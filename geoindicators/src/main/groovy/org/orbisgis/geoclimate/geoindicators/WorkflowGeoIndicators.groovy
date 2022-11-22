@@ -875,6 +875,244 @@ IProcess computeRSUIndicators() {
         }
     }
 }
+
+
+/**
+ * Compute the typology indicators
+ *
+ * @param buildingIndicators The table where are stored indicators values at building scale
+ * @param blockIndicators The table where are stored indicators values at block scale
+ * @param rsuIndicators  The table where are stored indicators values at rsu scale
+ * @param prefixName A prefix used to name the output table
+ * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
+ * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
+ * @param mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
+ * of the map) for the LCZ classification step (default : all values to 1)
+ * @param utrfModelName Name of the Random Forest model used to calculate the urban typology
+ *
+ * @return 4 tables: rsu_lcz, rsu_utrf_area, rsu_utrf_floor_area, building_utrf
+ */
+IProcess computeTypologyIndicators() {
+    return create {
+        title "Compute the geoindicators at RSU scale"
+        id "computeRSUIndicators"
+        inputs datasource: JdbcDataSource, buildingIndicators: "", blockIndicators: "",
+                rsuIndicators: "", indicatorUse: ["LCZ", "UTRF", "TEB"], prefixName: "",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+                utrfModelName: ""
+        outputs rsu_lcz: String, rsu_utrf_area: String, rsu_utrf_floor_area: String,
+                building_utrf: String
+        run { datasource, buildingIndicators, blockIndicators, rsuIndicators, indicatorUse,
+              prefixName, mapOfWeights, utrfModelName ->
+
+            info "Start computing Typology indicators..."
+
+            //Sanity check for URTF model
+            def runUTRFTypology = true
+            if (indicatorUse*.toUpperCase().contains("UTRF")) {
+                if (!utrfModelName) {
+                    runUTRFTypology = false
+                } else if (!modelCheck(utrfModelName)) {
+                    return
+                }
+            }
+            // Temporary (and output tables) are created
+            def lczIndicTable = postfix "LCZ_INDIC_TABLE"
+            def baseNameUtrfRsu = postfix "UTRF_RSU_"
+            def utrfBuilding
+            def distribNotPercent = "DISTRIB_NOT_PERCENT"
+
+            def COLUMN_ID_RSU = "id_rsu"
+            def COLUMN_ID_BUILD = "id_build"
+            def GEOMETRIC_COLUMN = "the_geom"
+            def CORRESPONDENCE_TAB_UTRF = ["ba"  : 1, "bgh": 2, "icif": 3, "icio": 4, "id": 5, "local": 6, "pcif": 7,
+                                           "pcio": 8, "pd": 9, "psc": 10]
+            def nameColTypoMaj = "TYPO_MAJ"
+
+            // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
+            def rsuLcz = null
+            def utrfArea = baseNameUtrfRsu + "AREA"
+            def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
+
+            if (indicatorUse.contains("LCZ")) {
+                info """ The LCZ classification is performed """
+                def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
+                                     "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
+                                     "ASPECT_RATIO"                      : "ASPECT_RATIO",
+                                     "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
+                                     "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
+                                     "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
+                                     "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
+
+                // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
+                // for LCZ classification (rename the indicators with the real names)
+                def queryReplaceNames = []
+                lczIndicNames.each { oldIndic, newIndic ->
+                    queryReplaceNames << "$oldIndic as $newIndic"
+                }
+                datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
+                                CREATE TABLE $lczIndicTable 
+                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${queryReplaceNames.join(",")} 
+                                        FROM ${rsuIndicators};""".toString()
+
+                // The classification algorithm is called
+                def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
+                if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
+                                  rsuAllIndicators : rsuIndicators,
+                                  normalisationType: "AVG",
+                                  mapOfWeights     : mapOfWeights,
+                                  prefixName       : prefixName,
+                                  datasource       : datasource,
+                                  prefixName       : prefixName])) {
+                    info "Cannot compute the LCZ classification."
+                    return
+                }
+                rsuLcz = classifyLCZ.results.outputTableName
+                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable".toString()
+
+            }
+            // If the UTRF indicators should be calculated, we only affect a URBAN typo class
+            // to each building and then to each RSU
+            if (indicatorUse.contains("UTRF") && runUTRFTypology) {
+                info """ The URBAN TYPOLOGY classification is performed """
+                def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
+                applygatherScales.execute([
+                        buildingTable    : buildingIndicators,
+                        blockTable       : blockIndicators,
+                        rsuTable         : rsuIndicators,
+                        targetedScale    : "BUILDING",
+                        operationsToApply: ["AVG", "STD"],
+                        prefixName       : prefixName,
+                        datasource       : datasource])
+                def gatheredScales = applygatherScales.results.outputTableName
+                if (!datasource.getTable(gatheredScales).isEmpty()) {
+                    def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
+                    if (!applyRF.execute([
+                            explicativeVariablesTableName: gatheredScales,
+                            pathAndFileName              : utrfModelName,
+                            idName                       : COLUMN_ID_BUILD,
+                            prefixName                   : prefixName,
+                            datasource                   : datasource])) {
+                        error "Cannot apply the urban typology model $utrfModelName"
+                        return
+                    }
+                    def utrfBuild = applyRF.results.outputTableName
+
+                    // Creation of a list which contains all types of the urban typology (in their string version)
+                    def urbTypoCorrespondenceTabInverted = [:]
+                    CORRESPONDENCE_TAB_UTRF.each { fin, ini ->
+                        urbTypoCorrespondenceTabInverted[ini] = fin
+                    }
+                    datasource."$utrfBuild".I_TYPO.createIndex()
+                    def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $utrfBuild"""
+                    def mapTypos = datasource.rows(queryDistinct.toString())
+                    def listTypos = []
+                    mapTypos.each {
+                        listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])
+                    }
+
+                    // Join the geometry field to the building typology table and replace integer by string values
+                    def queryCaseWhenReplace = ""
+                    def endCaseWhen = ""
+                    urbTypoCorrespondenceTabInverted.each { ini, fin ->
+                        queryCaseWhenReplace += "CASE WHEN b.I_TYPO=$ini THEN '$fin' ELSE "
+                        endCaseWhen += " END"
+                    }
+                    queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
+                    utrfBuilding = postfix"UTRF_BUILDING"
+                    datasource."$utrfBuild"."$COLUMN_ID_BUILD".createIndex()
+                    datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
+                    datasource """  DROP TABLE IF EXISTS $utrfBuilding;
+                                CREATE TABLE $utrfBuilding
+                                    AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
+                                                $queryCaseWhenReplace AS I_TYPO
+                                    FROM $buildingIndicators a LEFT JOIN $utrfBuild b
+                                    ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
+                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL""".toString()
+
+                    // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
+                    def queryCasewhen = [:]
+                    queryCasewhen["AREA"] = ""
+                    queryCasewhen["FLOOR_AREA"] = ""
+                    queryCasewhen.keySet().each { ind ->
+                        def querySum = ""
+                        listTypos.each { typoCol ->
+                            queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO='$typoCol' THEN b.$ind ELSE 0 END) AS TYPO_$typoCol,"""
+                            querySum = querySum + " COALESCE(b.TYPO_${typoCol}/(b.TYPO_${listTypos.join("+b.TYPO_")}), 0) AS TYPO_$typoCol,"
+                        }
+                        // Calculates the distribution per RSU
+                        datasource."$buildingIndicators"."$COLUMN_ID_RSU".createIndex()
+                        datasource."$utrfBuilding"."$COLUMN_ID_BUILD".createIndex()
+                        datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
+                                            CREATE TABLE $distribNotPercent
+                                                AS SELECT   b.$COLUMN_ID_RSU,
+                                                            ${queryCasewhen[ind][0..-2]} 
+                                                FROM $utrfBuilding a RIGHT JOIN $buildingIndicators b
+                                                ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
+                                                WHERE b.$COLUMN_ID_RSU IS NOT NULL 
+                                                GROUP BY b.$COLUMN_ID_RSU
+                                                """.toString()
+                        // Calculates the frequency by RSU
+                        datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
+                        datasource."$rsuIndicators"."$COLUMN_ID_RSU".createIndex()
+                        datasource.execute """  DROP TABLE IF EXISTS TEMPO_DISTRIB;
+                                            CREATE TABLE TEMPO_DISTRIB
+                                                AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
+                                                            ${querySum[0..-2]} 
+                                                FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
+                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
+
+                        // Characterize the distribution to identify the most frequent type within a RSU
+                        def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
+                        computeDistribChar([distribTableName: "TEMPO_DISTRIB",
+                                            inputId         : COLUMN_ID_RSU,
+                                            initialTable    : "TEMPO_DISTRIB",
+                                            distribIndicator: ["uniqueness"],
+                                            extremum        : "GREATEST",
+                                            keep2ndCol      : false,
+                                            keepColVal      : false,
+                                            prefixName      : "${prefixName}$ind",
+                                            datasource      : datasource])
+                        def resultsDistrib = computeDistribChar.results.outputTableName
+
+                        // Join main typo table with distribution table and replace typo by null when it has been set
+                        // while there is no building in the RSU
+                        datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
+                        datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
+                        datasource """  DROP TABLE IF EXISTS $baseNameUtrfRsu$ind;
+                                    CREATE TABLE $baseNameUtrfRsu$ind
+                                        AS SELECT   a.*, 
+                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
+                                                    THEN        NULL
+                                                    ELSE        b.UNIQUENESS_VALUE END AS UNIQUENESS_VALUE,
+                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
+                                                    THEN        NULL
+                                                    ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj
+                                        FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
+                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU""".toString()
+                    }
+                    // Drop temporary tables
+                    datasource """DROP TABLE IF EXISTS $utrfBuild, $gatheredScales, $distribNotPercent, TEMPO_DISTRIB"""
+                }
+            } else {
+                utrfArea = null
+                utrfFloorArea = null
+                utrfBuilding = null
+            }
+
+            return [rsu_lcz            : rsuLcz,
+                    rsu_utrf_area       : utrfArea,
+                    rsu_utrf_floor_area  : utrfFloorArea,
+                    building_utrf      : utrfBuilding]
+        }
+    }
+}
+
+
+
+
 /** The processing chain creates the units used to describe the territory at three scales: Reference Spatial
  * Unit (RSU), block and building. The creation of the RSU needs several layers such as the hydrology,
  * the vegetation, the roads and the rail network and the boundary of the study zone. The blocks are created
@@ -1171,31 +1409,14 @@ IProcess computeAllGeoIndicators() {
                 //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
                 def rsuRelationFiltered = prefix prefixName, "RSU_RELATION_"
                 datasource.execute """DROP TABLE IF EXISTS $rsuRelationFiltered;
-            CREATE TABLE $rsuRelationFiltered AS SELECT ID_RSU, THE_GEOM FROM $relationRSU;
-            DROP TABLE $relationRSU;""".toString()
+                    CREATE TABLE $rsuRelationFiltered AS SELECT ID_RSU, THE_GEOM FROM $relationRSU;
+                    DROP TABLE $relationRSU;""".toString()
 
                 def relationBlocksFiltered = prefix prefixName, "BLOCK_RELATION_"
                 datasource.execute """DROP TABLE IF EXISTS $relationBlocksFiltered;
-            CREATE TABLE $relationBlocksFiltered AS SELECT ID_BLOCK,  THE_GEOM,ID_RSU FROM $relationBlocks;
-            DROP TABLE $relationBlocks;""".toString()
+                    CREATE TABLE $relationBlocksFiltered AS SELECT ID_BLOCK,  THE_GEOM,ID_RSU FROM $relationBlocks;
+                    DROP TABLE $relationBlocks;""".toString()
 
-                // Temporary (and output tables) are created
-                def lczIndicTable = postfix "LCZ_INDIC_TABLE"
-                def baseNameUtrfRsu = postfix "UTRF_RSU_"
-                def utrfBuilding
-                def distribNotPercent = "DISTRIB_NOT_PERCENT"
-                def COLUMN_ID_RSU = "id_rsu"
-                def COLUMN_ID_BUILD = "id_build"
-                def GEOMETRIC_COLUMN = "the_geom"
-                def CORRESPONDENCE_TAB_UTRF = ["ba"  : 1, "bgh": 2, "icif": 3, "icio": 4, "id": 5, "local": 6, "pcif": 7,
-                                               "pcio": 8, "pd": 9, "psc": 10]
-                def nameColTypoMaj = "TYPO_MAJ"
-
-                // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
-                def rsuLcz = null
-                def utrfArea = baseNameUtrfRsu + "AREA"
-                def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
-                def rsuLczWithoutGeom = "rsu_lcz_without_geom"
 
                 //Compute building indicators
                 def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
@@ -1241,176 +1462,26 @@ IProcess computeAllGeoIndicators() {
                     return null
                 }
                 rsuIndicators = computeRSUIndicators.results.outputTableName
+
+                // Compute the typology indicators (LCZ and UTRF)
+                def computeTypologyIndicators = Geoindicators.WorkflowGeoIndicators.computeTypologyIndicators()
+                if (!computeTypologyIndicators([datasource          : datasource,
+                                                buildingIndicators  : buildingIndicators,
+                                                blockIndicators     : blockIndicators,
+                                                rsuIndicators       : rsuIndicators,
+                                                prefixName          : prefixName,
+                                                mapOfWeights        : mapOfWeights,
+                                                indicatorUse        : indicatorUse,
+                                                utrfModelName       : utrfModelName])) {
+                    info "Cannot compute the Typology indicators."
+                    return
+                }
                 info "All geoindicators have been computed"
+                def rsuLcz = computeTypologyIndicators.results.rsu_lcz
+                def utrfArea = computeTypologyIndicators.results.rsu_utrf_area
+                def utrfFloorArea = computeTypologyIndicators.results.rsu_utrf_floor_area
+                def utrfBuilding = computeTypologyIndicators.results.building_utrf
 
-                // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
-                if (indicatorUse.contains("LCZ")) {
-                    info """ The LCZ classification is performed """
-
-                    def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                         "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
-                                         "ASPECT_RATIO"                      : "ASPECT_RATIO",
-                                         "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
-                                         "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
-                                         "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                         "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
-
-                    // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-                    // for LCZ classification (rename the indicators with the real names)
-                    def queryReplaceNames = []
-                    lczIndicNames.each { oldIndic, newIndic ->
-                        queryReplaceNames << "$oldIndic as $newIndic"
-                    }
-                    datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
-                                CREATE TABLE $lczIndicTable 
-                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${queryReplaceNames.join(",")} 
-                                        FROM ${computeRSUIndicators.results.outputTableName};""".toString()
-
-
-                    // The classification algorithm is called
-                    def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-                    if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
-                                      rsuAllIndicators : computeRSUIndicators.results.outputTableName,
-                                      normalisationType: "AVG",
-                                      mapOfWeights     : mapOfWeights,
-                                      prefixName       : prefixName,
-                                      datasource       : datasource,
-                                      prefixName       : prefixName])) {
-                        info "Cannot compute the LCZ classification."
-                        return
-                    }
-                    rsuLcz = classifyLCZ.results.outputTableName
-                    datasource.execute "DROP TABLE IF EXISTS $lczIndicTable".toString()
-
-                }
-                // If the UTRF indicators should be calculated, we only affect a URBAN typo class
-                // to each building and then to each RSU
-                if (indicatorUse.contains("UTRF") && utrfModelName) {
-                    info """ The URBAN TYPOLOGY classification is performed """
-                    applygatherScales = Geoindicators.GenericIndicators.gatherScales()
-                    applygatherScales.execute([
-                            buildingTable    : buildingIndicators,
-                            blockTable       : blockIndicators,
-                            rsuTable         : rsuIndicators,
-                            targetedScale    : "BUILDING",
-                            operationsToApply: ["AVG", "STD"],
-                            prefixName       : prefixName,
-                            datasource       : datasource])
-                    gatheredScales = applygatherScales.results.outputTableName
-                    if (!datasource.getTable(gatheredScales).isEmpty()) {
-                        def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                        if (!applyRF.execute([
-                                explicativeVariablesTableName: gatheredScales,
-                                pathAndFileName              : utrfModelName,
-                                idName                       : COLUMN_ID_BUILD,
-                                prefixName                   : prefixName,
-                                datasource                   : datasource])) {
-                            error "Cannot apply the urban typology model $utrfModelName"
-                            return
-                        }
-                        def utrfBuild = applyRF.results.outputTableName
-
-                        // Creation of a list which contains all types of the urban typology (in their string version)
-                        def urbTypoCorrespondenceTabInverted = [:]
-                        CORRESPONDENCE_TAB_UTRF.each { fin, ini ->
-                            urbTypoCorrespondenceTabInverted[ini] = fin
-                        }
-                        datasource."$utrfBuild".I_TYPO.createIndex()
-                        def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $utrfBuild"""
-                        def mapTypos = datasource.rows(queryDistinct.toString())
-                        def listTypos = []
-                        mapTypos.each {
-                            listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])
-                        }
-
-                        // Join the geometry field to the building typology table and replace integer by string values
-                        def queryCaseWhenReplace = ""
-                        def endCaseWhen = ""
-                        urbTypoCorrespondenceTabInverted.each { ini, fin ->
-                            queryCaseWhenReplace += "CASE WHEN b.I_TYPO=$ini THEN '$fin' ELSE "
-                            endCaseWhen += " END"
-                        }
-                        queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
-                        utrfBuilding = postfix"UTRF_BUILDING"
-                        datasource."$utrfBuild"."$COLUMN_ID_BUILD".createIndex()
-                        datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
-                        datasource """  DROP TABLE IF EXISTS $utrfBuilding;
-                                CREATE TABLE $utrfBuilding
-                                    AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
-                                                $queryCaseWhenReplace AS I_TYPO
-                                    FROM $buildingIndicators a LEFT JOIN $utrfBuild b
-                                    ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL""".toString()
-
-                        // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
-                        def queryCasewhen = ["AREA": "" , "FLOOR_AREA":  ""]
-                        queryCasewhen.keySet().each { ind ->
-                            def querySum = ""
-                            listTypos.each { typoCol ->
-                                queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO='$typoCol' THEN b.$ind ELSE 0 END) AS TYPO_$typoCol,"""
-                                querySum = querySum + " COALESCE(b.TYPO_${typoCol}/(b.TYPO_${listTypos.join("+b.TYPO_")}), 0) AS TYPO_$typoCol,"
-                            }
-                            // Calculates the distribution per RSU
-                            datasource."$buildingIndicators"."$COLUMN_ID_RSU".createIndex()
-                            datasource."$utrfBuilding"."$COLUMN_ID_BUILD".createIndex()
-                            datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
-                                            CREATE TABLE $distribNotPercent
-                                                AS SELECT   b.$COLUMN_ID_RSU,
-                                                            ${queryCasewhen[ind][0..-2]} 
-                                                FROM $utrfBuilding a RIGHT JOIN $buildingIndicators b
-                                                ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                                WHERE b.$COLUMN_ID_RSU IS NOT NULL 
-                                                GROUP BY b.$COLUMN_ID_RSU
-                                                """.toString()
-                            // Calculates the frequency by RSU
-                            datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
-                            datasource."$rsuIndicators"."$COLUMN_ID_RSU".createIndex()
-                            datasource.execute """  DROP TABLE IF EXISTS TEMPO_DISTRIB;
-                                            CREATE TABLE TEMPO_DISTRIB
-                                                AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
-                                                            ${querySum[0..-2]} 
-                                                FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
-                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
-
-                            // Characterize the distribution to identify the most frequent type within a RSU
-                            def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
-                            computeDistribChar([distribTableName: "TEMPO_DISTRIB",
-                                                inputId         : COLUMN_ID_RSU,
-                                                initialTable    : "TEMPO_DISTRIB",
-                                                distribIndicator: ["uniqueness"],
-                                                extremum        : "GREATEST",
-                                                keep2ndCol      : false,
-                                                keepColVal      : false,
-                                                prefixName      : "${prefixName}$ind",
-                                                datasource      : datasource])
-                            def resultsDistrib = computeDistribChar.results.outputTableName
-
-                            // Join main typo table with distribution table and replace typo by null when it has been set
-                            // while there is no building in the RSU
-                            datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
-                            datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
-                            datasource """  DROP TABLE IF EXISTS $baseNameUtrfRsu$ind;
-                                    CREATE TABLE $baseNameUtrfRsu$ind
-                                        AS SELECT   a.*, 
-                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
-                                                    THEN        NULL
-                                                    ELSE        b.UNIQUENESS_VALUE END AS UNIQUENESS_VALUE,
-                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
-                                                    THEN        NULL
-                                                    ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj
-                                        FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
-                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU""".toString()
-                        }
-                        // Drop temporary tables
-                        datasource """DROP TABLE IF EXISTS $utrfBuild, $gatheredScales, $distribNotPercent, TEMPO_DISTRIB""".toString()
-                    }
-                } else {
-                    utrfArea = null
-                    utrfFloorArea = null
-                    utrfBuilding = null
-                }
-
-                datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;".toString()
                 //Drop all cached tables
                 def cachedTableNames = getCachedTableNames()
                 if (cachedTableNames) {
@@ -1511,37 +1582,6 @@ IProcess computeGeoclimateIndicators() {
               utrfModelName ->
             info "Start computing the geoindicators..."
             def start = System.currentTimeMillis()
-            //Sanity check for URTF model
-            def runUTRFTypology = true
-            if (indicatorUse*.toUpperCase().contains("UTRF")) {
-                if (!utrfModelName) {
-                    runUTRFTypology = false
-                } else if (!modelCheck(utrfModelName)) {
-                    return
-                }
-            }
-            // Temporary (and output tables) are created
-            def lczIndicTable = postfix "LCZ_INDIC_TABLE"
-            def baseNameUtrfRsu = postfix "UTRF_RSU_"
-            def utrfBuilding
-            def distribNotPercent = "DISTRIB_NOT_PERCENT"
-
-            def COLUMN_ID_RSU = "id_rsu"
-            def COLUMN_ID_BUILD = "id_build"
-            def GEOMETRIC_COLUMN = "the_geom"
-            def CORRESPONDENCE_TAB_UTRF = ["ba"  : 1, "bgh": 2, "icif": 3, "icio": 4, "id": 5, "local": 6, "pcif": 7,
-                                           "pcio": 8, "pd": 9, "psc": 10]
-            def nameColTypoMaj = "TYPO_MAJ"
-            //Check data before computing indicators
-            if (!zoneTable && !buildingTable && !roadTable) {
-                error "To compute the geoindicators the zone, building and road tables must not be null or empty"
-                return null
-            }
-
-            // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
-            def rsuLcz = null
-            def utrfArea = baseNameUtrfRsu + "AREA"
-            def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
 
             //Create spatial units and relations : building, block, rsu
             IProcess spatialUnits = createUnitsOfAnalysis()
@@ -1605,174 +1645,26 @@ IProcess computeGeoclimateIndicators() {
                 return null
             }
             rsuIndicators = computeRSUIndicators.results.outputTableName
+
+            // Compute the typology indicators (LCZ and UTRF)
+            def computeTypologyIndicators = Geoindicators.WorkflowGeoIndicators.computeTypologyIndicators()
+            if (!computeTypologyIndicators([datasource          : datasource,
+                                            buildingIndicators  : buildingIndicators,
+                                            blockIndicators     : blockIndicators,
+                                            rsuIndicators       : rsuIndicators,
+                                            prefixName          : prefixName,
+                                            mapOfWeights        : mapOfWeights,
+                                            indicatorUse        : indicatorUse,
+                                            utrfModelName       : utrfModelName])) {
+                info "Cannot compute the Typology indicators."
+                return
+            }
             info "All geoindicators have been computed"
+            def rsuLcz = computeTypologyIndicators.results.rsu_lcz
+            def utrfArea = computeTypologyIndicators.results.rsu_utrf_area
+            def utrfFloorArea = computeTypologyIndicators.results.rsu_utrf_floor_area
+            def utrfBuilding = computeTypologyIndicators.results.building_utrf
 
-            // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
-            if (indicatorUse.contains("LCZ")) {
-                info """ The LCZ classification is performed """
-                def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                     "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
-                                     "ASPECT_RATIO"                      : "ASPECT_RATIO",
-                                     "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
-                                     "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
-                                     "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                     "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
-
-                // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-                // for LCZ classification (rename the indicators with the real names)
-                def queryReplaceNames = []
-                lczIndicNames.each { oldIndic, newIndic ->
-                    queryReplaceNames << "$oldIndic as $newIndic"
-                }
-                datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
-                                CREATE TABLE $lczIndicTable 
-                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${queryReplaceNames.join(",")} 
-                                        FROM ${rsuIndicators};""".toString()
-
-                // The classification algorithm is called
-                def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-                if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
-                                  rsuAllIndicators : rsuIndicators,
-                                  normalisationType: "AVG",
-                                  mapOfWeights     : mapOfWeights,
-                                  prefixName       : prefixName,
-                                  datasource       : datasource,
-                                  prefixName       : prefixName])) {
-                    info "Cannot compute the LCZ classification."
-                    return
-                }
-                rsuLcz = classifyLCZ.results.outputTableName
-                datasource.execute "DROP TABLE IF EXISTS $lczIndicTable".toString()
-
-            }
-            // If the UTRF indicators should be calculated, we only affect a URBAN typo class
-            // to each building and then to each RSU
-            if (indicatorUse.contains("UTRF") && runUTRFTypology) {
-                info """ The URBAN TYPOLOGY classification is performed """
-                def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
-                applygatherScales.execute([
-                        buildingTable    : buildingIndicators,
-                        blockTable       : blockIndicators,
-                        rsuTable         : rsuIndicators,
-                        targetedScale    : "BUILDING",
-                        operationsToApply: ["AVG", "STD"],
-                        prefixName       : prefixName,
-                        datasource       : datasource])
-                def gatheredScales = applygatherScales.results.outputTableName
-                if (!datasource.getTable(gatheredScales).isEmpty()) {
-                    def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                    if (!applyRF.execute([
-                            explicativeVariablesTableName: gatheredScales,
-                            pathAndFileName              : utrfModelName,
-                            idName                       : COLUMN_ID_BUILD,
-                            prefixName                   : prefixName,
-                            datasource                   : datasource])) {
-                        error "Cannot apply the urban typology model $utrfModelName"
-                        return
-                    }
-                    def utrfBuild = applyRF.results.outputTableName
-
-                    // Creation of a list which contains all types of the urban typology (in their string version)
-                    def urbTypoCorrespondenceTabInverted = [:]
-                    CORRESPONDENCE_TAB_UTRF.each { fin, ini ->
-                        urbTypoCorrespondenceTabInverted[ini] = fin
-                    }
-                    datasource."$utrfBuild".I_TYPO.createIndex()
-                    def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $utrfBuild"""
-                    def mapTypos = datasource.rows(queryDistinct.toString())
-                    def listTypos = []
-                    mapTypos.each {
-                        listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])
-                    }
-
-                    // Join the geometry field to the building typology table and replace integer by string values
-                    def queryCaseWhenReplace = ""
-                    def endCaseWhen = ""
-                    urbTypoCorrespondenceTabInverted.each { ini, fin ->
-                        queryCaseWhenReplace += "CASE WHEN b.I_TYPO=$ini THEN '$fin' ELSE "
-                        endCaseWhen += " END"
-                    }
-                    queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
-                    utrfBuilding = postfix"UTRF_BUILDING"
-                    datasource."$utrfBuild"."$COLUMN_ID_BUILD".createIndex()
-                    datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
-                    datasource """  DROP TABLE IF EXISTS $utrfBuilding;
-                                CREATE TABLE $utrfBuilding
-                                    AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
-                                                $queryCaseWhenReplace AS I_TYPO
-                                    FROM $buildingIndicators a LEFT JOIN $utrfBuild b
-                                    ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL""".toString()
-
-                    // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
-                    def queryCasewhen = [:]
-                    queryCasewhen["AREA"] = ""
-                    queryCasewhen["FLOOR_AREA"] = ""
-                    queryCasewhen.keySet().each { ind ->
-                        def querySum = ""
-                        listTypos.each { typoCol ->
-                            queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO='$typoCol' THEN b.$ind ELSE 0 END) AS TYPO_$typoCol,"""
-                            querySum = querySum + " COALESCE(b.TYPO_${typoCol}/(b.TYPO_${listTypos.join("+b.TYPO_")}), 0) AS TYPO_$typoCol,"
-                        }
-                        // Calculates the distribution per RSU
-                        datasource."$buildingIndicators"."$COLUMN_ID_RSU".createIndex()
-                        datasource."$utrfBuilding"."$COLUMN_ID_BUILD".createIndex()
-                        datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
-                                            CREATE TABLE $distribNotPercent
-                                                AS SELECT   b.$COLUMN_ID_RSU,
-                                                            ${queryCasewhen[ind][0..-2]} 
-                                                FROM $utrfBuilding a RIGHT JOIN $buildingIndicators b
-                                                ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                                WHERE b.$COLUMN_ID_RSU IS NOT NULL 
-                                                GROUP BY b.$COLUMN_ID_RSU
-                                                """.toString()
-                        // Calculates the frequency by RSU
-                        datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
-                        datasource."$rsuIndicators"."$COLUMN_ID_RSU".createIndex()
-                        datasource.execute """  DROP TABLE IF EXISTS TEMPO_DISTRIB;
-                                            CREATE TABLE TEMPO_DISTRIB
-                                                AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
-                                                            ${querySum[0..-2]} 
-                                                FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
-                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
-
-                        // Characterize the distribution to identify the most frequent type within a RSU
-                        def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
-                        computeDistribChar([distribTableName: "TEMPO_DISTRIB",
-                                            inputId         : COLUMN_ID_RSU,
-                                            initialTable    : "TEMPO_DISTRIB",
-                                            distribIndicator: ["uniqueness"],
-                                            extremum        : "GREATEST",
-                                            keep2ndCol      : false,
-                                            keepColVal      : false,
-                                            prefixName      : "${prefixName}$ind",
-                                            datasource      : datasource])
-                        def resultsDistrib = computeDistribChar.results.outputTableName
-
-                        // Join main typo table with distribution table and replace typo by null when it has been set
-                        // while there is no building in the RSU
-                        datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
-                        datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
-                        datasource """  DROP TABLE IF EXISTS $baseNameUtrfRsu$ind;
-                                    CREATE TABLE $baseNameUtrfRsu$ind
-                                        AS SELECT   a.*, 
-                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
-                                                    THEN        NULL
-                                                    ELSE        b.UNIQUENESS_VALUE END AS UNIQUENESS_VALUE,
-                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
-                                                    THEN        NULL
-                                                    ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj
-                                        FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
-                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU""".toString()
-                    }
-                    // Drop temporary tables
-                    datasource """DROP TABLE IF EXISTS $utrfBuild, $gatheredScales, $distribNotPercent, TEMPO_DISTRIB"""
-                }
-            } else {
-                utrfArea = null
-                utrfFloorArea = null
-                utrfBuilding = null
-            }
 
             //Populate reporting
             def nbBuilding = datasource.firstRow("select count(*) as count from ${buildingIndicators} WHERE ID_RSU IS NOT NULL".toString()).count
