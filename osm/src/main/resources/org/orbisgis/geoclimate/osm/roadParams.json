@@ -12,11 +12,11 @@
       "road","track","living_street", "pedestrian"
     ],"junction": ["roundabout",
       "circular","jughandle","filter","yes"
-    ]
+    ], "aeroway": ["taxiway"]
   },
   "columns":["width","highway", "surface", "sidewalk",
     "layer","maxspeed","oneway",
-    "route","junction", "bridge", "service", "access", "area"],
+    "route","junction", "bridge", "service", "access", "area", "aeroway"],
     "surface":
      {
         "unpaved": {
@@ -219,7 +219,12 @@
            "highway": [
              "service"
            ]
-         }
+         },
+      "aeroway": {
+        "aeroway": [
+          "taxiway"
+        ]
+      }
     },
     "width" :
      {
@@ -240,7 +245,8 @@
         "roundabout": 4,
         "ferry": 0,
         "pedestrian": 3,
-        "service": 3
+        "service": 3,
+        "aeroway": 18
      },
   "crossing":{"bridge" :
   ["yes", "aqueduct", "cantilever", "covered", "low_water_crossing", "movable", "trestle",
