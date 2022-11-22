@@ -2,11 +2,15 @@ package org.orbisgis.geoclimate.bdtopo_v2
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 
 import static org.junit.jupiter.api.Assertions.*
 
 class InputDataFormattingTest {
+
+    @TempDir
+    static File folder
 
     H2GIS h2GISDatabase
 
@@ -19,7 +23,7 @@ class InputDataFormattingTest {
                                "ROUTE", "TRONCON_VOIE_FERREE", "SURFACE_EAU", "ZONE_VEGETATION"
                               ,"TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE","SURFACE_ROUTE", "SURFACE_ACTIVITE"]
 
-        h2GISDatabase = H2GIS.open("./target/h2gis_input_data_formating;AUTO_SERVER=TRUE;", "sa", "")
+        h2GISDatabase = H2GIS.open(folder.getAbsolutePath()+File.separator+"bdtopo_v2_2_inputDataFormattingTest;AUTO_SERVER=TRUE;")
         // Load data files
         listFilesBDTopo.each{
             h2GISDatabase.load(getClass().getResource("$dataFolderInseeCode${File.separator+it.toLowerCase()}.shp"), it, true)

@@ -13,8 +13,6 @@
     {"distance" : 1000,
         "prefixName": "",
         "hLevMin": 3,
-        "hLevMax": 15,
-        "hThresholdLev2": 10,
         "rsu_indicators": {
         "indicatorUse": ["LCZ", "UTRF", "TEB"],
         "svfSimplified": false,

@@ -15169,7 +15169,7 @@
     <tag k="maxspeed" v="30"/>
     <tag k="name" v="Rue de Saint-Nicolas"/>
     <tag k="ref" v="D 775"/>
-    <tag k="surface" v="asphalt"/>
+    <tag k="surface" v="compacted"/>
   </way>
   <way id="61486053">
     <nd ref="2524391917"/>

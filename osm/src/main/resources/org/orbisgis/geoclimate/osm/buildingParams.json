@@ -11,7 +11,7 @@
     "barrier", "government", "historic:building", "grandstand",
     "house", "shop", "industrial", "man_made", "residential",
     "apartments", "ruins", "agricultural", "barn", "healthcare",
-    "education", "restaurant", "sustenance", "office", "tourism"]
+    "education", "restaurant", "sustenance", "office", "tourism", "roof:shape"]
     ,
     "level" : {
         "building": 1,
@@ -38,6 +38,7 @@
         "transportation": 0,
         "train_station": 0,
         "toll_booth": 0,
+        "toll": 0,
         "terminal": 0,
         "healthcare": 1,
         "education": 1,

@@ -119,8 +119,6 @@ import java.sql.SQLException
  * - mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
  * of the map) for the LCZ classification step (default : all values to 1)
  * - hLevMin Minimum building level height
- * - hLevMax Maximum building level height
- * - hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
  * @return
  * a map with the name of zone and a list of the output tables computed and stored in the local database,
@@ -874,7 +872,7 @@ def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames, H2GIS h2gis
 def extractProcessingParameters(def processing_parameters) {
     def defaultParameters = [distance       : 1000f,
                              distance_buffer: 500f, prefixName: "",
-                             hLevMin        : 3, hLevMax: 15, hThresholdLev2: 10]
+                             hLevMin        : 3]
     def rsu_indicators_default = [indicatorUse      : [],
                                   svfSimplified     : true,
                                   surface_vegetation: 10000f,
@@ -903,14 +901,6 @@ def extractProcessingParameters(def processing_parameters) {
         def hLevMinP = processing_parameters.hLevMin
         if (hLevMinP && hLevMinP in Integer) {
             defaultParameters.hLevMin = hLevMinP
-        }
-        def hLevMaxP = processing_parameters.hLevMax
-        if (hLevMaxP && hLevMaxP in Integer) {
-            defaultParameters.hLevMax = hLevMaxP
-        }
-        def hThresholdLev2P = processing_parameters.hThresholdLev2
-        if (hThresholdLev2P && hThresholdLev2P in Integer) {
-            defaultParameters.hThresholdLev2 = hThresholdLev2P
         }
         //Check for rsu indicators
         def rsu_indicators = processing_parameters.rsu_indicators
@@ -1296,9 +1286,7 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                                    tablePiste_AerodromeName    : 'PISTE_AERODROME',
                                    tableReservoirName          : 'RESERVOIR',
                                    distance                    : processing_parameters.distance,
-                                   hLevMin                     : processing_parameters.hLevMin,
-                                   hLevMax                     : processing_parameters.hLevMax,
-                                   hThresholdLev2              : processing_parameters.hThresholdLev2
+                                   hLevMin                     : processing_parameters.hLevMin
     ])) {
 
         def buildingTableName = loadAndFormatData.results.outputBuilding
@@ -1885,24 +1873,17 @@ IProcess loadAndFormatData() {
                 tableImperviousActivSurfName: "",
                 tablePiste_AerodromeName: "",
                 tableReservoirName: "",
-                hLevMin: 3,
-                hLevMax: 15,
-                hThresholdLev2: 10
+                hLevMin: 3
         outputs outputBuilding: String, outputRoad: String, outputRail: String, outputHydro: String, outputVeget: String,
                 outputImpervious: String, outputUrbanAreas: String, outputZone: String
         run { datasource, distance, tableCommuneName, tableBuildIndifName, tableBuildIndusName, tableBuildRemarqName, tableRoadName, tableRailName,
               tableHydroName, tableVegetName, tableImperviousSportName, tableImperviousBuildSurfName, tableImperviousRoadSurfName, tableImperviousActivSurfName,
-              tablePiste_AerodromeName, tableReservoirName, hLevMin, hLevMax, hThresholdLev2 ->
+              tablePiste_AerodromeName, tableReservoirName, hLevMin ->
 
             if (!hLevMin) {
                 hLevMin = 3
             }
-            if (!hLevMax) {
-                hLevMax = 15
-            }
-            if (!hThresholdLev2) {
-                hThresholdLev2 = 10
-            }
+
             if (!datasource) {
                 error "The database to store the BD Topo data doesn't exist"
                 return
@@ -1945,8 +1926,7 @@ IProcess loadAndFormatData() {
             processFormatting = BDTopo_V2.InputDataFormatting.formatBuildingLayer()
             processFormatting.execute([datasource                : datasource,
                                        inputTableName            : preprocessTables.outputBuildingName,
-                                       inputUrbanAreas           : urbanAreas, h_lev_min: hLevMin, h_lev_max: hLevMax,
-                                       hThresholdLev2            : hThresholdLev2,
+                                       inputUrbanAreas           : urbanAreas, h_lev_min: hLevMin,
                                        inputZoneEnvelopeTableName: zoneTable])
             def finalBuildings = processFormatting.results.outputTableName
 

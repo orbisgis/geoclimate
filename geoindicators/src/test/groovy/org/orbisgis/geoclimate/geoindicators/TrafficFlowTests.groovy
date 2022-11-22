@@ -2,6 +2,7 @@ package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -10,15 +11,13 @@ import static org.orbisgis.data.H2GIS.open
 
 class TrafficFlowTests {
 
+    @TempDir
+    static File folder
     private static def h2GIS
-
-    private static def randomDbName() {
-        "${BlockIndicatorsTests.simpleName}_${UUID.randomUUID().toString().replaceAll "-", "_"}"
-    }
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open "./target/${randomDbName()};AUTO_SERVER=TRUE"
+        h2GIS = open(folder.getAbsolutePath()+File.separator+"trafficFlowTests;AUTO_SERVER=TRUE")
     }
 
     @Test
@@ -39,6 +38,5 @@ class TrafficFlowTests {
 
         assertEquals 6 , h2GIS.getTable(traffic.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${traffic.results.outputTableName} where road_type is not null").count==6
-
     }
 }
