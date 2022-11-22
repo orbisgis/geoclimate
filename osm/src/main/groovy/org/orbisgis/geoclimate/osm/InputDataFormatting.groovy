@@ -230,7 +230,7 @@ IProcess formatRoadLayer() {
                             def processRow = true
                             def road_access = row.'access'
                             def road_area = row.'area'
-                            if(road_area in['yes']){
+                            if (road_area in ['yes']) {
                                 processRow = false
                             }
                             def road_service = row.'service'
@@ -540,12 +540,11 @@ IProcess formatImperviousLayer() {
         run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
             debug('Impervious transformation starts')
             def outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, ID_SOURCE VARCHAR);""".toString()
             debug(inputTableName)
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("imperviousParams.json")
                 def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+                def mappingTypeAndUse = parametersMap.type
                 def queryMapper = "SELECT "
                 def columnToMap = parametersMap.get("columns")
                 ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
@@ -555,44 +554,82 @@ IProcess formatImperviousLayer() {
                     columnNames.remove("THE_GEOM")
                     queryMapper += columnsMapper(columnNames, columnToMap)
                     if (inputZoneEnvelopeTableName) {
-                        queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
+                        queryMapper += ", CASE WHEN st_overlaps (a.the_geom, b.the_geom) " +
                                 "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
                                 "ELSE a.the_geom " +
                                 "END AS the_geom " +
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
-                                "a.the_geom && b.the_geom "
+                                "a.the_geom && b.the_geom"
                     } else {
                         queryMapper += ", st_force2D(a.the_geom) as the_geom FROM $inputTableName  as a"
                     }
+
+                    def polygonizedTable = postfix("polygonized")
+                    def polygonizedExploded = postfix("polygonized_exploded")
+                    datasource.execute("""  
+                    DROP TABLE IF EXISTS $polygonizedTable;
+                    CREATE TABLE $polygonizedTable as select st_polygonize(st_union(st_accum(ST_ToMultiLine( the_geom)))) as the_geom from 
+                    ($queryMapper) as foo where "surface" not in('grass') or "parking" not in ('underground') or "building" is null;
+                    DROP TABLE IF EXISTS $polygonizedExploded;
+                    CREATE TABLE $polygonizedExploded as select * from st_explode('$polygonizedTable');
+                    """.toString())
+
+                    def filtered_area = postfix("filtered_area")
+                    datasource.execute("""DROP TABLE IF EXISTS $filtered_area;
+                    CREATE TABLE  $filtered_area AS 
+                    SELECT a.EXPLOD_ID , a.the_geom, st_area(b.the_geom) as area_imp, b.* EXCEPT(the_geom) from $polygonizedExploded as a , $inputTableName as b where
+                    a.the_geom && b.the_geom AND st_intersects(st_pointonsurface(a.the_geom), b.the_geom) ;
+                    CREATE INDEX ON $filtered_area(EXPLOD_ID);""".toString())
+
+                    def impervious_prepared = postfix("impervious_prepared")
+
+                    datasource.execute """Drop table if exists $impervious_prepared;
+                    CREATE TABLE $impervious_prepared (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, type varchar);""".toString()
+
                     int rowcount = 1
                     datasource.withBatch(100) { stmt ->
-                        datasource.eachRow(queryMapper) { row ->
-                            def toAdd = true
-                            if ((row.surface != null) && (row.surface == "grass")) {
-                                toAdd = false
-                            }
-                            if ((row.parking != null) && (row.parking == "underground")) {
-                                toAdd = false
-                            }
-                            if (toAdd) {
+                        datasource.eachRow("""SELECT 
+                                g1.*
+                                 FROM $filtered_area g1
+                                 LEFT JOIN $filtered_area g2 ON 
+                                    g1.EXPLOD_ID = g2.EXPLOD_ID AND g1.AREA_IMP  > g2.AREA_IMP 
+                                 WHERE g2.EXPLOD_ID  IS NULL
+                                 ORDER BY g1.EXPLOD_ID  ASC""".toString()) { row ->
+                            //println(row)
+                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                            def use = typeAndUseValues[1]
+                            def type = typeAndUseValues[0]
+                            if (type) {
                                 Geometry geom = row.the_geom
-                                if(!geom.isEmpty()) {
+                                if (!geom.isEmpty()) {
                                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                                         Geometry subGeom = geom.getGeometryN(i)
-                                        if(!subGeom.isEmpty()){
-                                        if (subGeom instanceof Polygon) {
-                                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}')".toString()
-                                        }
+                                        if (!subGeom.isEmpty()) {
+                                            if (subGeom instanceof Polygon) {
+                                                stmt.addBatch "insert into $impervious_prepared values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                    //Do the union of all type
+                    datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+                    CREATE TABLE $outputTableName as SELECT EXPLOD_ID AS id_impervious, THE_GEOM, TYPE
+                    FROM ST_EXPLODE('(
+                    SELECT ST_UNION(ST_ACCUM(the_geom)) as the_geom, TYPE from $impervious_prepared group by type
+                    )');""".toString())
+                    datasource.execute("DROP TABLE IF EXISTS  $polygonizedTable, $filtered_area, $polygonizedExploded, $impervious_prepared".toString())
+
+                    return [outputTableName: outputTableName]
                 }
             }
+            datasource.execute """Drop table if exists $outputTableName;
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(POLYGON, $epsg), id_impervious serial, type varchar);""".toString()
+
             debug('Impervious transformation finishes')
             [outputTableName: outputTableName]
         }
@@ -894,7 +931,6 @@ static String getSidewalk(String sidewalk) {
  * @return a flat list with escaped elements
  */
 static String columnsMapper(def inputColumns, def columnsToMap) {
-    //def flatList = "\"${inputColumns.join("\",\"")}\""
     def flatList = inputColumns.inject([]) { result, iter ->
         result += "a.\"$iter\""
     }.join(",")
@@ -1033,7 +1069,7 @@ IProcess formatSeaLandMask() {
                         def coastLinesPoints = "coatline_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def sea_land_mask = "sea_land_mask${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def sea_land_mask_in_zone = "sea_land_mask_in_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                        def water_to_be_filtered ="water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        def water_to_be_filtered = "water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         def water_filtered_exploded = "water_filtered_exploded${UUID.randomUUID().toString().replaceAll("-", "_")}"
                         datasource.execute """DROP TABLE IF EXISTS $outputTableName, $coastLinesIntersects, 
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
@@ -1117,12 +1153,12 @@ IProcess formatSeaLandMask() {
                          """.toString()
 
                         } else {
-                         datasource.execute """
+                            datasource.execute """
                         CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
                        SELECT the_geom, EXPLOD_ID  FROM st_explode('(  
                        SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
 
-                        datasource.execute """  
+                            datasource.execute """  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL

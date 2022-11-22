@@ -154,7 +154,7 @@ class InputDataFormattingTest {
                 inputTableName: extractData.results.imperviousTableName,
                 epsg          : epsg])
         assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp", true)
-        assertEquals 47, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Sea/Land mask
         format = OSM.InputDataFormatting.formatSeaLandMask()
@@ -376,6 +376,8 @@ class InputDataFormattingTest {
         //zoneToExtract =[13.4203,120.2165,14.5969 , 122.0293]
         //Le Havre
         zoneToExtract = [49.4370, -0.0230,49.5359,0.2053,]
+        //aeroway Toulouse https://www.openstreetmap.org/way/739797641#map=14/43.6316/1.3590
+        zoneToExtract =  [43.610539,1.334152,43.648808,1.392689]
         IProcess extractData = OSM.InputDataLoading.extractAndCreateGISLayers()
         extractData.execute([
                 datasource   : h2GIS,
@@ -461,13 +463,13 @@ class InputDataFormattingTest {
             h2GIS.getTable(inputWaterTableName).save("${ file.absolutePath+File.separator}osm_hydro_${formatedPlaceName}.geojson", true)
 
             //Impervious
-            /*format = OSM.InputDataFormatting.formatImperviousLayer()
+            format = OSM.InputDataFormatting.formatImperviousLayer()
             format.execute([
                     datasource                : h2GIS,
                     inputTableName            : extractData.results.imperviousTableName,
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
                     epsg                      : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)*/
+            h2GIS.getTable(format.results.outputTableName).save("${file.absolutePath+File.separator}osm_impervious_${formatedPlaceName}.geojson", true)
 
 
             //Sea/Land mask

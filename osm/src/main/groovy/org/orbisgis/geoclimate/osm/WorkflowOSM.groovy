@@ -442,7 +442,7 @@ IProcess osm_processing() {
                         def keysValues = ["building", "railway", "amenity",
                                           "leisure", "highway", "natural",
                                           "landuse", "landcover",
-                                          "vegetation", "waterway"]
+                                          "vegetation", "waterway","area", "aeroway", "area:aeroway"]
                         query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
