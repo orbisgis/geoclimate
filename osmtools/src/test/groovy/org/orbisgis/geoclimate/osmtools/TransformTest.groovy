@@ -62,6 +62,14 @@ class TransformTest extends AbstractOSMTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TransformTest)
 
+    static  H2GIS ds
+
+    @BeforeAll
+    static  void loadDb(){
+        ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformTest;AUTO_SERVER=TRUE;")
+    }
+
+
     @BeforeEach
     final void beforeEach(TestInfo testInfo){
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
@@ -80,7 +88,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void badToPointsTest(){
         def toPoints = OSMTools.Transform.toPoints()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
@@ -109,7 +116,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void toPointsTest(){
         def toPoints = OSMTools.Transform.toPoints()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
@@ -157,7 +163,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void badToLinesTest(){
         def toLines = OSMTools.Transform.toLines()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
@@ -186,7 +191,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void toLinesTest(){
         def toLines = OSMTools.Transform.toLines()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
@@ -236,7 +240,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void badToPolygonsTest(){
         def toPolygons = OSMTools.Transform.toPolygons()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
@@ -265,7 +268,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void toPolygonsTest(){
         def toPolygons = OSMTools.Transform.toPolygons()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
@@ -315,7 +317,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void badExtractWaysAsPolygonsTest(){
         def extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
@@ -344,7 +345,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void extractWaysAsPolygonsTest(){
         def extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
-        H2GIS ds = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
@@ -402,7 +402,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void badExtractRelationsAsPolygonsTest(){
         def extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
@@ -431,7 +430,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void extractRelationsAsPolygonsTest(){
         def extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
@@ -489,7 +487,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void badExtractWaysAsLinesTest(){
         def extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
@@ -518,7 +515,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void extractWaysAsLinesTest(){
         def extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
@@ -577,7 +573,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void badExtractRelationsAsLinesTest(){
         def extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
@@ -606,7 +601,6 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void extractRelationsAsLinesTest(){
         def extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
@@ -665,7 +659,6 @@ class TransformTest extends AbstractOSMTest {
     @Disabled
     @Test
     void transformOnLine() {
-        H2GIS h2GIS = RANDOM_DS()
         Geometry geom = Utilities.getNominatimData("Saint Jean La Poterie");
         def query = Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         def extract = OSMTools.Loader.extract()
@@ -687,25 +680,24 @@ class TransformTest extends AbstractOSMTest {
 
     @Test
     void buildGISLayersTest () {
-        def h2GIS = H2GIS.open('./target/osmtools_read_file;AUTO_SERVER=TRUE')
         IProcess loader = OSMTools.Loader.load()
         def prefix = "OSM_REDON"
-        assertTrue loader.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+        assertTrue loader.execute(datasource : ds, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
         //Create building layer
         def tags = ["building"]
         IProcess transform = OSMTools.Transform.toPolygons()
-        transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
+        transform.execute(datasource: ds, osmTablesPrefix: prefix, tags: tags)
         def outputTableName = transform.results.outputTableName
-        assertEquals 6, h2GIS.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  > 0").count as int
-        assertEquals 1032, h2GIS.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  = 0").count as int
+        assertEquals 6, ds.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  > 0").count as int
+        assertEquals 1032, ds.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  = 0").count as int
 
         //Create landuse layer
         tags = ["landuse":["farmland", "forest", "grass", "meadow", "orchard", "vineyard", "village_green", "allotments"],]
-        transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
+        transform.execute(datasource: ds, osmTablesPrefix: prefix, tags: tags)
         outputTableName = transform.results.outputTableName
-        assertEquals 131, h2GIS.firstRow("select count(*) as count from ${outputTableName}").count as int
-        assertEquals 123, h2GIS.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='grass'").count as int
+        assertEquals 131, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
+        assertEquals 123, ds.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='grass'").count as int
 
     }
 

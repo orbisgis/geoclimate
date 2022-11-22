@@ -22,7 +22,7 @@ class InputDataLoadingTest {
 
     @BeforeAll
     static  void loadDb(){
-        h2GIS = H2GIS.open('./target/osm_gislayers_test;AUTO_SERVER=TRUE')
+        h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "osm_inputDataLoadingTest;AUTO_SERVER=TRUE;")
     }
 
     @Disabled //enable it to test data extraction from the overpass api
@@ -34,7 +34,7 @@ class InputDataLoadingTest {
                 zoneToExtract: "Île de la Nouvelle-Amsterdam"])
         process.getResults().each {it ->
             if(it.value!=null){
-                h2GIS.getTable(it.value).save("./target/${it.value}.shp", true)
+                h2GIS.getTable(it.value).save(new File(folder, "${it.value}.shp").absolutePath, true)
             }
         }
     }

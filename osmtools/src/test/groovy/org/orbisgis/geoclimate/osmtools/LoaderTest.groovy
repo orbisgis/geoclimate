@@ -37,6 +37,7 @@
 package org.orbisgis.geoclimate.osmtools
 
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
@@ -64,6 +65,13 @@ class LoaderTest extends AbstractOSMTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoaderTest)
 
+    static  H2GIS ds
+
+    @BeforeAll
+    static  void loadDb(){
+        ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "LoaderTest;AUTO_SERVER=TRUE;")
+    }
+
     @BeforeEach
     final void beforeEach(TestInfo testInfo){
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
@@ -84,7 +92,6 @@ class LoaderTest extends AbstractOSMTest {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromArea = OSMTools.Loader.fromArea()
-        H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
                                                new Coordinate(4, 8),
@@ -107,7 +114,6 @@ class LoaderTest extends AbstractOSMTest {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromArea = OSMTools.Loader.fromArea()
-        H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
                                                new Coordinate(4, 8),
@@ -187,7 +193,6 @@ class LoaderTest extends AbstractOSMTest {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
         def fromArea = OSMTools.Loader.fromArea()
-        H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def dist = 1000
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
@@ -275,7 +280,6 @@ class LoaderTest extends AbstractOSMTest {
                 "\trelation(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
                 ");\n" +
                 "out;"
-        H2GIS ds = RANDOM_DS()
 
         assertTrue fromPlace(datasource: ds, placeName: placeName)
         def r = fromPlace.results
@@ -324,7 +328,6 @@ class LoaderTest extends AbstractOSMTest {
                 "\trelation(poly:\"48.819955084235794 -3.01606821815555 48.821044915764205 -3.01606821815555 48.821044915764205 -3.0149317818444503 48.819955084235794 -3.0149317818444503\");\n" +
                 ");\n" +
                 "out;"
-        H2GIS ds = RANDOM_DS()
         assertTrue fromPlace(datasource: ds, placeName: placeName, distance: dist)
         def r = fromPlace.results
         assertFalse r.isEmpty()
@@ -364,7 +367,6 @@ class LoaderTest extends AbstractOSMTest {
         def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def dist = -5
-        H2GIS ds = RANDOM_DS()
 
         assertFalse fromPlace(datasource: ds, placeName: placeName, distance: dist)
         assertTrue fromPlace.results.isEmpty()
@@ -414,7 +416,6 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void badLoadTest(){
-        H2GIS ds = RANDOM_DS()
         def load = OSMTools.Loader.load()
         assertNotNull load
         def url = LoaderTest.getResource("sample.osm")
@@ -453,7 +454,6 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void loadTest(){
-        H2GIS ds = RANDOM_DS()
         def load = OSMTools.Loader.load()
         assertNotNull load
         def url = LoaderTest.getResource("sample.osm")

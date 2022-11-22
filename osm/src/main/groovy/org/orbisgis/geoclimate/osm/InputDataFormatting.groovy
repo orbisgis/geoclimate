@@ -146,7 +146,7 @@ IProcess formatBuildingLayer() {
                                                a.NB_LEV, 
                                                COALESCE(b.TYPE, a.TYPE) AS TYPE ,
                                                COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
-                                               , a.ZINDEX, a.a.ROOF_SHAPE from $outputTableName
+                                               , a.ZINDEX, a.ROOF_SHAPE from $outputTableName
                                         a LEFT JOIN $buildinType b on a.id_build=b.id_build""".toString()
 
                         datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName;

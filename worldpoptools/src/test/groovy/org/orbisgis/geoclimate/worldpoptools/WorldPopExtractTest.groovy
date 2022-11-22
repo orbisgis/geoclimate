@@ -27,7 +27,7 @@ class WorldPopExtractTest {
 
     @BeforeAll
     static void beforeAll(){
-        h2GIS = open"./target/worldpop_extract;AUTO_SERVER=TRUE"
+        h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "WorldPopExtractTest;AUTO_SERVER=TRUE;")
     }
 
     @BeforeEach
@@ -45,7 +45,7 @@ class WorldPopExtractTest {
      */
     @Test
     void extractGrid(){
-        def outputGridFile = new File("target/extractGrid.asc")
+        def outputGridFile = new File(folder,"extractGrid.asc")
         if(outputGridFile.exists()){
             outputGridFile.delete()
         }
