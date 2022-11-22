@@ -55,7 +55,7 @@ IProcess build_road_traffic() {
 
             if (inputTableName) {
                 def paramsDefaultFile = this.class.getResourceAsStream("roadTrafficParams.json")
-                def traffic_flow_params = parametersMapping(jsonFilename, paramsDefaultFile)
+                def traffic_flow_params = Geoindicators.DataUtils.parametersMapping(jsonFilename, paramsDefaultFile)
                 if(!traffic_flow_params){
                     error "The road traffic flow parameters cannot be null"
                     return
@@ -261,27 +261,4 @@ static String getTrafficRoadType(def road_types, def road_type){
         }
     }
     return type_key
-}
-
-/**
- * Get a set of parameters stored in a json file
- *
- * @param file
- * @param altResourceStream
- * @return
- */
-static Map parametersMapping(def file, def altResourceStream) {
-    def paramStream
-    def jsonSlurper = new JsonSlurper()
-    if (file) {
-        if (new File(file).isFile()) {
-            paramStream = new FileInputStream(file)
-        } else {
-            warn("No file named ${file} found. Taking default instead")
-            paramStream = altResourceStream
-        }
-    } else {
-        paramStream = altResourceStream
-    }
-    return jsonSlurper.parse(paramStream)
 }

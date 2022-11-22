@@ -418,7 +418,7 @@ class RsuIndicatorsTests {
 
         def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                rsuTable  : outputTable, buildingTable: "building_test", roadTable: "road_test", vegetationTable: "veget_test", waterTable: "hydro_test",
+                zone  : outputTable, id_zone : "id_rsu" , building: "building_test", road: "road_test", vegetation: "veget_test", water: "hydro_test",
                 prefixName: "test", datasource: h2GIS])
         def outputTableStats = p.results.outputTableName
 
@@ -497,7 +497,7 @@ class RsuIndicatorsTests {
         // Need to create the smallest geometries used as input of the surface fraction process
         def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                rsuTable  : "rsu_tempo", buildingTable: "building_test", vegetationTable: "veget_test", waterTable: "hydro_test",
+                zone  : "rsu_tempo",id_zone : "id_rsu" , building: "building_test", vegetation: "veget_test", water: "hydro_test",
                 prefixName: "test", datasource: h2GIS])
         def tempoTable = p.results.outputTableName
 
@@ -570,7 +570,7 @@ class RsuIndicatorsTests {
         // Need to create the smallest geometries used as input of the surface fraction process
         def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                rsuTable  : "rsu_tempo", roadTable: "road_tempo",
+                zone  : "rsu_tempo",id_zone : "id_rsu" , road: "road_tempo",
                 prefixName: "test", datasource: h2GIS])
         def tempoTable = p.results.outputTableName
 
@@ -624,7 +624,7 @@ class RsuIndicatorsTests {
         // Need to create the smallest geometries used as input of the surface fraction process
         def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                rsuTable  : "rsu_tempo", buildingTable: "building_test", vegetationTable: "veget_test", waterTable: "hydro_test",
+                zone  : "rsu_tempo", id_zone : "id_rsu" ,building: "building_test", vegetation: "veget_test", water: "hydro_test",
                 prefixName: "test", datasource: h2GIS])
         def tempoTable = p.results.outputTableName
 
@@ -785,14 +785,15 @@ class RsuIndicatorsTests {
             assert gridP.execute([geometry: env, deltaX: 100, deltaY: 100, datasource: h2GIS])
             def outputTable = gridP.results.outputTableName
             IProcess process = Geoindicators.RsuIndicators.groundLayer()
-            assertTrue process.execute(["zones" : outputTable, "id_zones": "id_grid",
+            assertTrue process.execute(["zone" : outputTable, "id_zone": "id_grid",
                                         building: "building_test", road: "road_test", vegetation: "veget_test", water: "hydro_test", datasource: h2GIS])
 
             def ground = process.results.ground
-            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  building_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where building is not null".toString()).area)<10)
-            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where water is not null".toString()).area)<10)
-            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  veget_test where zindex=0".toString()).area  - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where low_vegetation is not null or  high_vegetation is not null".toString()).area)<10)
-       }
+            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  building_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where building_type is not null".toString()).area)<10)
+            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where water_type is not null".toString()).area)<10)
+            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  veget_test where zindex=0".toString()).area  - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where low_vegetation_type is not null or  high_vegetation_type is not null".toString()).area)<10)
+            h2GIS.save("(SELECT the_geom, LOW_VEGETATION_TYPE, HIGH_VEGETATION_TYPE, WATER_TYPE, IMPERVIOUS_TYPE FROM $ground where BUILDING_TYPE IS NULL AND ROAD_TYPE IS NULL )", "/tmp/ground.shp")
+        }
     }
 
 }

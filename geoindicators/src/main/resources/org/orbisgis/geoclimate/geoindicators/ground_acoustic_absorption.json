@@ -1,0 +1,15 @@
+{
+  "default_g": 0,
+  "g": {
+    "water": 0,
+    "low_vegetation": 1,
+    "high_vegetation": 1,
+    "impervious": 0
+  },
+  "layer_priorities": [
+    "water",
+    "low_vegetation",
+    "impervious",
+    "high_vegetation"
+  ]
+}

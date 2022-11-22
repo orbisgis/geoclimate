@@ -54,7 +54,8 @@
         "light_industry": 0,
         "emergency": 0,
         "hotel": 2,
-        "hospital": 2
+        "hospital": 2,
+        "parking": 1
     },
     "type" : {
         "terminal:transportation": {
@@ -69,6 +70,11 @@
             "building": [
                 "terminal",
                 "airport_terminal"
+            ]
+        },
+        "parking:transportation": {
+            "building": [
+                "parking"
             ]
         },
         "monument": {
