@@ -1152,7 +1152,7 @@ IProcess createUnitsOfAnalysis() {
             info "Create the units of analysis..."
             // Create the RSU
             def createRSU = Geoindicators.SpatialUnits.createRSU()
-            if (!createRSU([inputzone  : zoneTable,
+            if (!createRSU([inputzone           : zoneTable,
                             prefixName          : prefixName,
                             datasource          : datasource,
                             rsuType             : rsuType,
@@ -1166,6 +1166,8 @@ IProcess createUnitsOfAnalysis() {
                 info "Cannot compute the RSU."
                 return
             }
+            def rsuTable = createRSU.results.outputTableName
+            def idRsu = createRSU.results.outputIdRsu
 
             // By default, the building table is used to calculate the relations between buildings and RSU
             def inputLowerScaleBuRsu = buildingTable
@@ -1187,13 +1189,14 @@ IProcess createUnitsOfAnalysis() {
                 def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.spatialJoin()
                 if (!createScalesRelationsRsuBl([datasource    : datasource,
                                                  sourceTable   : createBlocks.results.outputTableName,
-                                                 targetTable   : createRSU.results.outputTableName,
-                                                 idColumnTarget: createRSU.results.outputIdRsu,
+                                                 targetTable   : rsuTable,
+                                                 idColumnTarget: idRsu,
                                                  prefixName    : prefixName,
                                                  nbRelations   : 1])) {
                     info "Cannot compute the scales relations between blocks and RSU."
                     return
                 }
+                tableRsuBlocks = createScalesRelationsRsuBl.results.outputTableName
 
                 // Create the relations between buildings and blocks (store in the buildings table)
                 def createScalesRelationsBlBu = Geoindicators.SpatialUnits.spatialJoin()
@@ -1207,7 +1210,6 @@ IProcess createUnitsOfAnalysis() {
                     return
                 }
                 inputLowerScaleBuRsu = createScalesRelationsBlBu.results.outputTableName
-                tableRsuBlocks = createScalesRelationsRsuBl.results.outputTableName
             }
 
 
@@ -1218,18 +1220,22 @@ IProcess createUnitsOfAnalysis() {
             def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.spatialJoin()
             if (!createScalesRelationsRsuBlBu([datasource    : datasource,
                                                sourceTable   : inputLowerScaleBuRsu,
-                                               targetTable   : createRSU.results.outputTableName,
-                                               idColumnTarget: createRSU.results.outputIdRsu,
+                                               targetTable   : rsuTable,
+                                               idColumnTarget: idRsu,
                                                prefixName    : prefixName,
                                                nbRelations   : 1])) {
                 info "Cannot compute the scales relations between buildings and RSU."
                 return
             }
+            def relationsBuildings = createScalesRelationsRsuBlBu.results.outputTableName
 
+            //Replace the building table with a new one that contains the relations between block and RSU
+            datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
+            ALTER TABLE $relationsBuildings RENAME TO $buildingTable;""".toString())
 
-            [outputTableBuildingName: createScalesRelationsRsuBlBu.results.outputTableName,
+            [outputTableBuildingName: buildingTable,
              outputTableBlockName   : tableRsuBlocks,
-             outputTableRsuName     : createRSU.results.outputTableName]
+             outputTableRsuName     : rsuTable]
         }
     }
 }
@@ -1281,14 +1287,31 @@ IProcess computeAllGeoIndicators() {
                 if (!modelCheck(buildingHeightModelName)) {
                     return
                 }
+                //Create spatial units and relations : building, block, rsu
+                IProcess spatialUnits = createUnitsOfAnalysis()
+                if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
+                                           buildingTable     : buildingTable, roadTable: roadTable,
+                                           railTable         : railTable, vegetationTable: vegetationTable,
+                                           hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
+                                           surface_vegetation: surface_vegetation,
+                                           surface_hydro     : surface_hydro, snappingTolerance: snappingTolerance,
+                                           prefixName        : prefixName,
+                                           indicatorUse      : ["UTRF"]])) {
+                    error "Cannot create the spatial units"
+                    return null
+                }
+                def relationBuildings = spatialUnits.results.outputTableBuildingName
+                def relationBlocks = spatialUnits.results.outputTableBlockName
+                def rsuTable = spatialUnits.results.outputTableRsuName
+
+                // Calculates indicators needed for the building height estimation algorithm
                 IProcess geoIndicators = computeGeoclimateIndicators()
                 if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
-                        buildingTable: buildingTable,
+                        buildingsWithRelations: relationBuildings, blocksWithRelations: relationBlocks,
+                        rsuTable: rsuTable,
                         roadTable: roadTable,
                         railTable: railTable, vegetationTable: vegetationTable,
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
-                        seaLandMaskTableName: seaLandMaskTableName,
-                        surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
                         indicatorUse: ["UTRF"],
                         svfSimplified: true, prefixName: prefixName,
                         mapOfWeights: mapOfWeights,
@@ -1296,21 +1319,23 @@ IProcess computeAllGeoIndicators() {
                     error "Cannot build the geoindicators to estimate the building height"
                     return
                 }
+
                 //Let's go to select the building's id that must be processed to fix the height
                 info "Extracting the building having no height information and estimate it"
-                def results = geoIndicators.results;
                 //Select indicators we need at building scales
-                def buildingIndicatorsTableName = results.building_indicators;
+                def buildingIndicatorsForHeightEst = geoIndicators.results.building_indicators
+                def blockIndicatorsForHeightEst = geoIndicators.results.block_indicators
+                def rsuIndicatorsForHeightEst = geoIndicators.results.rsu_indicators
                 datasource.getTable(buildingEstimateTableName).id_build.createIndex()
-                datasource.getTable(buildingIndicatorsTableName).id_build.createIndex()
-                datasource.getTable(buildingIndicatorsTableName).id_rsu.createIndex()
+                datasource.getTable(buildingIndicatorsForHeightEst).id_build.createIndex()
+                datasource.getTable(buildingIndicatorsForHeightEst).id_rsu.createIndex()
 
                 def estimated_building_with_indicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                 datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators;
                                            CREATE TABLE $estimated_building_with_indicators 
                                                     AS SELECT a.*
-                                                    FROM $buildingIndicatorsTableName a 
+                                                    FROM $buildingIndicatorsForHeightEst a 
                                                         RIGHT JOIN $buildingEstimateTableName b 
                                                         ON a.id_build=b.id_build
                                                     WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
@@ -1320,17 +1345,13 @@ IProcess computeAllGeoIndicators() {
                 def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
                 applygatherScales.execute([
                         buildingTable    : estimated_building_with_indicators,
-                        blockTable       : results.block_indicators,
-                        rsuTable         : results.rsu_indicators,
+                        blockTable       : blockIndicatorsForHeightEst,
+                        rsuTable         : rsuIndicatorsForHeightEst,
                         targetedScale    : "BUILDING",
                         operationsToApply: ["AVG", "STD"],
                         prefixName       : prefixName,
                         datasource       : datasource])
                 def gatheredScales = applygatherScales.results.outputTableName
-
-                //We use the existing spatial units
-                def relationBlocks = results.block_indicators
-                def relationRSU = results.rsu_indicators
 
                 def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
                 def nbBuildingEstimated
@@ -1371,7 +1392,8 @@ IProcess computeAllGeoIndicators() {
                                             SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                         CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
                                                 COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
-                                                CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU from $buildingIndicatorsTableName
+                                                CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU 
+                                            from $buildingIndicatorsForHeightEst
                                         a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
 
                     //We must format only estimated buildings
@@ -1389,9 +1411,9 @@ IProcess computeAllGeoIndicators() {
                     if (indicatorUse.isEmpty()) {
                         //Clean the System properties that stores intermediate table names
                         clearTablesCache()
-                        return [building_indicators: results.building_indicators,
-                                block_indicators   : relationBlocks,
-                                rsu_indicators     : relationRSU,
+                        return [building_indicators: buildingIndicatorsForHeightEst,
+                                block_indicators   : blockIndicatorsForHeightEst,
+                                rsu_indicators     : rsuIndicatorsForHeightEst,
                                 rsu_lcz            : null,
                                 zone               : zoneTable,
                                 rsu_utrf_area      : null,
@@ -1409,8 +1431,8 @@ IProcess computeAllGeoIndicators() {
                 //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
                 def rsuRelationFiltered = prefix prefixName, "RSU_RELATION_"
                 datasource.execute """DROP TABLE IF EXISTS $rsuRelationFiltered;
-                    CREATE TABLE $rsuRelationFiltered AS SELECT ID_RSU, THE_GEOM FROM $relationRSU;
-                    DROP TABLE $relationRSU;""".toString()
+                    CREATE TABLE $rsuRelationFiltered AS SELECT ID_RSU, THE_GEOM FROM $rsuTable;
+                    DROP TABLE $rsuTable;""".toString()
 
                 def relationBlocksFiltered = prefix prefixName, "BLOCK_RELATION_"
                 datasource.execute """DROP TABLE IF EXISTS $relationBlocksFiltered;
@@ -1428,7 +1450,6 @@ IProcess computeAllGeoIndicators() {
                     error "Cannot compute the building indicators"
                     return null
                 }
-
                 def buildingIndicators = computeBuildingsIndicators.results.outputTableName
 
                 //Compute block indicators
@@ -1522,14 +1543,30 @@ IProcess computeAllGeoIndicators() {
 
             } else {
                 clearTablesCache()
+                //Create spatial units and relations : building, block, rsu
+                IProcess spatialUnits = createUnitsOfAnalysis()
+                if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
+                                           buildingTable     : buildingTable, roadTable: roadTable,
+                                           railTable         : railTable, vegetationTable: vegetationTable,
+                                           hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
+                                           surface_vegetation: surface_vegetation,
+                                           surface_hydro     : surface_hydro, snappingTolerance: snappingTolerance,
+                                           prefixName        : prefixName,
+                                           indicatorUse      : indicatorUse])) {
+                    error "Cannot create the spatial units"
+                    return null
+                }
+                def relationBuildings = spatialUnits.getResults().outputTableBuildingName
+                def relationBlocks = spatialUnits.getResults().outputTableBlockName
+                def rsuTable = spatialUnits.getResults().outputTableRsuName
+
                 IProcess geoIndicators = computeGeoclimateIndicators()
                 if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
-                        buildingTable: buildingTable,
+                        buildingsWithRelations: relationBuildings, blocksWithRelations: relationBlocks,
+                        rsuTable: rsuTable,
                         roadTable: roadTable,
                         railTable: railTable, vegetationTable: vegetationTable,
                         hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
-                        seaLandMaskTableName: seaLandMaskTableName,
-                        surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
                         indicatorUse: indicatorUse,
                         svfSimplified: svfSimplified, prefixName: prefixName,
                         mapOfWeights: mapOfWeights,
@@ -1547,8 +1584,7 @@ IProcess computeAllGeoIndicators() {
 }
 
 /**
- * Compute all geoclimate indicators at the 3 scales :
- * building, block and RSU
+ * Compute all geoclimate indicators at the 3 scales (building, block and RSU) plus the typologies (LCZ and UTRF)
  * The LCZ classification  and the urban typology
  *
  * @return 8 tables building_indicators, block_indicators, rsu_indicators,
@@ -1563,11 +1599,11 @@ IProcess computeGeoclimateIndicators() {
     return create {
         title "Compute geoclimate indicators"
         id "computeGeoclimateIndicators"
-        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingsWithRelations: String,
+                blocksWithRelations: String, rsuTable: String,
                 roadTable: "", railTable: "", vegetationTable: "",
                 hydrographicTable: "", imperviousTable: "",
-                seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
-                snappingTolerance: 0.01, indicatorUse: ["LCZ", "UTRF", "TEB"], svfSimplified: false, prefixName: "",
+                indicatorUse: ["LCZ", "UTRF", "TEB"], svfSimplified: false, prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
@@ -1576,42 +1612,23 @@ IProcess computeGeoclimateIndicators() {
                 rsu_indicators: String, rsu_lcz: String, zone: String,
                 rsu_utrf_area: String, rsu_utrf_floor_area: String,
                 building_utrf: String
-        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              imperviousTable, seaLandMaskTableName,
-              surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
+        run { datasource, zoneTable, buildingsWithRelations, blocksWithRelations, rsuTable,
+              roadTable, railTable, vegetationTable, hydrographicTable,
+              imperviousTable, indicatorUse, svfSimplified, prefixName, mapOfWeights,
               utrfModelName ->
             info "Start computing the geoindicators..."
             def start = System.currentTimeMillis()
 
-            //Create spatial units and relations : building, block, rsu
-            IProcess spatialUnits = createUnitsOfAnalysis()
-            if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
-                                       buildingTable     : buildingTable, roadTable: roadTable,
-                                       railTable         : railTable, vegetationTable: vegetationTable,
-                                       hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
-                                       surface_vegetation: surface_vegetation,
-                                       surface_hydro     : surface_hydro, snappingTolerance: snappingTolerance,
-                                       prefixName        : prefixName,
-                                       indicatorUse      : indicatorUse])) {
-                error "Cannot create the spatial units"
-                return null
-            }
-            def relationBuildings = spatialUnits.getResults().outputTableBuildingName
-            def relationBlocks = spatialUnits.getResults().outputTableBlockName
-            def relationRSU = spatialUnits.getResults().outputTableRsuName
-
-
             //Compute building indicators
             def computeBuildingsIndicators = computeBuildingsIndicators()
             if (!computeBuildingsIndicators.execute([datasource            : datasource,
-                                                     inputBuildingTableName: relationBuildings,
+                                                     inputBuildingTableName: buildingsWithRelations,
                                                      inputRoadTableName    : roadTable,
                                                      indicatorUse          : indicatorUse,
                                                      prefixName            : prefixName])) {
                 error "Cannot compute the building indicators"
                 return null
             }
-
             def buildingIndicators = computeBuildingsIndicators.results.outputTableName
 
             //Compute block indicators
@@ -1620,7 +1637,7 @@ IProcess computeGeoclimateIndicators() {
                 def computeBlockIndicators = computeBlockIndicators()
                 if (!computeBlockIndicators.execute([datasource            : datasource,
                                                      inputBuildingTableName: buildingIndicators,
-                                                     inputBlockTableName   : relationBlocks,
+                                                     inputBlockTableName   : blocksWithRelations,
                                                      prefixName            : prefixName])) {
                     error "Cannot compute the block indicators"
                     return null
@@ -1633,7 +1650,7 @@ IProcess computeGeoclimateIndicators() {
             def computeRSUIndicators = computeRSUIndicators()
             if (!computeRSUIndicators.execute([datasource       : datasource,
                                                buildingTable    : buildingIndicators,
-                                               rsuTable         : relationRSU,
+                                               rsuTable         : rsuTable,
                                                vegetationTable  : vegetationTable,
                                                roadTable        : roadTable,
                                                hydrographicTable: hydrographicTable,
@@ -1695,10 +1712,6 @@ IProcess computeGeoclimateIndicators() {
             version = '${Geoindicators.version()}',
             build_number = '${Geoindicators.buildNumber()}'""".toString()
 
-
-            //Replace the building table with a new one that contains the relations between block and RSU
-            datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
-            ALTER TABLE $relationBuildings RENAME TO $buildingTable;""".toString())
 
             return [building_indicators: buildingIndicators,
                     block_indicators   : blockIndicators,
