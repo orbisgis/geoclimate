@@ -1305,8 +1305,8 @@ IProcess computeAllGeoIndicators() {
                 def rsuTable = spatialUnits.results.outputTableRsuName
 
                 // Calculates indicators needed for the building height estimation algorithm
-                IProcess geoIndicators = computeGeoclimateIndicators()
-                if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
+                IProcess geoIndicatorsEstH = computeGeoclimateIndicators()
+                if (!geoIndicatorsEstH.execute(datasource: datasource, zoneTable: zoneTable,
                         buildingsWithRelations: relationBuildings, blocksWithRelations: relationBlocks,
                         rsuTable: rsuTable,
                         roadTable: roadTable,
@@ -1323,9 +1323,9 @@ IProcess computeAllGeoIndicators() {
                 //Let's go to select the building's id that must be processed to fix the height
                 info "Extracting the building having no height information and estimate it"
                 //Select indicators we need at building scales
-                def buildingIndicatorsForHeightEst = geoIndicators.results.building_indicators
-                def blockIndicatorsForHeightEst = geoIndicators.results.block_indicators
-                def rsuIndicatorsForHeightEst = geoIndicators.results.rsu_indicators
+                def buildingIndicatorsForHeightEst = geoIndicatorsEstH.results.building_indicators
+                def blockIndicatorsForHeightEst = geoIndicatorsEstH.results.block_indicators
+                def rsuIndicatorsForHeightEst = geoIndicatorsEstH.results.rsu_indicators
                 datasource.getTable(buildingEstimateTableName).id_build.createIndex()
                 datasource.getTable(buildingIndicatorsForHeightEst).id_build.createIndex()
                 datasource.getTable(buildingIndicatorsForHeightEst).id_rsu.createIndex()
@@ -1361,7 +1361,7 @@ IProcess computeAllGeoIndicators() {
                     datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
                                        CREATE TABLE $buildingTableName 
                                             AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
-                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $buildingIndicatorsTableName""".toString()
+                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $estimated_building_with_indicators""".toString()
                 } else {
                     info "Start estimating the building height"
                     //Apply RF model
@@ -1440,106 +1440,30 @@ IProcess computeAllGeoIndicators() {
                     DROP TABLE $relationBlocks;""".toString()
 
 
-                //Compute building indicators
-                def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
-                if (!computeBuildingsIndicators.execute([datasource            : datasource,
-                                                         inputBuildingTableName: buildingTableName,
-                                                         inputRoadTableName    : roadTable,
-                                                         indicatorUse          : indicatorUse,
-                                                         prefixName            : prefixName])) {
-                    error "Cannot compute the building indicators"
-                    return null
-                }
-                def buildingIndicators = computeBuildingsIndicators.results.outputTableName
-
-                //Compute block indicators
-                def blockIndicators = null
-                if (indicatorUse*.toUpperCase().contains("UTRF")) {
-                    def computeBlockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators()
-                    if (!computeBlockIndicators.execute([datasource            : datasource,
-                                                         inputBuildingTableName: buildingIndicators,
-                                                         inputBlockTableName   : relationBlocksFiltered,
-                                                         prefixName            : prefixName])) {
-                        error "Cannot compute the block indicators"
-                        return null
-                    }
-                    blockIndicators = computeBlockIndicators.results.outputTableName
-                }
-
-                //Compute RSU indicators
-                def rsuIndicators = null
-                def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators()
-                if (!computeRSUIndicators.execute([datasource       : datasource,
-                                                   buildingTable    : buildingIndicators,
-                                                   rsuTable         : rsuRelationFiltered,
-                                                   vegetationTable  : vegetationTable,
-                                                   roadTable        : roadTable,
-                                                   hydrographicTable: hydrographicTable,
-                                                   imperviousTable  : imperviousTable,
-                                                   indicatorUse     : indicatorUse,
-                                                   svfSimplified    : svfSimplified,
-                                                   prefixName       : prefixName])) {
-                    error "Cannot compute the RSU indicators"
-                    return null
-                }
-                rsuIndicators = computeRSUIndicators.results.outputTableName
-
-                // Compute the typology indicators (LCZ and UTRF)
-                def computeTypologyIndicators = Geoindicators.WorkflowGeoIndicators.computeTypologyIndicators()
-                if (!computeTypologyIndicators([datasource          : datasource,
-                                                buildingIndicators  : buildingIndicators,
-                                                blockIndicators     : blockIndicators,
-                                                rsuIndicators       : rsuIndicators,
-                                                prefixName          : prefixName,
-                                                mapOfWeights        : mapOfWeights,
-                                                indicatorUse        : indicatorUse,
-                                                utrfModelName       : utrfModelName])) {
-                    info "Cannot compute the Typology indicators."
+                //Compute Geoindicators (at all scales + typologies)
+                IProcess geoIndicators = computeGeoclimateIndicators()
+                if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
+                        buildingsWithRelations: buildingTableName, blocksWithRelations: relationBlocksFiltered,
+                        rsuTable: rsuRelationFiltered,
+                        roadTable: roadTable,
+                        railTable: railTable, vegetationTable: vegetationTable,
+                        hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                        indicatorUse: indicatorUse,
+                        svfSimplified: svfSimplified, prefixName: prefixName,
+                        mapOfWeights: mapOfWeights,
+                        utrfModelName: utrfModelName,
+                        nbEstimatedBuildHeight: nbBuildingEstimated)) {
+                    error "Cannot build the geoindicators"
                     return
-                }
-                info "All geoindicators have been computed"
-                def rsuLcz = computeTypologyIndicators.results.rsu_lcz
-                def utrfArea = computeTypologyIndicators.results.rsu_utrf_area
-                def utrfFloorArea = computeTypologyIndicators.results.rsu_utrf_floor_area
-                def utrfBuilding = computeTypologyIndicators.results.building_utrf
-
-                //Drop all cached tables
-                def cachedTableNames = getCachedTableNames()
-                if (cachedTableNames) {
-                    datasource.execute "DROP TABLE IF EXISTS ${cachedTableNames.join(",")}".toString()
+                } else {
+                    def results = geoIndicators.getResults()
+                    //Clean the System properties that stores intermediate table names
+                    clearTablesCache()
+                    results.put("building", buildingTableName)
+                    return results
                 }
 
-                //Populate reporting
 
-                def nbBuilding = datasource.firstRow("select count(*) as count from ${computeBuildingsIndicators.getResults().outputTableName} WHERE ID_RSU IS NOT NULL".toString()).count
-
-                def nbBlock = 0
-                if (blockIndicators) {
-                    nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString()).count
-                }
-                def nbRSU = datasource.firstRow("select count(*) as count from ${computeRSUIndicators.getResults().outputTableName}".toString()).count
-
-                def computation_time = (System.currentTimeMillis() - start) / 1000;
-                //Update reporting to the zone table
-                datasource.execute """update ${zoneTable} 
-                set nb_estimated_building = ${nbBuildingEstimated}, 
-                nb_building = ${nbBuilding}, 
-                nb_block =  ${nbBlock},
-                nb_rsu = ${nbRSU},
-                computation_time = ${computation_time},
-                last_update = CAST(now() AS VARCHAR)""".toString()
-
-                //Clean the System properties that stores intermediate table names
-                clearTablesCache()
-                return [building_indicators: computeBuildingsIndicators.getResults().outputTableName,
-                        block_indicators   : blockIndicators,
-                        rsu_indicators     : computeRSUIndicators.getResults().outputTableName,
-                        rsu_lcz            : rsuLcz,
-                        zone                : zoneTable,
-                        rsu_utrf_area       : utrfArea,
-                        rsu_utrf_floor_area  : utrfFloorArea,
-                        building_utrf      : utrfBuilding,
-                        building            : buildingTableName]
 
             } else {
                 clearTablesCache()
@@ -1607,7 +1531,7 @@ IProcess computeGeoclimateIndicators() {
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                utrfModelName: ""
+                utrfModelName: "", nbEstimatedBuildHeight: 0
         outputs building_indicators: String, block_indicators: String,
                 rsu_indicators: String, rsu_lcz: String, zone: String,
                 rsu_utrf_area: String, rsu_utrf_floor_area: String,
@@ -1615,7 +1539,7 @@ IProcess computeGeoclimateIndicators() {
         run { datasource, zoneTable, buildingsWithRelations, blocksWithRelations, rsuTable,
               roadTable, railTable, vegetationTable, hydrographicTable,
               imperviousTable, indicatorUse, svfSimplified, prefixName, mapOfWeights,
-              utrfModelName ->
+              utrfModelName, nbEstimatedBuildHeight ->
             info "Start computing the geoindicators..."
             def start = System.currentTimeMillis()
 
@@ -1691,26 +1615,28 @@ IProcess computeGeoclimateIndicators() {
             }
             def nbRSU = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString()).count
             //Alter the zone table to add statics
-            datasource.execute """ALTER TABLE ${zoneTable} ADD COLUMN (
-                NB_BUILDING INTEGER,
-                NB_ESTIMATED_BUILDING INTEGER,
-                NB_BLOCK INTEGER,
-                NB_RSU INTEGER,
-                COMPUTATION_TIME INTEGER,
-                LAST_UPDATE VARCHAR, VERSION VARCHAR, BUILD_NUMBER VARCHAR
-                )""".toString()
+            if(!datasource.getSpatialTable(zoneTable).getColumns().contains("NB_ESTIMATED_BUILDING")){
+                datasource.execute """ALTER TABLE ${zoneTable} ADD COLUMN (
+                    NB_BUILDING INTEGER,
+                    NB_ESTIMATED_BUILDING INTEGER,
+                    NB_BLOCK INTEGER,
+                    NB_RSU INTEGER,
+                    COMPUTATION_TIME INTEGER,
+                    LAST_UPDATE VARCHAR, VERSION VARCHAR, BUILD_NUMBER VARCHAR
+                    )""".toString()
+            }
 
 
             //Update reporting to the zone table
             datasource.execute """update ${zoneTable} 
-            set nb_estimated_building = 0, 
-            nb_building = ${nbBuilding}, 
-            nb_block =  ${nbBlock},
-            nb_rsu = ${nbRSU},
-            computation_time = ${(System.currentTimeMillis() - start) / 1000},
-            last_update = CAST(now() AS VARCHAR),
-            version = '${Geoindicators.version()}',
-            build_number = '${Geoindicators.buildNumber()}'""".toString()
+                set nb_estimated_building = ${nbEstimatedBuildHeight}, 
+                nb_building = ${nbBuilding}, 
+                nb_block =  ${nbBlock},
+                nb_rsu = ${nbRSU},
+                computation_time = ${(System.currentTimeMillis() - start) / 1000},
+                last_update = CAST(now() AS VARCHAR),
+                version = '${Geoindicators.version()}',
+                build_number = '${Geoindicators.buildNumber()}'""".toString()
 
 
             return [building_indicators: buildingIndicators,
