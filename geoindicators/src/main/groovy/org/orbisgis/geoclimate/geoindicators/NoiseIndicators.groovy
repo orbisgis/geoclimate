@@ -22,58 +22,36 @@ IProcess groundAcousticAbsorption() {
         outputs ground_acoustic: String
         run { zone, id_zone, building, road, water, vegetation, impervious, H2GIS datasource, jsonFilename ->
 
+            def paramsDefaultFile = this.class.getResourceAsStream("ground_acoustic_absorption.json")
+            def absorption_params = Geoindicators.DataUtils.parametersMapping(jsonFilename, paramsDefaultFile)
+            def default_absorption = absorption_params.default_g
+            def g_absorption = absorption_params.g
+            def layer_priorities = absorption_params.layer_priorities
+
             IProcess process = Geoindicators.RsuIndicators.groundLayer()
             if(process.execute(["zone" : zone, "id_zone": id_zone,
-                                        building: building, road: road, vegetation: vegetation, water: water, datasource: datasource])){
-
+                                        "building": building, "road": road, "vegetation": vegetation,
+                                "water": water,"impervious":impervious, datasource: datasource])){
                 def outputTableName = postfix("GROUND_ACOUSTIC")
                 datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_ground serial,G float, type VARCHAR);""".toString()
-                def paramsDefaultFile = this.class.getResourceAsStream("ground_acoustic_absorption.json")
-
-                def absorption_params = Geoindicators.DataUtils.parametersMapping(jsonFilename, paramsDefaultFile)
-                def default_absorption = absorption_params.default_g
-                def g_absorption = absorption_params.g
-                def layer_priorities = absorption_params.layer_priorities
 
                 def ground = process.results.ground
                 int rowcount = 1
                 datasource.withBatch(100) { stmt ->
-                    datasource.eachRow("SELECT the_geom, LOW_VEGETATION_TYPE, HIGH_VEGETATION_TYPE, WATER_TYPE, IMPERVIOUS_TYPE FROM $ground where BUILDING_TYPE IS NULL AND ROAD_TYPE IS NULL".toString()) { row ->
-                        def data = row.toRowResult()
+                    datasource.eachRow("SELECT the_geom, TYPE FROM $ground where layer NOT in ('building' ,'road')".toString()) { row ->
+                        def type = row.type
                         float g_coeff
-                        def best_types
-                        def layer_name
-                        layer_priorities.each {layer ->
-                            def tmp_val =data."${layer.toUpperCase()}_TYPE"
-                            if(tmp_val){
-                                best_types=tmp_val
-                                layer_name=layer
-                                return
-                            }
-                        }
                         //There is no type
-                        if(!best_types){
+                        if(!type){
                             g_coeff = default_absorption as float
                         }else{
-                            g_coeff= g_absorption.get(layer_name)
+                            g_coeff= g_absorption.get(type) as float
                         }
-
-                        //TODO for futur improvments, let's find the best coefficient regarding internal priorities
-                        /*def listTypes = best_types.split(",") as Set
-                        if (listTypes.size() == 1) {
-                            def mapping = g_absorption.get(best_types)
-                            if (mapping) {
-                                g_coeff = mapping
-                            }
-                        } else {
-                            type = weight_values.subMap(matching_bdtopo_values.subMap(listTypes).values()).max { it.key }.key
-                        }*/
-                        Geometry geom = data.THE_GEOM
+                        Geometry geom = row.the_geom
                         def epsg = geom.getSRID()
-                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++},${g_coeff}, '${layer_name}')".toString()
-
-                    }
+                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++},${g_coeff}, '${type}')".toString()
+                  }
                 }
                 debug('Ground acoustic transformation finishes')
                 [ground_acoustic: outputTableName]

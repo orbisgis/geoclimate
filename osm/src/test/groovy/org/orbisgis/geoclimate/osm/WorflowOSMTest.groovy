@@ -543,11 +543,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_test_integration;AUTO_SERVER=TRUE;",
+                        "name" : "geoclimate_test_integration_test;AUTO_SERVER=TRUE;",
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : [nominatim["bbox"], "Redon"],
+                        "locations" : ["Redon"],
                         "timeout":182,
                         "maxsize": 536870918,
                         "endpoint":"https://lz4.overpass-api.de/api"],
@@ -569,7 +569,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                 "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
                         ],   "worldpop_indicators" : false,
-                         "road_traffic" : false
+                         "road_traffic" : false,
+                         "noise_indicators": [
+                             "ground_acoustic" : true
+                         ]
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()

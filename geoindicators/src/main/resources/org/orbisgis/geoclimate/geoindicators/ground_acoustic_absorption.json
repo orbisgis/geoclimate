@@ -1,15 +1,35 @@
 {
   "default_g": 0,
   "g": {
-    "water": 0,
+    "water": 0.3,
     "low_vegetation": 1,
     "high_vegetation": 1,
-    "impervious": 0
+    "impervious": 0.1,
+    "tree": 1,
+    "wood": 1,
+    "forest": 1,
+    "tree_row": 1,
+    "hedge": 1,
+    "mangrove": 1,
+    "orchard": 0.8,
+    "banana_plants": 0.8,
+    "farmland": 0.7,
+    "scrub": 0.7,
+    "grass": 1,
+    "grassland": 1,
+    "heath": 1,
+    "park": 0.7,
+    "meadow": 1,
+    "vineyard": 0.8,
+    "sugar_cane": 0.8,
+    "garden": 1,
+    "marsh": 0.4,
+    "saltmarsh": 0.9
   },
   "layer_priorities": [
     "water",
+    "high_vegetation",
     "low_vegetation",
-    "impervious",
-    "high_vegetation"
-  ]
+    "impervious"]
+
 }

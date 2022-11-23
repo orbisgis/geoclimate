@@ -715,18 +715,24 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         "locations": [communeToTest]],
                 "output"      : [
                         "folder": ["path"  : "$directory",
-                                   "tables": ["road_traffic"]]],
+                                   "tables": ["road_traffic", "ground_acoustic", "impervious"]]],
                 "parameters"  :
                         ["distance"    : 0,
-                         "road_traffic": true
+                         "road_traffic": true,
+                         "noise_indicators":[
+                                    "ground_acoustic":true
+                                ]
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: bdTopoParameters))
         def roadTableName = process.getResults().output[communeToTest]["road_traffic"]
         assertNotNull(roadTableName)
+        def ground_acoustic = process.getResults().output[communeToTest]["ground_acoustic"]
+        assertNotNull(ground_acoustic)
         H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is null".toString()).count == 0
+
     }
 
     @Disabled

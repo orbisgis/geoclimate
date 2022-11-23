@@ -274,7 +274,8 @@ IProcess workflow() {
                                             "sea_land_mask",
                                             "building_height_missing",
                                             "road_traffic",
-                                            "population"]
+                                            "population",
+                                            "ground_acoustic"]
 
             //Get processing parameters
             def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
@@ -637,10 +638,34 @@ IProcess osm_processing() {
                                     results.put("population", outputTableWorldPopName)
                                 }
                             }
+                            def noise_indicators = processing_parameters.noise_indicators
+
+                            def geomEnv;
+                            if(noise_indicators){
+                                if(noise_indicators.ground_acoustic) {
+                                    geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
+                                    def gridP = Geoindicators.SpatialUnits.createGrid()
+                                    if (gridP.execute([geometry: geomEnv, deltaX: 200, deltaY: 200, datasource: h2gis_datasource])) {
+                                        def outputTable = gridP.results.outputTableName
+                                        IProcess process = Geoindicators.NoiseIndicators.groundAcousticAbsorption()
+                                        if (process.execute(["zone"    : outputTable, "id_zone": "id_grid",
+                                                             building  : buildingTableName, road: roadTableName, vegetation: vegetationTableName,
+                                                             water     : hydrographicTableName,
+                                                             impervious: imperviousTableName,
+                                                             datasource: h2gis_datasource])) {
+
+                                            results.put("ground_acoustic", process.results.ground_acoustic)
+                                        }
+                                        h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTable".toString())
+                                    }
+                                }
+                            }
 
                             //Default
                             def outputGrid = "geojson"
-                            def geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
+                            if(!geomEnv) {
+                                geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
+                            }
                             if (grid_indicators_params) {
                                 outputGrid = grid_indicators_params.output
                                 def x_size = grid_indicators_params.x_size
@@ -938,6 +963,14 @@ def static extractProcessingParameters(def processing_parameters) {
             defaultParameters.put("worldpop_indicators", pop_indics)
         }
 
+        //Check if the noise indicators must be computed
+        def noise_indicators = processing_parameters.noise_indicators
+        if (noise_indicators) {
+            def ground_acoustic = noise_indicators.ground_acoustic
+            if (ground_acoustic && ground_acoustic in Boolean) {
+                defaultParameters.put("noise_indicators" , ["ground_acoustic": ground_acoustic])
+            }
+        }
         return defaultParameters
     } else {
         return defaultParameters

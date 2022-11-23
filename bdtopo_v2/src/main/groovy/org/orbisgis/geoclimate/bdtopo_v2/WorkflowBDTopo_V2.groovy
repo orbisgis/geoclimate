@@ -259,7 +259,8 @@ IProcess workflow() {
                                             "building_utrf",
                                             "grid_indicators",
                                             "road_traffic",
-                                            "population"]
+                                            "population",
+                                            "ground_acoustic"]
             //Get processing parameters
             def processing_parameters = extractProcessingParameters(parameters.parameters)
             if (!processing_parameters) {
@@ -948,6 +949,8 @@ def extractProcessingParameters(def processing_parameters) {
         } else {
             rsu_indicators = rsu_indicators_default
         }
+
+
         //Check for grid indicators
         def grid_indicators = processing_parameters.grid_indicators
         if (grid_indicators) {
@@ -1011,6 +1014,15 @@ def extractProcessingParameters(def processing_parameters) {
         def pop_indics = processing_parameters.worldpop_indicators
         if (pop_indics && pop_indics in Boolean) {
             defaultParameters.put("worldpop_indicators", pop_indics)
+        }
+
+        //Check if the noise indicators must be computed
+        def noise_indicators = processing_parameters.noise_indicators
+        if (noise_indicators) {
+            def ground_acoustic = noise_indicators.ground_acoustic
+            if (ground_acoustic && ground_acoustic in Boolean) {
+                defaultParameters.put("noise_indicators" , ["ground_acoustic": ground_acoustic])
+            }
         }
 
         return defaultParameters
@@ -1114,7 +1126,7 @@ def bdtopo_processing(def location, H2GIS h2gis_datasource, def processing_param
                                      "rsu_indicators"     : [], "rsu_lcz": [],
                                      "rsu_utrf_area"      : [], "rsu_utrf_floor_area": [],
                                      "building_utrf"      : [], "population": [], "road_traffic": [],
-                                     "grid_indicators"    : []
+                                     "grid_indicators"    : [],"ground_acoustic":[]
                 ]
                 tmp_results.each{ code ->
                     code.value.each{it->
@@ -1381,6 +1393,29 @@ def bdTopoProcessingSingleArea(def h2gis_datasource, def id_zone, def subCommune
                     inputTableName: roadTableName,
                     epsg          : srid])
             results.put("road_traffic", format.results.outputTableName)
+        }
+
+        def noise_indicators = processing_parameters.noise_indicators
+
+        def geomEnv;
+        if(noise_indicators){
+            if(noise_indicators.ground_acoustic) {
+                geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
+                def gridP = Geoindicators.SpatialUnits.createGrid()
+                if (gridP.execute([geometry: geomEnv, deltaX: 200, deltaY: 200, datasource: h2gis_datasource])) {
+                    def outputTable = gridP.results.outputTableName
+                    IProcess process = Geoindicators.NoiseIndicators.groundAcousticAbsorption()
+                    if (process.execute(["zone"    : outputTable, "id_zone": "id_grid",
+                                         building  : buildingTableName, road: roadTableName, vegetation: vegetationTableName,
+                                         water     : hydrographicTableName,
+                                         impervious: imperviousTableName,
+                                         datasource: h2gis_datasource])) {
+
+                        results.put("ground_acoustic", process.results.ground_acoustic)
+                    }
+                    h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTable".toString())
+                }
+            }
         }
 
         info "${id_zone} has been processed"
