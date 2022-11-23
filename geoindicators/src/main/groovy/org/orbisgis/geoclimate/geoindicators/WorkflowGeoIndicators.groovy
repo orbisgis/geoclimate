@@ -895,7 +895,7 @@ IProcess computeRSUIndicators() {
 IProcess computeTypologyIndicators() {
     return create {
         title "Compute the geoindicators at RSU scale"
-        id "computeRSUIndicators"
+        id "computeTypologyIndicators"
         inputs datasource: JdbcDataSource, buildingIndicators: "", blockIndicators: "",
                 rsuIndicators: "", indicatorUse: ["LCZ", "UTRF", "TEB"], prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
@@ -1279,153 +1279,48 @@ IProcess computeAllGeoIndicators() {
             if (buildingHeightModelName && datasource.getTable(buildingTable).getRowCount() > 0) {
                 def start = System.currentTimeMillis()
                 enableTableCache()
-                if (!buildingEstimateTableName) {
-                    error "To estimate the building height a table that contains the list of building to estimate must be provided"
-                    return
-                }
-                info "Geoclimate will try to estimate the building heights with the model $buildingHeightModelName."
-                if (!modelCheck(buildingHeightModelName)) {
-                    return
-                }
-                //Create spatial units and relations : building, block, rsu
-                IProcess spatialUnits = createUnitsOfAnalysis()
-                if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
-                                           buildingTable     : buildingTable, roadTable: roadTable,
-                                           railTable         : railTable, vegetationTable: vegetationTable,
-                                           hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
-                                           surface_vegetation: surface_vegetation,
-                                           surface_hydro     : surface_hydro, snappingTolerance: snappingTolerance,
-                                           prefixName        : prefixName,
-                                           indicatorUse      : ["UTRF"]])) {
-                    error "Cannot create the spatial units"
-                    return null
-                }
-                def relationBuildings = spatialUnits.results.outputTableBuildingName
-                def relationBlocks = spatialUnits.results.outputTableBlockName
-                def rsuTable = spatialUnits.results.outputTableRsuName
 
-                // Calculates indicators needed for the building height estimation algorithm
-                IProcess geoIndicatorsEstH = computeGeoclimateIndicators()
-                if (!geoIndicatorsEstH.execute(datasource: datasource, zoneTable: zoneTable,
-                        buildingsWithRelations: relationBuildings, blocksWithRelations: relationBlocks,
-                        rsuTable: rsuTable,
-                        roadTable: roadTable,
-                        railTable: railTable, vegetationTable: vegetationTable,
-                        hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
-                        indicatorUse: ["UTRF"],
-                        svfSimplified: true, prefixName: prefixName,
-                        mapOfWeights: mapOfWeights,
-                        utrfModelName: "")) {
-                    error "Cannot build the geoindicators to estimate the building height"
-                    return
-                }
-
-                //Let's go to select the building's id that must be processed to fix the height
-                info "Extracting the building having no height information and estimate it"
-                //Select indicators we need at building scales
-                def buildingIndicatorsForHeightEst = geoIndicatorsEstH.results.building_indicators
-                def blockIndicatorsForHeightEst = geoIndicatorsEstH.results.block_indicators
-                def rsuIndicatorsForHeightEst = geoIndicatorsEstH.results.rsu_indicators
-                datasource.getTable(buildingEstimateTableName).id_build.createIndex()
-                datasource.getTable(buildingIndicatorsForHeightEst).id_build.createIndex()
-                datasource.getTable(buildingIndicatorsForHeightEst).id_rsu.createIndex()
-
-                def estimated_building_with_indicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-
-                datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators;
-                                           CREATE TABLE $estimated_building_with_indicators 
-                                                    AS SELECT a.*
-                                                    FROM $buildingIndicatorsForHeightEst a 
-                                                        RIGHT JOIN $buildingEstimateTableName b 
-                                                        ON a.id_build=b.id_build
-                                                    WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
-
-                info "Collect building indicators to estimate the height"
-
-                def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
-                applygatherScales.execute([
-                        buildingTable    : estimated_building_with_indicators,
-                        blockTable       : blockIndicatorsForHeightEst,
-                        rsuTable         : rsuIndicatorsForHeightEst,
-                        targetedScale    : "BUILDING",
-                        operationsToApply: ["AVG", "STD"],
-                        prefixName       : prefixName,
-                        datasource       : datasource])
-                def gatheredScales = applygatherScales.results.outputTableName
-
-                def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
+                def buildingTableName
+                def rsuTable
+                def buildingIndicatorsForHeightEst
+                def blockIndicatorsForHeightEst
+                def rsuIndicatorsForHeightEst
                 def nbBuildingEstimated
-                if (datasource.getTable(gatheredScales).isEmpty()) {
-                    info "No building height to estimate"
-                    nbBuildingEstimated = 0
-                    datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
-                                       CREATE TABLE $buildingTableName 
-                                            AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
-                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $estimated_building_with_indicators""".toString()
+
+                // Estimate building height
+                IProcess estimHeight = estimateBuildingHeight()
+                if (!estimHeight.execute(datasource: datasource, zoneTable: zoneTable, buildingTable: buildingTable,
+                                            roadTable: roadTable, railTable: railTable, vegetationTable: vegetationTable,
+                                            hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                                            buildingEstimateTableName: buildingEstimateTableName,
+                                            seaLandMaskTableName: seaLandMaskTableName,
+                                            surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
+                                            snappingTolerance: snappingTolerance, prefixName: prefixName,
+                                            buildingHeightModelName: buildingHeightModelName)) {
+                    error "Cannot estimate building height"
+                    return
                 } else {
-                    info "Start estimating the building height"
-                    //Apply RF model
-                    def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                    if (!applyRF.execute([
-                            explicativeVariablesTableName: gatheredScales,
-                            pathAndFileName              : buildingHeightModelName,
-                            idName                       : "id_build",
-                            prefixName                   : prefixName,
-                            datasource                   : datasource])) {
-                        error "Cannot apply the building height model $buildingHeightModelName"
-                        return
-                    }
+                    buildingTableName = estimHeight.getResults().building_table_name
+                    rsuTable = estimHeight.getResults().rsu_table
+                    buildingIndicatorsForHeightEst = estimHeight.getResults().building_indicators_without_height
+                    blockIndicatorsForHeightEst = estimHeight.getResults().block_indicators_without_height
+                    rsuIndicatorsForHeightEst = estimHeight.getResults().rsu_indicators_without_height
+                    nbBuildingEstimated = estimHeight.getResults().nb_building_estimated
+                }
 
-                    //Update the abstract building table
-                    info "Replace the input building table by the estimated height"
-                    def buildEstimatedHeight = applyRF.results.outputTableName
-
-                    nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
-
-                    datasource.getTable(buildEstimatedHeight).id_build.createIndex()
-
-                    def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-
-                    //Use build table indicators
-                    datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
-                                           CREATE TABLE $newEstimatedHeigthWithIndicators as 
-                                            SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
-                                        CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
-                                                COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
-                                                CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU 
-                                            from $buildingIndicatorsForHeightEst
-                                        a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
-
-                    //We must format only estimated buildings
-                    //Apply format on the new abstract table
-                    def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
-                    IProcess formatEstimatedBuilding = formatEstimatedBuilding()
-                    formatEstimatedBuilding.execute([
-                            datasource    : datasource,
-                            inputTableName: newEstimatedHeigthWithIndicators,
-                            epsg          : epsg])
-
-                    buildingTableName = formatEstimatedBuilding.results.outputTableName
-
-                    //This is a shortcut to extract building with estimated height
-                    if (indicatorUse.isEmpty()) {
-                        //Clean the System properties that stores intermediate table names
-                        clearTablesCache()
-                        return [building_indicators: buildingIndicatorsForHeightEst,
-                                block_indicators   : blockIndicatorsForHeightEst,
-                                rsu_indicators     : rsuIndicatorsForHeightEst,
-                                rsu_lcz            : null,
-                                zone               : zoneTable,
-                                rsu_utrf_area      : null,
-                                rsu_utrf_floor_area: null,
-                                building_utrf      : null,
-                                building           : buildingTableName]
-                    }
-
-                    //Drop tables
-                    datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
-                                        $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
-                                        $gatheredScales""".toString()
+                //This is a shortcut to extract building with estimated height
+                if (indicatorUse.isEmpty()) {
+                    //Clean the System properties that stores intermediate table names
+                    clearTablesCache()
+                    return [building_indicators: buildingIndicatorsForHeightEst,
+                            block_indicators   : blockIndicatorsForHeightEst,
+                            rsu_indicators     : rsuIndicatorsForHeightEst,
+                            rsu_lcz            : null,
+                            zone               : zoneTable,
+                            rsu_utrf_area      : null,
+                            rsu_utrf_floor_area: null,
+                            building_utrf      : null,
+                            building           : buildingTableName]
                 }
 
                 //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
@@ -1436,8 +1331,8 @@ IProcess computeAllGeoIndicators() {
 
                 def relationBlocksFiltered = prefix prefixName, "BLOCK_RELATION_"
                 datasource.execute """DROP TABLE IF EXISTS $relationBlocksFiltered;
-                    CREATE TABLE $relationBlocksFiltered AS SELECT ID_BLOCK,  THE_GEOM,ID_RSU FROM $relationBlocks;
-                    DROP TABLE $relationBlocks;""".toString()
+                    CREATE TABLE $relationBlocksFiltered AS SELECT ID_BLOCK,  THE_GEOM,ID_RSU FROM $blockIndicatorsForHeightEst;
+                    DROP TABLE $blockIndicatorsForHeightEst;""".toString()
 
 
                 //Compute Geoindicators (at all scales + typologies)
@@ -1462,9 +1357,6 @@ IProcess computeAllGeoIndicators() {
                     results.put("building", buildingTableName)
                     return results
                 }
-
-
-
             } else {
                 clearTablesCache()
                 //Create spatial units and relations : building, block, rsu
@@ -1506,6 +1398,176 @@ IProcess computeAllGeoIndicators() {
         }
     }
 }
+
+
+/**
+ * Compute all geoindicators having no height are computed and then used for building height estimation.
+ *
+ * @return 5 tables building_table, rsu_table, building_indicators_without_height, block_indicators_without_height,
+ * rsu_indicators_without_height
+ *          1 integer being the number of buildings having their height estimated
+ *
+ */
+IProcess estimateBuildingHeight() {
+    return create {
+        title "Estimate building height"
+        id "estimateBuildingHeight"
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+                roadTable: "", railTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable: "",
+                buildingEstimateTableName: "", seaLandMaskTableName: "",
+                surface_vegetation: 10000, surface_hydro: 2500,
+                snappingTolerance: 0.01, prefixName: "",
+                buildingHeightModelName: ""
+        outputs building_table_name: String, rsu_table: String, building_indicators_without_height: String,
+                block_indicators_without_height: String, rsu_indicators_without_height: String,
+                nb_building_estimated: Integer
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              imperviousTable, buildingEstimateTableName, seaLandMaskTableName,
+              surface_vegetation, surface_hydro, snappingTolerance, prefixName, buildingHeightModelName ->
+            if (!buildingEstimateTableName) {
+                error "To estimate the building height a table that contains the list of building to estimate must be provided"
+                return
+            }
+            info "Geoclimate will try to estimate the building heights with the model $buildingHeightModelName."
+            if (!modelCheck(buildingHeightModelName)) {
+                return
+            }
+            //Create spatial units and relations : building, block, rsu
+            IProcess spatialUnits = createUnitsOfAnalysis()
+            if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
+                                       buildingTable     : buildingTable, roadTable: roadTable,
+                                       railTable         : railTable, vegetationTable: vegetationTable,
+                                       hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
+                                       surface_vegetation: surface_vegetation,
+                                       surface_hydro     : surface_hydro, snappingTolerance: snappingTolerance,
+                                       prefixName        : prefixName,
+                                       indicatorUse      : ["UTRF"]])) {
+                error "Cannot create the spatial units"
+                return null
+            }
+            def relationBuildings = spatialUnits.results.outputTableBuildingName
+            def relationBlocks = spatialUnits.results.outputTableBlockName
+            def rsuTable = spatialUnits.results.outputTableRsuName
+
+            // Calculates indicators needed for the building height estimation algorithm
+            IProcess geoIndicatorsEstH = computeGeoclimateIndicators()
+            if (!geoIndicatorsEstH.execute(datasource: datasource, zoneTable: zoneTable,
+                    buildingsWithRelations: relationBuildings, blocksWithRelations: relationBlocks,
+                    rsuTable: rsuTable,
+                    roadTable: roadTable,
+                    railTable: railTable, vegetationTable: vegetationTable,
+                    hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                    indicatorUse: ["UTRF"],
+                    svfSimplified: true, prefixName: prefixName,
+                    utrfModelName: "")) {
+                error "Cannot build the geoindicators to estimate the building height"
+                return
+            }
+
+            //Let's go to select the building's id that must be processed to fix the height
+            info "Extracting the building having no height information and estimate it"
+            //Select indicators we need at building scales
+            def buildingIndicatorsForHeightEst = geoIndicatorsEstH.results.building_indicators
+            def blockIndicatorsForHeightEst = geoIndicatorsEstH.results.block_indicators
+            def rsuIndicatorsForHeightEst = geoIndicatorsEstH.results.rsu_indicators
+            datasource.getTable(buildingEstimateTableName).id_build.createIndex()
+            datasource.getTable(buildingIndicatorsForHeightEst).id_build.createIndex()
+            datasource.getTable(buildingIndicatorsForHeightEst).id_rsu.createIndex()
+
+            def estimated_building_with_indicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+            datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators;
+                                               CREATE TABLE $estimated_building_with_indicators 
+                                                        AS SELECT a.*
+                                                        FROM $buildingIndicatorsForHeightEst a 
+                                                            RIGHT JOIN $buildingEstimateTableName b 
+                                                            ON a.id_build=b.id_build
+                                                        WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
+
+            info "Collect building indicators to estimate the height"
+
+            def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
+            applygatherScales.execute([
+                    buildingTable    : estimated_building_with_indicators,
+                    blockTable       : blockIndicatorsForHeightEst,
+                    rsuTable         : rsuIndicatorsForHeightEst,
+                    targetedScale    : "BUILDING",
+                    operationsToApply: ["AVG", "STD"],
+                    prefixName       : prefixName,
+                    datasource       : datasource])
+            def gatheredScales = applygatherScales.results.outputTableName
+
+            def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
+            def nbBuildingEstimated
+            if (datasource.getTable(gatheredScales).isEmpty()) {
+                info "No building height to estimate"
+                nbBuildingEstimated = 0
+                datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
+                                           CREATE TABLE $buildingTableName 
+                                                AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
+                                                    HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $estimated_building_with_indicators""".toString()
+            } else {
+                info "Start estimating the building height"
+                //Apply RF model
+                def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
+                if (!applyRF.execute([
+                        explicativeVariablesTableName: gatheredScales,
+                        pathAndFileName              : buildingHeightModelName,
+                        idName                       : "id_build",
+                        prefixName                   : prefixName,
+                        datasource                   : datasource])) {
+                    error "Cannot apply the building height model $buildingHeightModelName"
+                    return
+                }
+
+                //Update the abstract building table
+                info "Replace the input building table by the estimated height"
+                def buildEstimatedHeight = applyRF.results.outputTableName
+
+                nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
+
+                datasource.getTable(buildEstimatedHeight).id_build.createIndex()
+
+                def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+                //Use build table indicators
+                datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
+                                               CREATE TABLE $newEstimatedHeigthWithIndicators as 
+                                                SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
+                                            CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
+                                                    COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
+                                                    CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU 
+                                                from $buildingIndicatorsForHeightEst
+                                            a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
+
+                //We must format only estimated buildings
+                //Apply format on the new abstract table
+                def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
+                IProcess formatEstimatedBuilding = formatEstimatedBuilding()
+                formatEstimatedBuilding.execute([
+                        datasource    : datasource,
+                        inputTableName: newEstimatedHeigthWithIndicators,
+                        epsg          : epsg])
+
+                buildingTableName = formatEstimatedBuilding.results.outputTableName
+
+                //Drop intermediate tables
+                datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
+                                            $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
+                                            $gatheredScales""".toString()
+
+                return [building_table_name: buildingTableName,
+                        rsu_table: rsuTable,
+                        building_indicators_without_height: buildingIndicatorsForHeightEst,
+                        block_indicators_without_height: blockIndicatorsForHeightEst,
+                        rsu_indicators_without_height: rsuIndicatorsForHeightEst,
+                        nb_building_estimated: nbBuildingEstimated]
+            }
+        }
+    }
+}
+
 
 /**
  * Compute all geoclimate indicators at the 3 scales (building, block and RSU) plus the typologies (LCZ and UTRF)
