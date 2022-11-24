@@ -697,8 +697,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
 
     @Test
-    void testWorkFlowRoadTraffic() {
-        String directory = "./target/bdtopo_roadtraffic"
+    void testWorkFlowRoadTrafficAndNoiseIndicators() {
+        String directory = "/tmp/geoclimate"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -732,6 +732,8 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
         assertNotNull(ground_acoustic)
         H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is null".toString()).count == 0
+        assertTrue h2gis.firstRow("select count(*) as count from $ground_acoustic where layer in ('road', 'building')".toString()).count == 0
+        assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where type = 'water'".toString()).size() == 1
 
     }
 

@@ -501,7 +501,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
 
     @Test
-    void testRoad_traffic() {
+    void testRoad_trafficAndNoiseIndicators() {
         String directory ="./target/geoclimate_chain_grid"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -519,14 +519,22 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder" : ["path": directory,
                                     "tables": ["road_traffic"]]],
                 "parameters":
-                        ["road_traffic" : true]
+                        ["road_traffic" : true],
+                "noise_indicators":[
+                        "ground_acoustic":true
+                ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
         def roadTableName = process.getResults().output["Pont-de-Veyle"]["road_traffic"]
         assertNotNull(roadTableName)
+        def ground_acoustic = process.getResults().output["Pont-de-Veyle"]["ground_acoustic"]
+        assertNotNull(ground_acoustic)
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is not null".toString()).count>0
+        assertTrue h2gis.firstRow("select count(*) as count from $ground_acoustic where layer in ('road', 'building')".toString()).count == 0
+        assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where type = 'water'".toString()).size() == 1
+
     }
 
     @Disabled //Use it for debug
@@ -569,7 +577,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                 "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
                         ],   "worldpop_indicators" : false,
-                         "road_traffic" : false,
+                         "road_traffic" : true,
                          "noise_indicators": [
                              "ground_acoustic" : true
                          ]
