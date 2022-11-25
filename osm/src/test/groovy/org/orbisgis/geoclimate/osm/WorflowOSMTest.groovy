@@ -259,13 +259,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: osm_parmeters))
         def  folder = new File(directory+File.separator+"osm_"+bbox.join("_"))
-        def resultFiles =[]
+        def countFiles=0;
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
-                resultFiles << file.getAbsolutePath()
+                countFiles++
             }
         }
-        assertTrue(resultFiles.size()==9)
+        assertEquals(9,countFiles)
     }
 
     @Disabled
