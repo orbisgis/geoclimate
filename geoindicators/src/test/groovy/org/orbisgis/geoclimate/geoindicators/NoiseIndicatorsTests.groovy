@@ -43,8 +43,7 @@ class NoiseIndicatorsTests {
             assertTrue process.execute(["zone"  : outputTable, "id_zone": "id_grid",
                              building: "building_test", road: "road_test", vegetation: "veget_test", water: "hydro_test", datasource: h2GIS])
             def ground_acoustic = process.results.ground_acoustic
-            h2GIS.save(ground_acoustic, "/tmp/ground_acoustics.shp", true)
-
+            assertTrue(h2GIS.hasTable(ground_acoustic))
         }
     }
 }

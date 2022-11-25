@@ -792,11 +792,9 @@ class RsuIndicatorsTests {
                                         building: "building_test", road: "road_test", vegetation: "veget_test", water: "hydro_test", datasource: h2GIS])
 
             def ground = process.results.ground
-            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  building_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where building_type is not null".toString()).area)<10)
-            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where water_type is not null".toString()).area)<10)
-            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  veget_test where zindex=0".toString()).area  - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where low_vegetation_type is not null or  high_vegetation_type is not null".toString()).area)<10)
-            h2GIS.save("(SELECT the_geom, LOW_VEGETATION_TYPE, HIGH_VEGETATION_TYPE, WATER_TYPE, IMPERVIOUS_TYPE FROM $ground where BUILDING_TYPE IS NULL AND ROAD_TYPE IS NULL )", "/tmp/ground.shp")
-        }
+            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  building_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer = 'building'".toString()).area)<10)
+            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer ='water'".toString()).area)<10)
+          }
     }
 
 }
