@@ -265,8 +265,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 resultFiles << file.getAbsolutePath()
             }
         }
-        assertTrue(resultFiles.size()==1)
-        assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zone.geojson")
+        assertTrue(resultFiles.size()==9)
     }
 
     @Disabled
