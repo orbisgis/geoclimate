@@ -103,8 +103,8 @@ IProcess formatBuildingLayer() {
                                                     ${formatedHeight.heightWall},
                                                     ${formatedHeight.heightRoof},
                                                     ${formatedHeight.nbLevels},
-                                                    '${type}',
-                                                    '${use}',
+                                                    ${singleQuote(type)},
+                                                    ${singleQuote(use)},
                                                     ${zIndex},
                                                     ${roof_shape ? "'"+roof_shape+"'" : null})
                                             """.toString()
@@ -265,10 +265,10 @@ IProcess formatRoadLayer() {
                                         ${rowcount++}, 
                                         '${row.id}', 
                                         ${width},
-                                        '${type}',
+                                        ${singleQuote(type)},
                                         ${crossing}, 
-                                        '${surface}',
-                                        '${sidewalk}',
+                                        ${singleQuote(surface)},
+                                        ${singleQuote(sidewalk)},
                                         ${maxspeed_value},
                                         ${direction},
                                         ${zIndex})
@@ -349,7 +349,7 @@ IProcess formatRailsLayer() {
                             }
                             def crossing = row.'bridge'
                             if (crossing) {
-                                crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
+                                crossing = crossingValues.bridge.contains(crossing) ? "bridge" : null
                             }
                             if (zIndex >= 0 && type) {
                                 Geometry geom = row.the_geom
@@ -359,8 +359,8 @@ IProcess formatRailsLayer() {
                                     '${geom.getGeometryN(i)}',$epsg), 
                                     ${rowcount++}, 
                                     '${row.id}',
-                                    '${type}',
-                                    ${crossing},
+                                    ${singleQuote(type)},
+                                    ${singleQuote(crossing)},
                                     ${zIndex})
                                 """
                                 }
@@ -437,8 +437,8 @@ IProcess formatVegetationLayer() {
                                                 ST_GEOMFROMTEXT('${subGeom}',$epsg), 
                                                 ${rowcount++}, 
                                                 '${row.id}',
-                                                '${type}', 
-                                                '${height_class}', ${zindex})
+                                                ${singleQuote(type)}, 
+                                                ${singleQuote(height_class)}, ${zindex})
                                     """.toString()
                                     }
                                 }
@@ -870,6 +870,10 @@ static String getTypeValue(def row, def columnNames, def myMap) {
     return strType
 }
 
+static String singleQuote(String value){
+    return value?"'"+value+"'":value
+}
+
 /**
  * This function defines the value of the column sidewalk according to the values of sidewalk from OSM
  * @param width The original sidewalk value
@@ -992,7 +996,7 @@ IProcess formatUrbanAreas() {
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${type}','${use}')".toString()
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', ${singleQuote(type)},${singleQuote(use)})".toString()
                                 }
                             }
                         }
