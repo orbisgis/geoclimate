@@ -349,7 +349,7 @@ IProcess formatRailsLayer() {
                             }
                             def crossing = row.'bridge'
                             if (crossing) {
-                                crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
+                                crossing = crossingValues.bridge.contains(crossing) ? "bridge" : null
                             }
                             if (zIndex >= 0 && type) {
                                 Geometry geom = row.the_geom
