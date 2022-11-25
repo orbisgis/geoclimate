@@ -106,7 +106,6 @@ IProcess formatBuildingLayer() {
                                                     ${singleQuote(type)},
                                                     ${singleQuote(use)},
                                                     ${zIndex},
-                                                    ${zIndex},
                                                     ${roof_shape ? "'"+roof_shape+"'" : null})
                                             """.toString()
 
