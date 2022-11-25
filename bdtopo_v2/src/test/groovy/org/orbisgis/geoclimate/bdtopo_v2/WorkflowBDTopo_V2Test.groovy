@@ -678,7 +678,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         "folder"   : dataFolder,
                         "locations": [communeToTest]],
                 "output"      : [
-                        "folder": ["path"  : "$directory",
+                        "folder": ["path"  : folder.absolutePath,
                                    "tables": ["road_traffic", "ground_acoustic", "impervious"]]],
                 "parameters"  :
                         ["distance"    : 0,
