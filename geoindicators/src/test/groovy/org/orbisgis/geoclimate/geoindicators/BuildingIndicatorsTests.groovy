@@ -3,6 +3,7 @@ package org.orbisgis.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.process.api.IProcess
 
@@ -12,13 +13,14 @@ import static org.orbisgis.data.H2GIS.open
 
 class BuildingIndicatorsTests {
 
-    private static def h2GIS
-    private static def randomDbName() {"${BuildingIndicatorsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
+    @TempDir
+    static File folder
 
+    private static def h2GIS
 
     @BeforeAll
     static void beforeAll(){
-        h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
+        h2GIS = open(folder.getAbsolutePath()+File.separator+"buildingIndicatorsTests;AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
@@ -59,12 +61,10 @@ class BuildingIndicatorsTests {
                               prefixName : "test",datasource:h2GIS])
         def concat = ["", "", ""]
         h2GIS.eachRow("SELECT * FROM test_building_neighbors_properties WHERE id_build = 1 OR id_build = 5 " +
-                "ORDER BY id_build ASC"){
-            row ->
+                "ORDER BY id_build ASC"){row ->
                 concat[0]+= "${row.contiguity.round(5)}\n"
                 concat[1]+= "${row.common_wall_fraction.round(5)}\n"
                 concat[2]+= "${row.number_building_neighbor}\n"
-
         }
         assertEquals("0.00000\n${(50/552).round(5)}\n".toString(),concat[0].toString())
         assertEquals("0.00000\n${(10/46).round(5)}\n".toString(), concat[1].toString())

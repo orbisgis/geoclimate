@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
@@ -18,12 +19,15 @@ import static org.orbisgis.data.H2GIS.open
 
 class WorldPopExtractTest {
 
+    @TempDir
+    static File folder
+
     private static final Logger LOGGER = LoggerFactory.getLogger(WorldPopExtractTest)
     private static H2GIS h2GIS
 
     @BeforeAll
     static void beforeAll(){
-        h2GIS = open"./target/worldpop_extract;AUTO_SERVER=TRUE"
+        h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "WorldPopExtractTest;AUTO_SERVER=TRUE;")
     }
 
     @BeforeEach
@@ -41,7 +45,7 @@ class WorldPopExtractTest {
      */
     @Test
     void extractGrid(){
-        def outputGridFile = new File("target/extractGrid.asc")
+        def outputGridFile = new File(folder,"extractGrid.asc")
         if(outputGridFile.exists()){
             outputGridFile.delete()
         }

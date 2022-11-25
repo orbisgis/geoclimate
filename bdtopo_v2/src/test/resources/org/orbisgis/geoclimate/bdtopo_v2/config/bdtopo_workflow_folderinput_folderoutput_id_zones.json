@@ -14,8 +14,6 @@
     "parameters":
     {"distance" : 1000,
         "hLevMin": 3,
-        "hLevMax": 15,
-        "hThresholdLev2": 10,
         "rsu_indicators": {
         "indicatorUse": ["TEB"],
         "svfSimplified": false,

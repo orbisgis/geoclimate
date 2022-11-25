@@ -1343,9 +1343,7 @@ IProcess computeAllGeoIndicators() {
                                     WHERE a.$COLUMN_ID_RSU IS NOT NULL""".toString()
 
                         // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
-                        def queryCasewhen = [:]
-                        queryCasewhen["AREA"] = ""
-                        queryCasewhen["FLOOR_AREA"] = ""
+                        def queryCasewhen = ["AREA": "" , "FLOOR_AREA":  ""]
                         queryCasewhen.keySet().each { ind ->
                             def querySum = ""
                             listTypos.each { typoCol ->
@@ -2332,7 +2330,7 @@ IProcess formatEstimatedBuilding() {
                     def columnNames = inputSpatialTable.columns
                     queryMapper += " ${columnNames.join(",")} FROM $inputTableName"
 
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def heightRoof = row.height_roof
                             def heightWall = heightRoof

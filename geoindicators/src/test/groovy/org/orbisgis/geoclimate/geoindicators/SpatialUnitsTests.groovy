@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
+import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.io.WKTReader
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.POSTGIS
@@ -14,6 +15,9 @@ import static org.orbisgis.data.H2GIS.open
 
 class SpatialUnitsTests {
 
+    @TempDir
+    static File folder
+
     def static dbProperties = [databaseName: 'orbisgis_db',
                                user        : 'orbisgis',
                                password    : 'orbisgis',
@@ -22,11 +26,10 @@ class SpatialUnitsTests {
     static POSTGIS postGIS;
 
     private static def h2GIS
-    private static def randomDbName() {"${SpatialUnitsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
     static void beforeAll(){
-        h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
+        h2GIS = open(folder.getAbsolutePath()+File.separator+"spatialUnitsTests;AUTO_SERVER=TRUE")
         postGIS = POSTGIS.open(dbProperties)
         System.setProperty("test.postgis", Boolean.toString(postGIS != null));
     }
@@ -79,7 +82,7 @@ class SpatialUnitsTests {
         def tsu = Geoindicators.SpatialUnits.createTSU()
         assert tsu([inputTableName: outputTableGeoms, prefixName: "tsu", datasource: h2GIS])
         def outputTable = tsu.results.outputTableName
-        assert h2GIS.getSpatialTable(outputTable).save('./target/tsu.shp',true)
+        assert h2GIS.getSpatialTable(outputTable).save(new File(folder,"tsu.shp").getAbsolutePath(),true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 235 == countRows.numberOfRows
     }
@@ -109,7 +112,7 @@ class SpatialUnitsTests {
         }
         def outputTable = createRSU.results.outputTableName
 
-        assert h2GIS.getSpatialTable(outputTable).save('./target/rsu.shp',true)
+        assert h2GIS.getSpatialTable(outputTable).save(new File(folder,"rsu.shp").getAbsolutePath(),true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 235 == countRows.numberOfRows
     }

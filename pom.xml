@@ -27,7 +27,7 @@
         <java-version>11</java-version>
 
         <!-- Dependencies versions -->
-        <junit-version>5.8.2</junit-version>
+        <junit-version>5.9.1</junit-version>
         <jts-version>1.19.0</jts-version>
         <h2gis-version>2.2.0-SNAPSHOT</h2gis-version>
         <h2-version>2.1.214</h2-version>

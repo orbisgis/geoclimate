@@ -3,6 +3,7 @@ package org.orbisgis.geoclimate
 import groovy.json.JsonOutput
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import picocli.CommandLine
 
 import java.util.regex.Pattern
@@ -14,6 +15,9 @@ import java.util.regex.Pattern
  * @author Sylvain PALOMINOS (UBS chaire GEOTERA)
  */
 class GeoclimateTest {
+
+    @TempDir
+    static File folder
 
     @Test
     void runCLITest() {
@@ -42,28 +46,22 @@ class GeoclimateTest {
     @Disabled
     @Test
     void runCLIWorkflow() {
-        def directory ="./target/geoclimate_cli"
-        def dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osmParameters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb" : [
-                        "folder" : "${dirFile.absolutePath}",
+                        "folder" : folder.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : ["Pont de veyle"]],
                 "output" :[
-                        "folder" : "$directory"],
+                        "folder" : folder.absolutePath],
                 "parameters":
                         [
                                 "indicatorUse": ["TEB"],
                                 "svfSimplified": true,
                                 "hLevMin": 3,
-                                "hLevMax": 15,
-                                "hThresholdLev2": 10
                         ]
         ]
 
@@ -86,21 +84,17 @@ class GeoclimateTest {
     @Disabled
     @Test
     void runOSMWorkflow() {
-        def directory ="./target/geoclimate_cli"
-        def dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osmParameters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultset in a folder",
                 "geoclimatedb" : [
-                        "folder" : dirFile.absolutePath,
+                        "folder" : folder.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" : [
                         "osm" : ["Pont de veyle"]],
                 "output" :[
-                        "folder" : directory],
+                        "folder" : folder.absolutePath],
                 "parameters":[
                         "rsu_indicators":[
                                 "indicatorUse": ["LCZ"],
@@ -121,22 +115,18 @@ class GeoclimateTest {
     @Disabled
     @Test
     void runBDTopoWorkflow() {
-        def directory ="./target/geoclimate_cli_bdtopo"
-        def dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def wParameters = [
                 "description" :"Example of configuration file to run the OSM workflow and store the resultset in a folder",
                 "geoclimatedb" : [
-                        "folder" : dirFile.absolutePath,
+                        "folder" : folder.absolutePath,
                         "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete" :true
                 ],
                 "input" :[
-                        "folder": ["path" :"/home/ebocher/Autres/codes/geoclimate/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/sample_12174",
+                        "folder": ["path" :"../geoclimate/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/sample_12174",
                                    "locations":["12174"]]],
                 "output" :[
-                        "folder" : directory],
+                        "folder" : folder.absolutePath],
                 "parameters":[
                         "rsu_indicators":[
                                 "indicatorUse": ["LCZ"]

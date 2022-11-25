@@ -3,19 +3,20 @@ package org.orbisgis.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.orbisgis.data.H2GIS.open
 
 class DataUtilsTests {
 
+    @TempDir
+    static File folder
     private static def h2GIS
-    private static def randomDbName() {"${DataUtilsTests.simpleName}_${UUID.randomUUID().toString().replaceAll"-", "_"}"}
 
     @BeforeAll
     static void beforeAll(){
-        h2GIS = open"./target/${randomDbName()};AUTO_SERVER=TRUE"
+        h2GIS = open(folder.getAbsolutePath()+File.separator+"dataUtilsTests;AUTO_SERVER=TRUE")
     }
 
     @BeforeEach

@@ -90,7 +90,7 @@ IProcess extractAndCreateGISLayers() {
                     def  keysValues = ["building", "railway", "amenity",
                                        "leisure", "highway", "natural",
                                        "landuse", "landcover",
-                                       "vegetation","waterway"]
+                                       "vegetation","waterway", "area", "aeroway", "area:aeroway"]
                     query =  "[maxsize:1073741824]"+ Utilities.buildOSMQueryWithAllData(envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                 }
 

@@ -106,8 +106,6 @@ import org.orbisgis.geoclimate.Geoindicators
  * - mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
  * of the map) for the LCZ classification step (default : all values to 1)
  * - hLevMin Minimum building level height
- * - hLevMax Maximum building level height
- * - hThresholdLev2 Threshold on the building height, used to determine the number of levels
  *
  * @return
  * a map with the name of zone and a list of the output tables computed and stored in the local database, otherwise throw an error.
@@ -171,6 +169,18 @@ IProcess workflow() {
             if (geoclimatedb) {
                 def h2gis_folder = geoclimatedb.get("folder")
                 if (h2gis_folder) {
+                    File tmp_folder_db =  new File(h2gis_folder)
+                    if(!tmp_folder_db.exists()){
+                        if(!tmp_folder_db.mkdir()){
+                            h2gis_folder = null
+                            error "You don't have permission to write in the folder $h2gis_folder \n" +
+                                    "Please check the folder."
+                            return
+                        }
+                    }else  if (!tmp_folder_db.isDirectory()) {
+                        error "Invalid output folder $h2gis_folder."
+                        return
+                    }
                     databaseFolder = h2gis_folder
                 }
                 databasePath = databaseFolder + File.separator + databaseName
@@ -311,14 +321,15 @@ IProcess workflow() {
                     outputFileTables = outputFiles.tables
                     //Check if we can write in the output folder
                     file_outputFolder = new File(outputFiles.path)
-                    if (!file_outputFolder.isDirectory()) {
-                        error "The directory $file_outputFolder doesn't exist."
-                        return
-                    }
-                    if (!file_outputFolder.canWrite()) {
-                        file_outputFolder = null
-                        error "You don't have permission to write in the folder $outputFolder \n" +
-                                "Please check the folder."
+                    if(!file_outputFolder.exists()){
+                        if(file_outputFolder.mkdir()){
+                            file_outputFolder = null
+                            error "You don't have permission to write in the folder $outputFolder \n" +
+                                    "Please check the folder."
+                            return
+                        }
+                    }else  if (!file_outputFolder.isDirectory()) {
+                        error "Invalid output folder $file_outputFolder."
                         return
                     }
                 }
@@ -430,7 +441,7 @@ IProcess osm_processing() {
                         def keysValues = ["building", "railway", "amenity",
                                           "leisure", "highway", "natural",
                                           "landuse", "landcover",
-                                          "vegetation", "waterway"]
+                                          "vegetation", "waterway","area", "aeroway", "area:aeroway"]
                         query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
@@ -473,8 +484,6 @@ IProcess osm_processing() {
                                         inputZoneEnvelopeTableName: zoneEnvelopeTableName,
                                         epsg                      : srid,
                                         h_lev_min                 : processing_parameters.hLevMin,
-                                        h_lev_max                 : processing_parameters.hLevMax,
-                                        hThresholdLev2            : processing_parameters.hThresholdLev2,
                                         urbanAreasTableName       : urbanAreasTable])
 
                                 buildingTableName = format.results.outputTableName
@@ -808,7 +817,7 @@ def static extractOSMZone(def datasource, def zoneToExtract, def distance, def b
  */
 def static extractProcessingParameters(def processing_parameters) {
     def defaultParameters = [distance: 0f, prefixName: "",
-                             hLevMin : 3, hLevMax: 15, hThresholdLev2: 10]
+                             hLevMin : 3]
     def rsu_indicators_default = [indicatorUse      : [],
                                   svfSimplified     : true,
                                   surface_vegetation: 10000f,
@@ -839,14 +848,7 @@ def static extractProcessingParameters(def processing_parameters) {
         if (hLevMinP && hLevMinP in Integer) {
             defaultParameters.hLevMin = hLevMinP
         }
-        def hLevMaxP = processing_parameters.hLevMax
-        if (hLevMaxP && hLevMaxP in Integer) {
-            defaultParameters.hLevMax = hLevMaxP
-        }
-        def hThresholdLev2P = processing_parameters.hThresholdLev2
-        if (hThresholdLev2P && hThresholdLev2P in Integer) {
-            defaultParameters.hThresholdLev2 = hThresholdLev2P
-        }
+
         //Check for rsu indicators
         def rsu_indicators = processing_parameters.rsu_indicators
         if (rsu_indicators) {
@@ -1109,7 +1111,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
                 output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)""".toString()
             }
             IOMethods.exportToDataBase(h2gis_datasource.getConnection(), "(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save where estimated=true)".toString(),
-                    output_datasource.getConnection(), output_table, 2, 1000);
+                    output_datasource.getConnection(), output_table, 2, 100);
         }
     }
 }
@@ -1134,7 +1136,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                 output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString())
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                int BATCH_MAX_SIZE = 1000
+                int BATCH_MAX_SIZE = 100
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {
                     def outputColumns = output_datasource.getTable(output_table).getColumnsTypes()
@@ -1254,7 +1256,7 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                     output_datasource.execute("DELETE FROM $output_table WHERE id_zone='$id_zone'".toString())
                     //If the table exists we populate it with the last result
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                    int BATCH_MAX_SIZE = 1000;
+                    int BATCH_MAX_SIZE = 100;
                     ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                     if (inputRes) {
                         def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
@@ -1449,12 +1451,10 @@ IProcess buildGeoclimateLayers() {
         inputs datasource: JdbcDataSource,
                 zoneToExtract: Object,
                 distance: 500,
-                hLevMin: 3,
-                hLevMax: 15,
-                hThresholdLev2: 10
+                hLevMin: 3
         outputs outputBuilding: String, outputRoad: String, outputRail: String,
                 outputHydro: String, outputVeget: String, outputImpervious: String, outputZone: String, outputZoneEnvelope: String
-        run { datasource, zoneToExtract, distance, hLevMin, hLevMax, hThresholdLev2 ->
+        run { datasource, zoneToExtract, distance, hLevMin ->
 
             if (datasource == null) {
                 error "Cannot access to the database to store the osm data"

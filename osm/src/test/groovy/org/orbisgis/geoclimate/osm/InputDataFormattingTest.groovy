@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.data.H2GIS
@@ -16,11 +17,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class InputDataFormattingTest {
+
+    @TempDir
+    static File folder
+
     static H2GIS h2GIS
 
     @BeforeAll
     static void loadDb() {
-        h2GIS = H2GIS.open('./target/osm_formating_test;AUTO_SERVER=TRUE')
+        h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "osm_inputDataFormattingTest;AUTO_SERVER=TRUE;")
     }
 
     @Test
@@ -50,7 +55,7 @@ class InputDataFormattingTest {
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
-        assertEquals 45, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
+        assertEquals 47, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
         assertEquals 6, h2GIS.getTable(extractData.results.urbanAreasTableName).rowCount
         assertEquals 0, h2GIS.getTable(extractData.results.coastlineTableName).rowCount
 
@@ -61,7 +66,7 @@ class InputDataFormattingTest {
                 inputTableName: extractData.results.buildingTableName,
                 epsg          : epsg,
                 jsonFilename  : null])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_building_formated.shp").absolutePath, true)
         assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0".toString()).count == 0
@@ -77,7 +82,7 @@ class InputDataFormattingTest {
                 inputTableName: extractData.results.urbanAreasTableName,
                 epsg          : epsg])
         def urbanAreas = format.results.outputTableName
-        assertNotNull h2GIS.getTable(urbanAreas).save("./target/osm_urban_areas.shp", true)
+        assertNotNull h2GIS.getTable(urbanAreas).save(new File(folder, "osm_urban_areas.shp").absolutePath, true)
 
 
         //Improve building type
@@ -87,7 +92,7 @@ class InputDataFormattingTest {
                 inputTableName     : extractData.results.buildingTableName,
                 epsg               : epsg,
                 urbanAreasTableName: urbanAreas])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated_type.shp", true)
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_building_formated_type.shp").absolutePath, true)
         def rows = h2GIS.rows("select type from ${format.results.outputTableName} where id_build=158 or id_build=982".toString())
         assertEquals(2, rows.size())
         assertTrue(rows.type == ['residential', 'residential'])
@@ -104,7 +109,7 @@ class InputDataFormattingTest {
                 inputTableName: extractData.results.roadTableName,
                 epsg          : epsg,
                 jsonFilename  : null])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_formated.shp", true)
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_road_formated.shp").absolutePath, true)
         assertEquals 146, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where WIDTH<=0".toString()).count == 0
@@ -119,7 +124,7 @@ class InputDataFormattingTest {
                 epsg          : epsg,
                 jsonFilename  : null])
 
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_formated.shp", true)
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_rails_formated.shp").absolutePath, true)
         assertEquals 41, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where CROSSING IS NOT NULL".toString()).count == 8
 
@@ -132,7 +137,7 @@ class InputDataFormattingTest {
                 epsg          : epsg,
                 jsonFilename  : null
         ])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_formated.shp", true)
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_vegetation_formated.shp").absolutePath, true)
         assertEquals 140, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_CLASS is null".toString()).count == 0
@@ -143,9 +148,9 @@ class InputDataFormattingTest {
                 datasource    : h2GIS,
                 inputTableName: extractData.results.hydroTableName,
                 epsg          : epsg])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_hydro_formated.shp", true)
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_hydro_formated.shp").absolutePath, true)
         assertEquals 10, h2GIS.getTable(format.results.outputTableName).rowCount
-        assertTrue   h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type = 'sea'").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where type = 'sea'").count == 0
 
         //Impervious surfaces
         format = OSM.InputDataFormatting.formatImperviousLayer()
@@ -153,8 +158,8 @@ class InputDataFormattingTest {
                 datasource    : h2GIS,
                 inputTableName: extractData.results.imperviousTableName,
                 epsg          : epsg])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_formated.shp", true)
-        assertEquals 45, h2GIS.getTable(format.results.outputTableName).rowCount
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_impervious_formated.shp").absolutePath, true)
+        assertEquals 44, h2GIS.getTable(format.results.outputTableName).rowCount
 
         //Sea/Land mask
         format = OSM.InputDataFormatting.formatSeaLandMask()
@@ -172,7 +177,7 @@ class InputDataFormattingTest {
                 inputTableName: formatedRoadTable,
                 epsg          : epsg])
 
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_traffic.shp", true)
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_road_traffic.shp").absolutePath, true)
         assertEquals 138, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where road_type is not null").count == 138
 
@@ -230,6 +235,7 @@ class InputDataFormattingTest {
                 assertEquals(expectedFlow.get(it.key), it.value)
             }
         }
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where PAVEMENT = 'NL08'").count)
 
     }
 
@@ -262,7 +268,7 @@ class InputDataFormattingTest {
         assertEquals(2, h2GIS.getTable(inputSeaLandTableName).getRowCount())
         assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 1
 
-        h2GIS.getTable(inputSeaLandTableName).save("./target/osm_sea_land_${testInfo.getDisplayName()}.geojson", true)
+        h2GIS.getTable(inputSeaLandTableName).save(new File(folder, "osm_sea_land.geojson").absolutePath, true)
 
     }
 
@@ -277,21 +283,21 @@ class InputDataFormattingTest {
                 osmFilePath: new File(this.class.getResource("osmBuildingCheckHeigh.osm").toURI()).getAbsolutePath(),
                 epsg       : epsg])
 
-            //Buildings
-            IProcess format = OSM.InputDataFormatting.formatBuildingLayer()
-            format.execute([
-                    datasource                : h2GIS,
-                    inputTableName            : extractData.results.buildingTableName,
-                    inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
-                    epsg                      : epsg])
+        //Buildings
+        IProcess format = OSM.InputDataFormatting.formatBuildingLayer()
+        format.execute([
+                datasource                : h2GIS,
+                inputTableName            : extractData.results.buildingTableName,
+                inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
+                epsg                      : epsg])
 
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where 1=1").count > 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where 1=1").count > 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
 
     }
 
@@ -309,7 +315,7 @@ class InputDataFormattingTest {
         assertEquals 44, h2GIS.getTable(extractData.results.railTableName).rowCount
         assertEquals 135, h2GIS.getTable(extractData.results.vegetationTableName).rowCount
         assertEquals 10, h2GIS.getTable(extractData.results.hydroTableName).rowCount
-        assertEquals 45, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
+        assertEquals 47, h2GIS.getTable(extractData.results.imperviousTableName).rowCount
 
         //Buildings with estimation state
         IProcess format = OSM.InputDataFormatting.formatBuildingLayer()
@@ -319,7 +325,7 @@ class InputDataFormattingTest {
                 epsg          : epsg,
                 jsonFilename  : null,
                 estimateHeight: true])
-        assertNotNull h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_formated.shp", true)
+        assertNotNull h2GIS.getTable(format.results.outputTableName).save(new File(folder, "osm_building_formated.shp").absolutePath, true)
         assertEquals 1038, h2GIS.getTable(format.results.outputTableName).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
@@ -348,15 +354,14 @@ class InputDataFormattingTest {
     //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
 
-        def directory =  "/tmp/geoclimate"
+        def directory = "/tmp/geoclimate"
 
-        File file  =  new File(directory)
-        if(!file.exists()){
+        File file = new File(directory)
+        if (!file.exists()) {
             file.mkdir()
         }
 
-
-        def h2GIS = H2GIS.open("${ file.absolutePath+File.separator}osmdb_gislayers;AUTO_SERVER=TRUE".toString())
+        def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osmdb_gislayers;AUTO_SERVER=TRUE".toString())
 
         //def zoneToExtract ="Shanghai, Chine"
         def zoneToExtract = "École Lycée Joliot-Curie,Rennes"
@@ -371,11 +376,14 @@ class InputDataFormattingTest {
         //zoneToExtract = "Brest"
 
         //river Göta älv
-        zoneToExtract =[57.6753, 11.7982, 57.6955, 11.8656]
+        zoneToExtract = [57.6753, 11.7982, 57.6955, 11.8656]
         //Taal Crater Lake
         //zoneToExtract =[13.4203,120.2165,14.5969 , 122.0293]
         //Le Havre
         zoneToExtract = [49.4370, -0.0230,49.5359,0.2053,]
+        //aeroway Toulouse https://www.openstreetmap.org/way/739797641#map=14/43.6316/1.3590
+        zoneToExtract =  [43.610539,1.334152,43.648808,1.392689]
+
         IProcess extractData = OSM.InputDataLoading.extractAndCreateGISLayers()
         extractData.execute([
                 datasource   : h2GIS,
@@ -387,10 +395,10 @@ class InputDataFormattingTest {
         if (extractData.results.zone != null) {
             //Zone
             def epsg = h2GIS.getSpatialTable(extractData.results.zone).srid
-            h2GIS.getTable(extractData.results.zone).save("${ file.absolutePath+File.separator}osm_zone_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(extractData.results.zone).save("${file.absolutePath + File.separator}osm_zone_${formatedPlaceName}.geojson", true)
 
             //Zone envelope
-            h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("${ file.absolutePath+File.separator}osm_zone_envelope_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(extractData.results.zoneEnvelopeTableName).save("${file.absolutePath + File.separator}osm_zone_envelope_${formatedPlaceName}.geojson", true)
             IProcess format
 
             //Urban Areas
@@ -458,16 +466,16 @@ class InputDataFormattingTest {
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
                     epsg                      : epsg])
             def inputWaterTableName = format.results.outputTableName
-            h2GIS.getTable(inputWaterTableName).save("${ file.absolutePath+File.separator}osm_hydro_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(inputWaterTableName).save("${file.absolutePath + File.separator}osm_hydro_${formatedPlaceName}.geojson", true)
 
             //Impervious
-            /*format = OSM.InputDataFormatting.formatImperviousLayer()
+            format = OSM.InputDataFormatting.formatImperviousLayer()
             format.execute([
                     datasource                : h2GIS,
                     inputTableName            : extractData.results.imperviousTableName,
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
                     epsg                      : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_impervious_${formatedPlaceName}.geojson", true)*/
+            h2GIS.getTable(format.results.outputTableName).save("${file.absolutePath+File.separator}osm_impervious_${formatedPlaceName}.geojson", true)
 
 
             //Sea/Land mask
@@ -476,10 +484,10 @@ class InputDataFormattingTest {
                     datasource                : h2GIS,
                     inputTableName            : extractData.results.coastlineTableName,
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
-                    inputWaterTableName : inputWaterTableName,
+                    inputWaterTableName       : inputWaterTableName,
                     epsg                      : epsg])
             def inputSeaLandTableName = format.results.outputTableName;
-            h2GIS.getTable(inputSeaLandTableName).save("${ file.absolutePath+File.separator}osm_sea_land_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(inputSeaLandTableName).save("${file.absolutePath + File.separator}osm_sea_land_${formatedPlaceName}.geojson", true)
 
             //Merge Sea/Land mask and Water layers
             format = OSM.InputDataFormatting.mergeWaterAndSeaLandTables()
@@ -487,7 +495,7 @@ class InputDataFormattingTest {
                     datasource           : h2GIS,
                     inputSeaLandTableName: inputSeaLandTableName, inputWaterTableName: inputWaterTableName,
                     epsg                 : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("${ file.absolutePath+File.separator}osm_water_sea_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(format.results.outputTableName).save("${file.absolutePath + File.separator}osm_water_sea_${formatedPlaceName}.geojson", true)
 
         } else {
             assertTrue(false)
@@ -503,8 +511,7 @@ class InputDataFormattingTest {
         process.execute([
                 datasource : h2GIS,
                 osmFilePath: osmfile,
-                epsg :2154])
-
+                epsg       : 2154])
 
         //Format Roads
         def format = OSM.InputDataFormatting.formatRoadLayer()
@@ -514,7 +521,5 @@ class InputDataFormattingTest {
                 inputZoneEnvelopeTableName: process.results.zoneEnvelopeTableName,
                 epsg                      : 2154])
         h2GIS.getTable(format.results.outputTableName).save("/tmp/formated_osm_road.shp", true)
-
     }
-
 }

@@ -93,28 +93,23 @@
     "Dead-end roads": 30
   },
   "pavements": {
-    "NL05": null,
-    "NL05": "asphalt",
-    "NL08": [
-      "concrete",
-      "wood",
-      "grass",
-      "sand",
-      "earth",
-      "ground",
-      "sett",
-      "mud",
-      "dirt",
-      "unpaved",
-      "compacted",
-      "gravel",
-      "fine_gravel"
-    ],
-    "NL10": [
-      "paved",
-      "paving_stones",
-      "cobblestone"
-    ]
+    "asphalt": "NL05",
+    "concrete": "NL08",
+    "wood": "NL08",
+    "grass": "NL08",
+    "sand": "NL08",
+    "earth": "NL08",
+    "ground": "NL08",
+    "sett": "NL08",
+    "mud": "NL08",
+    "dirt": "NL08",
+    "unpaved": "NL08",
+    "compacted": "NL08",
+    "gravel": "NL08",
+    "fine_gravel":"NL08",
+    "paved" : "NL10",
+    "paving_stones" : "NL10",
+    "cobblestone" : "NL10"
   },
   "road_types": {
     "Motorway": [

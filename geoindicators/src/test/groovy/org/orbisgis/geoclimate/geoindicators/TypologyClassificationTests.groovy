@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.dataframe.DataFrame
 import smile.classification.DataFrameClassifier
@@ -22,11 +23,13 @@ import static org.orbisgis.data.H2GIS.open
 
 class TypologyClassificationTests {
 
+    @TempDir
+    static File folder
     private static def h2GIS
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open "./target/${TypologyClassificationTests.class.name};AUTO_SERVER=TRUE"
+        h2GIS = open(folder.getAbsolutePath()+File.separator+"typologyClassificationTests;AUTO_SERVER=TRUE")
     }
 
     @Test
@@ -155,7 +158,7 @@ class TypologyClassificationTests {
         def trainingURL = TypologyClassificationTests.getResource("model/rf/training_data.shp")
 
         def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
-        def savePath = "target/geoclimate_rf_${uuid}.model"
+        def savePath = new File(folder,"geoclimate_rf_${uuid}.model").getAbsolutePath()
 
         def trainingTable = h2GIS.table(h2GIS.load(trainingURL, trainingTableName, true))
         assert trainingTable

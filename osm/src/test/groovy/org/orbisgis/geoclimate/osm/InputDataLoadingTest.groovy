@@ -3,6 +3,7 @@ package org.orbisgis.geoclimate.osm
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
@@ -12,13 +13,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 
 class InputDataLoadingTest {
 
+    @TempDir
+    static File folder
+
     private static final Logger logger = LoggerFactory.getLogger(InputDataLoadingTest.class)
 
     static  H2GIS h2GIS
 
     @BeforeAll
     static  void loadDb(){
-        h2GIS = H2GIS.open('./target/osm_gislayers_test;AUTO_SERVER=TRUE')
+        h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "osm_inputDataLoadingTest;AUTO_SERVER=TRUE;")
     }
 
     @Disabled //enable it to test data extraction from the overpass api
@@ -30,7 +34,7 @@ class InputDataLoadingTest {
                 zoneToExtract: "Île de la Nouvelle-Amsterdam"])
         process.getResults().each {it ->
             if(it.value!=null){
-                h2GIS.getTable(it.value).save("./target/${it.value}.shp", true)
+                h2GIS.getTable(it.value).save(new File(folder, "${it.value}.shp").absolutePath, true)
             }
         }
     }
@@ -59,7 +63,7 @@ class InputDataLoadingTest {
         assertEquals 10, h2GIS.getTable(process.results.hydroTableName).rowCount
 
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
-        assertEquals 45, h2GIS.getTable(process.results.imperviousTableName).rowCount
+        assertEquals 47, h2GIS.getTable(process.results.imperviousTableName).rowCount
 
         //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
         assertEquals 6, h2GIS.getTable(process.results.urbanAreasTableName).rowCount

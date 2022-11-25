@@ -1,13 +1,15 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 
 import static org.junit.jupiter.api.Assertions.*
 
 class InputDataLoadingTest {
 
-
+    @TempDir
+    static File folder
     public static communeToTest = "12174"
 
 
@@ -25,7 +27,7 @@ class InputDataLoadingTest {
                            "ROAD_BD_TOPO_TYPE", "VEGET_ABSTRACT_PARAMETERS", "VEGET_ABSTRACT_TYPE",
                            "VEGET_BD_TOPO_TYPE"]
 
-        H2GIS h2GISDatabase = H2GIS.open("./target/${dbPath};AUTO_SERVER=TRUE", "sa", "")
+        H2GIS h2GISDatabase = H2GIS.open(folder.getAbsolutePath()+File.separator+"bdtopo_v2_2_inputDataLoadingTest;AUTO_SERVER=TRUE")
 
         // Load parameter files
         paramTables.each{
@@ -192,7 +194,7 @@ class InputDataLoadingTest {
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(13, table.rowCount)
+        assertEquals(16, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -559,7 +561,7 @@ class InputDataLoadingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(2, table.rowCount)
+        assertEquals(5, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -574,7 +576,7 @@ class InputDataLoadingTest {
         // Check if the SURFACE_ACTIVITE table has the correct number of columns and rows
         table = h2GISDatabase.getTable("SURFACE_ACTIVITE")
         assertNotNull(table)
-        assertEquals(3, table.columnCount)
+        assertEquals(4, table.columnCount)
         assertEquals(0, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
@@ -655,7 +657,7 @@ class InputDataLoadingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(13, table.rowCount)
+        assertEquals(16, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.THE_GEOM.spatial)
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))
@@ -703,7 +705,7 @@ class InputDataLoadingTest {
         def table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
         assertEquals(4, table.columnCount)
-        assertEquals(11, table.rowCount)
+        assertEquals(14, table.rowCount)
         // Check if the column types are correct
         assertTrue(table.the_geom.isSpatial())
         assertEquals('CHARACTER VARYING', table.columnType('ID_SOURCE'))

@@ -115,7 +115,7 @@ IProcess build_road_traffic() {
                     } else {
                         queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $inputTableName  as a"
                     }
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             //Find road type
                             def source_road_type = row."type"
@@ -128,11 +128,8 @@ IProcess build_road_traffic() {
                                     maxspeed_value = maxspeed[road_type]
                                 }
                                 def direction = row."direction"
-
                                 def surface = row."surface"
-
                                 def pavement_value = getPavement(pavements, surface)
-
                                 def traffic_data = getNumberVehiclesPerHour(road_type, direction, flow_data, flow_period)
                                 Geometry geom = row.the_geom
                                 if (geom) {
@@ -188,11 +185,7 @@ static String getPavement(def pavements, def surface ){
     if(!surface){
         return pvmt
     }
-    for(def pavement : pavements){
-        def pavement_key = pavement.key
-        return  pavement_key.value.contains(surface)?pavement_key:pvmt
-    }
-    return pvmt
+    return pavements.get(surface, pvmt)
 }
 
 /**

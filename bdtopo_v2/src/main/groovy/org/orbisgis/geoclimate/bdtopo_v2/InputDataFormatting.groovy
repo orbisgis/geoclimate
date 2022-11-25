@@ -3,6 +3,7 @@ package org.orbisgis.geoclimate.bdtopo_v2
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
+import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
@@ -18,8 +19,6 @@ import java.util.regex.Pattern
  * @param datasource A connexion to a DB containing the raw buildings table
  * @param inputTableName The name of the raw buildings table in the DB
  * @param hLevMin Minimum building level height
- * @param hLevMax Maximum building level height
- * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
  * @return outputTableName The name of the final buildings table
  * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
  */
@@ -27,20 +26,12 @@ IProcess formatBuildingLayer() {
     return create {
         title "Transform BDTopo buildings table into a table that matches the constraints of the GeoClimate input model"
         id "formatBuildingLayer"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputImpervious: "", h_lev_min: 3, h_lev_max: 15, hThresholdLev2: 10
+        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: String, inputUrbanAreas: "", h_lev_min: 3
         outputs outputTableName: String
-        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputImpervious, h_lev_min, h_lev_max, hThresholdLev2 ->
-
+        run { JdbcDataSource datasource, inputTableName, inputZoneEnvelopeTableName, inputUrbanAreas, h_lev_min ->
             if (!h_lev_min) {
                 h_lev_min = 3
             }
-            if (!h_lev_max) {
-                h_lev_max = 15
-            }
-            if (!hThresholdLev2) {
-                hThresholdLev2 = 10
-            }
-
             def outputTableName = postfix "BUILDING"
             debug 'Formating building layer'
 
@@ -48,7 +39,7 @@ IProcess formatBuildingLayer() {
 
             datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM geometry, ID_BUILD integer, ID_SOURCE varchar(24), 
-            HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer);""".toString())
+            HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer, ROOF_SHAPE VARCHAR);""".toString())
 
             if (inputTableName) {
                 ISpatialTable inputSpatialTable = datasource."$inputTableName"
@@ -130,7 +121,7 @@ IProcess formatBuildingLayer() {
 
                     //Formating building table
                     def id_build = 1;
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper.toString()) { row ->
                             def feature_type = "building"
                             def feature_main_use = "building"
@@ -147,14 +138,12 @@ IProcess formatBuildingLayer() {
                             def height_roof = 0
                             def nb_lev = 0
                             //Update height_wall
-                            if (height_wall == null || height_wall == 0) {
-                                height_wall = h_lev_min
-                                height_roof = h_lev_max
+                            if (!height_wall) {
+                                height_wall = 0
                             }
                             //Update NB_LEV
-                            def nbLevelsFromType = building_type_level[feature_type]
                             def formatedHeight = formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
-                                    h_lev_max, hThresholdLev2, nbLevelsFromType == null ? 0 : nbLevelsFromType)
+                                    feature_type,  building_type_level)
 
                             def zIndex = 0
                             if (formatedHeight.nbLevels > 0) {
@@ -173,7 +162,7 @@ IProcess formatBuildingLayer() {
                                                     ${formatedHeight.nbLevels},
                                                     '${feature_type}',
                                                     '${feature_main_use}',
-                                                    ${zIndex})
+                                                    ${zIndex}, null)
                                             """.toString()
 
                                         id_build++
@@ -182,17 +171,17 @@ IProcess formatBuildingLayer() {
                             }
                         }
                     }
-                    //Let's use the impervious table to improve building qualification
-                    if (inputImpervious) {
+                    //Let's use the urban areas table to improve building qualification
+                    if (inputUrbanAreas) {
                         datasource."$outputTableName".the_geom.createSpatialIndex()
                         datasource."$outputTableName".id_build.createIndex()
                         datasource."$outputTableName".type.createIndex()
-                        datasource."$inputImpervious".the_geom.createSpatialIndex()
+                        datasource."$inputUrbanAreas".the_geom.createSpatialIndex()
                         def buildinType = postfix("BUILDING_TYPE")
 
                         datasource.execute """create table $buildinType as SELECT 
                         max(b.type) as type, 
-                        max(b.type) as main_use, a.id_build FROM $outputTableName a, $inputImpervious b 
+                        max(b.type) as main_use, a.id_build FROM $outputTableName a, $inputUrbanAreas b 
                         WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) 
                         AND  a.TYPE ='building' AND b.TYPE != 'unknown'
                          group by a.id_build""".toString()
@@ -209,7 +198,7 @@ IProcess formatBuildingLayer() {
                                                a.NB_LEV, 
                                                COALESCE(b.TYPE, a.TYPE) AS TYPE ,
                                                COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
-                                               , a.ZINDEX from $outputTableName
+                                               , a.ZINDEX, a.ROOF_SHAPE from $outputTableName
                                         a LEFT JOIN $buildinType b on a.id_build=b.id_build""".toString()
 
                         datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName;
@@ -305,7 +294,7 @@ IProcess formatRoadLayer() {
                         queryMapper += ", the_geom FROM $inputTableName  as a"
                     }
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def road_type = row.TYPE
                             if (road_type) {
@@ -411,7 +400,7 @@ IProcess formatHydroLayer() {
 
                     }
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(query) { row ->
                             def water_type = 'water'
                             def water_zindex = 0
@@ -485,7 +474,7 @@ IProcess formatRailsLayer() {
                                       'Tramway'                   : 'tram',
                                       'Pont'                      : 'bridge', 'Tunnel': 'tunnel', 'NC': null]
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def rail_type = row.TYPE
                             if (rail_type) {
@@ -600,7 +589,7 @@ IProcess formatVegetationLayer() {
                     ]
 
                     int rowcount = 1
-                    datasource.withBatch(1000) { stmt ->
+                    datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
                             def vegetation_type = row.TYPE
                             if (vegetation_type) {
@@ -646,15 +635,11 @@ IProcess formatVegetationLayer() {
  * @param heightRoof value
  * @param nbLevels value
  * @param h_lev_min value
- * @param h_lev_max value
- * @param hThresholdLev2 value
- * @param nbLevFromType value
- * @param hThresholdLev2 value
  * @return a map with the new values
  */
 static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
-                                    def h_lev_max, def hThresholdLev2, def nbLevFromType) {
-    //Use the OSM values
+                                    def buildingType, def levelBuildingTypeMap) {
+    //Use the BDTopo values
     if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
         return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
     }
@@ -664,45 +649,110 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
     if (heightWall == 0) {
         if (heightRoof == 0) {
             if (nbLevels == 0) {
-                heightWall = h_lev_min
+                nbLevels = levelBuildingTypeMap[buildingType]
+                if(!nbLevels){
+                    nbLevels=1
+                }
+                heightWall = h_lev_min * nbLevels
+                heightRoof=heightWall
                 estimated = true
             } else {
                 heightWall = h_lev_min * nbLevels
+                heightRoof=heightWall
             }
         } else {
             heightWall = heightRoof
-        }
-    }
-    // Update heightRoof
-    if (heightRoof == 0) {
-        heightRoof = heightWall
-    }
-    // Update nbLevels
-    // If the nb_lev parameter  is equal to 1 or 2
-    // (and height_wall > 10m) then apply the rule. Else, the nb_lev is equal to 1
-    if (nbLevels == 0) {
-        nbLevels = 1
-        if (nbLevFromType == 1 || (nbLevFromType == 2 && heightWall > hThresholdLev2)) {
             nbLevels = Math.floor(heightWall / h_lev_min)
         }
+    }else if(heightWall==heightRoof){
+        if(nbLevels==0){
+            nbLevels=Math.floor(heightWall / h_lev_min)
+        }
     }
-
     // Control of heights and number of levels
     // Check if height_roof is lower than height_wall. If yes, then correct height_roof
-    if (heightWall > heightRoof) {
+    else if (heightWall > heightRoof) {
         heightRoof = heightWall
-    }
-    def tmpHmin = nbLevels * h_lev_min
-    // Check if there is a high difference between the "real" and "theorical (based on the level number) roof heights
-    if (tmpHmin > heightRoof) {
-        heightRoof = tmpHmin
-    }
-    def tmpHmax = nbLevels * h_lev_max
-    if (nbLevFromType == 1 || nbLevFromType == 2 && heightWall > hThresholdLev2) {
-        if (tmpHmax < heightWall) {
-            nbLevels = Math.floor(heightWall / h_lev_max)
+        if(nbLevels==0){
+            nbLevels=Math.floor(heightWall / h_lev_min)
         }
     }
     return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
 
+}
+
+/**
+ * This process is used to transform the BDTopo impervious table into a table that matches the constraints
+ * of the geoClimate Input Model
+ * @param datasource A connexion to a DB containing the impervious table
+ * @param inputTableName The name of the impervious table in the DB
+ * @return outputTableName The name of the final impervious table
+ */
+IProcess formatImperviousLayer() {
+    return create {
+        title "Format the impervious table into a table that matches the constraints of the GeoClimate Input Model"
+        inputs datasource: JdbcDataSource, inputTableName: String
+        outputs outputTableName: String
+        run { H2GIS datasource, inputTableName ->
+            debug('Impervious formation')
+            def outputTableName = postfix("IMPERVIOUS")
+            datasource.execute """ drop table if exists $outputTableName;
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_impervious serial,TYPE VARCHAR);""".toString()
+
+            // A map to set up mappings between BDTopo values and the tags allowed by the internal geoclimate model
+            def matching_bdtopo_values =  ["Indifférencié":"sport" , "Piste de sport":"sport",
+                                       "Terrain de tennis":"sport","Barrage":"dam", "Dalle de protection":"tile_slab", "Ecluse":"lock",
+                                         "Parking":"parking", "Péage":"rest_area", "Place ou carrefour":"square","Piste en dur":"aerodrome",
+                                         "Administratif":"government", "Culture et loisirs":"entertainment_arts_culture",
+                                   "Enseignement":"education", "Gestion des eaux":"industrial",
+                                   "Industriel ou commercial":"commercial", "Santé":"healthcare", "Sport":"sport", "Transport":"transport"]
+
+            // A map of weigths to select a tag when several geometries overlap
+            def weight_values = ["dam" : 100, "tile_slab" : 100,
+                                 "lock":100, "parking": 200, "rest_area":200, "square" : 200,"aerodrome":  300,
+                                 "government":5, "entertainment_arts_culture":10,"education":  10,
+                                 "industrial":20, "commercial":20,"healthcare":10,  "transport":15,
+                                 "sport":10]
+
+            //We must remove all overlapping geometries and then choose the attribute TYPE to set according some priorities
+            def polygonizedTable = postfix("impervious_polygonized")
+            datasource.execute(""" DROP TABLE IF EXISTS $polygonizedTable;
+            CREATE TABLE $polygonizedTable as
+            SELECT * from ST_EXPLODE('(select st_polygonize(st_union(st_accum(ST_ToMultiLine( the_geom)))) as the_geom from $inputTableName)')
+            """.toString())
+
+            datasource."$inputTableName".the_geom.createSpatialIndex()
+
+            datasource.execute(""" CREATE SPATIAL INDEX ON $polygonizedTable(THE_GEOM);
+                        CREATE INDEX ON $polygonizedTable(EXPLOD_ID);""".toString())
+
+            def query =  """SELECT LISTAGG(a.ID_IMPERVIOUS, ',') AS ids_impervious, LISTAGG(a.TYPE, ',') AS types, b.EXPLOD_ID as id, b.the_geom  FROM $inputTableName AS a, $polygonizedTable AS b
+            WHERE a.the_geom && b.the_geom AND st_intersects(st_pointonsurface(b.the_geom), a.the_geom) GROUP BY b.explod_id;""".toString()
+            int rowcount = 1
+            datasource.withBatch(100) { stmt ->
+                datasource.eachRow(query) { row ->
+                    def types = row.types
+                    def type =null;
+                    //Choose the best impervious type
+                    def listTypes = types.split(",") as Set
+                    if (listTypes.size() == 1) {
+                        def mapping = matching_bdtopo_values.get(types)
+                        if (mapping) {
+                            type = mapping
+                        }
+                    } else {
+                        type = weight_values.subMap(matching_bdtopo_values.subMap(listTypes).values()).max { it.key }.key
+                    }
+                    if (type) {
+                        Geometry geom = row.the_geom
+                        def epsg = geom.getSRID()
+                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++}, '${type}')".toString()
+                    }
+                }
+            }
+            datasource.execute("DROP TABLE IF EXISTS $polygonizedTable".toString())
+            debug('Impervious areas transformation finishes')
+            [outputTableName: outputTableName]
+        }
+    }
 }

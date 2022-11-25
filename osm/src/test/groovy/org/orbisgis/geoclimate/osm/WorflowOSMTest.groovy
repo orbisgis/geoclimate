@@ -5,6 +5,8 @@ import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.CleanupMode
+import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
@@ -15,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.*
 
 class WorflowOSMTest extends WorkflowAbstractTest {
 
+    @TempDir(cleanup = CleanupMode.ON_SUCCESS)
+    static File folder
 
     /**
      * This method is used to copy resources from the jar the tmp folder in order to limit
@@ -52,7 +56,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         //TODO enable it for debug purpose
         boolean saveResults = false
-        String directory ="./target/osm_processchain_geoindicators_redon"
+        String directory = folder.absolutePath+File.separator+"osm_processchain_geoindicators_redon"
         def prefixName = ""
         def indicatorUse = ["UTRF", "LCZ", "TEB"]
         def svfSimplified = true
@@ -87,7 +91,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      */
     @Test
     void osmWorkflowToH2Database() {
-        String directory ="./target/geoclimate_chain_db"
+        String directory =folder.absolutePath+File.separator+"osmWorkflowToH2Database"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -130,7 +134,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      */
     @Test
     void osmWorkflowToPostGISDatabase() {
-        String directory ="./target/geoclimate_chain_postgis"
+        String directory =folder.absolutePath+File.separator+"osmWorkflowToPostGISDatabase"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -194,7 +198,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testOSMWorkflowFromPlaceNameWithSrid() {
-        String directory ="./target/geoclimate_chain_srid"
+        String directory =folder.absolutePath+File.separator+"testOSMWorkflowFromPlaceNameWithSrid"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -235,7 +239,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testOSMWorkflowFromBbox() {
-        String directory ="./target/geoclimate_chain"
+        String directory =folder.absolutePath+File.separator+"testOSMWorkflowFromBbox"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -268,7 +272,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Disabled
     @Test
     void testOSMWorkflowFromPoint() {
-        String directory ="./target/geoclimate_osm_point"
+        String directory =folder.absolutePath+File.separator+"testOSMWorkflowFromPoint"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -300,7 +304,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testOSMWorkflowBadOSMFilters() {
-        String directory ="./target/geoclimate_chain"
+        String directory =folder.absolutePath+File.separator+"testOSMWorkflowBadOSMFilters"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -322,7 +326,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void workflowWrongMapOfWeights() {
-        String directory ="./target/bdtopo_workflow"
+        String directory =folder.absolutePath+File.separator+"workflowWrongMapOfWeights"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -340,8 +344,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["distance" : 100,
                          "hLevMin": 3,
-                         "hLevMax": 15,
-                         "hThresholdLev2": 10,
                          rsu_indicators: ["indicatorUse": ["LCZ"],
                                           "svfSimplified": true,
                          "mapOfWeights":
@@ -361,7 +363,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testGrid_Indicators() {
-        String directory ="./target/geoclimate_chain_grid"
+        String directory =folder.absolutePath+File.separator+"testGrid_Indicators"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -403,7 +405,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testLoggerZones() {
-        String directory ="./target/geoclimate_chain_grid_logger"
+        String directory =folder.absolutePath+File.separator+"testLoggerZones"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -436,7 +438,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void osmWrongAreaSize() {
-        String directory ="./target/geoclimate_chain_db"
+        String directory =folder.absolutePath+File.separator+"osmWrongAreaSize"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -471,7 +473,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testOSMTEB() {
-        String directory ="./target/geoclimate_chain"
+        String directory =folder.absolutePath+File.separator+"testOSMTEB"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -501,7 +503,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testRoad_trafficAndNoiseIndicators() {
-        String directory ="./target/geoclimate_chain_grid"
+        String directory =folder.absolutePath+File.separator+"testRoad_traffic"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -554,7 +556,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : ["Redon"],
+                        "locations" : ["Redon"],//[nominatim["bbox"]],
+
                         "timeout":182,
                         "maxsize": 536870918,
                         "endpoint":"https://lz4.overpass-api.de/api"],
@@ -655,8 +658,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def deleteOutputData = true
         def outputFolder = new File('/home/decide/Data/WRF/Data/output/updated')
         def subFolder = new File(outputFolder.getAbsolutePath()+File.separator+"osm_"+id_zone)
-        def w = new WorkflowOSM();
-        w.saveTableToAsciiGrid("grid_indicators", subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
+        Geoindicators.WorkflowUtilities.saveToAscGrid("grid_indicators", subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
     }
 
     @Disabled
