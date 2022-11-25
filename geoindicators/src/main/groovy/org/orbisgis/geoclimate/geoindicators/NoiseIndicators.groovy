@@ -1,6 +1,7 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
+import org.h2.util.StringUtils
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
@@ -41,9 +42,9 @@ IProcess groundAcousticAbsorption() {
     return create {
         title "Compute a ground acoustic absorption table"
         inputs zone: String, id_zone: String, building: "", road: "", water: "", vegetation: "",
-                impervious: "", datasource: H2GIS, jsonFilename: ""
+                impervious: "", datasource: H2GIS, jsonFilename: "", unknownArea: false
         outputs ground_acoustic: String
-        run { zone, id_zone, building, road, water, vegetation, impervious, H2GIS datasource, jsonFilename ->
+        run { zone, id_zone, building, road, water, vegetation, impervious, H2GIS datasource, jsonFilename, unknownArea ->
             def outputTableName = postfix("GROUND_ACOUSTIC")
             datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_ground serial,G float, type VARCHAR, layer VARCHAR);""".toString()
@@ -53,7 +54,10 @@ IProcess groundAcousticAbsorption() {
             def default_absorption = absorption_params.default_g
             def g_absorption = absorption_params.g
             def layer_priorities = absorption_params.layer_priorities
-
+            String filter = " where layer not in('building','road') "
+            if (unknownArea) {
+                filter+= " or layer is null"
+            }
             IProcess process = Geoindicators.RsuIndicators.groundLayer()
             if (process.execute(["zone"    : zone, "id_zone": id_zone,
                                  "building": building, "road": road, "vegetation": vegetation,
@@ -61,19 +65,16 @@ IProcess groundAcousticAbsorption() {
                 def ground = process.results.ground
                 int rowcount = 1
                 datasource.withBatch(100) { stmt ->
-                    datasource.eachRow("SELECT the_geom, TYPE, layer FROM $ground where layer NOT in ('building' ,'road')".toString()) { row ->
-                        def type = row.type
+                    datasource.eachRow("SELECT the_geom, TYPE, layer FROM $ground $filter".toString()) { row ->
+                        String type = row.type
                         def layer = row.layer
-                        float g_coeff
-                        //There is no type
-                        if (!type) {
-                            g_coeff = default_absorption as float
-                        } else {
-                            g_coeff = g_absorption.get(type) as float
+                        float g_coeff = default_absorption as float
+                        if (type) {
+                            g_coeff = g_absorption.get(type)
                         }
                         Geometry geom = row.the_geom
                         def epsg = geom.getSRID()
-                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++},${g_coeff}, '${type}', '${layer}')".toString()
+                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++},${g_coeff}, ${StringUtils.quoteStringSQL(type)}, ${StringUtils.quoteStringSQL(layer)})".toString()
                     }
                 }
             }

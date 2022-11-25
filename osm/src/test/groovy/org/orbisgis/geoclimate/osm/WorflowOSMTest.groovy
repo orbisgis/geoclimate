@@ -499,7 +499,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-
     @Test
     void testRoad_trafficAndNoiseIndicators() {
         String directory ="./target/geoclimate_chain_grid"
@@ -565,8 +564,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
-                         ],"grid_indicators": [
+                                 "indicatorUse": ["LCZ"]//, "UTRF", "TEB"]
+                         ],/*,"grid_indicators": [
                                 "x_size": 100,
                                 "y_size": 100,
                                 //"rowCol": true,
@@ -576,7 +575,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                 "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
-                        ],   "worldpop_indicators" : false,
+                        ],   "worldpop_indicators" : false,*/
                          "road_traffic" : true,
                          "noise_indicators": [
                              "ground_acoustic" : true

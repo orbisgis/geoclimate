@@ -1,6 +1,7 @@
 {
   "default_g": 0,
   "g": {
+    "asphalt": 0.1,
     "water": 0.3,
     "low_vegetation": 1,
     "high_vegetation": 1,
@@ -26,10 +27,6 @@
     "marsh": 0.4,
     "saltmarsh": 0.9
   },
-  "layer_priorities": [
-    "water",
-    "high_vegetation",
-    "low_vegetation",
-    "impervious"]
+  "layer_priorities": ["building", "road", "water", "high_vegetation", "low_vegetation", "impervious"]
 
 }
