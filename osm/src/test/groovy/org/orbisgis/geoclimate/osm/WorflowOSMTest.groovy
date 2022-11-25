@@ -502,7 +502,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testRoad_trafficAndNoiseIndicators() {
+    void testRoadTrafficAndNoiseIndicators() {
         String directory =folder.absolutePath+File.separator+"testRoad_traffic"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -518,12 +518,12 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : ["path": directory,
-                                    "tables": ["road_traffic"]]],
+                                    "tables": ["road_traffic", "ground_acoustic"]]],
                 "parameters":
-                        ["road_traffic" : true],
+                        ["road_traffic" : true,
                 "noise_indicators":[
                         "ground_acoustic":true
-                ]
+                ]]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
@@ -534,7 +534,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is not null".toString()).count>0
         assertTrue h2gis.firstRow("select count(*) as count from $ground_acoustic where layer in ('road', 'building')".toString()).count == 0
-        assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where type = 'water'".toString()).size() == 1
+        assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where layer = 'water'".toString()).size() == 1
 
     }
 
