@@ -1102,7 +1102,7 @@ IProcess computeAllGeoIndicators() {
                     datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
                                        CREATE TABLE $buildingTableName 
                                             AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
-                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $buildingIndicatorsTableName""".toString()
+                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX,ROOF_SHAPE ID_BLOCK, ID_RSU from $buildingIndicatorsTableName""".toString()
                 } else {
                     info "Start estimating the building height"
                     //Apply RF model
@@ -1133,7 +1133,7 @@ IProcess computeAllGeoIndicators() {
                                             SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                         CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
                                                 COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
-                                                CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU from $buildingIndicatorsTableName
+                                                CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ROOF_SHAPE, a.ID_BLOCK, a.ID_RSU from $buildingIndicatorsTableName
                                         a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
 
                     //We must format only estimated buildings
