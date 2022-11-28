@@ -14,6 +14,7 @@ import static org.orbisgis.data.H2GIS.open
 
 class RsuIndicatorsTests {
 
+
     @TempDir
     static File folder
     private static def h2GIS
@@ -24,7 +25,7 @@ class RsuIndicatorsTests {
     }
 
     @BeforeEach
-    void beforeEach(){
+    void beforeEach() {
         h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
     }
 
@@ -43,15 +44,15 @@ class RsuIndicatorsTests {
 
         def p = Geoindicators.RsuIndicators.freeExternalFacadeDensity()
         assert p([
-                buildingTable               : "tempo_build",
-                rsuTable                    : "rsu_tempo",
-                buContiguityColumn          : "contiguity",
-                buTotalFacadeLengthColumn   : "total_facade_length",
-                prefixName                  : "test",
-                datasource                  : h2GIS])
+                buildingTable            : "tempo_build",
+                rsuTable                 : "rsu_tempo",
+                buContiguityColumn       : "contiguity",
+                buTotalFacadeLengthColumn: "total_facade_length",
+                prefixName               : "test",
+                datasource               : h2GIS])
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM test_rsu_free_external_facade_density WHERE id_rsu = 1"){
-            row -> concat+= row.free_external_facade_density
+        h2GIS.eachRow("SELECT * FROM test_rsu_free_external_facade_density WHERE id_rsu = 1") {
+            row -> concat += row.free_external_facade_density
         }
         assert 0.947 == concat
     }
@@ -74,22 +75,22 @@ class RsuIndicatorsTests {
         """
         // First calculate the correlation table between buildings and rsu
         def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
-        createScalesRelationsGridBl([datasource              : h2GIS,
-                                     sourceTable             : "tempo_build",
-                                     targetTable             : "tempo_rsu",
-                                     idColumnTarget          : "id_rsu",
-                                     prefixName              : "test",
-                                     nbRelations             : null])
+        createScalesRelationsGridBl([datasource    : h2GIS,
+                                     sourceTable   : "tempo_build",
+                                     targetTable   : "tempo_rsu",
+                                     idColumnTarget: "id_rsu",
+                                     prefixName    : "test",
+                                     nbRelations   : null])
 
-        def buildingTableRelation =createScalesRelationsGridBl.results.outputTableName
+        def buildingTableRelation = createScalesRelationsGridBl.results.outputTableName
 
         def p = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact()
         assertTrue p([
-                        buildingTable               : buildingTableRelation,
-                        rsuTable                    : "tempo_rsu",
-                        idRsu                       : "id_rsu",
-                        prefixName                  : "test",
-                        datasource                  : h2GIS])
+                buildingTable: buildingTableRelation,
+                rsuTable     : "tempo_rsu",
+                idRsu        : "id_rsu",
+                prefixName   : "test",
+                datasource   : h2GIS])
         assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").FREE_EXTERNAL_FACADE_DENSITY
         assertEquals 0.28, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").FREE_EXTERNAL_FACADE_DENSITY
         assertEquals 0.25, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 3").FREE_EXTERNAL_FACADE_DENSITY
@@ -109,13 +110,13 @@ class RsuIndicatorsTests {
 
         def p = Geoindicators.RsuIndicators.groundSkyViewFactor()
         assertTrue p.execute([
-                rsuTable                    : "rsu_test",
-                correlationBuildingTable    : "corr_tempo",
-                pointDensity                : 0.008,
-                rayLength                   : 100,
-                numberOfDirection           : 60,
-                prefixName                  : "test",
-                datasource                  : h2GIS])
+                rsuTable                : "rsu_test",
+                correlationBuildingTable: "corr_tempo",
+                pointDensity            : 0.008,
+                rayLength               : 100,
+                numberOfDirection       : 60,
+                prefixName              : "test",
+                datasource              : h2GIS])
         assertEquals 0.54, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor " +
                 "WHERE id_rsu = 8").ground_sky_view_factor, 0.05
         // For RSU having no buildings in and around them
@@ -127,12 +128,12 @@ class RsuIndicatorsTests {
     @Test
     void aspectRatioTest() {
         def p = Geoindicators.RsuIndicators.aspectRatio()
-        assertTrue p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
+        assertTrue p.execute([rsuTable                                      : "rsu_test", rsuFreeExternalFacadeDensityColumn:
                 "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
-                   prefixName: "test", datasource: h2GIS])
+                              prefixName                                    : "test", datasource: h2GIS])
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM test_rsu_aspect_ratio WHERE id_rsu = 1"){
-            row -> concat+= row.aspect_ratio
+        h2GIS.eachRow("SELECT * FROM test_rsu_aspect_ratio WHERE id_rsu = 1") {
+            row -> concat += row.aspect_ratio
         }
         assertEquals(0.672, concat, 0.001)
     }
@@ -140,9 +141,9 @@ class RsuIndicatorsTests {
     @Test
     void aspectRatioTest2() {
         def p = Geoindicators.RsuIndicators.aspectRatio()
-        assertTrue p.execute([rsuTable: "rsu_test", rsuFreeExternalFacadeDensityColumn:
+        assertTrue p.execute([rsuTable                                      : "rsu_test", rsuFreeExternalFacadeDensityColumn:
                 "rsu_free_external_facade_density", rsuBuildingDensityColumn: "rsu_building_density",
-                              prefixName: "test", datasource: h2GIS])
+                              prefixName                                    : "test", datasource: h2GIS])
         def result = h2GIS.firstRow("SELECT aspect_ratio FROM test_rsu_aspect_ratio WHERE id_rsu = 17")
         assertEquals(null, result["aspect_ratio"])
     }
@@ -155,25 +156,25 @@ class RsuIndicatorsTests {
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
-        def rangeDeg = 360/numberOfDirection
+        def rangeDeg = 360 / numberOfDirection
         def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
-        assertTrue p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
+        assertTrue p.execute([buildingTable    : "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
                               numberOfDirection: numberOfDirection, prefixName: "test", datasource: h2GIS])
         def concat = ""
-        h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1") {
             row ->
                 // Iterate over columns
                 def names = []
-                for (i in 1..listLayersBottom.size()){
-                    names[i-1]="projected_facade_area_distribution_H${listLayersBottom[i-1]}"+
+                for (i in 1..listLayersBottom.size()) {
+                    names[i - 1] = "projected_facade_area_distribution_H${listLayersBottom[i - 1]}" +
                             "_${listLayersBottom[i]}"
-                    if (i == listLayersBottom.size()){
-                        names[listLayersBottom.size()-1]="projected_facade_area_distribution"+
-                                "_H${listLayersBottom[listLayersBottom.size()-1]}"
+                    if (i == listLayersBottom.size()) {
+                        names[listLayersBottom.size() - 1] = "projected_facade_area_distribution" +
+                                "_H${listLayersBottom[listLayersBottom.size() - 1]}"
                     }
-                    for (int d=0; d<numberOfDirection/2; d++){
-                        int dirDeg = d*360/numberOfDirection
-                        concat+= row["${names[i-1]}_D${dirDeg}_${dirDeg+rangeDeg}".toString()].round(2).toString()+"\n"
+                    for (int d = 0; d < numberOfDirection / 2; d++) {
+                        int dirDeg = d * 360 / numberOfDirection
+                        concat += row["${names[i - 1]}_D${dirDeg}_${dirDeg + rangeDeg}".toString()].round(2).toString() + "\n"
                     }
                 }
 
@@ -189,25 +190,25 @@ class RsuIndicatorsTests {
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
-        def rangeDeg = 360/numberOfDirection
+        def rangeDeg = 360 / numberOfDirection
         def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
-        assertTrue p.execute([buildingTable: "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
+        assertTrue p.execute([buildingTable    : "tempo_build", rsuTable: "rsu_test", listLayersBottom: listLayersBottom,
                               numberOfDirection: numberOfDirection, prefixName: "test", datasource: h2GIS])
         def concat = ""
-        h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1") {
             row ->
                 // Iterate over columns
                 def names = []
-                for (i in 1..listLayersBottom.size()){
-                    names[i-1]="projected_facade_area_distribution_H${listLayersBottom[i-1]}"+
+                for (i in 1..listLayersBottom.size()) {
+                    names[i - 1] = "projected_facade_area_distribution_H${listLayersBottom[i - 1]}" +
                             "_${listLayersBottom[i]}"
-                    if (i == listLayersBottom.size()){
-                        names[listLayersBottom.size()-1]="projected_facade_area_distribution"+
-                                "_H${listLayersBottom[listLayersBottom.size()-1]}"
+                    if (i == listLayersBottom.size()) {
+                        names[listLayersBottom.size() - 1] = "projected_facade_area_distribution" +
+                                "_H${listLayersBottom[listLayersBottom.size() - 1]}"
                     }
-                    for (int d=0; d<numberOfDirection/2; d++){
-                        int dirDeg = d*360/numberOfDirection
-                        concat+= row["${names[i-1]}_D${dirDeg}_${dirDeg+rangeDeg}".toString()].round(2).toString()+"\n"
+                    for (int d = 0; d < numberOfDirection / 2; d++) {
+                        int dirDeg = d * 360 / numberOfDirection
+                        concat += row["${names[i - 1]}_D${dirDeg}_${dirDeg + rangeDeg}".toString()].round(2).toString() + "\n"
                     }
                 }
         }
@@ -224,36 +225,34 @@ class RsuIndicatorsTests {
 
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def p = Geoindicators.RsuIndicators.roofAreaDistribution()
-        assertTrue p.execute([rsuTable: "rsu_test", buildingTable: "tempo_build",
-                   listLayersBottom: listLayersBottom, prefixName: "test",
-                   datasource: h2GIS])
+        assertTrue p.execute([rsuTable        : "rsu_test", buildingTable: "tempo_build",
+                              listLayersBottom: listLayersBottom, prefixName: "test",
+                              datasource      : h2GIS])
         def concat1 = ""
         def concat2 = ""
-        h2GIS.eachRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1") {
             row ->
                 // Iterate over columns
-                for (i in 1..listLayersBottom.size()){
+                for (i in 1..listLayersBottom.size()) {
                     if (i == listLayersBottom.size()) {
                         concat1 += row["non_vert_roof_area_H${listLayersBottom[listLayersBottom.size() - 1]}"].round(2) + "\n"
                         concat1 += row["vert_roof_area_H${listLayersBottom[listLayersBottom.size() - 1]}"].round(2) + "\n"
-                    }
-                    else {
-                        concat1+=row["non_vert_roof_area_H${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
-                        concat1+=row["vert_roof_area_H${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                    } else {
+                        concat1 += row["non_vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"].round(2) + "\n"
+                        concat1 += row["vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"].round(2) + "\n"
                     }
                 }
         }
-        h2GIS.eachRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13") {
             row ->
                 // Iterate over columns
-                for (i in 1..listLayersBottom.size()){
+                for (i in 1..listLayersBottom.size()) {
                     if (i == listLayersBottom.size()) {
                         concat2 += row["non_vert_roof_area_H${listLayersBottom[listLayersBottom.size() - 1]}"].round(2) + "\n"
                         concat2 += row["vert_roof_area_H${listLayersBottom[listLayersBottom.size() - 1]}"].round(2) + "\n"
-                    }
-                    else {
-                        concat2+=row["non_vert_roof_area_H${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
-                        concat2+=row["vert_roof_area_H${listLayersBottom[i-1]}_${listLayersBottom[i]}"].round(2)+"\n"
+                    } else {
+                        concat2 += row["non_vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"].round(2) + "\n"
+                        concat2 += row["vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"].round(2) + "\n"
                     }
                 }
         }
@@ -267,8 +266,8 @@ class RsuIndicatorsTests {
         def V1 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 1").VERT_ROOF_DENSITY
         def NV2 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13").NON_VERT_ROOF_DENSITY
         def V2 = h2GIS.firstRow("SELECT * FROM test_rsu_roof_area_distribution WHERE id_rsu = 13").VERT_ROOF_DENSITY
-        assertEquals(796.64/2000, NV1+V1, 0.001)
-        assertEquals(1600.27/10000, NV2+V2, 0.001)
+        assertEquals(796.64 / 2000, NV1 + V1, 0.001)
+        assertEquals(1600.27 / 10000, NV2 + V2, 0.001)
     }
 
     @Test
@@ -280,20 +279,20 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def pFacadeDistrib = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution()
-        assertTrue pFacadeDistrib.execute([buildingTable: "tempo_build",
-                                           rsuTable: "rsu_test",
-                                           listLayersBottom: listLayersBottom,
+        assertTrue pFacadeDistrib.execute([buildingTable    : "tempo_build",
+                                           rsuTable         : "rsu_test",
+                                           listLayersBottom : listLayersBottom,
                                            numberOfDirection: numberOfDirection,
-                                           prefixName: "test",
-                                           datasource: h2GIS])
+                                           prefixName       : "test",
+                                           datasource       : h2GIS])
         def pGeomAvg = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
         assertTrue pGeomAvg.execute([inputLowerScaleTableName: "tempo_build",
                                      inputUpperScaleTableName: "rsu_build_corr",
-                                     inputIdUp: "id_rsu",
-                                     inputIdLow: "id_build",
-                                     inputVarAndOperations: ["height_roof": ["GEOM_AVG"]],
-                                     prefixName: "test",
-                                     datasource: h2GIS])
+                                     inputIdUp               : "id_rsu",
+                                     inputIdLow              : "id_build",
+                                     inputVarAndOperations   : ["height_roof": ["GEOM_AVG"]],
+                                     prefixName              : "test",
+                                     datasource              : h2GIS])
 
         // Add the geometry field in the previous resulting Tables
         h2GIS "ALTER TABLE test_unweighted_operation_from_lower_scale add column the_geom GEOMETRY;" +
@@ -304,16 +303,16 @@ class RsuIndicatorsTests {
                 "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu"
         def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength()
-        assertTrue p.execute([rsuTable: "rsu_table",
-                              projectedFacadeAreaName: "projected_facade_area_distribution",
+        assertTrue p.execute([rsuTable                       : "rsu_table",
+                              projectedFacadeAreaName        : "projected_facade_area_distribution",
                               geometricMeanBuildingHeightName: "geom_avg_height_roof",
-                              prefixName: "test",
-                              listLayersBottom: listLayersBottom,
-                              numberOfDirection: numberOfDirection,
-                              datasource: h2GIS])
+                              prefixName                     : "test",
+                              listLayersBottom               : listLayersBottom,
+                              numberOfDirection              : numberOfDirection,
+                              datasource                     : h2GIS])
 
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness_length WHERE id_rsu = 1"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness_length WHERE id_rsu = 1") {
             row -> concat += row["effective_terrain_roughness_length"].round(2)
         }
         assertEquals(1.60, concat)
@@ -326,13 +325,13 @@ class RsuIndicatorsTests {
                 "FROM road_test WHERE id_road < 7"
 
         def p1 = Geoindicators.RsuIndicators.linearRoadOperations()
-        assertTrue p1.execute([rsuTable: "rsu_test",
-                               roadTable: "road_test",
-                               operations: ["road_direction_distribution", "linear_road_density"],
-                               prefixName: "test",
-                               angleRangeSize: 30,
+        assertTrue p1.execute([rsuTable         : "rsu_test",
+                               roadTable        : "road_test",
+                               operations       : ["road_direction_distribution", "linear_road_density"],
+                               prefixName       : "test",
+                               angleRangeSize   : 30,
                                levelConsiderated: null,
-                               datasource: h2GIS])
+                               datasource       : h2GIS])
         def t0 = h2GIS.firstRow("SELECT road_direction_distribution_d0_30 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         def t1 = h2GIS.firstRow("SELECT road_direction_distribution_d90_120 " +
@@ -344,15 +343,15 @@ class RsuIndicatorsTests {
         assertEquals(0.0142, t2.linear_road_density.round(4))
 
         def p2 = Geoindicators.RsuIndicators.linearRoadOperations()
-        assertTrue p2.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["road_direction_distribution"],
-                    prefixName: "test", angleRangeSize: 30, levelConsiderated: [0], datasource: h2GIS])
+        assertTrue p2.execute([rsuTable  : "rsu_test", roadTable: "road_test", operations: ["road_direction_distribution"],
+                               prefixName: "test", angleRangeSize: 30, levelConsiderated: [0], datasource: h2GIS])
         def t01 = h2GIS.firstRow("SELECT road_direction_distribution_h0_d0_30 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         assertEquals(20, t01.road_direction_distribution_h0_d0_30)
 
         def p3 = Geoindicators.RsuIndicators.linearRoadOperations()
-        assertTrue p3.execute([rsuTable: "rsu_test", roadTable: "road_test", operations: ["linear_road_density"],
-                    prefixName: "test", angleRangeSize: 30, levelConsiderated: [-1], datasource: h2GIS])
+        assertTrue p3.execute([rsuTable  : "rsu_test", roadTable: "road_test", operations: ["linear_road_density"],
+                               prefixName: "test", angleRangeSize: 30, levelConsiderated: [-1], datasource: h2GIS])
         def t001 = h2GIS.firstRow("SELECT linear_road_density_hminus1 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
         assertEquals(0.00224, t001.linear_road_density_hminus1.round(5))
@@ -366,9 +365,9 @@ class RsuIndicatorsTests {
 
         def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass()
         assertTrue p.execute([datasource: h2GIS, rsuTable: "rsu_tempo", effectiveTerrainRoughnessLength: "effective_terrain_roughness_length",
-                   prefixName: "test"])
+                              prefixName: "test"])
         def concat = ""
-        h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness_class WHERE id_rsu < 4 ORDER BY id_rsu ASC"){
+        h2GIS.eachRow("SELECT * FROM test_rsu_effective_terrain_roughness_class WHERE id_rsu < 4 ORDER BY id_rsu ASC") {
             row -> concat += "${row["effective_terrain_roughness_class"]}\n".toString()
         }
         assertEquals("8\n4\nnull\n", concat)
@@ -385,14 +384,14 @@ class RsuIndicatorsTests {
                 "FROM rsu_test WHERE id_rsu = 1"
 
         def p = Geoindicators.RsuIndicators.extendedFreeFacadeFraction()
-        assertTrue p.execute([buildingTable: "tempo_build",
-                              rsuTable: "rsu_tempo",
-                              buContiguityColumn: "contiguity",
+        assertTrue p.execute([buildingTable            : "tempo_build",
+                              rsuTable                 : "rsu_tempo",
+                              buContiguityColumn       : "contiguity",
                               buTotalFacadeLengthColumn: "total_facade_length",
-                              prefixName: "test", buffDist : 30, datasource: h2GIS])
+                              prefixName               : "test", buffDist: 30, datasource: h2GIS])
         def concat = 0
-        h2GIS.eachRow("SELECT * FROM test_rsu_extended_free_facade_fraction WHERE id_rsu = 1"){
-            row -> concat+= row.extended_free_facade_fraction.round(3)
+        h2GIS.eachRow("SELECT * FROM test_rsu_extended_free_facade_fraction WHERE id_rsu = 1") {
+            row -> concat += row.extended_free_facade_fraction.round(3)
         }
         assertEquals(0.173, concat)
     }
@@ -404,13 +403,13 @@ class RsuIndicatorsTests {
         h2GIS.load(SpatialUnitsTests.class.getResource("building_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"),true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"), true)
 
         def prepareData = Geoindicators.SpatialUnits.prepareTSUData()
-        assertTrue prepareData.execute([zoneTable: 'zone_test', roadTable: 'road_test',  railTable: '',
-                                        vegetationTable : 'veget_test',
-                                        hydrographicTable :'hydro_test',
-                                        prefixName: "prepare_rsu", datasource: h2GIS])
+        assertTrue prepareData.execute([zoneTable        : 'zone_test', roadTable: 'road_test', railTable: '',
+                                        vegetationTable  : 'veget_test',
+                                        hydrographicTable: 'hydro_test',
+                                        prefixName       : "prepare_rsu", datasource: h2GIS])
 
         def outputTableGeoms = prepareData.results.outputTableName
 
@@ -422,9 +421,11 @@ class RsuIndicatorsTests {
 
         def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                              rsuTable: outputTable,buildingTable: "building_test", roadTable:"road_test",vegetationTable: "veget_test",waterTable: "hydro_test",
-                              prefixName: "test", datasource: h2GIS])
+                zone  : outputTable, id_zone : "id_rsu" , building: "building_test", road: "road_test", vegetation: "veget_test", water: "hydro_test",
+                prefixName: "test", datasource: h2GIS])
         def outputTableStats = p.results.outputTableName
+
+        h2GIS.save(outputTableStats, "/tmp/vegetation.csv")
 
         h2GIS """DROP TABLE IF EXISTS stats_rsu;
                     CREATE INDEX ON $outputTableStats (ID_RSU);
@@ -448,7 +449,7 @@ class RsuIndicatorsTests {
                            CREATE TABLE building_compare_stats as select (a.building_sum- b.building_areas) as diff, a.id_rsu from stats_rsu as a,
                            stats_building as b where a.id_rsu=b.id_rsu;"""
 
-        assertTrue h2GIS.firstRow("select count(*) as count from building_compare_stats where diff > 1").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from building_compare_stats where diff > 1").count == 0
 
 
         //Check the sum of low vegetation areas by USR
@@ -461,7 +462,7 @@ class RsuIndicatorsTests {
                            CREATE TABLE vegetation_low_compare_stats as select (a.low_VEGETATION_sum- b.vegetation_areas) as diff, a.id_rsu from stats_rsu as a,
                            stats_vegetation_low as b where a.id_rsu=b.id_rsu;"""
 
-        assertTrue h2GIS.firstRow("select count(*) as count from vegetation_low_compare_stats where diff > 1").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from vegetation_low_compare_stats where diff > 1").count == 0
 
         //Check the sum of high vegetation areas by USR
         h2GIS """DROP TABLE IF EXISTS stats_vegetation_high;
@@ -473,7 +474,7 @@ class RsuIndicatorsTests {
                            CREATE TABLE vegetation_high_compare_stats as select (a.high_VEGETATION_sum- b.vegetation_areas) as diff, a.id_rsu from stats_rsu as a,
                            stats_vegetation_high as b where a.id_rsu=b.id_rsu;"""
 
-        assertTrue h2GIS.firstRow("select count(*) as count from vegetation_high_compare_stats where diff > 1").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from vegetation_high_compare_stats where diff > 1").count == 0
 
         //Check the sum of water areas by USR
         h2GIS """DROP TABLE IF EXISTS stats_water;
@@ -485,7 +486,7 @@ class RsuIndicatorsTests {
                            CREATE TABLE water_compare_stats as select (a.water_sum- b.water_areas) as diff, a.id_rsu from stats_rsu as a,
                            stats_water as b where a.id_rsu=b.id_rsu;"""
 
-        assertTrue h2GIS.firstRow("select count(*) as count from water_compare_stats where diff > 1").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from water_compare_stats where diff > 1").count == 0
 
     }
 
@@ -499,7 +500,7 @@ class RsuIndicatorsTests {
         // Need to create the smallest geometries used as input of the surface fraction process
         def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                rsuTable: "rsu_tempo",buildingTable: "building_test",vegetationTable: "veget_test",waterTable: "hydro_test",
+                zone  : "rsu_tempo",id_zone : "id_rsu" , building: "building_test", vegetation: "veget_test", water: "hydro_test",
                 prefixName: "test", datasource: h2GIS])
         def tempoTable = p.results.outputTableName
 
@@ -509,17 +510,17 @@ class RsuIndicatorsTests {
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p0.execute([
-                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                rsuTable      : "rsu_tempo", spatialRelationsTable: tempoTable,
                 superpositions: superpositions0,
-                priorities: priorities0,
-                prefixName: "test", datasource: h2GIS])
+                priorities    : priorities0,
+                prefixName    : "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
-        assertEquals(1.0/5, result0["high_vegetation_building_fraction"])
-        assertEquals(3.0/20, result0["high_vegetation_low_vegetation_fraction"])
-        assertEquals(3.0/20, result0["high_vegetation_fraction"])
-        assertEquals(3.0/20, result0["low_vegetation_fraction"])
-        assertEquals(1.0/4, result0["water_fraction"])
-        assertEquals(1.0/10, result0["building_fraction"])
+        assertEquals(1.0 / 5, result0["high_vegetation_building_fraction"])
+        assertEquals(3.0 / 20, result0["high_vegetation_low_vegetation_fraction"])
+        assertEquals(3.0 / 20, result0["high_vegetation_fraction"])
+        assertEquals(3.0 / 20, result0["low_vegetation_fraction"])
+        assertEquals(1.0 / 4, result0["water_fraction"])
+        assertEquals(1.0 / 10, result0["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
 
         // combination 2
@@ -527,35 +528,35 @@ class RsuIndicatorsTests {
         def superpositions1 = ["high_vegetation": ["building", "water", "low_vegetation", "road", "impervious"]]
         def priorities1 = ["building", "water", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p1.execute([
-                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                rsuTable      : "rsu_tempo", spatialRelationsTable: tempoTable,
                 superpositions: superpositions1,
-                priorities: priorities1,
-                prefixName: "test", datasource: h2GIS])
+                priorities    : priorities1,
+                prefixName    : "test", datasource: h2GIS])
         def result1 = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
-        assertEquals(1.0/5, result1["high_vegetation_building_fraction"])
-        assertEquals(3.0/20, result1["high_vegetation_low_vegetation_fraction"])
-        assertEquals(3.0/20, result1["high_vegetation_fraction"])
-        assertEquals(3.0/20, result1["low_vegetation_fraction"])
-        assertEquals(3.0/20, result1["water_fraction"])
-        assertEquals(1.0/5, result1["building_fraction"])
+        assertEquals(1.0 / 5, result1["high_vegetation_building_fraction"])
+        assertEquals(3.0 / 20, result1["high_vegetation_low_vegetation_fraction"])
+        assertEquals(3.0 / 20, result1["high_vegetation_fraction"])
+        assertEquals(3.0 / 20, result1["low_vegetation_fraction"])
+        assertEquals(3.0 / 20, result1["water_fraction"])
+        assertEquals(1.0 / 5, result1["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
 
         // combination 3
         def p2 = Geoindicators.RsuIndicators.surfaceFractions()
         def superpositions2 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"],
-                "building": ["low_vegetation"]]
+                               "building"       : ["low_vegetation"]]
         assertTrue p2.execute([
-                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                rsuTable      : "rsu_tempo", spatialRelationsTable: tempoTable,
                 superpositions: superpositions2,
-                priorities: priorities0,
-                prefixName: "test", datasource: h2GIS])
+                priorities    : priorities0,
+                prefixName    : "test", datasource: h2GIS])
         def result2 = h2GIS.firstRow("SELECT * FROM ${p2.results.outputTableName}")
-        assertEquals(1.0/5, result2["high_vegetation_building_fraction"])
-        assertEquals(3.0/20, result2["high_vegetation_low_vegetation_fraction"])
-        assertEquals(3.0/20, result2["high_vegetation_fraction"])
-        assertEquals(1.0/10, result2["building_low_vegetation_fraction"])
-        assertEquals(3.0/20, result2["low_vegetation_fraction"])
-        assertEquals(1.0/4, result2["water_fraction"])
+        assertEquals(1.0 / 5, result2["high_vegetation_building_fraction"])
+        assertEquals(3.0 / 20, result2["high_vegetation_low_vegetation_fraction"])
+        assertEquals(3.0 / 20, result2["high_vegetation_fraction"])
+        assertEquals(1.0 / 10, result2["building_low_vegetation_fraction"])
+        assertEquals(3.0 / 20, result2["low_vegetation_fraction"])
+        assertEquals(1.0 / 4, result2["water_fraction"])
         assertEquals(0d, result2["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
     }
@@ -572,7 +573,7 @@ class RsuIndicatorsTests {
         // Need to create the smallest geometries used as input of the surface fraction process
         def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                rsuTable: "rsu_tempo", roadTable: "road_tempo",
+                zone  : "rsu_tempo",id_zone : "id_rsu" , road: "road_tempo",
                 prefixName: "test", datasource: h2GIS])
         def tempoTable = p.results.outputTableName
 
@@ -582,12 +583,12 @@ class RsuIndicatorsTests {
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p0.execute([
-                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                rsuTable      : "rsu_tempo", spatialRelationsTable: tempoTable,
                 superpositions: superpositions0,
-                priorities: priorities0,
-                prefixName: "test", datasource: h2GIS])
+                priorities    : priorities0,
+                prefixName    : "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
-        assertEquals(5.0/100, result0["road_fraction"])
+        assertEquals(5.0 / 100, result0["road_fraction"])
         assertEquals(0.95d, result0["undefined_fraction"])
     }
 
@@ -601,17 +602,17 @@ class RsuIndicatorsTests {
                                 water integer, impervious integer, road integer, building integer, id_rsu integer);
                                 INSERT INTO smallest_geom VALUES (923, 0, 1, 0, 0, 0, 0, 2)"""
 
-        
+
         // Apply the surface fractions for different combinations
         // combination 1
         def p0 = Geoindicators.RsuIndicators.surfaceFractions()
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p0.execute([
-                rsuTable: "rsu_tempo", spatialRelationsTable: "smallest_geom",
+                rsuTable      : "rsu_tempo", spatialRelationsTable: "smallest_geom",
                 superpositions: superpositions0,
-                priorities: priorities0,
-                prefixName: "test", datasource: h2GIS])
+                priorities    : priorities0,
+                prefixName    : "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE ID_RSU=1")
         assertEquals(0d, result0["building_fraction"])
         assertEquals(1d, result0["undefined_fraction"])
@@ -626,7 +627,7 @@ class RsuIndicatorsTests {
         // Need to create the smallest geometries used as input of the surface fraction process
         def p = Geoindicators.RsuIndicators.smallestCommunGeometry()
         assertTrue p.execute([
-                rsuTable: "rsu_tempo",buildingTable: "building_test",vegetationTable: "veget_test",waterTable: "hydro_test",
+                zone  : "rsu_tempo", id_zone : "id_rsu" ,building: "building_test", vegetation: "veget_test", water: "hydro_test",
                 prefixName: "test", datasource: h2GIS])
         def tempoTable = p.results.outputTableName
 
@@ -634,15 +635,15 @@ class RsuIndicatorsTests {
         def superpositions0 = []
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         assertTrue p0.execute([
-                rsuTable: "rsu_tempo", spatialRelationsTable: tempoTable,
+                rsuTable      : "rsu_tempo", spatialRelationsTable: tempoTable,
                 superpositions: superpositions0,
-                priorities: priorities0,
-                prefixName: "test", datasource: h2GIS])
+                priorities    : priorities0,
+                prefixName    : "test", datasource: h2GIS])
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
-        assertEquals(3.0/10, result0["high_vegetation_fraction"])
-        assertEquals(3.0/20, result0["low_vegetation_fraction"])
-        assertEquals(1.0/4, result0["water_fraction"])
-        assertEquals(3.0/10, result0["building_fraction"])
+        assertEquals(3.0 / 10, result0["high_vegetation_fraction"])
+        assertEquals(3.0 / 20, result0["low_vegetation_fraction"])
+        assertEquals(1.0 / 4, result0["water_fraction"])
+        assertEquals(3.0 / 10, result0["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
     }
 
@@ -661,10 +662,10 @@ class RsuIndicatorsTests {
         def p0 = Geoindicators.RsuIndicators.buildingSurfaceDensity()
         assertTrue p0.execute([
                 facadeDensityTable: "facade_density_tab", buildingFractionTable: "building_fraction_tab",
-                facDensityColumn: "facade_density",
-                buFractionColumn: "building_fraction",
-                idRsu: "id_rsu",
-                prefixName: "test", datasource: h2GIS])
+                facDensityColumn  : "facade_density",
+                buFractionColumn  : "building_fraction",
+                idRsu             : "id_rsu",
+                prefixName        : "test", datasource: h2GIS])
         def result1 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu=1")
         assertEquals(1.7, result1["building_surface_density"])
         def result2 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName} WHERE id_rsu=2")
@@ -688,25 +689,25 @@ class RsuIndicatorsTests {
             """
         // First calculate the correlation table between buildings and rsu
         def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
-        createScalesRelationsGridBl([datasource              : h2GIS,
-                                     sourceTable             : "tempo_build",
-                                     targetTable             : "tempo_rsu",
-                                     idColumnTarget          : "id_rsu",
-                                     prefixName              : "test",
-                                     nbRelations             : null])
+        createScalesRelationsGridBl([datasource    : h2GIS,
+                                     sourceTable   : "tempo_build",
+                                     targetTable   : "tempo_rsu",
+                                     idColumnTarget: "id_rsu",
+                                     prefixName    : "test",
+                                     nbRelations   : null])
 
         def p = Geoindicators.RsuIndicators.roofFractionDistributionExact()
         assertTrue p([
-                buildingTable               : createScalesRelationsGridBl.results.outputTableName,
-                rsuTable                    : "tempo_rsu",
-                idRsu                       : "id_rsu",
-                prefixName                  : "test",
-                listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                datasource                  : h2GIS])
-        assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
+                buildingTable   : createScalesRelationsGridBl.results.outputTableName,
+                rsuTable        : "tempo_rsu",
+                idRsu           : "id_rsu",
+                prefixName      : "test",
+                listLayersBottom: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                datasource      : h2GIS])
+        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
         assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_15_20, 0.00001
-        assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
-        assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
+        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
+        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
         assertEquals 1.0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
         assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
         assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
@@ -736,23 +737,23 @@ class RsuIndicatorsTests {
             """
         // First calculate the correlation table between buildings and rsu
         def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
-        createScalesRelationsGridBl([datasource              : h2GIS,
-                                     sourceTable             : "tempo_build",
-                                     targetTable             : "tempo_rsu",
-                                     idColumnTarget          : "id_rsu",
-                                     prefixName              : "test",
-                                     nbRelations             : null])
+        createScalesRelationsGridBl([datasource    : h2GIS,
+                                     sourceTable   : "tempo_build",
+                                     targetTable   : "tempo_rsu",
+                                     idColumnTarget: "id_rsu",
+                                     prefixName    : "test",
+                                     nbRelations   : null])
 
 
         def p = Geoindicators.RsuIndicators.frontalAreaIndexDistribution()
         assertTrue p([
-                buildingTable               : createScalesRelationsGridBl.results.outputTableName,
-                rsuTable                    : "tempo_rsu",
-                idRsu                       : "id_rsu",
-                listLayersBottom            : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                numberOfDirection           : 12,
-                prefixName                  : "test",
-                datasource                  : h2GIS])
+                buildingTable    : createScalesRelationsGridBl.results.outputTableName,
+                rsuTable         : "tempo_rsu",
+                idRsu            : "id_rsu",
+                listLayersBottom : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                numberOfDirection: 12,
+                prefixName       : "test",
+                datasource       : h2GIS])
         assertEquals 0.00566, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").FRONTAL_AREA_INDEX_H0_5_D30_60, 0.00001
         assertEquals 0.00321, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 1").FRONTAL_AREA_INDEX_H50_61_D30_60, 0.00001
         assertEquals 0.00321, h2GIS.firstRow("SELECT * FROM ${p.results.outputTableName} WHERE id_rsu = 4").FRONTAL_AREA_INDEX_H50_61_D30_60, 0.00001
@@ -768,9 +769,32 @@ class RsuIndicatorsTests {
         INSERT INTO rsu VALUES(1, 'POLYGON ((3 6, 6 6, 6 3, 3 3, 3 6))'::GEOMETRY);
         """.toString())
         IProcess process = Geoindicators.RsuIndicators.rsuPopulation()
-        assertTrue process.execute([inputRsuTableName: "rsu", inputPopulation: "population_grid",
-                                    inputPopulationColumns :["pop"], datasource: h2GIS])
-        assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process.results.rsuTableName}").pop)
+        assertTrue process.execute([inputRsuTableName     : "rsu", inputPopulation: "population_grid",
+                                    inputPopulationColumns: ["pop"], datasource: h2GIS])
+        assertEquals(10f, (float) h2GIS.firstRow("select pop from ${process.results.rsuTableName}").pop)
+    }
+
+    @Test
+    void groundLayer() {
+        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("building_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
+        def zone = h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"), true)
+
+        def env = h2GIS.getSpatialTable(zone).getExtent()
+        if (env) {
+            def gridP = Geoindicators.SpatialUnits.createGrid()
+            assert gridP.execute([geometry: env, deltaX: 100, deltaY: 100, datasource: h2GIS])
+            def outputTable = gridP.results.outputTableName
+            IProcess process = Geoindicators.RsuIndicators.groundLayer()
+            assertTrue process.execute(["zone" : outputTable, "id_zone": "id_grid",
+                                        building: "building_test", road: "road_test", vegetation: "veget_test", water: "hydro_test", datasource: h2GIS])
+
+            def ground = process.results.ground
+            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  building_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer = 'building'".toString()).area)<10)
+            assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area- h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer ='water'".toString()).area)<10)
+          }
     }
 
 }

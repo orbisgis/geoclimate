@@ -142,7 +142,7 @@
                 "! no"
             ]
         },
-        "banana plants": {
+        "banana_plants": {
             "trees": [
                 "banana_plants"
             ],
@@ -150,7 +150,7 @@
                 "banana"
             ]
         },
-        "sugar cane": {
+        "sugar_cane": {
             "produce": [
                 "sugar_cane"
             ],
@@ -192,6 +192,7 @@
         "banana_plants": "high",
         "sugar_cane": "low",
         "garden": "low",
-        "marsh": "low"
+        "marsh": "low",
+        "saltmarsh": "low"
     }
 }
