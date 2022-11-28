@@ -318,6 +318,9 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
         def inseeCode = communeToTest
         def defaultParameters = BDTopo_V2.WorkflowBDTopo_V2.extractProcessingParameters()
 
+        // Only download the data if no "indicator_use"
+        defaultParameters["rsu_indicators"]["indicatorUse"] = ["UTRF", "LCZ"]                                                       
+
         H2GIS h2GISDatabase = loadFiles(folder.absolutePath + File.separator + "roadTrafficFromBDTopoTest;AUTO_SERVER=TRUE")
         def tablesToSave = [
                 "rsu_lcz",]
