@@ -12,6 +12,7 @@ import org.orbisgis.process.api.IProcess
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest as RandomForestClassification
 import smile.data.type.DataType
+import smile.data.type.DataTypes
 import smile.data.vector.DoubleVector
 import smile.regression.RandomForest as RandomForestRegression
 import smile.data.formula.Formula
@@ -674,38 +675,29 @@ IProcess applyRandomForestModel() {
                 error "Cannot find the requiered columns to apply the model"
                 return
             }
-
             def isDouble = false
             if(DataType.isDouble(varType)){
                 isDouble=true
             }
-            // We need to add the name of the predicted variable in order to use the model
-            datasource.execute """ALTER TABLE $explicativeVariablesTableName ADD COLUMN $var2model ${isDouble?"DOUBLE PRECISION":"INTEGER"} DEFAULT 0""".toString()
-            datasource."$explicativeVariablesTableName".reload()
-
-            // The table containing explicative variables is recovered
-            def explicativeVariablesTable = datasource."$explicativeVariablesTableName"
-
-
             // Read the table containing the explicative variables as a DataFrame
-            def dfNofactorized = DataFrame.of(explicativeVariablesTable)
+            def dfNofactorized = DataFrame.of(datasource.getTable("""(SELECT ${modelColumnNames.join(",")}, 
+            ${isDouble?"CAST (0 AS DOUBLE PRECISION) AS "+var2model:"CAST(0 AS INTEGER) AS "+ var2model},
+            $idName from $explicativeVariablesTableName)""".toString()))
 
             def df = dfNofactorized
-            // Identify columns being string (thus needed to be factorized)
-            inputColumns.each{colName, colType ->
-                if(colType == "STRING" || colType=="VARCHAR" || colType=="CHARACTER VARYING"){
-                    df = df.factorize(colName)
-                }
-            }
+            //Factorize only string field
+             df.schema().fields().each{field->
+                if(DataTypes.StringType.equals(field.type)){
+                    df = df.factorize(field.name)
+                }}
+
             // Remove the id for the application of the randomForest
             def df_var = df.drop(idName.toUpperCase())
-
 
             def prediction = Validation.test(model, df_var)
             // We need to add the remove the initial predicted variable in order to not have duplicated...
             df=df.drop(var2model)
             df=df.merge(isDouble?DoubleVector.of(var2model, prediction):IntVector.of(var2model, prediction))
-
 
             //TODO change this after SMILE answer's
             // Keep only the id and the value of the classification
@@ -722,19 +714,19 @@ IProcess applyRandomForestModel() {
                     outputconnection.setAutoCommit(false);
                     outputconnectionStatement.execute(create_table_.toString());
                     preparedStatement = outputconnection.prepareStatement(insertTable.toString());
-                    long batch_size = 0;
-                    int batchSize = 1000;
+                    long batch_size = 0
+                    int batchSize = 100
                     while (df.next()) {
                         def id = df.getString(0)
                         def predictedValue = df.getObject(1)
                         preparedStatement.setObject( 1, id);
-                        preparedStatement.setObject( 2, predictedValue);
+                        preparedStatement.setObject( 2, predictedValue)
                         preparedStatement.addBatch();
                         batch_size++;
                         if (batch_size >= batchSize) {
-                            preparedStatement.executeBatch();
-                            preparedStatement.clearBatch();
-                            batchSize = 0;
+                            preparedStatement.executeBatch()
+                            preparedStatement.clearBatch()
+                            batchSize = 0
                         }
                     }
                     if (batch_size > 0) {
