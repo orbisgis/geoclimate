@@ -316,13 +316,11 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
     @Test
     void runBDTopoWorkflowWithSRID() {
         def inseeCode = communeToTest
-        def defaultParameters = [distance      : 0, distance_buffer: 0, prefixName: "",
-                                 rsu_indicators: [
-                                         indicatorUse : ["LCZ", "UTRF"],
-                                         svfSimplified: true,
-                                         mapOfWeights : ["sky_view_factor"             : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
-                                                         "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
-                                                         "height_of_roughness_elements": 3, "terrain_roughness_length": 1]]]
+        def defaultParameters = BDTopo_V2.WorkflowBDTopo_V2.extractProcessingParameters()
+
+        // Only download the data if no "indicator_use"
+        defaultParameters["rsu_indicators"]["indicatorUse"] = ["UTRF", "LCZ"]                                                       
+
         H2GIS h2GISDatabase = loadFiles(folder.absolutePath + File.separator + "roadTrafficFromBDTopoTest;AUTO_SERVER=TRUE")
         def tablesToSave = [
                 "rsu_lcz",]

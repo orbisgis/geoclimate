@@ -875,642 +875,40 @@ IProcess computeRSUIndicators() {
         }
     }
 }
-/** The processing chain creates the units used to describe the territory at three scales: Reference Spatial
- * Unit (RSU), block and building. The creation of the RSU needs several layers such as the hydrology,
- * the vegetation, the roads and the rail network and the boundary of the study zone. The blocks are created
- * from the buildings that are in contact.
- * Then the relationships between each scale is initialized in each unit table: the RSU ID is stored in
- * the block and in the building tables whereas the block ID is stored only in the building table.
+
+
+/**
+ * Compute the typology indicators
  *
- * @param zoneTable The area of zone to be processed *
- * @param buildingTable The building table to be processed
- * @param roadTable The road table to be processed
- * @param railTable The rail table to be processed
- * @param vegetationTable The vegetation table to be processed
- * @param hydrographicTable The hydrographic table to be processed
- * @param surface_vegetation The minimum area of vegetation that will be considered to delineate the RSU (default 100,000 m²)
- * @param surface_hydro The minimum area of water that will be considered to delineate the RSU (default 2,500 m²)
- * @param snappingTolerance A distance to group the geometries (e.g. two buildings in a block - default 0.01 m)
+ * @param buildingIndicators The table where are stored indicators values at building scale
+ * @param blockIndicators The table where are stored indicators values at block scale
+ * @param rsuIndicators  The table where are stored indicators values at rsu scale
  * @param prefixName A prefix used to name the output table
- * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
+ * @param mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
+ * of the map) for the LCZ classification step (default : all values to 1)
+ * @param utrfModelName Name of the Random Forest model used to calculate the urban typology
  *
- * @return outputTableBuildingName Table name where are stored the buildings and the RSU and block ID
- * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
- * @return outputTableRsuName Table name where are stored the RSU
+ * @return 4 tables: rsu_lcz, rsu_utrf_area, rsu_utrf_floor_area, building_utrf
  */
-IProcess createUnitsOfAnalysis() {
+IProcess computeTypologyIndicators() {
     return create {
-        title "Create all new spatial units and their relations : building, block and RSU"
-        id "createUnitsOfAnalysis"
-        inputs datasource: JdbcDataSource, zoneTable: String, rsuType: "TSU", buildingTable: String,
-                roadTable: String, railTable: String, vegetationTable: String,
-                hydrographicTable: String, seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
-                snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "UTRF", "TEB"]
-        outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
-        run { datasource, zoneTable, rsuType, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              seaLandMaskTableName, surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
-            info "Create the units of analysis..."
-            // Create the RSU
-            def createRSU = Geoindicators.SpatialUnits.createRSU()
-            if (!createRSU([inputzone  : zoneTable,
-                            prefixName          : prefixName,
-                            datasource          : datasource,
-                            rsuType             : rsuType,
-                            roadTable           : roadTable,
-                            railTable           : railTable,
-                            vegetationTable     : vegetationTable,
-                            hydrographicTable   : hydrographicTable,
-                            seaLandMaskTableName: seaLandMaskTableName,
-                            surface_vegetation  : surface_vegetation,
-                            surface_hydro       : surface_hydro])) {
-                info "Cannot compute the RSU."
-                return
-            }
-
-            // By default, the building table is used to calculate the relations between buildings and RSU
-            def inputLowerScaleBuRsu = buildingTable
-            // And the block / RSU table does not exists
-            def tableRsuBlocks = null
-            // If the urban typology is needed
-            if (indicatorUse.contains("UTRF")) {
-                // Create the blocks
-                def createBlocks = Geoindicators.SpatialUnits.createBlocks()
-                if (!createBlocks([datasource       : datasource,
-                                   inputTableName   : buildingTable,
-                                   prefixName       : prefixName,
-                                   snappingTolerance: snappingTolerance])) {
-                    info "Cannot create the blocks."
-                    return
-                }
-
-                // Create the relations between RSU and blocks (store in the block table)
-                def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.spatialJoin()
-                if (!createScalesRelationsRsuBl([datasource    : datasource,
-                                                 sourceTable   : createBlocks.results.outputTableName,
-                                                 targetTable   : createRSU.results.outputTableName,
-                                                 idColumnTarget: createRSU.results.outputIdRsu,
-                                                 prefixName    : prefixName,
-                                                 nbRelations   : 1])) {
-                    info "Cannot compute the scales relations between blocks and RSU."
-                    return
-                }
-
-                // Create the relations between buildings and blocks (store in the buildings table)
-                def createScalesRelationsBlBu = Geoindicators.SpatialUnits.spatialJoin()
-                if (!createScalesRelationsBlBu([datasource    : datasource,
-                                                sourceTable   : buildingTable,
-                                                targetTable   : createBlocks.results.outputTableName,
-                                                idColumnTarget: createBlocks.results.outputIdBlock,
-                                                prefixName    : prefixName,
-                                                nbRelations   : 1])) {
-                    info "Cannot compute the scales relations between blocks and buildings."
-                    return
-                }
-                inputLowerScaleBuRsu = createScalesRelationsBlBu.results.outputTableName
-                tableRsuBlocks = createScalesRelationsRsuBl.results.outputTableName
-            }
-
-
-            // Create the relations between buildings and RSU (store in the buildings table)
-            // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
-            // id_build but the relations between id_block and i_rsu should not been consider in this Table
-            // the relationships may indeed be different from the one in the block Table
-            def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.spatialJoin()
-            if (!createScalesRelationsRsuBlBu([datasource    : datasource,
-                                               sourceTable   : inputLowerScaleBuRsu,
-                                               targetTable   : createRSU.results.outputTableName,
-                                               idColumnTarget: createRSU.results.outputIdRsu,
-                                               prefixName    : prefixName,
-                                               nbRelations   : 1])) {
-                info "Cannot compute the scales relations between buildings and RSU."
-                return
-            }
-
-
-            [outputTableBuildingName: createScalesRelationsRsuBlBu.results.outputTableName,
-             outputTableBlockName   : tableRsuBlocks,
-             outputTableRsuName     : createRSU.results.outputTableName]
-        }
-    }
-}
-
-
-/**
- * Compute all geoindicators at the 3 scales :
- * building, block and RSU
- * Compute also the LCZ classification and the urban typology
- *
- * @return 5 tables building_indicators, block_indicators, rsu_indicators,
- * rsu_lcz, buildingTableName. The first three tables contains the geoindicators and the last table the LCZ classification.
- * The last table returns the new building table if the height model is set to true
- * This table can be empty if the user decides not to calculate it.
- *
- */
-IProcess computeAllGeoIndicators() {
-    return create {
-        title "Compute all geoindicators"
-        id "computeAllGeoIndicators"
-        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
-                roadTable: "", railTable: "", vegetationTable: "",
-                hydrographicTable: "", imperviousTable: "",
-                buildingEstimateTableName: "", seaLandMaskTableName: "",
-                surface_vegetation: 10000, surface_hydro: 2500,
-                snappingTolerance: 0.01, indicatorUse: ["LCZ", "UTRF", "TEB"], svfSimplified: false, prefixName: "",
-                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                utrfModelName: "",
-                buildingHeightModelName: ""
-        outputs building_indicators: String, block_indicators: String,
-                rsu_indicators: String, rsu_lcz: String, zone: String,
-                rsu_utrf_area: String, rsu_utrf_floor_area: String,
-                building_utrf: String, building: String
-        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              imperviousTable, buildingEstimateTableName, seaLandMaskTableName,
-              surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
-              utrfModelName, buildingHeightModelName ->
-            //Estimate height
-            if (buildingHeightModelName && datasource.getTable(buildingTable).getRowCount() > 0) {
-                def start = System.currentTimeMillis()
-                enableTableCache()
-                if (!buildingEstimateTableName) {
-                    error "To estimate the building height a table that contains the list of building to estimate must be provided"
-                    return
-                }
-                info "Geoclimate will try to estimate the building heights with the model $buildingHeightModelName."
-                if (!modelCheck(buildingHeightModelName)) {
-                    return
-                }
-                IProcess geoIndicators = computeGeoclimateIndicators()
-                if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
-                        buildingTable: buildingTable,
-                        roadTable: roadTable,
-                        railTable: railTable, vegetationTable: vegetationTable,
-                        hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
-                        seaLandMaskTableName: seaLandMaskTableName,
-                        surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
-                        indicatorUse: ["UTRF"],
-                        svfSimplified: true, prefixName: prefixName,
-                        mapOfWeights: mapOfWeights,
-                        utrfModelName: "")) {
-                    error "Cannot build the geoindicators to estimate the building height"
-                    return
-                }
-                //Let's go to select the building's id that must be processed to fix the height
-                info "Extracting the building having no height information and estimate it"
-                def results = geoIndicators.results;
-                //Select indicators we need at building scales
-                def buildingIndicatorsTableName = results.building_indicators;
-                datasource.getTable(buildingEstimateTableName).id_build.createIndex()
-                datasource.getTable(buildingIndicatorsTableName).id_build.createIndex()
-                datasource.getTable(buildingIndicatorsTableName).id_rsu.createIndex()
-
-                def estimated_building_with_indicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-
-                datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators;
-                                           CREATE TABLE $estimated_building_with_indicators 
-                                                    AS SELECT a.*
-                                                    FROM $buildingIndicatorsTableName a 
-                                                        RIGHT JOIN $buildingEstimateTableName b 
-                                                        ON a.id_build=b.id_build
-                                                    WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
-
-                info "Collect building indicators to estimate the height"
-
-                def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
-                applygatherScales.execute([
-                        buildingTable    : estimated_building_with_indicators,
-                        blockTable       : results.block_indicators,
-                        rsuTable         : results.rsu_indicators,
-                        targetedScale    : "BUILDING",
-                        operationsToApply: ["AVG", "STD"],
-                        prefixName       : prefixName,
-                        datasource       : datasource])
-                def gatheredScales = applygatherScales.results.outputTableName
-
-                //We use the existing spatial units
-                def relationBlocks = results.block_indicators
-                def relationRSU = results.rsu_indicators
-
-                def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
-                def nbBuildingEstimated
-                if (datasource.getTable(gatheredScales).isEmpty()) {
-                    info "No building height to estimate"
-                    nbBuildingEstimated = 0
-                    datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
-                                       CREATE TABLE $buildingTableName 
-                                            AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
-                                                HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX,ROOF_SHAPE ID_BLOCK, ID_RSU from $buildingIndicatorsTableName""".toString()
-                } else {
-                    info "Start estimating the building height"
-                    //Apply RF model
-                    def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                    if (!applyRF.execute([
-                            explicativeVariablesTableName: gatheredScales,
-                            pathAndFileName              : buildingHeightModelName,
-                            idName                       : "id_build",
-                            prefixName                   : prefixName,
-                            datasource                   : datasource])) {
-                        error "Cannot apply the building height model $buildingHeightModelName"
-                        return
-                    }
-
-                    //Update the abstract building table
-                    info "Replace the input building table by the estimated height"
-                    def buildEstimatedHeight = applyRF.results.outputTableName
-
-                    nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
-
-                    datasource.getTable(buildEstimatedHeight).id_build.createIndex()
-
-                    def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-
-                    //Use build table indicators
-                    datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
-                                           CREATE TABLE $newEstimatedHeigthWithIndicators as 
-                                            SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
-                                        CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
-                                                COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
-                                                CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ROOF_SHAPE, a.ID_BLOCK, a.ID_RSU from $buildingIndicatorsTableName
-                                        a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
-
-                    //We must format only estimated buildings
-                    //Apply format on the new abstract table
-                    def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
-                    IProcess formatEstimatedBuilding = formatEstimatedBuilding()
-                    formatEstimatedBuilding.execute([
-                            datasource    : datasource,
-                            inputTableName: newEstimatedHeigthWithIndicators,
-                            epsg          : epsg])
-
-                    buildingTableName = formatEstimatedBuilding.results.outputTableName
-
-                    //This is a shortcut to extract building with estimated height
-                    if (indicatorUse.isEmpty()) {
-                        //Clean the System properties that stores intermediate table names
-                        clearTablesCache()
-                        return [building_indicators: results.building_indicators,
-                                block_indicators   : relationBlocks,
-                                rsu_indicators     : relationRSU,
-                                rsu_lcz            : null,
-                                zone               : zoneTable,
-                                rsu_utrf_area      : null,
-                                rsu_utrf_floor_area: null,
-                                building_utrf      : null,
-                                building           : buildingTableName]
-                    }
-
-                    //Drop tables
-                    datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
-                                        $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
-                                        $gatheredScales""".toString()
-                }
-
-                //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
-                def rsuRelationFiltered = prefix prefixName, "RSU_RELATION_"
-                datasource.execute """DROP TABLE IF EXISTS $rsuRelationFiltered;
-            CREATE TABLE $rsuRelationFiltered AS SELECT ID_RSU, THE_GEOM FROM $relationRSU;
-            DROP TABLE $relationRSU;""".toString()
-
-                def relationBlocksFiltered = prefix prefixName, "BLOCK_RELATION_"
-                datasource.execute """DROP TABLE IF EXISTS $relationBlocksFiltered;
-            CREATE TABLE $relationBlocksFiltered AS SELECT ID_BLOCK,  THE_GEOM,ID_RSU FROM $relationBlocks;
-            DROP TABLE $relationBlocks;""".toString()
-
-                // Temporary (and output tables) are created
-                def lczIndicTable = postfix "LCZ_INDIC_TABLE"
-                def baseNameUtrfRsu = postfix "UTRF_RSU_"
-                def utrfBuilding
-                def distribNotPercent = "DISTRIB_NOT_PERCENT"
-                def COLUMN_ID_RSU = "id_rsu"
-                def COLUMN_ID_BUILD = "id_build"
-                def GEOMETRIC_COLUMN = "the_geom"
-                def CORRESPONDENCE_TAB_UTRF = ["ba"  : 1, "bgh": 2, "icif": 3, "icio": 4, "id": 5, "local": 6, "pcif": 7,
-                                               "pcio": 8, "pd": 9, "psc": 10]
-                def nameColTypoMaj = "TYPO_MAJ"
-
-                // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
-                def rsuLcz = null
-                def utrfArea = baseNameUtrfRsu + "AREA"
-                def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
-                def rsuLczWithoutGeom = "rsu_lcz_without_geom"
-
-                //Compute building indicators
-                def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
-                if (!computeBuildingsIndicators.execute([datasource            : datasource,
-                                                         inputBuildingTableName: buildingTableName,
-                                                         inputRoadTableName    : roadTable,
-                                                         indicatorUse          : indicatorUse,
-                                                         prefixName            : prefixName])) {
-                    error "Cannot compute the building indicators"
-                    return null
-                }
-
-                def buildingIndicators = computeBuildingsIndicators.results.outputTableName
-
-                //Compute block indicators
-                def blockIndicators = null
-                if (indicatorUse*.toUpperCase().contains("UTRF")) {
-                    def computeBlockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators()
-                    if (!computeBlockIndicators.execute([datasource            : datasource,
-                                                         inputBuildingTableName: buildingIndicators,
-                                                         inputBlockTableName   : relationBlocksFiltered,
-                                                         prefixName            : prefixName])) {
-                        error "Cannot compute the block indicators"
-                        return null
-                    }
-                    blockIndicators = computeBlockIndicators.results.outputTableName
-                }
-
-                //Compute RSU indicators
-                def rsuIndicators = null
-                def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators()
-                if (!computeRSUIndicators.execute([datasource       : datasource,
-                                                   buildingTable    : buildingIndicators,
-                                                   rsuTable         : rsuRelationFiltered,
-                                                   vegetationTable  : vegetationTable,
-                                                   roadTable        : roadTable,
-                                                   hydrographicTable: hydrographicTable,
-                                                   imperviousTable  : imperviousTable,
-                                                   indicatorUse     : indicatorUse,
-                                                   svfSimplified    : svfSimplified,
-                                                   prefixName       : prefixName])) {
-                    error "Cannot compute the RSU indicators"
-                    return null
-                }
-                rsuIndicators = computeRSUIndicators.results.outputTableName
-                info "All geoindicators have been computed"
-
-                // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
-                if (indicatorUse.contains("LCZ")) {
-                    info """ The LCZ classification is performed """
-
-                    def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
-                                         "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
-                                         "ASPECT_RATIO"                      : "ASPECT_RATIO",
-                                         "GROUND_SKY_VIEW_FACTOR"            : "SKY_VIEW_FACTOR",
-                                         "PERVIOUS_FRACTION_LCZ"             : "PERVIOUS_SURFACE_FRACTION",
-                                         "IMPERVIOUS_FRACTION_LCZ"           : "IMPERVIOUS_SURFACE_FRACTION",
-                                         "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH": "TERRAIN_ROUGHNESS_LENGTH"]
-
-                    // Get into a new table the ID, geometry column and the 7 indicators defined by Stewart and Oke (2012)
-                    // for LCZ classification (rename the indicators with the real names)
-                    def queryReplaceNames = []
-                    lczIndicNames.each { oldIndic, newIndic ->
-                        queryReplaceNames << "$oldIndic as $newIndic"
-                    }
-                    datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
-                                CREATE TABLE $lczIndicTable 
-                                        AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${queryReplaceNames.join(",")} 
-                                        FROM ${computeRSUIndicators.results.outputTableName};""".toString()
-
-
-                    // The classification algorithm is called
-                    def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-                    if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
-                                      rsuAllIndicators : computeRSUIndicators.results.outputTableName,
-                                      normalisationType: "AVG",
-                                      mapOfWeights     : mapOfWeights,
-                                      prefixName       : prefixName,
-                                      datasource       : datasource,
-                                      prefixName       : prefixName])) {
-                        info "Cannot compute the LCZ classification."
-                        return
-                    }
-                    rsuLcz = classifyLCZ.results.outputTableName
-                    datasource.execute "DROP TABLE IF EXISTS $lczIndicTable".toString()
-
-                }
-                // If the UTRF indicators should be calculated, we only affect a URBAN typo class
-                // to each building and then to each RSU
-                if (indicatorUse.contains("UTRF") && utrfModelName) {
-                    info """ The URBAN TYPOLOGY classification is performed """
-                    applygatherScales = Geoindicators.GenericIndicators.gatherScales()
-                    applygatherScales.execute([
-                            buildingTable    : buildingIndicators,
-                            blockTable       : blockIndicators,
-                            rsuTable         : rsuIndicators,
-                            targetedScale    : "BUILDING",
-                            operationsToApply: ["AVG", "STD"],
-                            prefixName       : prefixName,
-                            datasource       : datasource])
-                    gatheredScales = applygatherScales.results.outputTableName
-                    if (!datasource.getTable(gatheredScales).isEmpty()) {
-                        def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-                        if (!applyRF.execute([
-                                explicativeVariablesTableName: gatheredScales,
-                                pathAndFileName              : utrfModelName,
-                                idName                       : COLUMN_ID_BUILD,
-                                prefixName                   : prefixName,
-                                datasource                   : datasource])) {
-                            error "Cannot apply the urban typology model $utrfModelName"
-                            return
-                        }
-                        def utrfBuild = applyRF.results.outputTableName
-
-                        // Creation of a list which contains all types of the urban typology (in their string version)
-                        def urbTypoCorrespondenceTabInverted = [:]
-                        CORRESPONDENCE_TAB_UTRF.each { fin, ini ->
-                            urbTypoCorrespondenceTabInverted[ini] = fin
-                        }
-                        datasource."$utrfBuild".I_TYPO.createIndex()
-                        def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $utrfBuild"""
-                        def mapTypos = datasource.rows(queryDistinct.toString())
-                        def listTypos = []
-                        mapTypos.each {
-                            listTypos.add(urbTypoCorrespondenceTabInverted[it.I_TYPO])
-                        }
-
-                        // Join the geometry field to the building typology table and replace integer by string values
-                        def queryCaseWhenReplace = ""
-                        def endCaseWhen = ""
-                        urbTypoCorrespondenceTabInverted.each { ini, fin ->
-                            queryCaseWhenReplace += "CASE WHEN b.I_TYPO=$ini THEN '$fin' ELSE "
-                            endCaseWhen += " END"
-                        }
-                        queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
-                        utrfBuilding = postfix"UTRF_BUILDING"
-                        datasource."$utrfBuild"."$COLUMN_ID_BUILD".createIndex()
-                        datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
-                        datasource """  DROP TABLE IF EXISTS $utrfBuilding;
-                                CREATE TABLE $utrfBuilding
-                                    AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
-                                                $queryCaseWhenReplace AS I_TYPO
-                                    FROM $buildingIndicators a LEFT JOIN $utrfBuild b
-                                    ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                    WHERE a.$COLUMN_ID_RSU IS NOT NULL""".toString()
-
-                        // Create a distribution table (for each RSU, contains the % area OR floor area of each urban typo)
-                        def queryCasewhen = ["AREA": "" , "FLOOR_AREA":  ""]
-                        queryCasewhen.keySet().each { ind ->
-                            def querySum = ""
-                            listTypos.each { typoCol ->
-                                queryCasewhen[ind] += """ SUM(CASE WHEN a.I_TYPO='$typoCol' THEN b.$ind ELSE 0 END) AS TYPO_$typoCol,"""
-                                querySum = querySum + " COALESCE(b.TYPO_${typoCol}/(b.TYPO_${listTypos.join("+b.TYPO_")}), 0) AS TYPO_$typoCol,"
-                            }
-                            // Calculates the distribution per RSU
-                            datasource."$buildingIndicators"."$COLUMN_ID_RSU".createIndex()
-                            datasource."$utrfBuilding"."$COLUMN_ID_BUILD".createIndex()
-                            datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
-                                            CREATE TABLE $distribNotPercent
-                                                AS SELECT   b.$COLUMN_ID_RSU,
-                                                            ${queryCasewhen[ind][0..-2]} 
-                                                FROM $utrfBuilding a RIGHT JOIN $buildingIndicators b
-                                                ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
-                                                WHERE b.$COLUMN_ID_RSU IS NOT NULL 
-                                                GROUP BY b.$COLUMN_ID_RSU
-                                                """.toString()
-                            // Calculates the frequency by RSU
-                            datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
-                            datasource."$rsuIndicators"."$COLUMN_ID_RSU".createIndex()
-                            datasource.execute """  DROP TABLE IF EXISTS TEMPO_DISTRIB;
-                                            CREATE TABLE TEMPO_DISTRIB
-                                                AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
-                                                            ${querySum[0..-2]} 
-                                                FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
-                                                ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
-
-                            // Characterize the distribution to identify the most frequent type within a RSU
-                            def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
-                            computeDistribChar([distribTableName: "TEMPO_DISTRIB",
-                                                inputId         : COLUMN_ID_RSU,
-                                                initialTable    : "TEMPO_DISTRIB",
-                                                distribIndicator: ["uniqueness"],
-                                                extremum        : "GREATEST",
-                                                keep2ndCol      : false,
-                                                keepColVal      : false,
-                                                prefixName      : "${prefixName}$ind",
-                                                datasource      : datasource])
-                            def resultsDistrib = computeDistribChar.results.outputTableName
-
-                            // Join main typo table with distribution table and replace typo by null when it has been set
-                            // while there is no building in the RSU
-                            datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
-                            datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
-                            datasource """  DROP TABLE IF EXISTS $baseNameUtrfRsu$ind;
-                                    CREATE TABLE $baseNameUtrfRsu$ind
-                                        AS SELECT   a.*, 
-                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
-                                                    THEN        NULL
-                                                    ELSE        b.UNIQUENESS_VALUE END AS UNIQUENESS_VALUE,
-                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
-                                                    THEN        NULL
-                                                    ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj
-                                        FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
-                                        ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU""".toString()
-                        }
-                        // Drop temporary tables
-                        datasource """DROP TABLE IF EXISTS $utrfBuild, $gatheredScales, $distribNotPercent, TEMPO_DISTRIB""".toString()
-                    }
-                } else {
-                    utrfArea = null
-                    utrfFloorArea = null
-                    utrfBuilding = null
-                }
-
-                datasource.execute "DROP TABLE IF EXISTS $rsuLczWithoutGeom;".toString()
-                //Drop all cached tables
-                def cachedTableNames = getCachedTableNames()
-                if (cachedTableNames) {
-                    datasource.execute "DROP TABLE IF EXISTS ${cachedTableNames.join(",")}".toString()
-                }
-
-                //Populate reporting
-
-                def nbBuilding = datasource.firstRow("select count(*) as count from ${computeBuildingsIndicators.getResults().outputTableName} WHERE ID_RSU IS NOT NULL".toString()).count
-
-                def nbBlock = 0
-                if (blockIndicators) {
-                    nbBlock = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString()).count
-                }
-                def nbRSU = datasource.firstRow("select count(*) as count from ${computeRSUIndicators.getResults().outputTableName}".toString()).count
-
-                def computation_time = (System.currentTimeMillis() - start) / 1000;
-                //Update reporting to the zone table
-                datasource.execute """update ${zoneTable} 
-                set nb_estimated_building = ${nbBuildingEstimated}, 
-                nb_building = ${nbBuilding}, 
-                nb_block =  ${nbBlock},
-                nb_rsu = ${nbRSU},
-                computation_time = ${computation_time},
-                last_update = CAST(now() AS VARCHAR)""".toString()
-
-                //Clean the System properties that stores intermediate table names
-                clearTablesCache()
-                return [building_indicators: computeBuildingsIndicators.getResults().outputTableName,
-                        block_indicators   : blockIndicators,
-                        rsu_indicators     : computeRSUIndicators.getResults().outputTableName,
-                        rsu_lcz            : rsuLcz,
-                        zone                : zoneTable,
-                        rsu_utrf_area       : utrfArea,
-                        rsu_utrf_floor_area  : utrfFloorArea,
-                        building_utrf      : utrfBuilding,
-                        building            : buildingTableName]
-
-            } else {
-                clearTablesCache()
-                IProcess geoIndicators = computeGeoclimateIndicators()
-                if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
-                        buildingTable: buildingTable,
-                        roadTable: roadTable,
-                        railTable: railTable, vegetationTable: vegetationTable,
-                        hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
-                        seaLandMaskTableName: seaLandMaskTableName,
-                        surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
-                        indicatorUse: indicatorUse,
-                        svfSimplified: svfSimplified, prefixName: prefixName,
-                        mapOfWeights: mapOfWeights,
-                        utrfModelName: utrfModelName)) {
-                    error "Cannot build the geoindicators"
-                    return
-                } else {
-                    def results = geoIndicators.getResults()
-                    results.put("building", buildingTable)
-                    return results
-                }
-            }
-        }
-    }
-}
-
-/**
- * Compute all geoclimate indicators at the 3 scales :
- * building, block and RSU
- * The LCZ classification  and the urban typology
- *
- * @return 8 tables building_indicators, block_indicators, rsu_indicators,
- * rsu_lcz, zone ,
- * rsu_utrf_area, rsu_utrf_floor_area,
- * building_utrf.
- * The first three tables contains the geoindicators and the last tables the LCZ and urban typology classifications.
- * This table can be empty if the user decides not to calculate it.
- *
- */
-IProcess computeGeoclimateIndicators() {
-    return create {
-        title "Compute geoclimate indicators"
-        id "computeGeoclimateIndicators"
-        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
-                roadTable: "", railTable: "", vegetationTable: "",
-                hydrographicTable: "", imperviousTable: "",
-                seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
-                snappingTolerance: 0.01, indicatorUse: ["LCZ", "UTRF", "TEB"], svfSimplified: false, prefixName: "",
+        title "Compute the geoindicators at RSU scale"
+        id "computeTypologyIndicators"
+        inputs datasource: JdbcDataSource, buildingIndicators: "", blockIndicators: "",
+                rsuIndicators: "", indicatorUse: ["LCZ", "UTRF", "TEB"], prefixName: "",
                 mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
                 utrfModelName: ""
-        outputs building_indicators: String, block_indicators: String,
-                rsu_indicators: String, rsu_lcz: String, zone: String,
-                rsu_utrf_area: String, rsu_utrf_floor_area: String,
+        outputs rsu_lcz: String, rsu_utrf_area: String, rsu_utrf_floor_area: String,
                 building_utrf: String
-        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
-              imperviousTable, seaLandMaskTableName,
-              surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
-              utrfModelName ->
-            info "Start computing the geoindicators..."
-            def start = System.currentTimeMillis()
+        run { datasource, buildingIndicators, blockIndicators, rsuIndicators, indicatorUse,
+              prefixName, mapOfWeights, utrfModelName ->
+
+            info "Start computing Typology indicators..."
+
             //Sanity check for URTF model
             def runUTRFTypology = true
             if (indicatorUse*.toUpperCase().contains("UTRF")) {
@@ -1532,82 +930,12 @@ IProcess computeGeoclimateIndicators() {
             def CORRESPONDENCE_TAB_UTRF = ["ba"  : 1, "bgh": 2, "icif": 3, "icio": 4, "id": 5, "local": 6, "pcif": 7,
                                            "pcio": 8, "pd": 9, "psc": 10]
             def nameColTypoMaj = "TYPO_MAJ"
-            //Check data before computing indicators
-            if (!zoneTable && !buildingTable && !roadTable) {
-                error "To compute the geoindicators the zone, building and road tables must not be null or empty"
-                return null
-            }
 
             // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
             def rsuLcz = null
             def utrfArea = baseNameUtrfRsu + "AREA"
             def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
 
-            //Create spatial units and relations : building, block, rsu
-            IProcess spatialUnits = createUnitsOfAnalysis()
-            if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
-                                       buildingTable     : buildingTable, roadTable: roadTable,
-                                       railTable         : railTable, vegetationTable: vegetationTable,
-                                       hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
-                                       surface_vegetation: surface_vegetation,
-                                       surface_hydro     : surface_hydro, snappingTolerance: snappingTolerance,
-                                       prefixName        : prefixName,
-                                       indicatorUse      : indicatorUse])) {
-                error "Cannot create the spatial units"
-                return null
-            }
-            def relationBuildings = spatialUnits.getResults().outputTableBuildingName
-            def relationBlocks = spatialUnits.getResults().outputTableBlockName
-            def relationRSU = spatialUnits.getResults().outputTableRsuName
-
-
-            //Compute building indicators
-            def computeBuildingsIndicators = computeBuildingsIndicators()
-            if (!computeBuildingsIndicators.execute([datasource            : datasource,
-                                                     inputBuildingTableName: relationBuildings,
-                                                     inputRoadTableName    : roadTable,
-                                                     indicatorUse          : indicatorUse,
-                                                     prefixName            : prefixName])) {
-                error "Cannot compute the building indicators"
-                return null
-            }
-
-            def buildingIndicators = computeBuildingsIndicators.results.outputTableName
-
-            //Compute block indicators
-            def blockIndicators = null
-            if (indicatorUse*.toUpperCase().contains("UTRF")) {
-                def computeBlockIndicators = computeBlockIndicators()
-                if (!computeBlockIndicators.execute([datasource            : datasource,
-                                                     inputBuildingTableName: buildingIndicators,
-                                                     inputBlockTableName   : relationBlocks,
-                                                     prefixName            : prefixName])) {
-                    error "Cannot compute the block indicators"
-                    return null
-                }
-                blockIndicators = computeBlockIndicators.results.outputTableName
-            }
-
-            //Compute RSU indicators
-            def rsuIndicators = null
-            def computeRSUIndicators = computeRSUIndicators()
-            if (!computeRSUIndicators.execute([datasource       : datasource,
-                                               buildingTable    : buildingIndicators,
-                                               rsuTable         : relationRSU,
-                                               vegetationTable  : vegetationTable,
-                                               roadTable        : roadTable,
-                                               hydrographicTable: hydrographicTable,
-                                               imperviousTable  : imperviousTable,
-                                               indicatorUse     : indicatorUse,
-                                               svfSimplified    : svfSimplified,
-                                               prefixName       : prefixName])) {
-                error "Cannot compute the RSU indicators"
-                return null
-            }
-            rsuIndicators = computeRSUIndicators.results.outputTableName
-            info "All geoindicators have been computed"
-
-            // If the LCZ indicators should be calculated, we only affect a LCZ class to each RSU
             if (indicatorUse.contains("LCZ")) {
                 info """ The LCZ classification is performed """
                 def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
@@ -1774,6 +1102,573 @@ IProcess computeGeoclimateIndicators() {
                 utrfBuilding = null
             }
 
+            return [rsu_lcz            : rsuLcz,
+                    rsu_utrf_area       : utrfArea,
+                    rsu_utrf_floor_area  : utrfFloorArea,
+                    building_utrf      : utrfBuilding]
+        }
+    }
+}
+
+
+
+
+/** The processing chain creates the units used to describe the territory at three scales: Reference Spatial
+ * Unit (RSU), block and building. The creation of the RSU needs several layers such as the hydrology,
+ * the vegetation, the roads and the rail network and the boundary of the study zone. The blocks are created
+ * from the buildings that are in contact.
+ * Then the relationships between each scale is initialized in each unit table: the RSU ID is stored in
+ * the block and in the building tables whereas the block ID is stored only in the building table.
+ *
+ * @param zoneTable The area of zone to be processed *
+ * @param buildingTable The building table to be processed
+ * @param roadTable The road table to be processed
+ * @param railTable The rail table to be processed
+ * @param vegetationTable The vegetation table to be processed
+ * @param hydrographicTable The hydrographic table to be processed
+ * @param surface_vegetation The minimum area of vegetation that will be considered to delineate the RSU (default 100,000 m²)
+ * @param surface_hydro The minimum area of water that will be considered to delineate the RSU (default 2,500 m²)
+ * @param snappingTolerance A distance to group the geometries (e.g. two buildings in a block - default 0.01 m)
+ * @param prefixName A prefix used to name the output table
+ * @param datasource A connection to a database
+ * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
+ * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
+ *
+ * @return outputTableBuildingName Table name where are stored the buildings and the RSU and block ID
+ * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
+ * @return outputTableRsuName Table name where are stored the RSU
+ */
+IProcess createUnitsOfAnalysis() {
+    return create {
+        title "Create all new spatial units and their relations : building, block and RSU"
+        id "createUnitsOfAnalysis"
+        inputs datasource: JdbcDataSource, zoneTable: String, rsuType: "TSU", buildingTable: String,
+                roadTable: String, railTable: String, vegetationTable: String,
+                hydrographicTable: String, seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500,
+                snappingTolerance: 0.01d, prefixName: "", indicatorUse: ["LCZ", "UTRF", "TEB"]
+        outputs outputTableBuildingName: String, outputTableBlockName: String, outputTableRsuName: String
+        run { datasource, zoneTable, rsuType, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              seaLandMaskTableName, surface_vegetation, surface_hydro, snappingTolerance, prefixName, indicatorUse ->
+            info "Create the units of analysis..."
+            // Create the RSU
+            def createRSU = Geoindicators.SpatialUnits.createRSU()
+            if (!createRSU([inputzone           : zoneTable,
+                            prefixName          : prefixName,
+                            datasource          : datasource,
+                            rsuType             : rsuType,
+                            roadTable           : roadTable,
+                            railTable           : railTable,
+                            vegetationTable     : vegetationTable,
+                            hydrographicTable   : hydrographicTable,
+                            seaLandMaskTableName: seaLandMaskTableName,
+                            surface_vegetation  : surface_vegetation,
+                            surface_hydro       : surface_hydro])) {
+                info "Cannot compute the RSU."
+                return
+            }
+            def rsuTable = createRSU.results.outputTableName
+            def idRsu = createRSU.results.outputIdRsu
+
+            // By default, the building table is used to calculate the relations between buildings and RSU
+            def inputLowerScaleBuRsu = buildingTable
+            // And the block / RSU table does not exists
+            def tableRsuBlocks = null
+            // If the urban typology is needed
+            if (indicatorUse.contains("UTRF")) {
+                // Create the blocks
+                def createBlocks = Geoindicators.SpatialUnits.createBlocks()
+                if (!createBlocks([datasource       : datasource,
+                                   inputTableName   : buildingTable,
+                                   prefixName       : prefixName,
+                                   snappingTolerance: snappingTolerance])) {
+                    info "Cannot create the blocks."
+                    return
+                }
+
+                // Create the relations between RSU and blocks (store in the block table)
+                def createScalesRelationsRsuBl = Geoindicators.SpatialUnits.spatialJoin()
+                if (!createScalesRelationsRsuBl([datasource    : datasource,
+                                                 sourceTable   : createBlocks.results.outputTableName,
+                                                 targetTable   : rsuTable,
+                                                 idColumnTarget: idRsu,
+                                                 prefixName    : prefixName,
+                                                 nbRelations   : 1])) {
+                    info "Cannot compute the scales relations between blocks and RSU."
+                    return
+                }
+                tableRsuBlocks = createScalesRelationsRsuBl.results.outputTableName
+
+                // Create the relations between buildings and blocks (store in the buildings table)
+                def createScalesRelationsBlBu = Geoindicators.SpatialUnits.spatialJoin()
+                if (!createScalesRelationsBlBu([datasource    : datasource,
+                                                sourceTable   : buildingTable,
+                                                targetTable   : createBlocks.results.outputTableName,
+                                                idColumnTarget: createBlocks.results.outputIdBlock,
+                                                prefixName    : prefixName,
+                                                nbRelations   : 1])) {
+                    info "Cannot compute the scales relations between blocks and buildings."
+                    return
+                }
+                inputLowerScaleBuRsu = createScalesRelationsBlBu.results.outputTableName
+            }
+
+
+            // Create the relations between buildings and RSU (store in the buildings table)
+            // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
+            // id_build but the relations between id_block and i_rsu should not been consider in this Table
+            // the relationships may indeed be different from the one in the block Table
+            def createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.spatialJoin()
+            if (!createScalesRelationsRsuBlBu([datasource    : datasource,
+                                               sourceTable   : inputLowerScaleBuRsu,
+                                               targetTable   : rsuTable,
+                                               idColumnTarget: idRsu,
+                                               prefixName    : prefixName,
+                                               nbRelations   : 1])) {
+                info "Cannot compute the scales relations between buildings and RSU."
+                return
+            }
+            def relationsBuildings = createScalesRelationsRsuBlBu.results.outputTableName
+
+            //Replace the building table with a new one that contains the relations between block and RSU
+            datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
+            ALTER TABLE $relationsBuildings RENAME TO $buildingTable;""".toString())
+
+            [outputTableBuildingName: buildingTable,
+             outputTableBlockName   : tableRsuBlocks,
+             outputTableRsuName     : rsuTable]
+        }
+    }
+}
+
+
+/**
+ * Compute all geoindicators at the 3 scales :
+ * building, block and RSU
+ * Compute also the LCZ classification and the urban typology
+ *
+ * @return 5 tables building_indicators, block_indicators, rsu_indicators,
+ * rsu_lcz, buildingTableName. The first three tables contains the geoindicators and the last table the LCZ classification.
+ * The last table returns the new building table if the height model is set to true
+ * This table can be empty if the user decides not to calculate it.
+ *
+ */
+IProcess computeAllGeoIndicators() {
+    return create {
+        title "Compute all geoindicators"
+        id "computeAllGeoIndicators"
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+                roadTable: "", railTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable: "",
+                buildingEstimateTableName: "", seaLandMaskTableName: "",
+                surface_vegetation: 10000, surface_hydro: 2500,
+                snappingTolerance: 0.01, indicatorUse: ["LCZ", "UTRF", "TEB"], svfSimplified: false, prefixName: "",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+                utrfModelName: "",
+                buildingHeightModelName: ""
+        outputs building_indicators: String, block_indicators: String,
+                rsu_indicators: String, rsu_lcz: String, zone: String,
+                rsu_utrf_area: String, rsu_utrf_floor_area: String,
+                building_utrf: String, building: String
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              imperviousTable, buildingEstimateTableName, seaLandMaskTableName,
+              surface_vegetation, surface_hydro, snappingTolerance, indicatorUse, svfSimplified, prefixName, mapOfWeights,
+              utrfModelName, buildingHeightModelName ->
+            //Estimate height
+            if (buildingHeightModelName && datasource.getTable(buildingTable).getRowCount() > 0) {
+                def start = System.currentTimeMillis()
+                enableTableCache()
+
+                def buildingTableName
+                def rsuTable
+                def buildingIndicatorsForHeightEst
+                def blockIndicatorsForHeightEst
+                def rsuIndicatorsForHeightEst
+                def nbBuildingEstimated
+
+                // Estimate building height
+                IProcess estimHeight = estimateBuildingHeight()
+                if (!estimHeight.execute(datasource: datasource, zoneTable: zoneTable, buildingTable: buildingTable,
+                                            roadTable: roadTable, railTable: railTable, vegetationTable: vegetationTable,
+                                            hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                                            buildingEstimateTableName: buildingEstimateTableName,
+                                            seaLandMaskTableName: seaLandMaskTableName,
+                                            surface_vegetation: surface_vegetation, surface_hydro: surface_hydro,
+                                            snappingTolerance: snappingTolerance, prefixName: prefixName,
+                                            buildingHeightModelName: buildingHeightModelName)) {
+                    error "Cannot estimate building height"
+                    return
+                } else {
+                    buildingTableName = estimHeight.getResults().building_table_name
+                    rsuTable = estimHeight.getResults().rsu_table
+                    buildingIndicatorsForHeightEst = estimHeight.getResults().building_indicators_without_height
+                    blockIndicatorsForHeightEst = estimHeight.getResults().block_indicators_without_height
+                    rsuIndicatorsForHeightEst = estimHeight.getResults().rsu_indicators_without_height
+                    nbBuildingEstimated = estimHeight.getResults().nb_building_estimated
+                }
+
+                //This is a shortcut to extract building with estimated height
+                if (indicatorUse.isEmpty()) {
+                    //Clean the System properties that stores intermediate table names
+                    clearTablesCache()
+                    return [building_indicators: buildingIndicatorsForHeightEst,
+                            block_indicators   : blockIndicatorsForHeightEst,
+                            rsu_indicators     : rsuIndicatorsForHeightEst,
+                            rsu_lcz            : null,
+                            zone               : zoneTable,
+                            rsu_utrf_area      : null,
+                            rsu_utrf_floor_area: null,
+                            building_utrf      : null,
+                            building           : buildingTableName]
+                }
+
+                //The spatial relation tables RSU and BLOCK  must be filtered to keep only necessary columns
+                def rsuRelationFiltered = prefix prefixName, "RSU_RELATION_"
+                datasource.execute """DROP TABLE IF EXISTS $rsuRelationFiltered;
+                    CREATE TABLE $rsuRelationFiltered AS SELECT ID_RSU, THE_GEOM FROM $rsuTable;
+                    DROP TABLE $rsuTable;""".toString()
+
+                def relationBlocksFiltered = prefix prefixName, "BLOCK_RELATION_"
+                datasource.execute """DROP TABLE IF EXISTS $relationBlocksFiltered;
+                    CREATE TABLE $relationBlocksFiltered AS SELECT ID_BLOCK,  THE_GEOM,ID_RSU FROM $blockIndicatorsForHeightEst;
+                    DROP TABLE $blockIndicatorsForHeightEst;""".toString()
+
+
+                //Compute Geoindicators (at all scales + typologies)
+                IProcess geoIndicators = computeGeoclimateIndicators()
+                if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
+                        buildingsWithRelations: buildingTableName, blocksWithRelations: relationBlocksFiltered,
+                        rsuTable: rsuRelationFiltered,
+                        roadTable: roadTable,
+                        railTable: railTable, vegetationTable: vegetationTable,
+                        hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                        indicatorUse: indicatorUse,
+                        svfSimplified: svfSimplified, prefixName: prefixName,
+                        mapOfWeights: mapOfWeights,
+                        utrfModelName: utrfModelName,
+                        nbEstimatedBuildHeight: nbBuildingEstimated)) {
+                    error "Cannot build the geoindicators"
+                    return
+                } else {
+                    def results = geoIndicators.getResults()
+                    //Clean the System properties that stores intermediate table names
+                    clearTablesCache()
+                    results.put("building", buildingTableName)
+                    return results
+                }
+            } else {
+                clearTablesCache()
+                //Create spatial units and relations : building, block, rsu
+                IProcess spatialUnits = createUnitsOfAnalysis()
+                if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
+                                           buildingTable     : buildingTable, roadTable: roadTable,
+                                           railTable         : railTable, vegetationTable: vegetationTable,
+                                           hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
+                                           surface_vegetation: surface_vegetation,
+                                           surface_hydro     : surface_hydro, snappingTolerance: snappingTolerance,
+                                           prefixName        : prefixName,
+                                           indicatorUse      : indicatorUse])) {
+                    error "Cannot create the spatial units"
+                    return null
+                }
+                def relationBuildings = spatialUnits.getResults().outputTableBuildingName
+                def relationBlocks = spatialUnits.getResults().outputTableBlockName
+                def rsuTable = spatialUnits.getResults().outputTableRsuName
+
+                IProcess geoIndicators = computeGeoclimateIndicators()
+                if (!geoIndicators.execute(datasource: datasource, zoneTable: zoneTable,
+                        buildingsWithRelations: relationBuildings, blocksWithRelations: relationBlocks,
+                        rsuTable: rsuTable,
+                        roadTable: roadTable,
+                        railTable: railTable, vegetationTable: vegetationTable,
+                        hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                        indicatorUse: indicatorUse,
+                        svfSimplified: svfSimplified, prefixName: prefixName,
+                        mapOfWeights: mapOfWeights,
+                        utrfModelName: utrfModelName)) {
+                    error "Cannot build the geoindicators"
+                    return
+                } else {
+                    def results = geoIndicators.getResults()
+                    results.put("building", buildingTable)
+                    return results
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * Compute all geoindicators having no height are computed and then used for building height estimation.
+ *
+ * @return 5 tables building_table, rsu_table, building_indicators_without_height, block_indicators_without_height,
+ * rsu_indicators_without_height
+ *          1 integer being the number of buildings having their height estimated
+ *
+ */
+IProcess estimateBuildingHeight() {
+    return create {
+        title "Estimate building height"
+        id "estimateBuildingHeight"
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingTable: String,
+                roadTable: "", railTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable: "",
+                buildingEstimateTableName: "", seaLandMaskTableName: "",
+                surface_vegetation: 10000, surface_hydro: 2500,
+                snappingTolerance: 0.01, prefixName: "",
+                buildingHeightModelName: ""
+        outputs building_table_name: String, rsu_table: String, building_indicators_without_height: String,
+                block_indicators_without_height: String, rsu_indicators_without_height: String,
+                nb_building_estimated: Integer
+        run { datasource, zoneTable, buildingTable, roadTable, railTable, vegetationTable, hydrographicTable,
+              imperviousTable, buildingEstimateTableName, seaLandMaskTableName,
+              surface_vegetation, surface_hydro, snappingTolerance, prefixName, buildingHeightModelName ->
+            if (!buildingEstimateTableName) {
+                error "To estimate the building height a table that contains the list of building to estimate must be provided"
+                return
+            }
+            info "Geoclimate will try to estimate the building heights with the model $buildingHeightModelName."
+            if (!modelCheck(buildingHeightModelName)) {
+                return
+            }
+            //Create spatial units and relations : building, block, rsu
+            IProcess spatialUnits = createUnitsOfAnalysis()
+            if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
+                                       buildingTable     : buildingTable, roadTable: roadTable,
+                                       railTable         : railTable, vegetationTable: vegetationTable,
+                                       hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
+                                       surface_vegetation: surface_vegetation,
+                                       surface_hydro     : surface_hydro, snappingTolerance: snappingTolerance,
+                                       prefixName        : prefixName,
+                                       indicatorUse      : ["UTRF"]])) {
+                error "Cannot create the spatial units"
+                return null
+            }
+            def relationBuildings = spatialUnits.results.outputTableBuildingName
+            def relationBlocks = spatialUnits.results.outputTableBlockName
+            def rsuTable = spatialUnits.results.outputTableRsuName
+
+            // Calculates indicators needed for the building height estimation algorithm
+            IProcess geoIndicatorsEstH = computeGeoclimateIndicators()
+            if (!geoIndicatorsEstH.execute(datasource: datasource, zoneTable: zoneTable,
+                    buildingsWithRelations: relationBuildings, blocksWithRelations: relationBlocks,
+                    rsuTable: rsuTable,
+                    roadTable: roadTable,
+                    railTable: railTable, vegetationTable: vegetationTable,
+                    hydrographicTable: hydrographicTable, imperviousTable: imperviousTable,
+                    indicatorUse: ["UTRF"],
+                    svfSimplified: true, prefixName: prefixName,
+                    utrfModelName: "")) {
+                error "Cannot build the geoindicators to estimate the building height"
+                return
+            }
+
+            //Let's go to select the building's id that must be processed to fix the height
+            info "Extracting the building having no height information and estimate it"
+            //Select indicators we need at building scales
+            def buildingIndicatorsForHeightEst = geoIndicatorsEstH.results.building_indicators
+            def blockIndicatorsForHeightEst = geoIndicatorsEstH.results.block_indicators
+            def rsuIndicatorsForHeightEst = geoIndicatorsEstH.results.rsu_indicators
+            datasource.getTable(buildingEstimateTableName).id_build.createIndex()
+            datasource.getTable(buildingIndicatorsForHeightEst).id_build.createIndex()
+            datasource.getTable(buildingIndicatorsForHeightEst).id_rsu.createIndex()
+
+            def estimated_building_with_indicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+            datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators;
+                                               CREATE TABLE $estimated_building_with_indicators 
+                                                        AS SELECT a.*
+                                                        FROM $buildingIndicatorsForHeightEst a 
+                                                            RIGHT JOIN $buildingEstimateTableName b 
+                                                            ON a.id_build=b.id_build
+                                                        WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
+
+            info "Collect building indicators to estimate the height"
+
+            def applygatherScales = Geoindicators.GenericIndicators.gatherScales()
+            applygatherScales.execute([
+                    buildingTable    : estimated_building_with_indicators,
+                    blockTable       : blockIndicatorsForHeightEst,
+                    rsuTable         : rsuIndicatorsForHeightEst,
+                    targetedScale    : "BUILDING",
+                    operationsToApply: ["AVG", "STD"],
+                    prefixName       : prefixName,
+                    datasource       : datasource])
+            def gatheredScales = applygatherScales.results.outputTableName
+
+            def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
+            def nbBuildingEstimated
+            if (datasource.getTable(gatheredScales).isEmpty()) {
+                info "No building height to estimate"
+                nbBuildingEstimated = 0
+                datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
+                                           CREATE TABLE $buildingTableName 
+                                                AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
+                                                    HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $estimated_building_with_indicators""".toString()
+            } else {
+                info "Start estimating the building height"
+                //Apply RF model
+                def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
+                if (!applyRF.execute([
+                        explicativeVariablesTableName: gatheredScales,
+                        pathAndFileName              : buildingHeightModelName,
+                        idName                       : "id_build",
+                        prefixName                   : prefixName,
+                        datasource                   : datasource])) {
+                    error "Cannot apply the building height model $buildingHeightModelName"
+                    return
+                }
+
+                //Update the abstract building table
+                info "Replace the input building table by the estimated height"
+                def buildEstimatedHeight = applyRF.results.outputTableName
+
+                nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
+
+                datasource.getTable(buildEstimatedHeight).id_build.createIndex()
+
+                def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+
+                //Use build table indicators
+                datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
+                                               CREATE TABLE $newEstimatedHeigthWithIndicators as 
+                                                SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
+                                            CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
+                                                    COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
+                                                    CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU 
+                                                from $buildingIndicatorsForHeightEst
+                                            a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
+
+                //We must format only estimated buildings
+                //Apply format on the new abstract table
+                def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
+                IProcess formatEstimatedBuilding = formatEstimatedBuilding()
+                formatEstimatedBuilding.execute([
+                        datasource    : datasource,
+                        inputTableName: newEstimatedHeigthWithIndicators,
+                        epsg          : epsg])
+
+                buildingTableName = formatEstimatedBuilding.results.outputTableName
+
+                //Drop intermediate tables
+                datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
+                                            $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
+                                            $gatheredScales""".toString()
+
+                return [building_table_name: buildingTableName,
+                        rsu_table: rsuTable,
+                        building_indicators_without_height: buildingIndicatorsForHeightEst,
+                        block_indicators_without_height: blockIndicatorsForHeightEst,
+                        rsu_indicators_without_height: rsuIndicatorsForHeightEst,
+                        nb_building_estimated: nbBuildingEstimated]
+            }
+        }
+    }
+}
+
+
+/**
+ * Compute all geoclimate indicators at the 3 scales (building, block and RSU) plus the typologies (LCZ and UTRF)
+ * The LCZ classification  and the urban typology
+ *
+ * @return 8 tables building_indicators, block_indicators, rsu_indicators,
+ * rsu_lcz, zone ,
+ * rsu_utrf_area, rsu_utrf_floor_area,
+ * building_utrf.
+ * The first three tables contains the geoindicators and the last tables the LCZ and urban typology classifications.
+ * This table can be empty if the user decides not to calculate it.
+ *
+ */
+IProcess computeGeoclimateIndicators() {
+    return create {
+        title "Compute geoclimate indicators"
+        id "computeGeoclimateIndicators"
+        inputs datasource: JdbcDataSource, zoneTable: String, buildingsWithRelations: String,
+                blocksWithRelations: String, rsuTable: String,
+                roadTable: "", railTable: "", vegetationTable: "",
+                hydrographicTable: "", imperviousTable: "",
+                indicatorUse: ["LCZ", "UTRF", "TEB"], svfSimplified: false, prefixName: "",
+                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+                utrfModelName: "", nbEstimatedBuildHeight: 0
+        outputs building_indicators: String, block_indicators: String,
+                rsu_indicators: String, rsu_lcz: String, zone: String,
+                rsu_utrf_area: String, rsu_utrf_floor_area: String,
+                building_utrf: String
+        run { datasource, zoneTable, buildingsWithRelations, blocksWithRelations, rsuTable,
+              roadTable, railTable, vegetationTable, hydrographicTable,
+              imperviousTable, indicatorUse, svfSimplified, prefixName, mapOfWeights,
+              utrfModelName, nbEstimatedBuildHeight ->
+            info "Start computing the geoindicators..."
+            def start = System.currentTimeMillis()
+
+            //Compute building indicators
+            def computeBuildingsIndicators = computeBuildingsIndicators()
+            if (!computeBuildingsIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: buildingsWithRelations,
+                                                     inputRoadTableName    : roadTable,
+                                                     indicatorUse          : indicatorUse,
+                                                     prefixName            : prefixName])) {
+                error "Cannot compute the building indicators"
+                return null
+            }
+            def buildingIndicators = computeBuildingsIndicators.results.outputTableName
+
+            //Compute block indicators
+            def blockIndicators = null
+            if (indicatorUse*.toUpperCase().contains("UTRF")) {
+                def computeBlockIndicators = computeBlockIndicators()
+                if (!computeBlockIndicators.execute([datasource            : datasource,
+                                                     inputBuildingTableName: buildingIndicators,
+                                                     inputBlockTableName   : blocksWithRelations,
+                                                     prefixName            : prefixName])) {
+                    error "Cannot compute the block indicators"
+                    return null
+                }
+                blockIndicators = computeBlockIndicators.results.outputTableName
+            }
+
+            //Compute RSU indicators
+            def rsuIndicators = null
+            def computeRSUIndicators = computeRSUIndicators()
+            if (!computeRSUIndicators.execute([datasource       : datasource,
+                                               buildingTable    : buildingIndicators,
+                                               rsuTable         : rsuTable,
+                                               vegetationTable  : vegetationTable,
+                                               roadTable        : roadTable,
+                                               hydrographicTable: hydrographicTable,
+                                               imperviousTable  : imperviousTable,
+                                               indicatorUse     : indicatorUse,
+                                               svfSimplified    : svfSimplified,
+                                               prefixName       : prefixName])) {
+                error "Cannot compute the RSU indicators"
+                return null
+            }
+            rsuIndicators = computeRSUIndicators.results.outputTableName
+
+            // Compute the typology indicators (LCZ and UTRF)
+            def computeTypologyIndicators = Geoindicators.WorkflowGeoIndicators.computeTypologyIndicators()
+            if (!computeTypologyIndicators([datasource          : datasource,
+                                            buildingIndicators  : buildingIndicators,
+                                            blockIndicators     : blockIndicators,
+                                            rsuIndicators       : rsuIndicators,
+                                            prefixName          : prefixName,
+                                            mapOfWeights        : mapOfWeights,
+                                            indicatorUse        : indicatorUse,
+                                            utrfModelName       : utrfModelName])) {
+                info "Cannot compute the Typology indicators."
+                return
+            }
+            info "All geoindicators have been computed"
+            def rsuLcz = computeTypologyIndicators.results.rsu_lcz
+            def utrfArea = computeTypologyIndicators.results.rsu_utrf_area
+            def utrfFloorArea = computeTypologyIndicators.results.rsu_utrf_floor_area
+            def utrfBuilding = computeTypologyIndicators.results.building_utrf
+
+
             //Populate reporting
             def nbBuilding = datasource.firstRow("select count(*) as count from ${buildingIndicators} WHERE ID_RSU IS NOT NULL".toString()).count
             def nbBlock = 0
@@ -1782,31 +1677,29 @@ IProcess computeGeoclimateIndicators() {
             }
             def nbRSU = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString()).count
             //Alter the zone table to add statics
-            datasource.execute """ALTER TABLE ${zoneTable} ADD COLUMN (
-                NB_BUILDING INTEGER,
-                NB_ESTIMATED_BUILDING INTEGER,
-                NB_BLOCK INTEGER,
-                NB_RSU INTEGER,
-                COMPUTATION_TIME INTEGER,
-                LAST_UPDATE VARCHAR, VERSION VARCHAR, BUILD_NUMBER VARCHAR
-                )""".toString()
+            if(!datasource.getSpatialTable(zoneTable).getColumns().contains("NB_ESTIMATED_BUILDING")){
+                datasource.execute """ALTER TABLE ${zoneTable} ADD COLUMN (
+                    NB_BUILDING INTEGER,
+                    NB_ESTIMATED_BUILDING INTEGER,
+                    NB_BLOCK INTEGER,
+                    NB_RSU INTEGER,
+                    COMPUTATION_TIME INTEGER,
+                    LAST_UPDATE VARCHAR, VERSION VARCHAR, BUILD_NUMBER VARCHAR
+                    )""".toString()
+            }
 
 
             //Update reporting to the zone table
             datasource.execute """update ${zoneTable} 
-            set nb_estimated_building = 0, 
-            nb_building = ${nbBuilding}, 
-            nb_block =  ${nbBlock},
-            nb_rsu = ${nbRSU},
-            computation_time = ${(System.currentTimeMillis() - start) / 1000},
-            last_update = CAST(now() AS VARCHAR),
-            version = '${Geoindicators.version()}',
-            build_number = '${Geoindicators.buildNumber()}'""".toString()
+                set nb_estimated_building = ${nbEstimatedBuildHeight}, 
+                nb_building = ${nbBuilding}, 
+                nb_block =  ${nbBlock},
+                nb_rsu = ${nbRSU},
+                computation_time = ${(System.currentTimeMillis() - start) / 1000},
+                last_update = CAST(now() AS VARCHAR),
+                version = '${Geoindicators.version()}',
+                build_number = '${Geoindicators.buildNumber()}'""".toString()
 
-
-            //Replace the building table with a new one that contains the relations between block and RSU
-            datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
-            ALTER TABLE $relationBuildings RENAME TO $buildingTable;""".toString())
 
             return [building_indicators: buildingIndicators,
                     block_indicators   : blockIndicators,
