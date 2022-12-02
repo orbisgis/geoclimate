@@ -494,8 +494,8 @@ IProcess computeRSUIndicators() {
                 // Need to create the smallest geometries used as input of the surface fraction process
                 def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry()
                 if (!computeSmallestGeom.execute([
-                        rsuTable       : rsuTable, buildingTable: buildingTable, roadTable: roadTable, vegetationTable: vegetationTable, waterTable: hydrographicTable,
-                        imperviousTable: imperviousTable,
+                        zone       : rsuTable, id_zone : "id_rsu" , building: buildingTable, road: roadTable, vegetation: vegetationTable, water: hydrographicTable,
+                        impervious: imperviousTable,
                         prefixName     : temporaryPrefName, datasource: datasource])) {
                     info "Cannot compute the smallest commun geometries"
                     return
@@ -1912,10 +1912,10 @@ IProcess rasterizeIndicators() {
                 // Need to create the smallest geometries used as input of the surface fraction process
                 def computeSmallestGeom = Geoindicators.RsuIndicators.smallestCommunGeometry()
                 if (computeSmallestGeom.execute([
-                        rsuTable       : grid, id_rsu: grid_column_identifier,
-                        buildingTable  : building, roadTable: road,
-                        vegetationTable: vegetation, waterTable: water,
-                        imperviousTable: impervious,
+                        zone       : grid, id_zone: grid_column_identifier,
+                        building  : building, road: road,
+                        vegetation: vegetation, water: water,
+                        impervious: impervious,
                         prefixName     : prefixName, datasource: datasource])) {
                     def superpositionsTableGrid = computeSmallestGeom.results.outputTableName
                     surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions()

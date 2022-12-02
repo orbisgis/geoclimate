@@ -259,14 +259,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: osm_parmeters))
         def  folder = new File(directory+File.separator+"osm_"+bbox.join("_"))
-        def resultFiles =[]
+        def countFiles=0;
         folder.eachFileRecurse groovy.io.FileType.FILES,  { file ->
             if (file.name.toLowerCase().endsWith(".geojson")) {
-                resultFiles << file.getAbsolutePath()
+                countFiles++
             }
         }
-        assertTrue(resultFiles.size()==1)
-        assertTrue(resultFiles.get(0)==folder.absolutePath+File.separator+"zone.geojson")
+        assertEquals(9,countFiles)
     }
 
     @Disabled
@@ -501,9 +500,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
     }
 
-
     @Test
-    void testRoad_traffic() {
+    void testRoadTrafficAndNoiseIndicators() {
         String directory =folder.absolutePath+File.separator+"testRoad_traffic"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -519,16 +517,24 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations" : ["Pont-de-Veyle"]],
                 "output" :[
                         "folder" : ["path": directory,
-                                    "tables": ["road_traffic"]]],
+                                    "tables": ["road_traffic", "ground_acoustic"]]],
                 "parameters":
-                        ["road_traffic" : true]
+                        ["road_traffic" : true,
+                "noise_indicators":[
+                        "ground_acoustic":true
+                ]]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
         def roadTableName = process.getResults().output["Pont-de-Veyle"]["road_traffic"]
         assertNotNull(roadTableName)
+        def ground_acoustic = process.getResults().output["Pont-de-Veyle"]["ground_acoustic"]
+        assertNotNull(ground_acoustic)
         H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is not null".toString()).count>0
+        assertTrue h2gis.firstRow("select count(*) as count from $ground_acoustic where layer in ('road', 'building')".toString()).count == 0
+        assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where layer = 'water'".toString()).size() == 1
+
     }
 
     @Disabled //Use it for debug
@@ -545,11 +551,12 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "description" :"Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb" : [
                         "folder" : dirFile.absolutePath,
-                        "name" : "geoclimate_test_integration;AUTO_SERVER=TRUE;",
+                        "name" : "geoclimate_test_integration_test;AUTO_SERVER=TRUE;",
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : ["Santiago de Compostela (Spain)"],//[nominatim["bbox"], "Redon"],
+                        "locations" : ["Redon"],//[nominatim["bbox"]],
+
                         "timeout":182,
                         "maxsize": 536870918,
                         "endpoint":"https://lz4.overpass-api.de/api"],
@@ -559,8 +566,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters":
                         ["distance" : 0,
                          "rsu_indicators":[
-                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
-                         ],"grid_indicators": [
+                                 "indicatorUse": ["LCZ"]//, "UTRF", "TEB"]
+                         ],/*,"grid_indicators": [
                                 "x_size": 100,
                                 "y_size": 100,
                                 //"rowCol": true,
@@ -570,8 +577,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                 "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
-                        ],   "worldpop_indicators" : false,
-                         "road_traffic" : false
+                        ],   "worldpop_indicators" : false,*/
+                         "road_traffic" : true,
+                         "noise_indicators": [
+                             "ground_acoustic" : true
+                         ]
                         ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
