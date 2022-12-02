@@ -186,7 +186,7 @@ class WorkflowGeoIndicatorsTest {
             // Check that the sum of proportion (or building area) for each RSU is equal to 1
             def utrfArea = datasource."$GeoIndicatorsCompute_i.results.rsu_utrf_area"
             def colUtrfArea = utrfArea.getColumns()
-            colUtrfArea = colUtrfArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "UNIQUENESS_VALUE"])
+            colUtrfArea = colUtrfArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "TYPO_SECOND", "UNIQUENESS_VALUE"])
             def countSumAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
                                                                     FROM ${GeoIndicatorsCompute_i.results.rsu_utrf_area}
                                                                     WHERE ${colUtrfArea.join("+")}>0.99 AND ${colUtrfArea.join("+")}<1.01""")
@@ -198,7 +198,7 @@ class WorkflowGeoIndicatorsTest {
             // Check that the sum of proportion (or building floor area) for each RSU is equal to 1
             def utrfFloorArea = datasource."$GeoIndicatorsCompute_i.results.rsu_utrf_floor_area"
             def colUtrfFloorArea = utrfFloorArea.getColumns()
-            colUtrfFloorArea = colUtrfFloorArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "UNIQUENESS_VALUE"])
+            colUtrfFloorArea = colUtrfFloorArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "TYPO_SECOND", "UNIQUENESS_VALUE"])
             def countSumFloorAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
                                                                     FROM ${GeoIndicatorsCompute_i.results.rsu_utrf_floor_area}
                                                                     WHERE ${colUtrfFloorArea.join("+")}>0.99 AND ${colUtrfFloorArea.join("+")}<1.01""")

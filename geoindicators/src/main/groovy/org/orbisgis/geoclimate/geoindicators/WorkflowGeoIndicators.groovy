@@ -1064,14 +1064,14 @@ IProcess computeTypologyIndicators() {
                                                 FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
                                                 ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
 
-                        // Characterize the distribution to identify the most frequent type within a RSU
+                        // Characterize the distribution to identify the 2 most frequent type within a RSU
                         def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
                         computeDistribChar([distribTableName: "TEMPO_DISTRIB",
                                             inputId         : COLUMN_ID_RSU,
                                             initialTable    : "TEMPO_DISTRIB",
                                             distribIndicator: ["uniqueness"],
                                             extremum        : "GREATEST",
-                                            keep2ndCol      : false,
+                                            keep2ndCol      : true,
                                             keepColVal      : false,
                                             prefixName      : "${prefixName}$ind",
                                             datasource      : datasource])
