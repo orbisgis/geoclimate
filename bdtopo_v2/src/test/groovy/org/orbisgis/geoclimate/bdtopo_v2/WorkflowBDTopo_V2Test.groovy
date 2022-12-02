@@ -316,13 +316,11 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
     @Test
     void runBDTopoWorkflowWithSRID() {
         def inseeCode = communeToTest
-        def defaultParameters = [distance      : 0, distance_buffer: 0, prefixName: "",
-                                 rsu_indicators: [
-                                         indicatorUse : ["LCZ", "UTRF"],
-                                         svfSimplified: true,
-                                         mapOfWeights : ["sky_view_factor"             : 2, "aspect_ratio": 1, "building_surface_fraction": 4,
-                                                         "impervious_surface_fraction" : 0, "pervious_surface_fraction": 0,
-                                                         "height_of_roughness_elements": 3, "terrain_roughness_length": 1]]]
+        def defaultParameters = BDTopo_V2.WorkflowBDTopo_V2.extractProcessingParameters()
+
+        // Only download the data if no "indicator_use"
+        defaultParameters["rsu_indicators"]["indicatorUse"] = ["UTRF", "LCZ"]                                                       
+
         H2GIS h2GISDatabase = loadFiles(folder.absolutePath + File.separator + "roadTrafficFromBDTopoTest;AUTO_SERVER=TRUE")
         def tablesToSave = [
                 "rsu_lcz",]
@@ -665,7 +663,7 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
 
 
     @Test
-    void testWorkFlowRoadTraffic() {
+    void testWorkFlowRoadTrafficAndNoiseIndicators() {
         String dataFolder = getDataFolderPath()
         def bdTopoParameters = [
                 "description" : "Example of configuration file to build the road traffic",
@@ -679,18 +677,26 @@ class WorkflowBDTopo_V2Test extends WorkflowAbstractTest {
                         "locations": [communeToTest]],
                 "output"      : [
                         "folder": ["path"  : folder.absolutePath,
-                                   "tables": ["road_traffic"]]],
+                                   "tables": ["road_traffic", "ground_acoustic", "impervious"]]],
                 "parameters"  :
                         ["distance"    : 0,
-                         "road_traffic": true
+                         "road_traffic": true,
+                         "noise_indicators":[
+                                    "ground_acoustic":true
+                                ]
                         ]
         ]
         IProcess process = BDTopo_V2.WorkflowBDTopo_V2.workflow()
         assertTrue(process.execute(input: bdTopoParameters))
         def roadTableName = process.getResults().output[communeToTest]["road_traffic"]
         assertNotNull(roadTableName)
+        def ground_acoustic = process.getResults().output[communeToTest]["ground_acoustic"]
+        assertNotNull(ground_acoustic)
         H2GIS h2gis = H2GIS.open(folder.absolutePath + File.separator+"testWorkFlowRoadTraffic;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is null".toString()).count == 0
+        assertTrue h2gis.firstRow("select count(*) as count from $ground_acoustic where layer in ('road', 'building')".toString()).count == 0
+        assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where type = 'water'".toString()).size() == 1
+
     }
 
     @Disabled

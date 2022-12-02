@@ -24,45 +24,45 @@ class WorkflowGeoIndicatorsTest {
 
     // Indicator list (at RSU scale) for each type of use
     public static listNames = [
-            "TEB"           : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY",
-                               "ROAD_DIRECTION_DISTRIBUTION_H0_D0_30", "ROAD_DIRECTION_DISTRIBUTION_H0_D60_90",
-                               "ROAD_DIRECTION_DISTRIBUTION_H0_D90_120", "ROAD_DIRECTION_DISTRIBUTION_H0_D120_150",
-                               "ROAD_DIRECTION_DISTRIBUTION_H0_D150_180", "ROAD_DIRECTION_DISTRIBUTION_H0_D30_60",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180",
-                               "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180",
-                               "NON_VERT_ROOF_AREA_H0_10", "NON_VERT_ROOF_AREA_H10_20", "NON_VERT_ROOF_AREA_H20_30",
-                               "NON_VERT_ROOF_AREA_H30_40", "NON_VERT_ROOF_AREA_H40_50", "NON_VERT_ROOF_AREA_H50",
-                               "VERT_ROOF_AREA_H0_10", "VERT_ROOF_AREA_H10_20", "VERT_ROOF_AREA_H20_30", "VERT_ROOF_AREA_H30_40",
-                               "VERT_ROOF_AREA_H40_50", "VERT_ROOF_AREA_H50", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
+            "TEB" : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY",
+                     "ROAD_DIRECTION_DISTRIBUTION_H0_D0_30", "ROAD_DIRECTION_DISTRIBUTION_H0_D60_90",
+                     "ROAD_DIRECTION_DISTRIBUTION_H0_D90_120", "ROAD_DIRECTION_DISTRIBUTION_H0_D120_150",
+                     "ROAD_DIRECTION_DISTRIBUTION_H0_D150_180", "ROAD_DIRECTION_DISTRIBUTION_H0_D30_60",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180",
+                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180",
+                     "NON_VERT_ROOF_AREA_H0_10", "NON_VERT_ROOF_AREA_H10_20", "NON_VERT_ROOF_AREA_H20_30",
+                     "NON_VERT_ROOF_AREA_H30_40", "NON_VERT_ROOF_AREA_H40_50", "NON_VERT_ROOF_AREA_H50",
+                     "VERT_ROOF_AREA_H0_10", "VERT_ROOF_AREA_H10_20", "VERT_ROOF_AREA_H20_30", "VERT_ROOF_AREA_H30_40",
+                     "VERT_ROOF_AREA_H40_50", "VERT_ROOF_AREA_H50", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
             "UTRF": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
-                               "VEGETATION_FRACTION_UTRF", "LOW_VEGETATION_FRACTION_UTRF", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_UTRF",
-                               "HIGH_VEGETATION_PERVIOUS_FRACTION_UTRF", "ROAD_FRACTION_UTRF", "IMPERVIOUS_FRACTION_UTRF",
-                               "AVG_NUMBER_BUILDING_NEIGHBOR", "AVG_HEIGHT_ROOF_AREA_WEIGHTED",
-                               "STD_HEIGHT_ROOF_AREA_WEIGHTED", "BUILDING_NUMBER_DENSITY", "BUILDING_VOLUME_DENSITY",
-                               "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_LINEAR_ROAD_DENSITY",
-                               "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
-                               "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
-                               "BUILDING_DIRECTION_EQUALITY", "AREA_FRACTION_LIGHT_INDUSTRY", "FLOOR_AREA_FRACTION_RESIDENTIAL"],
-            "LCZ"           : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
-                               "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
-                               "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ", "AREA_FRACTION_LIGHT_INDUSTRY",
-                               "FLOOR_AREA_FRACTION_RESIDENTIAL"]]
+                     "VEGETATION_FRACTION_UTRF", "LOW_VEGETATION_FRACTION_UTRF", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_UTRF",
+                     "HIGH_VEGETATION_PERVIOUS_FRACTION_UTRF", "ROAD_FRACTION_UTRF", "IMPERVIOUS_FRACTION_UTRF",
+                     "AVG_NUMBER_BUILDING_NEIGHBOR", "AVG_HEIGHT_ROOF_AREA_WEIGHTED",
+                     "STD_HEIGHT_ROOF_AREA_WEIGHTED", "BUILDING_NUMBER_DENSITY", "BUILDING_VOLUME_DENSITY",
+                     "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_LINEAR_ROAD_DENSITY",
+                     "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
+                     "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
+                     "BUILDING_DIRECTION_EQUALITY", "AREA_FRACTION_LIGHT_INDUSTRY", "FLOOR_AREA_FRACTION_RESIDENTIAL"],
+            "LCZ" : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
+                     "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
+                     "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ", "AREA_FRACTION_LIGHT_INDUSTRY",
+                     "FLOOR_AREA_FRACTION_RESIDENTIAL"]]
 
     // Basic columns at RSU scale
     public static listColBasic = ["ID_RSU", "THE_GEOM"]
@@ -87,8 +87,9 @@ class WorkflowGeoIndicatorsTest {
                     "BUILDING_DIRECTION_UNIQUENESS", "BUILDING_DIRECTION_EQUALITY", "CLOSINGNESS", "NET_COMPACTNESS",
                     "AVG_HEIGHT_ROOF_AREA_WEIGHTED", "STD_HEIGHT_ROOF_AREA_WEIGHTED"]]
 
-    public static  H2GIS datasource
+    public static H2GIS datasource
     public static def inputTableNames
+
     @BeforeAll
     static void beforeAll(){
         datasource = open(folder.getAbsolutePath()+File.separator+"workflowGeoIndicatorsTest;AUTO_SERVER=TRUE")
@@ -98,8 +99,8 @@ class WorkflowGeoIndicatorsTest {
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("RAIL.geojson"), "RAIL", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("VEGET.geojson"), "VEGET", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("HYDRO.geojson"), "HYDRO", true)
-        inputTableNames= [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
-                railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
+        inputTableNames = [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
+                           railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
     }
 
 
@@ -122,7 +123,7 @@ class WorkflowGeoIndicatorsTest {
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
-        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
@@ -177,7 +178,7 @@ class WorkflowGeoIndicatorsTest {
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights, utrfModelName: modelPath)
 
-        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
@@ -211,7 +212,7 @@ class WorkflowGeoIndicatorsTest {
             def nbNull = datasource.firstRow("""SELECT COUNT(*) AS NB 
                                                             FROM ${GeoIndicatorsCompute_i.results.building_utrf}
                                                             WHERE I_TYPO = 'unknown'""")
-            assertTrue dfBuild.nrows()>0
+            assertTrue dfBuild.nrows() > 0
             assertEquals 0, nbNull.NB
         }
         def expectListRsuTempo = listColBasic + listColCommon
@@ -254,7 +255,7 @@ class WorkflowGeoIndicatorsTest {
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
-        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
@@ -299,7 +300,7 @@ class WorkflowGeoIndicatorsTest {
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
-        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
@@ -344,7 +345,7 @@ class WorkflowGeoIndicatorsTest {
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
-        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
@@ -389,7 +390,7 @@ class WorkflowGeoIndicatorsTest {
                 svfSimplified: svfSimplified, prefixName: prefixName,
                 mapOfWeights: mapOfWeights)
 
-        checkRSUIndicators(datasource,GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
@@ -448,7 +449,7 @@ class WorkflowGeoIndicatorsTest {
      * Method to check the result for the RSU indicators table
      * Please add new checks here
      */
-    def checkRSUIndicators(def datasource, def rsuIndicatorsTableName, def save){
+    def checkRSUIndicators(def datasource, def rsuIndicatorsTableName, def save) {
         //Check road_fraction > 0
         def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
         assertEquals(210, countResult.count)
@@ -500,7 +501,7 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoClimateProperties() {
-        assert "0.0.2-SNAPSHOT" ==  Geoindicators.version()
+        assert "0.0.2-SNAPSHOT" == Geoindicators.version()
         assertNotNull Geoindicators.buildNumber()
     }
 

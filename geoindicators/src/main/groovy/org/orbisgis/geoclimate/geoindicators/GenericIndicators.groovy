@@ -825,7 +825,7 @@ IProcess gatherScales() {
 
             // List of columns to remove from the analysis in building and block tables
             def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
-            def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE" , "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE"]
+            def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE" , "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ROOF_SHAPE", "ID_SOURCE"]
             def BASE_NAME = "all_scales_table"
 
             debug """ Executing the gathering of scales (to building or to RSU scale)"""
@@ -847,8 +847,8 @@ IProcess gatherScales() {
 
                 // Add operations to compute at RSU scale to each indicator of the building scale
                 def inputVarAndOperationsBuild = [:]
-                def buildIndicators = datasource.getTable(buildingTable).getColumns()
-                for (col in buildIndicators) {
+                def buildIndicatorsColumns = datasource.getTable(buildingTable).getColumns()
+                for (col in buildIndicatorsColumns) {
                     if (!BUILD_COL_TO_REMOVE.contains(col)) {
                         inputVarAndOperationsBuild[col] = operationsToApply
                     }
@@ -917,9 +917,9 @@ IProcess gatherScales() {
                             listRsuRename.add("a.$col AS rsu_$col")
                         }
                     }
-                    def listBuildCol = datasource.getTable(buildingTable).getColumns()
+                    //def listBuildCol = datasource.getTable(buildingTable).getColumns()
                     def listBuildRename = []
-                    for (col in listBuildCol) {
+                    for (col in buildIndicatorsColumns) {
                         if (col != "ID_RSU" && col != "ID_BLOCK" && col != "ID_BUILD" && col != "THE_GEOM") {
                             listBuildRename.add("b.$col AS build_$col")
                         } else {

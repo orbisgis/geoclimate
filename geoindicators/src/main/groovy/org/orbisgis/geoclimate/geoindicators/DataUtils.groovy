@@ -1,5 +1,6 @@
 package org.orbisgis.geoclimate.geoindicators
 
+import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.jdbc.*
@@ -121,4 +122,28 @@ IProcess saveTablesAsFiles() {
             [directory: directory]
         }
     }
+}
+
+
+/**
+ * Get a set of parameters stored in a json file
+ *
+ * @param file
+ * @param altResourceStream
+ * @return
+ */
+static Map parametersMapping(def file, def altResourceStream) {
+    def paramStream
+    def jsonSlurper = new JsonSlurper()
+    if (file) {
+        if (new File(file).isFile()) {
+            paramStream = new FileInputStream(file)
+        } else {
+            warn("No file named ${file} found. Taking default instead")
+            paramStream = altResourceStream
+        }
+    } else {
+        paramStream = altResourceStream
+    }
+    return jsonSlurper.parse(paramStream)
 }
