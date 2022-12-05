@@ -522,7 +522,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ["road_traffic" : true,
                 "noise_indicators":[
                         "ground_acoustic":true
-                ]]
+                ]
+                        ]
         ]
         IProcess process = OSM.WorkflowOSM.workflow()
         assertTrue(process.execute(input: createOSMConfigFile(osm_parmeters, directory)))
@@ -555,7 +556,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : ["Redon"],//[nominatim["bbox"]],
+                        "locations" : [[43.610352,1.340075,43.628279,1.376853]],//[nominatim["bbox"]],
 
                         "timeout":182,
                         "maxsize": 536870918,

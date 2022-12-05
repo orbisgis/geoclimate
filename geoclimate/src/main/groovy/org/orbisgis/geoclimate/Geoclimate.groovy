@@ -1,5 +1,6 @@
 package org.orbisgis.geoclimate
 
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 import java.util.concurrent.Callable
@@ -28,33 +29,8 @@ class Geoclimate implements Callable<Integer> {
     public static final def PROCESS_INVALID_CODE = 2
 
 
-    /**
-     * Shortcut to run the OSM workflow
-     */
-    static class OSM {
-        def static workflow = org.orbisgis.geoclimate.osm.OSM.WorkflowOSM.workflow()
-    }
-
-    /**
-     * Shortcut to run the BDTopo_V2 workflow
-     */
-    static class BDTopo_V2 {
-        def static workflow = org.orbisgis.geoclimate.bdtopo_v2.BDTopo_V2.WorkflowBDTopo_V2.workflow()
-    }
-
-
-
     public static def PROPS
 
-    /**
-     * Set the logger for all the processes.
-     *
-     * @param logger Logger to use in the processes.
-     */
-    static void setLogger(def logger){
-        OSM.logger = logger
-        BDTopo_V2.logger = logger
-    }
 
     @CommandLine.Option(names = ['-w'],
             defaultValue = "OSM",
@@ -68,10 +44,22 @@ class Geoclimate implements Callable<Integer> {
             description = "The configuration file used to set up the workflow")
     String configFile
 
+    @CommandLine.Option(names = ["verbose" ],
+            arity = "1",
+            required = false,
+            description = "Use it to activate the verbose")
+    boolean verbose
+
     @Override
     Integer call() {
+        if(verbose){
+            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")
+        }
+        else{
+            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "OFF")
+        }
         if (workflow.trim().equalsIgnoreCase("OSM")) {
-            def success = OSM.workflow.execute(input: configFile.trim())
+            def success = org.orbisgis.geoclimate.osm.OSM.WorkflowOSM.workflow().execute(input: configFile.trim())
             if (success) {
                 println("The OSM workflow has been successfully executed")
                 return SUCCESS_CODE
@@ -80,7 +68,7 @@ class Geoclimate implements Callable<Integer> {
                 return PROCESS_FAIL_CODE
             }
         } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V2.2")) {
-            def success = BDTopo_V2.workflow.execute(input: configFile.trim())
+            def success = org.orbisgis.geoclimate.bdtopo_v2.BDTopo_V2.WorkflowBDTopo_V2.workflow().execute(input: configFile.trim())
             if (success) {
                 println("The BDTOPO_V2.2 workflow has been successfully executed")
                 return SUCCESS_CODE
