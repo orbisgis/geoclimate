@@ -35,6 +35,9 @@ class GeoclimateTest {
         assert 2 == exitCode
         exitCode = cmd.execute("-w osm", "-f  /tmp/conf.json")
         assert 1 == exitCode
+        exitCode = cmd.execute("-w osm", "-f  /tmp/conf.json", "debug")
+        assert 1 == exitCode
+
     }
 
     @Test

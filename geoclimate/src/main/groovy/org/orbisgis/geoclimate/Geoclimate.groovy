@@ -50,6 +50,14 @@ class Geoclimate implements Callable<Integer> {
             description = "Use it to activate the verbose")
     boolean verbose
 
+
+    static class Exclusive {
+        @CommandLine.Option(names = "verbose_", required = true)
+        boolean verbose
+        @CommandLine.Option(names = "debug", required = true)
+        boolean debug
+    }
+
     @Override
     Integer call() {
         if(verbose){
