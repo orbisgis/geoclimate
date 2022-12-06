@@ -28,9 +28,7 @@ class Geoclimate implements Callable<Integer> {
     public static final def PROCESS_FAIL_CODE = 1
     public static final def PROCESS_INVALID_CODE = 2
 
-
     public static def PROPS
-
 
     @CommandLine.Option(names = ['-w'],
             defaultValue = "OSM",
@@ -44,24 +42,20 @@ class Geoclimate implements Callable<Integer> {
             description = "The configuration file used to set up the workflow")
     String configFile
 
-    @CommandLine.Option(names = ["verbose" ],
-            arity = "1",
+    @CommandLine.Option(names = ["verbose"],
             required = false,
+            defaultValue = "OFF",
             description = "Use it to activate the verbose")
-    boolean verbose
+    String verbose
 
-
-    static class Exclusive {
-        @CommandLine.Option(names = "verbose_", required = true)
-        boolean verbose
-        @CommandLine.Option(names = "debug", required = true)
-        boolean debug
-    }
 
     @Override
     Integer call() {
-        if(verbose){
+        if(verbose.trim().equalsIgnoreCase("INFO")){
             System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")
+        }
+        else if(verbose.trim().equalsIgnoreCase("DEBUG")){
+            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
         }
         else{
             System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "OFF")
