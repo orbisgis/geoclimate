@@ -37,7 +37,6 @@ class GeoclimateTest {
         assert 1 == exitCode
         exitCode = cmd.execute("-w osm", "-f  /tmp/conf.json", "verbose")
         assert 1 == exitCode
-
     }
 
     @Test
@@ -79,8 +78,8 @@ class GeoclimateTest {
         def cmd = new CommandLine(app)
         def sw = new StringWriter()
         cmd.setOut(new PrintWriter(sw))
-        def exitCode = cmd.execute("-w osm", "-f $configFile", "verbose")
-        assert 2 == exitCode
+        def exitCode = cmd.execute("-w osm", "-f $configFile")
+        assert 0 == exitCode
     }
 
 

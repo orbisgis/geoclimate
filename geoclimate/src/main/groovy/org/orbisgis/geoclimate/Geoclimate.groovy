@@ -1,6 +1,5 @@
 package org.orbisgis.geoclimate
 
-import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 import java.util.concurrent.Callable
@@ -20,7 +19,7 @@ import java.util.concurrent.Callable
 ["  ___  ____  _____  ___  __    ____  __  __    __   ____  ____ ",
  " / __)( ___)(  _  )/ __)(  )  (_  _)(  \\/  )  /__\\ (_  _)( ___)",
  "( (_-. )__)  )(_)(( (__  )(__  _)(_  )    (  /(__)\\  )(   )__) ",
- " \\___/(____)(_____)\\___)(____)(____)(_/\\/\\_)(__)(__)(__) (____)"])
+ " \\___/(____)(_____)\\___)(____)(____)(_/\\/\\_)(__)(__)(__) (____)"] )
 
 class Geoclimate implements Callable<Integer> {
 
@@ -36,7 +35,7 @@ class Geoclimate implements Callable<Integer> {
             description = "Name of workflow :  OSM (default) or BDTOPO_V2.2")
     String workflow
 
-    @CommandLine.Option(names = ["-f" ],
+    @CommandLine.Option(names = ["-f"],
             arity = "1",
             required = true,
             description = "The configuration file used to set up the workflow")
@@ -44,23 +43,19 @@ class Geoclimate implements Callable<Integer> {
 
     @CommandLine.Option(names = ["verbose"],
             required = false,
-            defaultValue = "OFF",
             description = "Use it to activate the verbose")
-    String verbose
+    boolean verbose
 
 
     @Override
     Integer call() {
-        if(verbose.trim().equalsIgnoreCase("INFO")){
+        if (verbose) {
             System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")
-        }
-        else if(verbose.trim().equalsIgnoreCase("DEBUG")){
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
-        }
-        else{
+        } else {
             System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "OFF")
         }
         if (workflow.trim().equalsIgnoreCase("OSM")) {
+            println("The OSM workflow has been started.\nPlease wait...")
             def success = org.orbisgis.geoclimate.osm.OSM.WorkflowOSM.workflow().execute(input: configFile.trim())
             if (success) {
                 println("The OSM workflow has been successfully executed")
@@ -70,6 +65,7 @@ class Geoclimate implements Callable<Integer> {
                 return PROCESS_FAIL_CODE
             }
         } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V2.2")) {
+            println("The BDTOPO_V2.2 workflow has been started.\nPlease wait...")
             def success = org.orbisgis.geoclimate.bdtopo_v2.BDTopo_V2.WorkflowBDTopo_V2.workflow().execute(input: configFile.trim())
             if (success) {
                 println("The BDTOPO_V2.2 workflow has been successfully executed")
@@ -91,13 +87,13 @@ class Geoclimate implements Callable<Integer> {
      */
     static void main(String[] args) {
         def executionCode = new CommandLine(new Geoclimate()).execute(args)
-        if(executionCode != SUCCESS_CODE) {
+        if (executionCode != SUCCESS_CODE) {
             System.exit(executionCode)
         }
     }
 
     static def $static_propertyMissing(String name) {
-        if(!PROPS) {
+        if (!PROPS) {
             PROPS = new Properties()
             PROPS.load(Geoclimate.getResourceAsStream("geoclimate.properties"))
         }
