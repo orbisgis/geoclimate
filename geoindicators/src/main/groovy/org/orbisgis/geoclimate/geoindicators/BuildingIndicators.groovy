@@ -527,9 +527,10 @@ IProcess buildingPopulation() {
             def popColumns =[]
             def sum_popColumns =[]
             if (inputPopulationColumns) {
-                 datasource."$inputPopulation".getColumns().each { col ->
+                def lowerCasePopCols = inputPopulationColumns.collect{ it.toLowerCase()}
+                datasource."$inputPopulation".getColumns().each { col ->
                      if (!["the_geom", "id_pop"].contains(col.toLowerCase()
-                     )&& inputPopulationColumns.contains(col.toLowerCase())) {
+                     )&& lowerCasePopCols.contains(col.toLowerCase())) {
                          popColumns << "b.$col"
                          sum_popColumns << "sum((a.area_building * $col)/b.sum_area_building) as $col"
                      }
