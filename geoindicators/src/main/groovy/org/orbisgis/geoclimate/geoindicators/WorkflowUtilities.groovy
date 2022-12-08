@@ -221,3 +221,24 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
         info "${outputTable} has been saved in ${filePath}."
     }
 }
+
+/**
+ * Utility class to change log level
+ *
+ */
+def applyVerbose(String verboseOption) {
+    if(verboseOption){
+        if (verboseOption.equalsIgnoreCase("INFO")) {
+            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")
+        }
+        else if (verboseOption.equalsIgnoreCase("DEBUG")) {
+            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
+        }
+        else if (verboseOption.equalsIgnoreCase("TRACE")) {
+            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
+        }
+        else if  (verboseOption.equalsIgnoreCase("OFF")) {
+            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "OFF")
+        }
+    }
+}

@@ -302,8 +302,8 @@ class Utilities {
 
         connection.connect()
 
-        info url
-        info "Executing query... $query"
+        debug url
+        debug "Executing query... $query"
         //Save the result in a file
         if (connection.responseCode == 200) {
             info "Downloading the Nominatim data."
@@ -707,7 +707,7 @@ class Utilities {
         } else {
          connection = queryUrl.openConnection() as HttpURLConnection
         }
-        info queryUrl
+        debug queryUrl
         connection.requestMethod = GET
 
         Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
@@ -729,7 +729,7 @@ class Utilities {
 
         connection.connect()
 
-        info "Executing query... $queryUrl"
+        debug "Executing query... $queryUrl"
         //Save the result in a file
         if (connection.responseCode == 200) {
             info "Downloading the OSM data from overpass api in ${outputOSMFile}"
@@ -776,7 +776,7 @@ class Utilities {
         } else {
             connection = queryUrl.openConnection() as HttpURLConnection
         }
-        info queryUrl
+        debug queryUrl
         connection.requestMethod = GET
         Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query)
         int timeout = OVERPASS_TIMEOUT
@@ -807,5 +807,4 @@ class Utilities {
             return false
         }
     }
-
 }

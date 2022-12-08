@@ -35,6 +35,8 @@ class GeoclimateTest {
         assert 2 == exitCode
         exitCode = cmd.execute("-w osm", "-f  /tmp/conf.json")
         assert 1 == exitCode
+        exitCode = cmd.execute("-w osm", "-f  /tmp/conf.json", "verbose")
+        assert 1 == exitCode
     }
 
     @Test
@@ -54,7 +56,7 @@ class GeoclimateTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont de veyle"]],
+                        "locations" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : folder.absolutePath],
                 "parameters":
@@ -77,7 +79,7 @@ class GeoclimateTest {
         def sw = new StringWriter()
         cmd.setOut(new PrintWriter(sw))
         def exitCode = cmd.execute("-w osm", "-f $configFile")
-        assert 2 == exitCode
+        assert 0 == exitCode
     }
 
 
@@ -92,7 +94,7 @@ class GeoclimateTest {
                         "delete" :true
                 ],
                 "input" : [
-                        "osm" : ["Pont de veyle"]],
+                        "locations" : ["Pont de veyle"]],
                 "output" :[
                         "folder" : folder.absolutePath],
                 "parameters":[
