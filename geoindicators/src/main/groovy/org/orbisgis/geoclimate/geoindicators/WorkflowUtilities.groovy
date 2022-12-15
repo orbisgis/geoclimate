@@ -1,11 +1,14 @@
 package org.orbisgis.geoclimate.geoindicators
 
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.Level
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.PRJUtil
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
+import org.slf4j.LoggerFactory
 
 @BaseScript Geoindicators geoindicators
 
@@ -226,19 +229,30 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
  * Utility class to change log level
  *
  */
-def applyVerbose(String verboseOption) {
+def applyVerbose(String logger_name,String verboseOption) {
     if(verboseOption){
+        Level level
         if (verboseOption.equalsIgnoreCase("INFO")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")
+            level = Level.INFO
         }
         else if (verboseOption.equalsIgnoreCase("DEBUG")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
+            level = Level.DEBUG
         }
         else if (verboseOption.equalsIgnoreCase("TRACE")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
+            level = Level.TRACE
         }
         else if  (verboseOption.equalsIgnoreCase("OFF")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "OFF")
+            level = Level.OFF
+        }
+        else{
+            throw new RuntimeException("Invalid log level. Allowed values are : INFO, DEBUG, TRACE, OFF")
+        }
+        var context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        var logger = context.getLogger(logger_name);
+        if (logger != null) {
+            logger.setLevel(level);
+        } else {
+            // handle missing logger here
         }
     }
 }
