@@ -1,7 +1,6 @@
 package org.orbisgis.geoclimate
 
 import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.LoggerContext
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
@@ -53,7 +52,7 @@ class Geoclimate implements Callable<Integer> {
     @Override
     Integer call() {
         if (verbose) {
-            final Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)
+            final Logger rootLogger = (Logger) LoggerFactory.getLogger("GeoClimate CLI")
             Geoindicators.WorkflowUtilities.applyVerbose(rootLogger.getName(), verbose.trim())
         } else {
             System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")

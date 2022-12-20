@@ -1,5 +1,6 @@
 package org.orbisgis.geoclimate.geoindicators
 
+import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.Level
 import groovy.json.JsonSlurper
@@ -226,10 +227,20 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
 }
 
 /**
+ * Init a logger with the INFO trace
+ * @return
+ */
+static Logger initLogInfo(String logger_name){
+        Logger rootLogger = (Logger) LoggerFactory.getLogger(logger_name)
+        WorkflowUtilities.applyVerbose(rootLogger.getName(), "INFO")
+        return rootLogger
+}
+
+/**
  * Utility class to change log level
  *
  */
-def applyVerbose(String logger_name,String verboseOption) {
+static def applyVerbose(String logger_name,String verboseOption) {
     if(verboseOption){
         Level level
         if (verboseOption.equalsIgnoreCase("INFO")) {

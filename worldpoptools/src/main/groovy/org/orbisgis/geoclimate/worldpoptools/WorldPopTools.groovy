@@ -37,6 +37,8 @@
 
 package org.orbisgis.geoclimate.worldpoptools
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
 import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 

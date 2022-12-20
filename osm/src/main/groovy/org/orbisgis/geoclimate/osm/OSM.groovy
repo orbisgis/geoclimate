@@ -1,12 +1,11 @@
 package org.orbisgis.geoclimate.osm
 
+import ch.qos.logback.classic.Logger
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.orbisgis.geoclimate.Geoindicators
+import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.process.GroovyProcessFactory
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * Main class to access to the OSM processes
@@ -14,7 +13,7 @@ import org.slf4j.LoggerFactory
  */
 abstract class OSM extends GroovyProcessFactory {
 
-    public static Logger logger = LoggerFactory.getLogger(OSM.class)
+    public static Logger logger = WorkflowUtilities.initLogInfo("GeoClimate")
 
     public static WorkflowOSM = new WorkflowOSM()
     public static InputDataLoading = new InputDataLoading()

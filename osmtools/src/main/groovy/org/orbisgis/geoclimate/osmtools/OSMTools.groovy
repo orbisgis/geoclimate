@@ -36,6 +36,9 @@
  */
 package org.orbisgis.geoclimate.osmtools
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
 import org.orbisgis.process.GroovyProcessFactory
 import org.orbisgis.geoclimate.osmtools.Loader as LOADER
 import org.orbisgis.geoclimate.osmtools.Transform as TRANSFORM
@@ -55,8 +58,17 @@ abstract class OSMTools extends GroovyProcessFactory {
     def static Transform = new TRANSFORM()
     def static Utilities = new UTILITIES()
 
-    public static def logger = LoggerFactory.getLogger(OSMTools.class)
-    static def info = { obj -> logger.info(obj.toString()) }
+    public static def logger = {def root_log = LoggerFactory.getLogger(OSMTools.class)
+        var context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        var logger = context.getLogger(root_log);
+        if (logger != null) {
+            logger.setLevel(Level.INFO);
+        } else {
+            // handle missing logger here
+        }
+    return logger}
+    static def info = { obj ->
+        logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }
     static def debug = { obj -> logger.debug(obj.toString()) }

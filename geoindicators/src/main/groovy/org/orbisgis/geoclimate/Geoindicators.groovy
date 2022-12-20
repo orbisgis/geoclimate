@@ -1,5 +1,6 @@
 package org.orbisgis.geoclimate
 
+import ch.qos.logback.classic.Logger
 import org.orbisgis.geoclimate.geoindicators.BlockIndicators
 import org.orbisgis.geoclimate.geoindicators.BuildingIndicators
 import org.orbisgis.geoclimate.geoindicators.DataUtils
