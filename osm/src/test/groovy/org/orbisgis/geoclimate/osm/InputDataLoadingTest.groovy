@@ -16,8 +16,6 @@ class InputDataLoadingTest {
     @TempDir
     static File folder
 
-    private static final Logger logger = LoggerFactory.getLogger(InputDataLoadingTest.class)
-
     static  H2GIS h2GIS
 
     @BeforeAll

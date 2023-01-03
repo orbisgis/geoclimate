@@ -1,11 +1,11 @@
 package org.orbisgis.geoclimate.osm
 
-import ch.qos.logback.classic.Logger
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.process.GroovyProcessFactory
+import org.slf4j.LoggerFactory
 
 /**
  * Main class to access to the OSM processes
@@ -13,7 +13,12 @@ import org.orbisgis.process.GroovyProcessFactory
  */
 abstract class OSM extends GroovyProcessFactory {
 
-    public static Logger logger = WorkflowUtilities.initLogInfo("GeoClimate")
+    public static def logger
+
+    OSM() {
+        logger = LoggerFactory.getLogger(OSM.class)
+        WorkflowUtilities.setLoggerLevel("INFO")
+    }
 
     public static WorkflowOSM = new WorkflowOSM()
     public static InputDataLoading = new InputDataLoading()
@@ -63,7 +68,7 @@ abstract class OSM extends GroovyProcessFactory {
      * @return
      */
     static List bbox(Geometry geometry) {
-        if(geometry){
+        if (geometry) {
             Envelope env = geometry.getEnvelopeInternal()
             return [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
         }
@@ -73,11 +78,11 @@ abstract class OSM extends GroovyProcessFactory {
      * Utility method to create bbox represented by a list of  values  :
      * [minY, minX, maxY, maxX]
      * from an envelope
-     * @param env  JTS envelope
+     * @param env JTS envelope
      * @return
      */
     static List bbox(Envelope env) {
-        if(env){
+        if (env) {
             return [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
         }
     }

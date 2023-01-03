@@ -36,14 +36,12 @@
  */
 package org.orbisgis.geoclimate.osmtools.utils
 
-import org.h2.jdbc.JdbcSQLSyntaxErrorException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
-import org.locationtech.jts.geom.Polygon
 import org.orbisgis.geoclimate.osmtools.AbstractOSMTest
 import org.orbisgis.data.H2GIS
 import org.slf4j.Logger
@@ -924,7 +922,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     @Test
     void badToPolygonOrLineTest(){
         def badType = "notAType"
-        def lineType = TransformUtils.Types.LINES
+        def lineType = GeometryTypes.LINES
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2145
@@ -952,8 +950,8 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void toPolygonOrLineTest() {
-        def lineType = TransformUtils.Types.LINES
-        def polygonType = TransformUtils.Types.POLYGONS
+        def lineType = GeometryTypes.LINES
+        def polygonType = GeometryTypes.POLYGONS
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_" + uuid()
         def epsgCode = 2145

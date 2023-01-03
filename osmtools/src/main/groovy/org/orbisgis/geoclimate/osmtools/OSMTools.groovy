@@ -37,7 +37,6 @@
 package org.orbisgis.geoclimate.osmtools
 
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
 import org.orbisgis.process.GroovyProcessFactory
 import org.orbisgis.geoclimate.osmtools.Loader as LOADER
@@ -57,16 +56,19 @@ abstract class OSMTools extends GroovyProcessFactory {
     def static Loader = new LOADER()
     def static Transform = new TRANSFORM()
     def static Utilities = new UTILITIES()
+    public static def logger
 
-    public static def logger = {def root_log = LoggerFactory.getLogger(OSMTools.class)
-        var context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        var logger = context.getLogger(root_log);
-        if (logger != null) {
-            logger.setLevel(Level.INFO);
-        } else {
-            // handle missing logger here
-        }
-    return logger}
+    OSMTools() {
+        logger = LoggerFactory.getLogger(OSMTools.class)
+        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
+        context.getLogger(OSMTools.class).setLevel(Level.INFO)
+    }
+
+    /** {@link Closure} returning a {@link String} prefix/suffix build from a random {@link UUID} with '-' replaced by '_'. */
+    static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
+
+    static def uuid() { getUuid() }
+
     static def info = { obj ->
         logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }

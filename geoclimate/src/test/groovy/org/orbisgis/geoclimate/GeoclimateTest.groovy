@@ -80,7 +80,7 @@ class GeoclimateTest {
         def cmd = new CommandLine(app)
         def sw = new StringWriter()
         cmd.setOut(new PrintWriter(sw))
-        def exitCode = cmd.execute("-w osm", "-f $configFile", "-l off")
+        def exitCode = cmd.execute("-w osm", "-f $configFile", "-l info")
         assert 0 == exitCode
     }
 

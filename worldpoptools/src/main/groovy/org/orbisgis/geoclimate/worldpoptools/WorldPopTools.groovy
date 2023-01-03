@@ -39,6 +39,7 @@ package org.orbisgis.geoclimate.worldpoptools
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
 import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
@@ -55,7 +56,14 @@ abstract class WorldPopTools extends GroovyProcessFactory {
 
     def static Extract = new WorldPopExtract()
 
-    public static def logger = LoggerFactory.getLogger(WorldPopTools.class)
+    public static def logger
+
+    WorldPopTools(){
+        logger = LoggerFactory.getLogger(WorldPopTools.class)
+        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
+        context.getLogger(WorldPopTools.class).setLevel(Level.INFO)
+    }
+
     static def info = { obj -> logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }

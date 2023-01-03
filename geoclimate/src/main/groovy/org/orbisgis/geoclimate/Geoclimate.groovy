@@ -52,10 +52,9 @@ class Geoclimate implements Callable<Integer> {
     @Override
     Integer call() {
         if (verbose) {
-            final Logger rootLogger = (Logger) LoggerFactory.getLogger("GeoClimate CLI")
-            Geoindicators.WorkflowUtilities.applyVerbose(rootLogger.getName(), verbose.trim())
+            Geoindicators.WorkflowUtilities.setLoggerLevel(verbose.trim())
         } else {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")
+            Geoindicators.WorkflowUtilities.setLoggerLevel("INFO")
         }
         if (workflow.trim().equalsIgnoreCase("OSM")) {
             println("The OSM workflow has been started.\nPlease wait...")

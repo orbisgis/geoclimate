@@ -72,30 +72,19 @@
  */
 package org.orbisgis.geoclimate.osmtools.utils
 
-import org.orbisgis.geoclimate.osmtools.OSMTools
-import org.orbisgis.data.jdbc.JdbcDataSource
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
 /**
  * Class containing utility methods for the {@link org.orbisgis.geoclimate.osmtools.Transform} script to keep only processes inside
  * the groovy script.
  */
-class TransformUtils {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(TransformUtils)
+import groovy.transform.BaseScript
+import org.orbisgis.geoclimate.osmtools.OSMTools
+import org.orbisgis.data.jdbc.JdbcDataSource
 
-    /** {@link Closure} returning a {@link String} prefix/suffix build from a random {@link UUID} with '-' replaced by '_'. */
-    static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
-    static def uuid = {getUuid()}
-    /** {@link Closure} logging with INFO level the given {@link Object} {@link String} representation. */
-    static def info = { obj -> LOGGER.info(obj.toString()) }
-    /** {@link Closure} logging with WARN level the given {@link Object} {@link String} representation. */
-    static def warn = { obj -> LOGGER.warn(obj.toString()) }
-    /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
-    static def error = { obj -> LOGGER.error(obj.toString()) }
-    /** {@link Closure} logging with DEBUG level the given {@link Object} {@link String} representation. */
-    static def debug = { obj -> LOGGER.debug(obj.toString()) }
+
+@BaseScript OSMTools pf
+
+
 
     /**
      * Merge arrays into one.
@@ -129,7 +118,7 @@ class TransformUtils {
      *
      * @return The name for the table that contains all polygons/lines
      */
-    static def toPolygonOrLine(Types type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, valid_geom=true) {
+    static def toPolygonOrLine(GeometryTypes type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, valid_geom=true) {
         //Check if parameters a good
         if (!datasource) {
             error "Please set a valid database connection"
@@ -148,11 +137,11 @@ class TransformUtils {
         def waysProcess
         def relationsProcess
         switch (type) {
-            case Types.POLYGONS:
+            case GeometryTypes.POLYGONS:
                 waysProcess = OSMTools.Transform.extractWaysAsPolygons()
                 relationsProcess = OSMTools.Transform.extractRelationsAsPolygons()
                 break
-            case Types.LINES:
+            case GeometryTypes.LINES:
                 waysProcess = OSMTools.Transform.extractWaysAsLines()
                 relationsProcess = OSMTools.Transform.extractRelationsAsLines()
                 break
@@ -482,5 +471,4 @@ class TransformUtils {
         return true
     }
 
-    enum Types {LINES, POLYGONS}
-}
+

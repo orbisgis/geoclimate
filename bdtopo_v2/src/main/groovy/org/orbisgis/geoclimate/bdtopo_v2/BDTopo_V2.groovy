@@ -5,6 +5,7 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.process.GroovyProcessFactory
+import org.slf4j.LoggerFactory
 
 /**
  * Class to manage and access to the BDTOPO processes
@@ -12,7 +13,12 @@ import org.orbisgis.process.GroovyProcessFactory
  */
 abstract class BDTopo_V2 extends GroovyProcessFactory {
 
-    public static Logger logger = WorkflowUtilities.initLogInfo("BDTopo 2.2 workflow")
+    public static Logger logger
+
+    BDTopo_V2(){
+        logger = LoggerFactory.getLogger(BDTopo_V2.class)
+        WorkflowUtilities.setLoggerLevel("INFO")
+    }
 
     public static WorkflowBDTopo_V2 = new WorkflowBDTopo_V2()
     public static InputDataLoading = new InputDataLoading()
