@@ -1,5 +1,7 @@
 package org.orbisgis.geoclimate
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.LoggerContext
 import org.orbisgis.geoclimate.geoindicators.BlockIndicators
 import org.orbisgis.geoclimate.geoindicators.BuildingIndicators
 import org.orbisgis.geoclimate.geoindicators.DataUtils
@@ -17,7 +19,13 @@ import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 abstract class Geoindicators  extends GroovyProcessFactory  {
-    public static def logger = LoggerFactory.getLogger(Geoindicators.class)
+    public static def logger
+
+    Geoindicators(){
+        logger = LoggerFactory.getLogger(Geoindicators.class)
+        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
+        context.getLogger(Geoindicators.class).setLevel(Level.INFO)
+    }
 
     //Processes
     public static BuildingIndicators = new BuildingIndicators()

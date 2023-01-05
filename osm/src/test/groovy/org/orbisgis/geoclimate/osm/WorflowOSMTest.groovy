@@ -545,7 +545,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-
         def nominatim = Utilities.getNominatimData("Pont-de-Veyle")
 
         def osm_parmeters = [
@@ -556,11 +555,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete" :false
                 ],
                 "input" : [
-                        "locations" : [[43.610352,1.340075,43.628279,1.376853]],//[nominatim["bbox"]],
+                        "locations" : ["Redon"],//[nominatim["bbox"]],
 
-                        "timeout":182,
+                        /*"timeout":182,
                         "maxsize": 536870918,
-                        "endpoint":"https://lz4.overpass-api.de/api"],
+                        "endpoint":"https://lz4.overpass-api.de/api"*/],
                 "output" :[
                          "folder" :  directory]
                 ,
@@ -578,7 +577,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                 "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
-                        ],   "worldpop_indicators" : false,*/
+                        ],   */ "worldpop_indicators" : true,
                          "road_traffic" : true,
                          "noise_indicators": [
                              "ground_acoustic" : true

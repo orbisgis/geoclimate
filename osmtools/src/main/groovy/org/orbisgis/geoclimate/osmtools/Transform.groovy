@@ -40,7 +40,9 @@ import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 
 import static org.orbisgis.geoclimate.osmtools.utils.TransformUtils.*
-import static org.orbisgis.geoclimate.osmtools.utils.TransformUtils.Types.*
+import static org.orbisgis.process.GroovyProcessFactory.postfix
+import static org.orbisgis.process.GroovyProcessFactory.prefix
+import static org.orbisgis.geoclimate.osmtools.utils.GeometryTypes.*
 
 @BaseScript OSMTools pf
 

@@ -1,11 +1,19 @@
 package org.orbisgis.geoclimate.geoindicators
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.Level
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.PRJUtil
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
+import org.slf4j.LoggerFactory
+
+import java.util.logging.FileHandler
+import java.util.logging.Handler
+import java.util.logging.LogManager
 
 @BaseScript Geoindicators geoindicators
 
@@ -14,9 +22,9 @@ import org.orbisgis.geoclimate.Geoindicators
  * -  create a connection to a specified output DataBase
  * -  check if specified output table names to save are allowed
  *
- * @param  outputDBProperties properties to define the db connection
- * @param  outputTables list of tables to save
- * @parm   allowedOutputTables list of supported tables
+ * @param outputDBProperties properties to define the db connection
+ * @param outputTables list of tables to save
+ * @parm allowedOutputTables list of supported tables
  *
  * @return a map with the allowed tables (tables) and a connection to the database (datasource)
  *
@@ -77,8 +85,8 @@ def createDatasource(def database_properties) {
 /**
  * Method to check the output tables that can be saved
  *
- * @param  outputFolder properties to store in a folder (path and table names)
- * @parm   allowedOutputTables list of supported tables
+ * @param outputFolder properties to store in a folder (path and table names)
+ * @parm allowedOutputTables list of supported tables
  *
  * @return a map with the allowed tables (tables) and a connection to the database (datasource)
  *
@@ -104,7 +112,7 @@ def buildOutputFolderParameters(def outputFolder, def allowedOutputTables) {
  * @param jsonFile
  * @return
  */
- Map readJSON(def jsonFile) {
+Map readJSON(def jsonFile) {
     def jsonSlurper = new JsonSlurper()
     if (jsonFile) {
         return jsonSlurper.parse(jsonFile)
@@ -157,7 +165,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, def h2gis_data
 
             //Save each grid
             columnNames.each { it ->
-                def outputFile = new File(subFolder + File.separator + filePrefix + "_"+it.toLowerCase()+".asc")
+                def outputFile = new File(subFolder + File.separator + filePrefix + "_" + it.toLowerCase() + ".asc")
                 if (deleteOutputData) {
                     outputFile.delete()
                 }
@@ -176,7 +184,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, def h2gis_data
                 }
                 //Save the PRJ file
                 if (outputSRID >= 0) {
-                    File outPrjFile = new File(subFolder + File.separator + filePrefix + "_"+it.toLowerCase()+".prj")
+                    File outPrjFile = new File(subFolder + File.separator + filePrefix + "_" + it.toLowerCase() + ".prj")
                     PRJUtil.writePRJ(h2gis_datasource.getConnection(), outputSRID, outPrjFile)
                 }
                 info "$outputTable has been saved in $outputFile"
@@ -223,22 +231,24 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
 }
 
 /**
- * Utility class to change log level
+ * Utility class to change log level for all loggers
  *
  */
-def applyVerbose(String verboseOption) {
-    if(verboseOption){
-        if (verboseOption.equalsIgnoreCase("INFO")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")
+static def setLoggerLevel(String loggerLevel) {
+    if (loggerLevel) {
+        Level level
+        if (loggerLevel.equalsIgnoreCase("INFO")) {
+            level = Level.INFO
+        } else if (loggerLevel.equalsIgnoreCase("DEBUG")) {
+            level = Level.DEBUG
+        } else if (loggerLevel.equalsIgnoreCase("TRACE")) {
+            level = Level.TRACE
+        } else if (loggerLevel.equalsIgnoreCase("OFF")) {
+            level = Level.OFF
+        } else {
+            throw new RuntimeException("Invalid log level. Allowed values are : INFO, DEBUG, TRACE, OFF")
         }
-        else if (verboseOption.equalsIgnoreCase("DEBUG")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
-        }
-        else if (verboseOption.equalsIgnoreCase("TRACE")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "DEBUG")
-        }
-        else if  (verboseOption.equalsIgnoreCase("OFF")) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "OFF")
-        }
+        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
+        context.getLoggerList().each { it -> it.setLevel(level) }
     }
 }
