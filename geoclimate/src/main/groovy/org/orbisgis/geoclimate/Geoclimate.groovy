@@ -1,5 +1,7 @@
 package org.orbisgis.geoclimate
 
+import ch.qos.logback.classic.Logger
+import org.slf4j.LoggerFactory
 import picocli.CommandLine
 
 import java.util.concurrent.Callable
@@ -41,18 +43,18 @@ class Geoclimate implements Callable<Integer> {
             description = "The configuration file used to set up the workflow")
     String configFile
 
-    @CommandLine.Option(names = ["verbose"],
+    @CommandLine.Option(names = ["-l"],
             required = false,
-            description = "Use it to activate the verbose")
-    boolean verbose
+            description = "Use it to manage the log level. Allowed values are : INFO, DEBUG, TRACE, OFF\"\n  ")
+    String verbose
 
 
     @Override
     Integer call() {
         if (verbose) {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "INFO")
+            Geoindicators.WorkflowUtilities.setLoggerLevel(verbose.trim())
         } else {
-            System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "OFF")
+            Geoindicators.WorkflowUtilities.setLoggerLevel("INFO")
         }
         if (workflow.trim().equalsIgnoreCase("OSM")) {
             println("The OSM workflow has been started.\nPlease wait...")

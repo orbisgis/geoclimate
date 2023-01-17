@@ -33,7 +33,8 @@
         <h2-version>2.1.214</h2-version>
         <cts-version>1.7.0</cts-version>
         <orbisdata-version>2.0.0</orbisdata-version>
-        <slf4j-version>1.7.36</slf4j-version>
+        <slf4j-version>2.0.4</slf4j-version>
+        <logback-version>1.4.5</logback-version>
         <groovy-version>3.0.11</groovy-version>
         <picocli-version>4.6.3</picocli-version>
         <commons-io-version>2.11.0</commons-io-version>
@@ -212,9 +213,9 @@
                 <version>${slf4j-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-simple</artifactId>
-                <version>${slf4j-version}</version>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback-version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>

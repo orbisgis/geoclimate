@@ -1336,8 +1336,8 @@ IProcess computeAllGeoIndicators() {
                 // If the RSU is provided by the user, new relations between units should be performed
                 if(rsuTable){
                     IProcess spatialUnitsForCalc = createUnitsOfAnalysis()
-                    if (!spatialUnits.execute([datasource        : datasource, zoneTable: zoneTable,
-                                               buildingTable     : buildingTable, roadTable: roadTable,
+                    if (!spatialUnitsForCalc.execute([datasource        : datasource, zoneTable: zoneTable,
+                                               buildingTable     : buildingTable, roadTable: roadTable,rsu_table: rsuTable,
                                                railTable         : railTable, vegetationTable: vegetationTable,
                                                hydrographicTable : hydrographicTable, seaLandMaskTableName: seaLandMaskTableName,
                                                surface_vegetation: surface_vegetation,
