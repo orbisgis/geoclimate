@@ -1,6 +1,5 @@
 package org.orbisgis.geoclimate.bdtopo_v2
 
-import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2.tools.DeleteDbFiles
 import org.h2gis.postgis_jts.PostGISDBFactory
