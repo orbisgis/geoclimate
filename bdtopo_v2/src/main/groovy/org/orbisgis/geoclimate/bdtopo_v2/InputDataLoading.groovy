@@ -180,7 +180,7 @@ IProcess prepareBDTopoData() {
             //1- Create (spatial) indexes if not already exists on the input layers
 
             datasource.execute("""
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON $tableCommuneName (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_COMMUNE ON $tableCommuneName (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDIFFERENCIE ON BATI_INDIFFERENCIE (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_INDUSTRIEL ON BATI_INDUSTRIEL (the_geom);
             CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATI_REMARQUABLE ON BATI_REMARQUABLE (the_geom);
@@ -264,24 +264,22 @@ IProcess prepareBDTopoData() {
             def input_urban_areas = postfix "INPUT_URBAN_AREAS"
             datasource.execute(""" DROP TABLE IF EXISTS TMP_SURFACE_ACTIVITE;
             CREATE TABLE TMP_SURFACE_ACTIVITE (THE_GEOM geometry, ID varchar(24), NATURE VARCHAR) AS 
-            SELECT ST_FORCE2D(ST_MAKEVALID(ST_CollectionExtract(ST_INTERSECTION(a.THE_GEOM, B.THE_GEOM), 3))) as the_geom, a.ID,a.CATEGORIE
+            SELECT ST_FORCE2D(ST_MAKEVALID(ST_CollectionExtract(ST_INTERSECTION(a.THE_GEOM, B.THE_GEOM), 3))) as the_geom, a.ID,
+            CASE WHEN a.CATEGORIE ='Administratif' THEN 'government'
+            WHEN a.CATEGORIE= 'Enseignement' THEN 'education'
+            WHEN a.CATEGORIE='Santé' THEN 'healthcare' 
+            WHEN a.CATEGORIE ='Culture et loisirs' THEN 'entertainment_arts_culture'
+            WHEN a.CATEGORIE ='Transport' THEN 'transportation'
+            WHEN a.CATEGORIE ='Industriel ou commercial' THEN 'commercial'
+            WHEN a.CATEGORIE ='Gestion des eaux' THEN 'industrial'
+            WHEN a.CATEGORIE ='Sport' THEN 'sport'
+            ELSE 'unknown' END
             FROM SURFACE_ACTIVITE a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom);
             DROP TABLE IF EXISTS $input_urban_areas;
             CREATE TABLE $input_urban_areas (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_urban INTEGER)
             AS SELECT THE_GEOM, ID, 
-            CASE WHEN NATURE ='Administratif' THEN 'government'
-            WHEN NATURE= 'Enseignement' THEN 'education'
-            WHEN NATURE='Santé' THEN 'healthcare' 
-            WHEN NATURE ='Culture et loisirs' THEN 'entertainment_arts_culture'
-            WHEN NATURE ='Transport' THEN 'transportation'
-            WHEN NATURE ='Industriel ou commercial' THEN 'commercial'
-            WHEN NATURE ='Gestion des eaux' THEN 'industrial'
-            WHEN NATURE ='Sport' THEN 'sport'
-            ELSE 'unknown' END AS TYPE
-            , EXPLOD_ID AS id_urban FROM ST_EXPLODE('TMP_SURFACE_ACTIVITE') where NATURE IN('Administratif', 'Enseignement',
-            'Santé','Culture et loisirs','Transport','Industriel ou commercial','Gestion des eaux'
-            ,'Sport');
+            NATURE AS TYPE , EXPLOD_ID AS id_urban FROM ST_EXPLODE('(SELECT * FROM TMP_SURFACE_ACTIVITE WHERE NATURE !=''unknown'')');
             """.toString())
 
             //9. Prepare the Impervious areas table (from the layers "TERRAIN_SPORT", "CONSTRUCTION_SURFACIQUE", "SURFACE_ROUTE" and "SURFACE_ACTIVITE") that are in the study area (ZONE)

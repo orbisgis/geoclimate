@@ -143,7 +143,7 @@ IProcess formatBuildingLayer() {
                             }
                             //Update NB_LEV
                             def formatedHeight = formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
-                                    feature_type,  building_type_level)
+                                    feature_type, building_type_level)
 
                             def zIndex = 0
                             if (formatedHeight.nbLevels > 0) {
@@ -650,31 +650,31 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
         if (heightRoof == 0) {
             if (nbLevels == 0) {
                 nbLevels = levelBuildingTypeMap[buildingType]
-                if(!nbLevels){
-                    nbLevels=1
+                if (!nbLevels) {
+                    nbLevels = 1
                 }
                 heightWall = h_lev_min * nbLevels
-                heightRoof=heightWall
+                heightRoof = heightWall
                 estimated = true
             } else {
                 heightWall = h_lev_min * nbLevels
-                heightRoof=heightWall
+                heightRoof = heightWall
             }
         } else {
             heightWall = heightRoof
             nbLevels = Math.floor(heightWall / h_lev_min)
         }
-    }else if(heightWall==heightRoof){
-        if(nbLevels==0){
-            nbLevels=Math.floor(heightWall / h_lev_min)
+    } else if (heightWall == heightRoof) {
+        if (nbLevels == 0) {
+            nbLevels = Math.floor(heightWall / h_lev_min)
         }
     }
     // Control of heights and number of levels
     // Check if height_roof is lower than height_wall. If yes, then correct height_roof
     else if (heightWall > heightRoof) {
         heightRoof = heightWall
-        if(nbLevels==0){
-            nbLevels=Math.floor(heightWall / h_lev_min)
+        if (nbLevels == 0) {
+            nbLevels = Math.floor(heightWall / h_lev_min)
         }
     }
     return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
@@ -699,20 +699,13 @@ IProcess formatImperviousLayer() {
             datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_impervious serial,TYPE VARCHAR);""".toString()
 
-            // A map to set up mappings between BDTopo values and the tags allowed by the internal geoclimate model
-            def matching_bdtopo_values =  ["Indifférencié":"sport" , "Piste de sport":"sport",
-                                       "Terrain de tennis":"sport","Barrage":"dam", "Dalle de protection":"tile_slab", "Ecluse":"lock",
-                                         "Parking":"parking", "Péage":"rest_area", "Place ou carrefour":"square","Piste en dur":"aerodrome",
-                                         "Administratif":"government", "Culture et loisirs":"entertainment_arts_culture",
-                                   "Enseignement":"education", "Gestion des eaux":"industrial",
-                                   "Industriel ou commercial":"commercial", "Santé":"healthcare", "Sport":"sport", "Transport":"transport"]
+            //TODO ADD cimetiere
 
             // A map of weigths to select a tag when several geometries overlap
-            def weight_values = ["dam" : 100, "tile_slab" : 100,
-                                 "lock":100, "parking": 200, "rest_area":200, "square" : 200,"aerodrome":  300,
-                                 "government":5, "entertainment_arts_culture":10,"education":  10,
-                                 "industrial":20, "commercial":20,"healthcare":10,  "transport":15,
-                                 "sport":10]
+            def weight_values = [
+                    "government": 5, "entertainment_arts_culture": 10, "education": 10,
+                    "industrial": 20, "commercial": 20, "healthcare": 10, "transport": 15, "building": 10,
+                    "sport"     : 10, "cimetiere": 10]
 
             //We must remove all overlapping geometries and then choose the attribute TYPE to set according some priorities
             def polygonizedTable = postfix("impervious_polygonized")
@@ -726,23 +719,15 @@ IProcess formatImperviousLayer() {
             datasource.execute(""" CREATE SPATIAL INDEX ON $polygonizedTable(THE_GEOM);
                         CREATE INDEX ON $polygonizedTable(EXPLOD_ID);""".toString())
 
-            def query =  """SELECT LISTAGG(a.ID_IMPERVIOUS, ',') AS ids_impervious, LISTAGG(a.TYPE, ',') AS types, b.EXPLOD_ID as id, b.the_geom  FROM $inputTableName AS a, $polygonizedTable AS b
+            def query = """SELECT LISTAGG(a.ID_IMPERVIOUS, ',') AS ids_impervious, LISTAGG(a.TYPE, ',') AS types, b.EXPLOD_ID as id, b.the_geom  FROM $inputTableName AS a, $polygonizedTable AS b
             WHERE a.the_geom && b.the_geom AND st_intersects(st_pointonsurface(b.the_geom), a.the_geom) GROUP BY b.explod_id;""".toString()
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(query) { row ->
                     def types = row.types
-                    def type =null;
                     //Choose the best impervious type
                     def listTypes = types.split(",") as Set
-                    if (listTypes.size() == 1) {
-                        def mapping = matching_bdtopo_values.get(types)
-                        if (mapping) {
-                            type = mapping
-                        }
-                    } else {
-                        type = weight_values.subMap(matching_bdtopo_values.subMap(listTypes).values()).max { it.key }.key
-                    }
+                    def type = weight_values.subMap(listTypes).max { it.key }.key
                     if (type) {
                         Geometry geom = row.the_geom
                         def epsg = geom.getSRID()
