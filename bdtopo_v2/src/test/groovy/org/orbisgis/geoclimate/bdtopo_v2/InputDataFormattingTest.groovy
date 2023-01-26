@@ -14,8 +14,6 @@ class InputDataFormattingTest {
 
     H2GIS h2GISDatabase
 
-    public static communeToTest = "abcde"
-
     @BeforeEach
     void beforeEach(){
         def dataFolderInseeCode = "bd_topo_unit_test"

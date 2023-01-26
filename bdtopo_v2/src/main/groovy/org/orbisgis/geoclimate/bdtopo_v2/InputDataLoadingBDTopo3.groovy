@@ -109,19 +109,11 @@ IProcess prepareBDTopo3Data() {
                 CREATE TABLE batiment (THE_GEOM geometry(polygon, $srid), 
                 ID CHARACTER VARYING(24),
 	            NATURE CHARACTER VARYING(34),
-	            USAGE1 CHARACTER VARYING(22),
-	            USAGE2 CHARACTER VARYING(22),
-	            LEGER CHARACTER VARYING(3),
-	            ETAT CHARACTER VARYING(15),
-	            NB_LOGTS INTEGER,
-	            NB_ETAGES INTEGER,
-	            MAT_MURS CHARACTER VARYING(2),
-	            MAT_TOITS CHARACTER VARYING(2),
-	            HAUTEUR DOUBLE PRECISION,
-	            Z_MIN_SOL DOUBLE PRECISION,
-	            Z_MIN_TOIT DOUBLE PRECISION,
-	            Z_MAX_TOIT DOUBLE PRECISION,
-	            Z_MAX_SOL DOUBLE PRECISION);""".toString())
+	            USAGE1 CHARACTER VARYING(22)
+	            NB_ETAGES INTEGER
+	            HAUTEUR FLOAT,
+	            Z_MIN_TOIT FLOAT,
+	            Z_MAX_TOIT FLOAT);""".toString())
             }
 
             if (!tablesExist.contains("troncon_de_route")) {
@@ -214,10 +206,16 @@ IProcess prepareBDTopo3Data() {
             // 3. Prepare the Building table that are in the study area
             datasource.execute("""
             DROP TABLE IF EXISTS INPUT_BUILDING;
-            CREATE TABLE INPUT_BUILDING 
+            CREATE TABLE INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, HEIGHT_ROOF integer, TYPE varchar, MAIN_USE varchar)
             AS 
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, 
-            a.* EXCEPT(the_geom) FROM BATIMENT a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+            a.ID, a.HAUTEUR, 
+            CASE WHEN a.Z_MAX_TOIT IS NOT NULL AND a.Z_MIN_TOIT IS NOT NULL THEN
+            a.Z_MAX_TOIT-a.Z_MIN_TOIT + a.HAUTEUR else null end as HEIGHT_ROOF, 
+            CASE WHEN a.NATURE='Indifférenciée' and a.USAGE1 is NOT NULL THEN a.USAGE1
+            WHEN a.NATURE='Industriel, agricole ou commercial' and a.USAGE1 is NOT NULL THEN a.USAGE1 
+            ELSE a.NATURE END AS type, a.USAGE1 as main_use FROM BATIMENT a, ZONE_EXTENDED b 
+            WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
             """.toString())
 
             //4. Prepare the Road table (from the layer "troncon_de_route") that are in the study area (ZONE_BUFFER)
@@ -267,7 +265,6 @@ IProcess prepareBDTopo3Data() {
             and a.NAT_DETAIL in ('Terrain de football', 'Terrain de rugby')
             ;
             """.toString())
-
 
             //8. Prepare the Urban areas
             def input_urban_areas = postfix "INPUT_URBAN_AREAS"

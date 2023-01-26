@@ -54,7 +54,7 @@ IProcess formatBuildingLayer() {
                         queryMapper += "* FROM $inputTableName as a where st_area(a.the_geom)>1 "
                     }
 
-                    def building_type_use =
+                    def types_uses_dictionnary =
                             ["Bâtiment agricole"        : ["farm_auxiliary": "agricultural"],
                              "Bâtiment commercial"      : ["commercial": "commercial"],
                              "Bâtiment industriel"      : ["light_industry": "industrial"],
@@ -76,10 +76,20 @@ IProcess formatBuildingLayer() {
                              "Préfecture"               : ["government": "government"],
                              "Sous-préfecture"          : ["government": "government"],
                              "Tour, donjon, moulin"     : ["historic": "heritage"],
+                             "Moulin à vent"            : ["historic": "heritage"],
+                             "Tour, donjon"             : ["historic": "heritage"],
                              "Tribune"                  : ["grandstand": "entertainment_arts_culture"],
-                             "Résidentiel"              : ["residential": "residential"]]
+                             "Résidentiel"              : ["residential": "residential"],
+                             "Agricole"                 : ["agricultural": "agricultural"],
+                             "Commercial et services"   : ["commercial": "commercial"],
+                             "Industriel"               : ["industrial": "industrial"],
+                             "Religieux"                : ["religious": "religious"],
+                             "Sportif"                  : ["sport": "sport"],
+                             "Annexe"                   : ["annex": "building"]
+                            ]
 
                     def building_type_level = ["building"                  : 1,
+                                               "annex"                     : 0,
                                                "house"                     : 1,
                                                "detached"                  : 1,
                                                "residential"               : 1,
@@ -123,31 +133,26 @@ IProcess formatBuildingLayer() {
                     def id_build = 1;
                     datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper.toString()) { row ->
-                            def feature_type = "building"
-                            def feature_main_use = "building"
-                            def id_source = row.ID_SOURCE
-                            if (row.TYPE) {
-                                def tmp_type_use = building_type_use.get(row.TYPE)
-                                if (tmp_type_use) {
-                                    def type_main = tmp_type_use.grep()[0]
-                                    feature_type = type_main.key
-                                    feature_main_use = type_main.value
-                                }
-                            }
-                            def height_wall = row.HEIGHT_WALL
-                            def height_roof = 0
+                            def values = row.toRowResult()
+                            def id_source = values.ID_SOURCE
+                            //We find the best type and use
+                            def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE,types_uses_dictionnary)
+                            def feature_type =type_use[0]
+                            def feature_main_use =type_use[1]
+                            def height_wall = values.HEIGHT_WALL
+                            def height_roof = values.HEIGHT_ROOF
                             def nb_lev = 0
                             //Update height_wall
                             if (!height_wall) {
                                 height_wall = 0
                             }
-                            //Update NB_LEV
+                            //Update NB_LEV, HEIGHT_WALL and HEIGHT_ROOF
                             def formatedHeight = formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
                                     feature_type, building_type_level)
 
                             def zIndex = 0
                             if (formatedHeight.nbLevels > 0) {
-                                Geometry geom = row.the_geom
+                                Geometry geom = values.the_geom
                                 def srid = geom.getSRID()
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
@@ -211,6 +216,36 @@ IProcess formatBuildingLayer() {
             [outputTableName: outputTableName]
         }
     }
+}
+
+/**
+ * Return the type and the use by looking in a dictionary of values
+ * @param main_type the original type
+ * @param main_use the original main use
+ * @param types_and_uses the dictionnary of values
+ * @return the type and the use. Default is [building, building]
+ */
+static String[] getTypeAndUse(def main_type, def main_use, def types_and_uses){
+    def feature_type = "building"
+    def feature_main_use="building"
+    if(main_type && main_use){
+        def tmp_type_use_from_main_type= types_and_uses.get(main_type)
+        def tmp_type_use_from_main_use= types_and_uses.get(main_use)
+        feature_type = tmp_type_use_from_main_type.grep()[0].key
+        feature_main_use = tmp_type_use_from_main_use.grep()[0].key
+    }
+    else if(!main_type && main_use){
+        def tmp_type_use_from_main_use= types_and_uses.get(main_use)
+        feature_type = tmp_type_use_from_main_use.grep()[0].key
+        feature_main_use = feature_type
+    }
+    else if(main_type && !main_use){
+        def tmp_type_use_from_main_type= types_and_uses.get(main_type)
+        def type_main = tmp_type_use_from_main_type.grep()[0]
+        feature_type = type_main.key
+        feature_main_use = type_main.value
+    }
+    return [feature_type, feature_main_use]
 }
 
 
@@ -694,16 +729,14 @@ IProcess formatImperviousLayer() {
         inputs datasource: JdbcDataSource, inputTableName: String
         outputs outputTableName: String
         run { H2GIS datasource, inputTableName ->
-            debug('Impervious formation')
+            debug('Impervious layer')
             def outputTableName = postfix("IMPERVIOUS")
             datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_impervious serial,TYPE VARCHAR);""".toString()
 
-            //TODO ADD cimetiere
-
             // A map of weigths to select a tag when several geometries overlap
             def weight_values = [
-                    "government": 5, "entertainment_arts_culture": 10, "education": 10,
+                    "government": 5, "entertainment_arts_culture": 10, "education": 10,"military": 20,
                     "industrial": 20, "commercial": 20, "healthcare": 10, "transport": 15, "building": 10,
                     "sport"     : 10, "cimetiere": 10]
 
