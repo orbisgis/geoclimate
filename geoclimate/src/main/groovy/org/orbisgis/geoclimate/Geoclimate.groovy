@@ -1,7 +1,7 @@
 package org.orbisgis.geoclimate
 
-import ch.qos.logback.classic.Logger
-import org.slf4j.LoggerFactory
+
+import org.orbisgis.geoclimate.bdtopo.BDTopo
 import picocli.CommandLine
 
 import java.util.concurrent.Callable
@@ -68,7 +68,7 @@ class Geoclimate implements Callable<Integer> {
             }
         } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V2.2")) {
             println("The BDTOPO_V2.2 workflow has been started.\nPlease wait...")
-            def success = org.orbisgis.geoclimate.bdtopo_v2.BDTopo_V2.WorkflowBDTopo_V2.workflow().execute(input: configFile.trim())
+            def success = BDTopo.WorkflowBDTopo_V2.workflow().execute(input: configFile.trim())
             if (success) {
                 println("The BDTOPO_V2.2 workflow has been successfully executed")
                 return SUCCESS_CODE

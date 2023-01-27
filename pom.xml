@@ -8,7 +8,7 @@
     <version>0.0.2-SNAPSHOT</version>
     <modules>
         <module>geoindicators</module>
-        <module>bdtopo_v2</module>
+        <module>bdtopo</module>
         <module>osm</module>
         <module>geoclimate</module>
         <module>osmtools</module>
@@ -184,7 +184,7 @@
             </dependency>
             <dependency>
                 <groupId>org.orbisgis.geoclimate</groupId>
-                <artifactId>bdtopo_v2</artifactId>
+                <artifactId>bdtopo</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -6,72 +5,31 @@
         <groupId>org.orbisgis.geoclimate</groupId>
         <artifactId>geoclimate-parent</artifactId>
         <version>0.0.2-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>geoclimate</artifactId>
     <version>0.0.2-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <groupId>org.orbisgis.geoclimate</groupId>
+    <artifactId>bdtopo</artifactId>
     <dependencies>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>commons</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>h2gis</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>h2gis-utilities</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>h2gis-network</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>postgis-jts</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>cts</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
+            <version>${groovy-version}</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-json</artifactId>
+            <version>${groovy-version}</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-sql</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>geoindicators</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>bdtopo</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>osm</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
+            <version>${groovy-version}</version>
         </dependency>
         <dependency>
             <groupId>org.orbisgis.data</groupId>
@@ -86,10 +44,17 @@
             <artifactId>process</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>osmtools</artifactId>
+            <groupId>org.orbisgis.data</groupId>
+            <artifactId>dataframe</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.orbisgis.geoclimate</groupId>
+            <artifactId>geoindicators</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis.geoclimate</groupId>
+            <artifactId>worldpoptools</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -98,7 +63,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
-
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -142,48 +106,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <mainClass>org.orbisgis.geoclimate.Geoclimate</mainClass>
-                        </manifest>
-                    </archive>
-                    <finalName>${project.build.finalName}</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id> <!-- this is used for inheritance merges -->
-                        <phase>package</phase> <!-- bind to the packaging phase -->
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/resources/</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>**/geoclimate.properties</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/main/resources/</directory>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>**/geoclimate.properties</exclude>
-                </excludes>
-            </resource>
-        </resources>
     </build>
 
     <distributionManagement>
