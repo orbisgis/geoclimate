@@ -20,10 +20,10 @@ abstract class BDTopo extends GroovyProcessFactory {
         WorkflowUtilities.setLoggerLevel("INFO")
     }
 
-    public static WorkflowBDTopo_V2 = new WorkflowBDTopo()
+    public static Workflow = new WorkflowBDTopo()
     public static InputDataLoading = new InputDataLoadingV2_2()
     public static InputDataLoadingBDTopo3 = new InputDataLoadingV3()
-    public static InputDataFormatting = new InputDataFormattingV2_2()
+    public static InputDataFormatting = new InputDataFormatting()
 
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
 

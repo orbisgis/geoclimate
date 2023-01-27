@@ -127,10 +127,11 @@ IProcess workflow() {
         run { input, version ->
             if (version) {
                 if (version == 2) {
-                    BDTopoV2_2Workflow bdtopo_v2_workflow = new BDTopoV2_2Workflow()
+                    BDTopoV2Workflow bdtopo_v2_workflow = new BDTopoV2Workflow()
                     return bdtopo_v2_workflow.execute(input: input)
                 } else if (version == 3) {
-
+                    BDTopoV3Workflow bdTopoV3Workflow = new BDTopoV3Workflow()
+                    return bdTopoV3Workflow.execute(input:input)
                 } else {
                     error "Unsupported version. Set number 2 or 3"
                     return null
@@ -140,4 +141,28 @@ IProcess workflow() {
     }
 }
 
+IProcess v2() {
+    return create {
+        title "Create all Geoindicators from BDTopo data with V2 workflow"
+        id "workflow"
+        inputs input: Object
+        outputs output: Map
+        run { input ->
+           BDTopoV2Workflow bdtopo_v2_workflow = new BDTopoV2Workflow()
+           return bdtopo_v2_workflow.execute(input: input)
+        }
+    }
+}
 
+IProcess v3() {
+    return create {
+        title "Create all Geoindicators from BDTopo data with V3 workflow"
+        id "workflow"
+        inputs input: Object
+        outputs output: Map
+        run { input ->
+            BDTopoV3Workflow bdtopo_v3_workflow = new BDTopoV3Workflow()
+            return bdtopo_v3_workflow.execute(input: input)
+        }
+    }
+}

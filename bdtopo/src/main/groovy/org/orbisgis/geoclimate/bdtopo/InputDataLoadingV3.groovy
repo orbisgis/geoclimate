@@ -166,7 +166,7 @@ IProcess prepareBDTopo3Data() {
 
             if (!tablesExist.contains("cimetiere")) {
                 datasource.execute("""DROP TABLE IF EXISTS cimetiere; 
-                CREATE TABLE cimetiere (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);""".toString())
+                CREATE TABLE cimetiere (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);""".toString())
             }
 
             //Here we prepare the BDTopo data

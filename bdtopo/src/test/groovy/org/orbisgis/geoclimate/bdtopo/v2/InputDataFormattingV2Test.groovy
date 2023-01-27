@@ -1,4 +1,4 @@
-package org.orbisgis.geoclimate.bdtopo.v2_2
+package org.orbisgis.geoclimate.bdtopo.v2
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -8,7 +8,7 @@ import org.orbisgis.geoclimate.bdtopo.BDTopo
 
 import static org.junit.jupiter.api.Assertions.*
 
-class InputDataFormattingV2_2Test {
+class InputDataFormattingV2Test {
 
     @TempDir
     static File folder

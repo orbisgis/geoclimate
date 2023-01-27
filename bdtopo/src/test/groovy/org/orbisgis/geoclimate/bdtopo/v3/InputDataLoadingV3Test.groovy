@@ -43,9 +43,6 @@ class InputDataLoadingV3Test {
         assertTrue process.execute([datasource: h2GISDatabase,
                                     layers : layers, idZone: communeToTest
         ])
-        /*process.getResults().each {
-            entry -> assertNotNull(h2GISDatabase.getTable(entry.getValue()))
-        }*/
 
         // Check if the INPUT_BUILDING table has the correct number of columns and rows
         def tableName = process.getResults().building
@@ -61,7 +58,7 @@ class InputDataLoadingV3Test {
                                                   "Z_MAX_SOL", "ORIGIN_BAT", "APP_FF"]).size())
 
         // Check if the INPUT_ROAD table has the correct number of columns and rows
-        /*tableName = process.getResults().outputRoadName
+        tableName = process.getResults().outputRoadName
         assertNotNull(tableName)
         table = h2GISDatabase.getTable(tableName)
         assertNotNull(table)
@@ -200,6 +197,6 @@ class InputDataLoadingV3Test {
             assertNotNull(row.ID_ZONE)
             assertNotEquals('', row.ID_ZONE)
             assertEquals(communeToTest, row.ID_ZONE)
-        }*/
+        }
     }
 }

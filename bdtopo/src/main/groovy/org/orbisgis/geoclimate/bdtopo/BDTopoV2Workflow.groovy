@@ -12,7 +12,7 @@ import javax.sql.DataSource
 import java.sql.Connection
 import java.sql.SQLException
 
-class BDTopoV2_2Workflow extends AbstractBDTopoWorkflow {
+class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
 
 
     @Override
@@ -189,7 +189,7 @@ class BDTopoV2_2Workflow extends AbstractBDTopoWorkflow {
             return commune_srid
 
         } else {
-            error "Cannot find any commune with the insee code : $code"
+            logger.error "Cannot find any commune with the insee code : $code"
             return
         }
     }
@@ -280,7 +280,7 @@ class BDTopoV2_2Workflow extends AbstractBDTopoWorkflow {
                 }
 
                 if (!datasource) {
-                    error "The database to store the BD Topo data doesn't exist"
+                    logger.error "The database to store the BD Topo data doesn't exist"
                     return
                 }
 
@@ -302,7 +302,7 @@ class BDTopoV2_2Workflow extends AbstractBDTopoWorkflow {
                                        tablePiste_AerodromeName    : tablePiste_AerodromeName,
                                        tableReservoirName          : tableReservoirName,
                                        distance                    : distance])) {
-                    error "Cannot prepare the BDTopo data."
+                    logger.error "Cannot prepare the BDTopo data."
                     return
                 }
 
