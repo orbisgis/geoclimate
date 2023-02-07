@@ -5,6 +5,7 @@ import org.h2gis.postgis_jts.PostGISDBFactory
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.orbisgis.data.H2GIS
+import org.orbisgis.data.jdbc.JdbcDataSource
 
 import javax.sql.DataSource
 import java.sql.Connection
@@ -200,7 +201,7 @@ class BDTopoV3Workflow extends AbstractBDTopoWorkflow{
     }
 
     @Override
-    Map getInputTables() {
+    List getInputTables() {
         return ["commune", "batiment", "zone_d_activite_ou_d_interet", "terrain_de_sport,cimetiere",
                 "piste_d_aerodrome", "reservoir", "construction_surfacique", "equipement_de_transport",
                 "troncon_de_route", "troncon_de_voie_ferree", "surface_hydrographique",
@@ -210,5 +211,10 @@ class BDTopoV3Workflow extends AbstractBDTopoWorkflow{
     @Override
     int getVersion() {
         return 3
+    }
+
+    @Override
+    Map loadAndFormatData2(JdbcDataSource datasource, Map layers, float distance, float hLevMin) {
+        return null
     }
 }

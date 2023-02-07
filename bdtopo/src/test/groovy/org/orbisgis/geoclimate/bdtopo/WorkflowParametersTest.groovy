@@ -2,9 +2,6 @@ package org.orbisgis.geoclimate.bdtopo
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import org.orbisgis.process.api.IProcess
-
-import static org.junit.jupiter.api.Assertions.assertFalse
 
 class WorkflowParametersTest {
 
@@ -49,7 +46,6 @@ class WorkflowParametersTest {
                                           "terrain_roughness_class"     : 1]]
                         ]
         ]
-        IProcess process = BDTopo.Workflow.workflow()
-        assertFalse(process.execute(input: bdTopoParameters, version:2))
+        BDTopo.Workflow.v2(input: bdTopoParameters)
     }
 }

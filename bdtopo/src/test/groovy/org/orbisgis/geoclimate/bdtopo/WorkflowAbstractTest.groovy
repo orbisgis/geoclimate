@@ -13,22 +13,20 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.process.api.IProcess
-import org.orbisgis.geoclimate.Geoindicators
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertNotNull
+import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.fail
 import static org.junit.jupiter.api.Assertions.fail
 
 abstract class WorkflowAbstractTest {
 
-    @TempDir
-    static File folder
+    //@TempDir
+    static File folder = new File("/tmp/")
 
     public static Logger logger = LoggerFactory.getLogger(WorkflowAbstractTest.class)
 
@@ -50,21 +48,14 @@ abstract class WorkflowAbstractTest {
      * @param dbPath
      * @return
      */
-    private def loadFiles(def dbPath) {
+    def loadFiles(def dbPath) {
         H2GIS h2GISDatabase = H2GIS.open(dbPath)
-        // Load parameter files
-        paramTables.each {
-            h2GISDatabase.load(getClass().getResource(it + ".csv"), it, true)
-        }
 
-        def relativePath = bdtopoFoldName
-
-        // Test whether there is a folder containing .shp files for the corresponding INSEE code
-        if (getClass().getResource(relativePath)) {
+        if (getClass().getResource(getFolderName())) {
             // Test is the URL is a folder
-            if (new File(getClass().getResource(relativePath).toURI()).isDirectory()) {
-                listTables.each {
-                    def filePath = getClass().getResource(relativePath + File.separator + it + ".shp")
+            if (new File(getClass().getResource(getFolderName()).toURI()).isDirectory()) {
+                getFileNames().each {
+                    def filePath = getClass().getResource(getFolderName() + File.separator + it + ".shp")
                     // If some layers are missing, do not try to load them...
                     if (filePath) {
                         h2GISDatabase.link(filePath, it, true)
@@ -91,9 +82,21 @@ abstract class WorkflowAbstractTest {
  * The folder that contains the BDTopo test data
  * @return
  */
-    abstract String getFolderName();
+    abstract String getFolderName()
 
-    abstract String getInseeCode();
+    /**
+     * Get the insee code of the tested area
+     * @return
+     */
+    abstract String getInseeCode()
+
+
+
+    /**
+     * The names of file used for the test
+     * @return
+     */
+    abstract ArrayList getFileNames()
 
 
     /**
@@ -130,114 +133,151 @@ abstract class WorkflowAbstractTest {
      * @return
      */
     String getDataFolderPath() {
-        if (new File(getClass().getResource(bdtopoFoldName).toURI()).isDirectory()) {
-            return new File(getClass().getResource(bdtopoFoldName).toURI()).absolutePath
+        if (new File(getClass().getResource(getFolderName()).toURI()).isDirectory()) {
+            return new File(getClass().getResource(getFolderName()).toURI()).absolutePath
         }
         return null;
     }
 
-    /**
-     * A method to compute geomorphological indicators
-     * @param directory
-     * @param datasource
-     * @param zone
-     * @param buildingTableName
-     * @param roadTableName
-     * @param railTableName
-     * @param vegetationTableName
-     * @param hydrographicTableName
-     * @param saveResults
-     * @param indicatorUse
-     */
-    void geoIndicatorsCalc(String directory, def datasource, String zone, String buildingTableName,
-                           String roadTableName, String railTableName, String vegetationTableName,
-                           String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
-                           String prefixName = "") {
-        //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis()
-        assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zone, buildingTable: buildingTableName,
-                                         roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
-                                         surface_hydro    : 2500, distance: 0.01, prefixName: prefixName])
+    @Test
+    void testFullWorkFlow() {
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description"     : "Example of configuration file to build the road traffic",
+                "geoclimatedb"    : [
+                        "folder": folder.absolutePath,
+                        "name"  : "testFullWorflow;AUTO_SERVER=TRUE",
+                        "delete": false
+                ],
+                "input"           : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"          : [
+                        "folder": ["path": folder.absolutePath]],
+                "parameters"      :
+                        ["distance"    : 0,
+                         rsu_indicators: [
+                                 "indicatorUse": ["LCZ", "TEB", "UTRF"]]
+                        ],
+                "grid_indicators" : [
+                        "x_size"    : 1000,
+                        "y_size"    : 1000,
+                        "indicators": ["WATER_FRACTION"]
+                ],
+                "road_traffic"    : true,
+                "noise_indicators": [
+                        "ground_acoustic": true
+                ]
+        ]
 
-        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
-        String relationBlocks = spatialUnits.getResults().outputTableBlockName
-        String relationRSU = spatialUnits.getResults().outputTableRsuName
+        Map process = BDTopo.workflow(input: bdTopoParameters, version: getVersion())
+        assertNotNull(process)
 
-        if (saveResults) {
-            logger.debug("Saving spatial units")
-            IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: spatialUnits.getResults().values(), delete: true
-                                , directory    : directory, datasource: datasource])
-        }
+        def tableNames = process.output[getInseeCode()]
+        assertTrue(tableNames.size()>0)
+        H2GIS h2gis = H2GIS.open(folder.absolutePath + File.separator + "testFullWorflow;AUTO_SERVER=TRUE")
 
-        def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())
-        def countBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
-        assertEquals(countBlocks.count, maxBlocks.max)
+        //Test zone
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.zone} where the_geom is not null").count > 0
+
+        //Test building
+        String building_table = tableNames.building
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where TYPE is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where MAIN_USE is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where NB_LEV is not null or NB_LEV>0 ;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where HEIGHT_WALL is not null or HEIGHT_WALL>0 ;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where HEIGHT_ROOF is not null or HEIGHT_ROOF>0 ;""".toString()).count > 0)
+
+        //Test building / block
+        assertEquals(h2gis.firstRow("""SELECT count(distinct id_block) as building_count from $building_table;""".toString()).building_count,
+                h2gis.firstRow("""SELECT count(*) as block_count from ${tableNames.block_indicators};""".toString()).block_count)
+
+        //Test water
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.water} where TYPE is not null;""".toString()).count > 0)
+
+        //Test vegetation
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.vegetation} where TYPE is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.vegetation} where HEIGHT_CLASS is not null;""".toString()).count > 0)
+
+        //Test road
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""".toString()).count > 0)
+
+        //Test road_traffic
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.road_traffic} where road_type is null".toString()).count == 0
+        assertEquals(h2gis.firstRow("""SELECT sum(ST_Length(the_geom)) as road_length from ${tableNames.road};""".toString()).road_length,
+                h2gis.firstRow("""SELECT sum(ST_Length(the_geom)) as traffic_Length from ${tableNames.road_traffic};""".toString()).traffic_Length)
 
 
-        def maxRSUBlocks = datasource.firstRow("select count(distinct id_block) as max from ${relationBuildings} where id_rsu is not null".toString())
-        def countRSU = datasource.firstRow("select count(*) as count from ${relationBlocks} where id_rsu is not null".toString())
-        assertEquals(countRSU.count, maxRSUBlocks.max)
+        //Test ground acoustic
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.ground_acoustic} where layer in ('road', 'building')".toString()).count == 0
+        assertTrue h2gis.rows("select distinct(g) as g from ${tableNames.ground_acoustic} where type = 'water'".toString()).size() == 1
 
-        //Compute building indicators
-        def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
-        assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: relationBuildings,
-                                                       inputRoadTableName    : roadTableName,
-                                                       indicatorUse          : indicatorUse,
-                                                       prefixName            : prefixName])
-        String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
-        if (saveResults) {
-            logger.debug("Saving building indicators")
-            datasource.save(buildingIndicators, directory + File.separator + "${buildingIndicators}.geojson", true)
-        }
-
-        //Check we have the same number of buildings
-        def countRelationBuilding = datasource.firstRow("select count(*) as count from ${relationBuildings}".toString())
-        def countBuildingIndicators = datasource.firstRow("select count(*) as count from ${buildingIndicators}".toString())
-        assertEquals(countRelationBuilding.count, countBuildingIndicators.count)
-
-        //Compute block indicators
-        if (indicatorUse.contains("UTRF")) {
-            def computeBlockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators()
-            assertTrue computeBlockIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: buildingIndicators,
-                                                       inputBlockTableName   : relationBlocks,
-                                                       prefixName            : prefixName])
-            String blockIndicators = computeBlockIndicators.getResults().outputTableName
-            if (saveResults) {
-                logger.debug("Saving block indicators")
-                datasource.save(blockIndicators, directory + File.separator + "${blockIndicators}.geojson", true)
-            }
-            //Check if we have the same number of blocks
-            def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
-            def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
-            assertEquals(countRelationBlocks.count, countBlocksIndicators.count)
-        }
-
-        //Compute RSU indicators
-        def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators()
-        assertTrue computeRSUIndicators.execute([datasource       : datasource,
-                                                 buildingTable    : buildingIndicators,
-                                                 rsuTable         : relationRSU,
-                                                 vegetationTable  : vegetationTableName,
-                                                 roadTable        : roadTableName,
-                                                 hydrographicTable: hydrographicTableName,
-                                                 indicatorUse     : indicatorUse,
-                                                 prefixName       : prefixName,
-                                                 svfSimplified    : svfSimplified])
-        String rsuIndicators = computeRSUIndicators.getResults().outputTableName
-        if (saveResults) {
-            logger.debug("Saving RSU indicators")
-            datasource.save(rsuIndicators, directory + File.separator + "${rsuIndicators}.geojson", true)
-        }
-
-        //Check if we have the same number of RSU
-        def countRelationRSU = datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
-        def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
-        assertEquals(countRelationRSU.count, countRSUIndicators.count)
+        //Test grid_indicators
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators} where water_fraction>0").count > 0
     }
+
+    @Test
+    void runWorkflowSRIDAndBBox() {
+        String dataFolder = getDataFolderPath()
+        def filePath = getClass().getResource(getFolderName() + File.separator  + "COMMUNE.shp")
+        // If some layers are missing, do not try to load them...
+        if (filePath) {
+            H2GIS  h2GIS = H2GIS.open(folder.absolutePath+File.separator+"tmpdb")
+            h2GIS.link(filePath, "COMMUNE", true)
+            Geometry geom = h2GIS.firstRow("""SELECT ST_BUFFER(ST_POINTONSURFACE(the_geom), 100) AS the_geom from commune""".toString()).the_geom
+            h2GIS.close()
+            Envelope env = geom.getEnvelopeInternal()
+            def location = [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
+
+            def bdTopoParameters = [
+                    "description"     : "Example of configuration file to build the road traffic",
+                    "geoclimatedb"    : [
+                            "folder": folder.absolutePath,
+                            "name"  : "testFullWorflowSRID;AUTO_SERVER=TRUE",
+                            "delete": false
+                    ],
+                    "input"           : [
+                            "folder"   : dataFolder,
+                            "locations": [location]],
+                    "output"          : [
+                            "folder": ["path": folder.absolutePath]],
+                    "srid": 4326,
+                    "parameters"      :
+                            ["distance"    : 0,
+                             rsu_indicators: [
+                                     "indicatorUse": ["LCZ"]],"grid_indicators"    : [
+                                    "x_size"    : 100,
+                                    "y_size"    : 100,
+                                    "rowCol"    : true,
+                                    "indicators": ["BUILDING_FRACTION"]
+                            ]
+                            ]
+            ]
+
+            Map process = BDTopo.workflow(input: bdTopoParameters, version: getVersion())
+            assertTrue(process)
+
+            List outputTables = ["zone", "road", "rail", "water", "vegetation",
+                                 "impervious", "urban_areas", "building",
+                                 "building_indicators", "block_indicators",
+                                 "rsu_indicators", "rsu_lcz",
+                                 "rsu_utrf_area", "rsu_utrf_floor_area",
+                                 "building_utrf", "grid_indicators",
+                                 "ground_acoustic"]
+
+            def tableNames = outputTables.intersect(process.values())
+            assertTrue(tableNames)
+            def grid_table = tableNames.grid_indicators
+
+            H2GIS h2gis = H2GIS.open("${folderName.absolutePath + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+            assertTrue h2gis.firstRow("select count(*) as count from $grid_table".toString()).count == 100
+            assertTrue h2gis.firstRow("select count(*) as count from $grid_table where WATER_FRACTION>0".toString()).count == 0
+            assertTrue h2gis.firstRow("select count(*) as count from $grid_table where HIGH_VEGETATION_FRACTION>0".toString()).count > 0
+            assertTrue h2gis.firstRow("select count(*) as count from $grid_table where LOW_VEGETATION_FRACTION>0".toString()).count == 0
+        }
+    }
+
 
     @Disabled
     @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
@@ -264,7 +304,7 @@ abstract class WorkflowAbstractTest {
                 ],
                 "input"       : [
                         "folder": ["path"     : folder.getAbsolutePath(),
-                                   "locations": [communeToTest]]],
+                                   "locations": [getInseeCode()]]],
                 "output"      : [
                         "database":
                                 ["user"    : postgis_dbProperties.user,
@@ -376,8 +416,7 @@ abstract class WorkflowAbstractTest {
                          ]
                         ]
         ]
-        IProcess process = BDTopo.Workflow.workflow()
-        assertFalse(process.execute(input: createConfigFile(bdTopoParameters, folder.absolutePath)))
+        assertNull(BDTopo.workflow(input:bdTopoParameters, version :getVersion()))
     }
 
     @Disabled
@@ -423,51 +462,5 @@ abstract class WorkflowAbstractTest {
         assertTrue(process.execute(input: bdTopoParameters, version: getVersion()))
     }
 
-    @Test
-    void testFullWorkFlow() {
-        String dataFolder = getDataFolderPath()
-        def bdTopoParameters = [
-                "description"     : "Example of configuration file to build the road traffic",
-                "geoclimatedb"    : [
-                        "folder": folder.absolutePath,
-                        "name"  : "testWorkFlowRoadTraffic;AUTO_SERVER=TRUE",
-                        "delete": false
-                ],
-                "input"           : [
-                        "folder"   : dataFolder,
-                        "locations": [getInseeCode()]],
-                "output"          : [
-                        "folder": ["path"  : folder.absolutePath,
-                                   "tables": ["road_traffic", "ground_acoustic", "impervious"]]],
-                "parameters"      :
-                        ["distance"    : 0,
-                         rsu_indicators: [
-                                 "indicatorUse": ["LCZ", "TEB", "UTRF"]]
-                        ],
-                "grid_indicators" : [
-                        "x_size"    : 1000,
-                        "y_size"    : 1000,
-                        "indicators": ["WATER_FRACTION"]
-                ],
-                "road_traffic"    : true,
-                "noise_indicators": [
-                        "ground_acoustic": true
-                ]
-        ]
-
-        IProcess process = BDTopo.Workflow.workflow()
-        assertTrue(process.execute(input: bdTopoParameters, version: getVersion()))
-        def tableNames = process.results.output.values()
-        def roadTableName = process.getResults().output[getInseeCode()]["road_traffic"]
-        assertNotNull(roadTableName)
-        def ground_acoustic = process.getResults().output[getInseeCode()]["ground_acoustic"]
-        assertNotNull(ground_acoustic)
-        H2GIS h2gis = H2GIS.open(folder.absolutePath + File.separator + "testWorkFlowRoadTraffic;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators[0]} where water_fraction>0").count > 0
-        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.roadTableName[0]} where road_type is null".toString()).count == 0
-        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.ground_acoustic[0]} where layer in ('road', 'building')".toString()).count == 0
-        assertTrue h2gis.rows("select distinct(g) as g from ${tableNames.ground_acoustic[0]} where type = 'water'".toString()).size() == 1
-
-    }
 
 }

@@ -3,23 +3,17 @@ package org.orbisgis.geoclimate.bdtopo
 import groovy.json.JsonSlurper
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.orbisgis.process.api.IProcess
-
-import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * Tests for debug purpose
  */
 class WorkflowDebugTest {
 
-    //Change the workflow version here
-    int version = 2
 
     @Disabled
     @Test
     void runFromFile() {
-        IProcess process = BDTopo.Workflow.workflow()
-        assertTrue(process.execute(input:'/home/ebocher/Téléchargements/formation_geoclimate/bdtopo_demo_test.json'))
+        BDTopo.Workflow.v2(input:'/home/ebocher/Téléchargements/formation_geoclimate/bdtopo_demo_test.json')
     }
 
     @Disabled
@@ -113,9 +107,7 @@ class WorkflowDebugTest {
                                      "road_traffic"  : true
                     ]
             ]
-
-            IProcess process = BDTopo.Workflow.workflow()
-            assertTrue(process.execute(input: workflow_parameters, version:version))
+            BDTopo.Workflow.v2(input: workflow_parameters)
         } else {
             println("The configuration file for the input database doesn't exist")
         }
@@ -156,8 +148,7 @@ class WorkflowDebugTest {
                          ]
                         ]
         ]
-        IProcess process = BDTopo.Workflow.workflow()
-        assertTrue(process.execute(input: bdTopoParameters, version: version))
+        BDTopo.Workflow.v2(input: bdTopoParameters)
 
     }
 

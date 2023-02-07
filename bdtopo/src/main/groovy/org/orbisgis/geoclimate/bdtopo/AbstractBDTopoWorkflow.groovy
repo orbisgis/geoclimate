@@ -9,7 +9,7 @@ import org.h2gis.utilities.URIUtilities
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ITable
-import org.slf4j.LoggerFactory
+import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 import org.orbisgis.process.api.IProcess
 import org.slf4j.LoggerFactory
@@ -19,15 +19,8 @@ import java.sql.Connection
 import java.sql.SQLException
 
 
-abstract class AbstractBDTopoWorkflow {
+abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
 
-    public static def logger
-
-    AbstractBDTopoWorkflow() {
-        logger = LoggerFactory.getLogger(AbstractBDTopoWorkflow.class)
-        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
-        context.getLogger(AbstractBDTopoWorkflow.class).setLevel(Level.INFO)
-    }
 
     /**
      * Run the workflow
@@ -35,7 +28,8 @@ abstract class AbstractBDTopoWorkflow {
      * @param input
      * @return
      */
-    def execute(def input) {
+    Map execute(def args) {
+        def input = args.input
         Map parameters = null
         if (input) {
             if (input instanceof String) {
@@ -134,14 +128,14 @@ abstract class AbstractBDTopoWorkflow {
         }
         if (inputFolder && inputDataBase) {
             logger.error "Please set only one input data provider"
-            return null
+            return
         }
 
         def inputWorkflowTableNames = getInputTables()
 
         if (!inputWorkflowTableNames) {
             logger.error "The input table names cannot be null or empty."
-            return null
+            return
         }
 
         def outputWorkflowTableNames = getOutputTables()
@@ -167,12 +161,12 @@ abstract class AbstractBDTopoWorkflow {
                 deleteOutputData = true
             } else if (!deleteOutputData in Boolean) {
                 logger.error "The delete parameter must be a boolean value"
-                return null
+                return
             }
             outputSRID = outputParameters.get("srid")
             if (outputSRID && outputSRID <= 0) {
                 logger.error "The output srid must be greater than 0"
-                return null
+                return
             }
             if (outputFolder) {
                 def outputFiles = Geoindicators.WorkflowUtilities.buildOutputFolderParameters(outputFolder, outputWorkflowTableNames)
@@ -714,7 +708,7 @@ abstract class AbstractBDTopoWorkflow {
     }
 
 
-    abstract  Map getInputTables()
+    abstract  List getInputTables()
 
     List getOutputTables() {
         return ["building_indicators",
@@ -1006,34 +1000,17 @@ abstract class AbstractBDTopoWorkflow {
         def results = [:]
         //Let's run the BDTopo process for the id_zone
         //Load and format the BDTopo data
-        IProcess loadAndFormatData = loadAndFormatData()
-        if (loadAndFormatData.execute([datasource                  : h2gis_datasource,
-                                       tableCommuneName            : subCommuneTableName,
-                                       tableBuildIndifName         : 'BATI_INDIFFERENCIE',
-                                       tableBuildIndusName         : 'BATI_INDUSTRIEL',
-                                       tableBuildRemarqName        : 'BATI_REMARQUABLE',
-                                       tableRoadName               : 'ROUTE',
-                                       tableRailName               : 'TRONCON_VOIE_FERREE',
-                                       tableHydroName              : 'SURFACE_EAU',
-                                       tableVegetName              : 'ZONE_VEGETATION',
-                                       tableImperviousSportName    : 'TERRAIN_SPORT',
-                                       tableImperviousBuildSurfName: 'CONSTRUCTION_SURFACIQUE',
-                                       tableImperviousRoadSurfName : 'SURFACE_ROUTE',
-                                       tableImperviousActivSurfName: 'SURFACE_ACTIVITE',
-                                       tablePiste_AerodromeName    : 'PISTE_AERODROME',
-                                       tableReservoirName          : 'RESERVOIR',
-                                       distance                    : processing_parameters.distance,
-                                       hLevMin                     : processing_parameters.hLevMin
-        ])) {
-
-            def buildingTableName = loadAndFormatData.results.outputBuilding
-            def roadTableName = loadAndFormatData.results.outputRoad
-            def railTableName = loadAndFormatData.results.outputRail
-            def hydrographicTableName = loadAndFormatData.results.outputHydro
-            def vegetationTableName = loadAndFormatData.results.outputVeget
-            def zone = loadAndFormatData.results.outputZone
-            def imperviousTableName = loadAndFormatData.results.outputImpervious
-            def urbanAreasTableName = loadAndFormatData.results.outputUrbanAreas
+        Map layers = getInputTables().collectEntries() { [it, it=="commune"?subCommuneTableName:it] }
+        Map dataFormated = loadAndFormatData2(h2gis_datasource, layers, processing_parameters.distance, processing_parameters.hLevMin)
+        if(dataFormated) {
+            def buildingTableName = dataFormated.building
+            def roadTableName = dataFormated.road
+            def railTableName = dataFormated.rail
+            def hydrographicTableName = dataFormated.water
+            def vegetationTableName = dataFormated.vegetation
+            def zone = dataFormated.zone
+            def imperviousTableName = dataFormated.impervious
+            def urbanAreasTableName = dataFormated.urban_areas
 
 
             logger.info "BDTOPO V2 GIS layers formated"
@@ -1575,5 +1552,19 @@ abstract class AbstractBDTopoWorkflow {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     abstract int getVersion();
+
+    /**
+     *
+     * @param datasource
+     * @param layers
+     * @param distance
+     * @param hLevMin
+     * @return
+     */
+    abstract Map loadAndFormatData2(JdbcDataSource datasource,Map layers, float distance=1000, float hLevMin = 3)
 }
