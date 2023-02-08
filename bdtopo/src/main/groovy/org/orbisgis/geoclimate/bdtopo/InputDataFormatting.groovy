@@ -129,10 +129,6 @@ class InputDataFormatting extends BDTopoUtils {
                     datasource.eachRow(queryMapper.toString()) { row ->
                         def values = row.toRowResult()
                         def id_source = values.ID_SOURCE
-                        if(id_source== "BATIMENT0000000297406217") {
-                            //We find the best type and use
-                            println("Type : " + values.TYPE + " main use " + values.MAIN_USE)
-                        }
                         def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
                         def feature_type = type_use[0]
                         def feature_main_use = type_use[1]

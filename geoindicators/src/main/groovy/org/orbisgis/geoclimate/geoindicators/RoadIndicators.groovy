@@ -111,9 +111,9 @@ IProcess build_road_traffic() {
                                 "FROM " +
                                 "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
                                 "WHERE " +
-                                "a.the_geom && b.the_geom "
+                                "a.the_geom && b.the_geom and a.type not in ('track', 'path', 'cycleway', 'steps') "
                     } else {
-                        queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $inputTableName  as a"
+                        queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $inputTableName  as a where type not in ('track', 'path', 'cycleway', 'steps')"
                     }
                     datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
