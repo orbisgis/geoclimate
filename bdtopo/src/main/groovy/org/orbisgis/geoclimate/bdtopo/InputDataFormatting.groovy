@@ -77,7 +77,9 @@ class InputDataFormatting extends BDTopoUtils {
                          "Industriel"               : ["industrial": "industrial"],
                          "Religieux"                : ["religious": "religious"],
                          "Sportif"                  : ["sport": "sport"],
-                         "Annexe"                   : ["annex": "building"]
+                         "Annexe"                   : ["annex": "building"],
+                         "Industriel, agricole ou commercial":["commercial":"commercial"],
+                         "Bâtiment"                 :["building":"building"]
                         ]
 
                 def building_type_level = ["building"                  : 1,
@@ -127,7 +129,10 @@ class InputDataFormatting extends BDTopoUtils {
                     datasource.eachRow(queryMapper.toString()) { row ->
                         def values = row.toRowResult()
                         def id_source = values.ID_SOURCE
-                        //We find the best type and use
+                        if(id_source== "BATIMENT0000000297406217") {
+                            //We find the best type and use
+                            println("Type : " + values.TYPE + " main use " + values.MAIN_USE)
+                        }
                         def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
                         def feature_type = type_use[0]
                         def feature_main_use = type_use[1]
@@ -137,6 +142,10 @@ class InputDataFormatting extends BDTopoUtils {
                         //Update height_wall
                         if (!height_wall) {
                             height_wall = 0
+                        }
+                        //Update height_roof
+                        if(!height_roof&& height_wall){
+                            height_roof=height_wall
                         }
                         //Update NB_LEV, HEIGHT_WALL and HEIGHT_ROOF
                         def formatedHeight = formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
@@ -219,16 +228,16 @@ class InputDataFormatting extends BDTopoUtils {
         def feature_type = "building"
         def feature_main_use = "building"
         if (main_type && main_use) {
-            def tmp_type_use_from_main_type = types_and_uses.get(main_type)
-            def tmp_type_use_from_main_use = types_and_uses.get(main_use)
+            def tmp_type_use_from_main_type = types_and_uses.get(main_type.trim())
+            def tmp_type_use_from_main_use = types_and_uses.get(main_use.trim())
             feature_type = tmp_type_use_from_main_type.grep()[0].key
             feature_main_use = tmp_type_use_from_main_use.grep()[0].key
         } else if (!main_type && main_use) {
-            def tmp_type_use_from_main_use = types_and_uses.get(main_use)
+            def tmp_type_use_from_main_use = types_and_uses.get(main_use.trim())
             feature_type = tmp_type_use_from_main_use.grep()[0].key
             feature_main_use = feature_type
         } else if (main_type && !main_use) {
-            def tmp_type_use_from_main_type = types_and_uses.get(main_type)
+            def tmp_type_use_from_main_type = types_and_uses.get(main_type.trim())
             def type_main = tmp_type_use_from_main_type.grep()[0]
             feature_type = type_main.key
             feature_main_use = type_main.value
@@ -653,11 +662,11 @@ class InputDataFormatting extends BDTopoUtils {
                 }
             } else {
                 heightWall = heightRoof
-                nbLevels = Math.floor(heightWall / h_lev_min)
+                nbLevels =  Math.max(Math.floor(heightWall / h_lev_min),1)
             }
         } else if (heightWall == heightRoof) {
             if (nbLevels == 0) {
-                nbLevels = Math.floor(heightWall / h_lev_min)
+                nbLevels = Math.max(Math.floor(heightWall / h_lev_min), 1)
             }
         }
         // Control of heights and number of levels
@@ -665,7 +674,12 @@ class InputDataFormatting extends BDTopoUtils {
         else if (heightWall > heightRoof) {
             heightRoof = heightWall
             if (nbLevels == 0) {
-                nbLevels = Math.floor(heightWall / h_lev_min)
+                nbLevels =  Math.max(Math.floor(heightWall / h_lev_min),1)
+            }
+        }
+        else if(heightRoof>heightWall){
+            if (nbLevels == 0) {
+                nbLevels =  Math.max(Math.floor(heightRoof / h_lev_min),1)
             }
         }
         return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]

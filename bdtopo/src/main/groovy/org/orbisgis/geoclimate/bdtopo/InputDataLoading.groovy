@@ -83,8 +83,6 @@ class InputDataLoading extends BDTopoUtils {
                         }
                     }
                 }
-
-
         }
 
         // -------------------------------------------------------------------------------
@@ -334,7 +332,10 @@ class InputDataLoading extends BDTopoUtils {
  * @return zone Table name in which the (ready to feed the GeoClimate model) zone is stored
  */
     Map loadV3(JdbcDataSource datasource,
-               List layers = [],
+               Map layers = ["commune":"" ,"batiment":"", "zone_d_activite_ou_d_interet":"", "terrain_de_sport":"","cimetiere":"",
+                              "piste_d_aerodrome":"", "reservoir":"", "construction_surfacique":"", "equipement_de_transport":"",
+                              "troncon_de_route":"", "troncon_de_voie_ferree":"", "surface_hydrographique":"",
+                              "zone_de_vegetation":"", "aerodrome":"", "limite_terre_mer":""],
                float distance = 1000) {
         if (!layers) {
             error "Please set a valid list of layers"
@@ -342,31 +343,27 @@ class InputDataLoading extends BDTopoUtils {
         }
         debug('Import the BDTopo data')
 
+        def commune = layers.commune
         // If the Commune table is empty, then the process is stopped
-        if (!layers*.toLowerCase().contains("commune")) {
+        if (!commune) {
             error 'The process has been stopped since the table Commnune is empty'
             return
         }
 
         // -------------------------------------------------------------------------------
         // Control the SRIDs from input tables
-        def allowedLayers = ["commune", "batiment", "zone_d_activite_ou_d_interet", "terrain_de_sport,cimetiere",
-                             "piste_d_aerodrome", "reservoir", "construction_surfacique", "equipement_de_transport",
-                             "troncon_de_route", "troncon_de_voie_ferree", "surface_hydrographique",
-                             "zone_de_vegetation", "aerodrome", "limite_terre_mer"]
 
         def srid = -1
-        def tablesExist = []
+        def tablesExist = [:]
         def con = datasource.getConnection()
         // For each tables in the list, we check the SRID and compare to the srid variable. If different, the process is stopped
-        for (String name : layers) {
+        layers.each {layer->
+            String name =  layer.getValue()
             if (name) {
-                def nameLCase = name.toLowerCase()
-                if (nameLCase in allowedLayers) {
-                    if (datasource.hasTable(name)) {
+                     if (datasource.hasTable(name)) {
                         def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
                         if (hasRow) {
-                            tablesExist << nameLCase
+                            tablesExist.put(layer.key, name)
                             def currentSrid = GeometryTableUtilities.getSRID(con, TableLocation.parse(name, datasource.getDataBaseType()))
                             if (srid == -1) {
                                 srid = currentSrid
@@ -382,17 +379,21 @@ class InputDataLoading extends BDTopoUtils {
                         }
                     }
                 }
+        }
 
-            }
+        if (!tablesExist.get("commune")) {
+            error 'The process has been stopped since the table zone does not exist or is empty'
+            return
         }
 
         // -------------------------------------------------------------------------------
         // Check if the input files are present
         // If the following tables does not exists, we create corresponding empty tables
-        if (!tablesExist.contains("batiment")) {
+        String batiment =  tablesExist.get("batiment")
+        if (!batiment) {
             batiment = "BATIMENT"
-            datasource.execute("""DROP TABLE IF EXISTS batiment; 
-                CREATE TABLE batiment (THE_GEOM geometry(polygon, $srid), 
+            datasource.execute("""DROP TABLE IF EXISTS $batiment; 
+                CREATE TABLE $batiment (THE_GEOM geometry(polygon, $srid), 
                 ID CHARACTER VARYING(24),
 	            NATURE CHARACTER VARYING(34),
 	            USAGE1 CHARACTER VARYING(22)
@@ -402,78 +403,104 @@ class InputDataLoading extends BDTopoUtils {
 	            Z_MAX_TOIT FLOAT);""".toString())
         }
 
-        if (!tablesExist.contains("troncon_de_route")) {
-            datasource.execute("""DROP TABLE IF EXISTS TRONCON_DE_ROUTE;  
-                CREATE TABLE TRONCON_DE_ROUTE (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);""".toString())
-        }
-        if (!tablesExist.contains("troncon_de_voie_ferree")) {
-            datasource.execute("""DROP TABLE IF EXISTS troncon_de_voie_ferree;  
-                CREATE TABLE troncon_de_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);""".toString())
-        }
-        if (!tablesExist.contains("surface_hydrographique")) {
-            datasource.execute("""DROP TABLE IF EXISTS surface_hydrographique;  
-                CREATE TABLE surface_hydrographique (THE_GEOM geometry(polygon, $srid), ID varchar);""".toString())
-        }
-        if (!tablesExist.contains("zone_de_vegetation")) {
-            datasource.execute("""DROP TABLE IF EXISTS zone_de_vegetation; 
-                CREATE TABLE zone_de_vegetation (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);""".toString())
-        }
-        if (!tablesExist.contains("terrain_de_sport")) {
-            datasource.execute("""DROP TABLE IF EXISTS TERRAIN_DE_SPORT; 
-                CREATE TABLE TERRAIN_DE_SPORT (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar, NAT_DETAIL varchar);""".toString())
-        }
-        if (!tablesExist.contains("construction_surfacique")) {
-            datasource.execute("""DROP TABLE IF EXISTS construction_surfacique; 
-                CREATE TABLE construction_surfacique (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);""".toString())
-        }
-        if (!tablesExist.contains("equipement_de_transport")) {
-            datasource.execute("""DROP TABLE IF EXISTS equipement_de_transport; 
-                CREATE TABLE equipement_de_transport (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);""".toString())
-        }
-        if (!tablesExist.contains("zone_d_activite_ou_d_interet")) {
-            datasource.execute("""DROP TABLE IF EXISTS zone_d_activite_ou_d_interet; 
-                CREATE TABLE zone_d_activite_ou_d_interet (THE_GEOM geometry(polygon, $srid), 
-                ID varchar, CATEGORIE varchar, ORIGINE varchar);""".toString())
-        }
-        if (!tablesExist.contains("piste_d_aerodrome")) {
-            datasource.execute("""DROP TABLE IF EXISTS piste_d_aerodrome; 
-                CREATE TABLE piste_d_aerodrome (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);""".toString())
+        String troncon_de_route =  tablesExist.get("troncon_de_route")
+        if (!troncon_de_route) {
+            troncon_de_route="troncon_de_route"
+            datasource.execute("""DROP TABLE IF EXISTS $troncon_de_route;  
+                CREATE TABLE $troncon_de_route (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);""".toString())
         }
 
-        if (!tablesExist.contains("aerodrome")) {
-            datasource.execute("""DROP TABLE IF EXISTS aerodrome; 
-                CREATE TABLE aerodrome (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);""".toString())
+        String troncon_de_voie_ferree =  tablesExist.get("troncon_de_voie_ferree")
+        if (!troncon_de_voie_ferree) {
+            troncon_de_voie_ferree ="troncon_de_voie_ferree"
+            datasource.execute("""DROP TABLE IF EXISTS $troncon_de_voie_ferree;  
+                CREATE TABLE $troncon_de_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);""".toString())
         }
 
-        if (!tablesExist.contains("reservoir")) {
-            datasource.execute("""DROP TABLE IF EXISTS reservoir; 
-                CREATE TABLE reservoir (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);""".toString())
+        String surface_hydrographique =  tablesExist.get("surface_hydrographique")
+        if (!surface_hydrographique) {
+            surface_hydrographique="surface_hydrographique"
+            datasource.execute("""DROP TABLE IF EXISTS $surface_hydrographique;  
+                CREATE TABLE $surface_hydrographique (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar,POS_SOL integer);""".toString())
         }
 
-        if (!tablesExist.contains("cimetiere")) {
-            datasource.execute("""DROP TABLE IF EXISTS cimetiere; 
-                CREATE TABLE cimetiere (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);""".toString())
+        String zone_de_vegetation =  tablesExist.get("zone_de_vegetation")
+        if (!zone_de_vegetation) {
+            zone_de_vegetation="zone_de_vegetation"
+            datasource.execute("""DROP TABLE IF EXISTS $zone_de_vegetation; 
+                CREATE TABLE $zone_de_vegetation (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);""".toString())
+        }
+        String terrain_de_sport =  tablesExist.get("terrain_de_sport")
+        if (!terrain_de_sport) {
+            terrain_de_sport="terrain_de_sport"
+            datasource.execute("""DROP TABLE IF EXISTS $terrain_de_sport; 
+                CREATE TABLE $terrain_de_sport (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar, NAT_DETAIL varchar);""".toString())
+        }
+        String construction_surfacique =  tablesExist.get("construction_surfacique")
+        if (!construction_surfacique) {
+            construction_surfacique="construction_surfacique"
+            datasource.execute("""DROP TABLE IF EXISTS $construction_surfacique; 
+                CREATE TABLE $construction_surfacique (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);""".toString())
+        }
+        String equipement_de_transport =  tablesExist.get("equipement_de_transport")
+        if (!equipement_de_transport) {
+            equipement_de_transport="equipement_de_transport"
+            datasource.execute("""DROP TABLE IF EXISTS $equipement_de_transport; 
+                CREATE TABLE $equipement_de_transport (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar);""".toString())
+        }
+        String zone_d_activite_ou_d_interet =  tablesExist.get("zone_d_activite_ou_d_interet")
+        if (!zone_d_activite_ou_d_interet) {
+            zone_d_activite_ou_d_interet="zone_d_activite_ou_d_interet"
+            datasource.execute("""DROP TABLE IF EXISTS $zone_d_activite_ou_d_interet; 
+                CREATE TABLE $zone_d_activite_ou_d_interet (THE_GEOM geometry(polygon, $srid), 
+                ID varchar, CATEGORIE varchar, NATURE varchar, FICTIF varchar);""".toString())
+        }
+        String piste_d_aerodrome =  tablesExist.get("piste_d_aerodrome")
+        if (!piste_d_aerodrome) {
+            piste_d_aerodrome="piste_d_aerodrome"
+            datasource.execute("""DROP TABLE IF EXISTS $piste_d_aerodrome; 
+                CREATE TABLE $piste_d_aerodrome (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);""".toString())
+        }
+
+        String aerodrome =  tablesExist.get("aerodrome")
+        if (!aerodrome) {
+            aerodrome="aerodrome"
+            datasource.execute("""DROP TABLE IF EXISTS $aerodrome; 
+                CREATE TABLE $aerodrome (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);""".toString())
+        }
+
+        String reservoir =  tablesExist.get("reservoir")
+        if (!reservoir) {
+            reservoir="reservoir"
+            datasource.execute("""DROP TABLE IF EXISTS $reservoir; 
+                CREATE TABLE $reservoir (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar, HAUTEUR integer);""".toString())
+        }
+
+        String cimetiere =  tablesExist.get("cimetiere")
+        if (!cimetiere) {
+            cimetiere="cimetiere"
+            datasource.execute("""DROP TABLE IF EXISTS $cimetiere; 
+                CREATE TABLE $cimetiere (THE_GEOM geometry(polygon, $srid), ID varchar,  NATURE varchar);""".toString())
         }
 
         //Here we prepare the BDTopo data
 
         //1- Create (spatial) indexes if not already exists on the input layers
         datasource.execute("""
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_COMMUNE ON commune (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATIMENT ON BATIMENT (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_troncon_de_route ON troncon_de_route (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_troncon_de_voie_ferree ON troncon_de_voie_ferree (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_surface_hydrographique ON surface_hydrographique (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_zone_de_vegetation ON zone_de_vegetation (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_terrain_de_sport ON terrain_de_sport (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_construction_surfacique ON construction_surfacique (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_equipement_de_transport ON equipement_de_transport (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_zone_d_activite_ou_d_interet ON zone_d_activite_ou_d_interet (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_piste_d_aerodrome ON piste_d_aerodrome (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_aerodrome ON aerodrome (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_cimetiere ON cimetiere (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_reservoir ON reservoir (the_geom);
-            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_cimetiere ON cimetiere (the_geom)
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_COMMUNE ON $commune (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_BATIMENT ON $batiment(the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_troncon_de_route ON $troncon_de_route (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_troncon_de_voie_ferree ON $troncon_de_voie_ferree (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_surface_hydrographique ON $surface_hydrographique (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_zone_de_vegetation ON $zone_de_vegetation (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_terrain_de_sport ON $terrain_de_sport (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_construction_surfacique ON $construction_surfacique (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_equipement_de_transport ON $equipement_de_transport (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_zone_d_activite_ou_d_interet ON $zone_d_activite_ou_d_interet (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_piste_d_aerodrome ON $piste_d_aerodrome (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_aerodrome ON $aerodrome (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_reservoir ON $reservoir (the_geom);
+            CREATE SPATIAL INDEX  IF NOT EXISTS idx_geom_cimetiere ON $cimetiere (the_geom)
             """.toString())
 
         //2- Preparation of the study area (zone_xx)
@@ -481,7 +508,7 @@ class InputDataLoading extends BDTopoUtils {
         def zoneTable = postfix("ZONE")
         datasource.execute("""
             DROP TABLE IF EXISTS $zoneTable;
-            CREATE TABLE $zoneTable AS SELECT ST_FORCE2D(the_geom) as the_geom, INSEE_COM AS ID_ZONE  FROM commune;
+            CREATE TABLE $zoneTable AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $commune;
             CREATE SPATIAL INDEX IF NOT EXISTS idx_geom_ZONE ON $zoneTable (the_geom);
             -- Create a bbox around the input commune
             DROP TABLE IF EXISTS ZONE_EXTENDED;
@@ -492,44 +519,46 @@ class InputDataLoading extends BDTopoUtils {
         // 3. Prepare the Building table that are in the study area
         datasource.execute("""
             DROP TABLE IF EXISTS INPUT_BUILDING;
-            CREATE TABLE INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL integer, HEIGHT_ROOF integer, TYPE varchar, MAIN_USE varchar)
+            CREATE TABLE INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL float, HEIGHT_ROOF float, TYPE varchar, MAIN_USE varchar)
             AS 
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, 
             a.ID, a.HAUTEUR, 
             CASE WHEN a.Z_MAX_TOIT IS NOT NULL AND a.Z_MIN_TOIT IS NOT NULL THEN
             a.Z_MAX_TOIT-a.Z_MIN_TOIT + a.HAUTEUR else null end as HEIGHT_ROOF, 
-            CASE WHEN a.NATURE='Indifférenciée' and a.USAGE1 is NOT NULL THEN a.USAGE1
-            WHEN a.NATURE='Industriel, agricole ou commercial' and a.USAGE1 is NOT NULL THEN a.USAGE1 
-            ELSE a.NATURE END AS type, a.USAGE1 as main_use FROM BATIMENT a, ZONE_EXTENDED b 
+            CASE WHEN a.NATURE='Indifférenciée' and a.USAGE1 != 'Indifférencié' THEN a.USAGE1
+            WHEN a.NATURE='Indifférenciée' and a.USAGE1 = 'Indifférencié' THEN 'Bâtiment'
+            WHEN a.NATURE= 'Industriel, agricole ou commercial' and a.USAGE1 != 'Indifférencié' then a.USAGE1
+            else a.NATURE end AS type, 
+            CASE WHEN a.USAGE1 = 'Indifférencié' and a.NATURE='Indifférenciée' then 'Bâtiment'
+            WHEN a.USAGE1 = 'Indifférencié' and  a.NATURE!='Indifférenciée' then a.NATURE
+            else a.USAGE1 end as main_use FROM $batiment a, ZONE_EXTENDED b 
             WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
             """.toString())
 
         //4. Prepare the Road table (from the layer "troncon_de_route") that are in the study area (ZONE_BUFFER)
         datasource.execute("""
             DROP TABLE IF EXISTS INPUT_ROAD;
-            CREATE TABLE INPUT_ROAD 
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.* EXCEPT(the_geom) FROM troncon_de_route a, ZONE_EXTENDED 
-            b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar, SENS varchar)
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, '', a.SENS FROM $troncon_de_route a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
-
 
         //5. Prepare the Rail table (from the layer "troncon_de_voie_ferree") that are in the study area (ZONE)
         datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
-            CREATE TABLE INPUT_RAIL
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.* EXCEPT(the_geom)  FROM troncon_de_voie_ferree a, $zoneTable
-            b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, '' FROM $troncon_de_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
+
 
 
         //6. Prepare the Hydrography table (from the layer "surface_hydrographique") that are in the study area (ZONE_EXTENDED)
         datasource.execute("""
             DROP TABLE IF EXISTS INPUT_HYDRO;
             CREATE TABLE INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE varchar)
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE FROM surface_hydrographique a, ZONE_EXTENDED 
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE FROM $surface_hydrographique a, ZONE_EXTENDED 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0
             union all
-            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE  FROM terrain_de_sport a, ZONE_EXTENDED 
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE  FROM $terrain_de_sport a, ZONE_EXTENDED 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
             and NATURE = 'Bassin de natation';
             """.toString())
@@ -539,15 +568,15 @@ class InputDataLoading extends BDTopoUtils {
         datasource.execute("""
             DROP TABLE IF EXISTS INPUT_VEGET;
             CREATE TABLE INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM zone_de_vegetation a, ZONE_EXTENDED b 
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM $zone_de_vegetation a, ZONE_EXTENDED b 
             WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0
-            FROM piste_d_aerodrome a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            FROM $piste_d_aerodrome a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NATURE = 'Piste en herbe'
              UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NAT_DETAIL, 0
-            FROM terrain_de_sport a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            FROM $terrain_de_sport a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NAT_DETAIL in ('Terrain de football', 'Terrain de rugby')
             ;
             """.toString())
@@ -577,7 +606,7 @@ class InputDataLoading extends BDTopoUtils {
             WHEN a.CATEGORIE ='Sport' THEN 'sport'
             WHEN a.CATEGORIE = 'Religieux' THEN 'religious'
             ELSE 'unknown' END AS TYPE
-            FROM zone_d_activite_ou_d_interet a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            FROM $zone_d_activite_ou_d_interet a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.FICTIF='Non';
             DROP TABLE IF EXISTS $input_urban_areas;
             CREATE TABLE $input_urban_areas (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_urban INTEGER)
@@ -595,37 +624,38 @@ class InputDataLoading extends BDTopoUtils {
             CREATE TABLE $input_impervious (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE VARCHAR, id_impervious INTEGER) AS        
             SELECT the_geom, ID,TYPE,CAST((row_number() over()) as Integer) from (      
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 'sport' as type
-            FROM terrain_de_sport a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            FROM $terrain_de_sport a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NAT_DETAIL not in ('Terrain de football', 'Terrain de rugby')
             UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 
             'building' as type
-            FROM CONSTRUCTION_SURFACIQUE a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            FROM $construction_surfacique a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Barrage','Ecluse','Dalle')
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 'transport' as type 
-            FROM equipement_de_transport a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            FROM $equipement_de_transport a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
             SELECT  the_geom, ID,NATURE
             FROM TMP_SURFACE_ACTIVITE where NATURE != 'unknown'
             UNION all
             SELECT  the_geom, ID,'cemetery'
-            FROM cimetiere
+            FROM $cimetiere
             UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 'transport' as type
-            FROM piste_d_aerodrome a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            FROM $piste_d_aerodrome a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NATURE = 'Piste en dur') as foo;
             """.toString())
 
         //10. Prepare the coastline table (from the layer "limite_terre_mer") that are in the study area (ZONE)
         String coastline
-        if (tablesExist.contains("limite_terre_mer")) {
+        String limite_terre_mer = tablesExist.get("limite_terre_mer")
+        if (limite_terre_mer) {
             coastline = "INPUT_COASTLINE"
             datasource.execute("""
             DROP TABLE IF EXISTS $coastline;
             CREATE TABLE $coastline
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.* EXCEPT(the_geom)  FROM limite_terre_mer a, $zoneTable
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.* EXCEPT(the_geom)  FROM $limite_terre_mer a, $zoneTable
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NIVEAU = 'Plus hautes eaux';
             """.toString())
         }
@@ -638,8 +668,8 @@ class InputDataLoading extends BDTopoUtils {
         return [building   : "INPUT_BUILDING",
                 road       : "INPUT_ROAD",
                 rail       : "INPUT_RAIL", water: "INPUT_HYDRO",
-                vegetation : "INPUT_VEGET", impervious: "INPUT_IMPERVIOUS",
-                urban_areas: "INPUT_URBAN_AREAS",
+                vegetation : "INPUT_VEGET", impervious: input_impervious,
+                urban_areas: input_urban_areas,
                 coastline  : coastline, zone: zoneTable
         ]
     }

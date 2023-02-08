@@ -211,7 +211,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
     }
 
     @Override
-    Map loadAndFormatData2(JdbcDataSource datasource, Map layers, float distance, float hLevMin ) {
+    Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin ) {
         if (!hLevMin) {
             hLevMin = 3
         }
@@ -272,66 +272,137 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
 
     }
 
+    @Override
+    def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTables,
+                               int sourceSRID, int inputSRID, H2GIS h2gis_datasource) {
+        def formatting_geom = "the_geom"
+        if (sourceSRID == 0 && sourceSRID != inputSRID) {
+            formatting_geom = "st_setsrid(the_geom, $inputSRID) as the_geom"
+        } else if (sourceSRID >= 0 && sourceSRID == inputSRID) {
+            formatting_geom = "st_transform(the_geom, $inputSRID) as the_geom"
+        }
 
+        String outputTableName = "COMMUNE"
+        //Let's process the data by location
+        //Check if code is a string or a bbox
+        //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
+        if (location in Collection) {
+            debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
+                    ST_INTERSECTION(the_geom, ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID)) as the_geom, CODE_INSEE  from ${inputTables.commune} where the_geom 
+                    && ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID) """.toString())
+        } else if (location instanceof String) {
+            logger.debug "Loading in the H2GIS database $outputTableName"
+            h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 
+            CODE_INSEE FROM ${inputTables.commune} WHERE CODE_INSEE='$location' or lower(nom)='${location.toLowerCase()}'""".toString())
+        }
+        def count = h2gis_datasource."$outputTableName".rowCount
+        if (count > 0) {
+            //Compute the envelope of the extracted area to extract the thematic tables
+            def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}) AS THE_GEOM FROM $outputTableName".toString()).THE_GEOM
 
+            if (inputTables.bati_indifferencie) {
+                //Extract bati_indifferencie
+                outputTableName = "BATI_INDIFFERENCIE"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, HAUTEUR FROM ${inputTables.bati_indifferencie}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            }
 
-/** This method creates the Table from the Abstract model and feed them with the BDTopo data according to some
- * defined rules (i.e. certain types of buildings or vegetation are transformed into a generic type in the abstract
- * model). Then default values are set (or values are corrected) and the quality of the input data is assessed and
- * returned into a statistic table for each layer. For further information, cf. each of the four processes used in the
- * mapper.
- *
- * @param datasource A connexion to a database (H2GIS, PostGIS, ...), in which the data to process will be stored
- * @param distBuffer The distance (exprimed in meter) used to compute the buffer area around the ZONE
- * @param distance The distance (exprimed in meter) used to compute the extended area around the ZONE
- * @param idZone The Zone id
- * @param tableZoneName The table name in which the zone area is stored
- * @param tableBuildIndifName The table name in which the undifferentiated ("Indifférencié" in french) buildings are stored
- * @param tableBuildIndusName The table name in which the industrial buildings are stored
- * @param tableBuildRemarqName The table name in which the remarkable ("Remarquable" in french) buildings are stored
- * @param tableRoadName The table name in which the roads are stored
- * @param tableRailName The table name in which the rail ways are stored
- * @param tableHydroName The table name in which the hydrographic areas are stored
- * @param tableVegetName The table name in which the vegetation areas are stored
- * @param tableImperviousSportName The table name in which the impervious sport areas are stored
- * @param tableImperviousBuildSurfName The table name in which the impervious surfacic buildings are stored
- * @param tableImperviousRoadSurfName The table name in which the impervious road areas are stored
- * @param tableImperviousActivSurfName The table name in which the impervious activities areas are stored
- * @param hLevMin Minimum building level height
- * @param hLevMax Maximum building level height
- * @param hThresholdLev2 Threshold on the building height, used to determine the number of levels
- * @param inputSRID to force the SRID of the input data
- *
- * @return outputBuilding Table name in which the (ready to be used in the GeoIndicators part) buildings are stored
- * @return outputRoad Table name in which the (ready to be used in the GeoIndicators part) roads are stored
- * @return outputRail Table name in which the (ready to be used in the GeoIndicators part) rail ways are stored
- * @return outputHydro Table name in which the (ready to be used in the GeoIndicators part) hydrographic areas are stored
- * @return outputVeget Table name in which the (ready to be used in the GeoIndicators part) vegetation areas are stored
- * @return outputImpervious Table name in which the (ready to be used in the GeoIndicators part) impervious areas are stored
- * @return outputUrbanAreas Table name in which the (ready to be used in the GeoIndicators part) urban areas are stored
- * @return outputZone Table name in which the (ready to be used in the GeoIndicators part) zone is stored
- *
- */
-    def loadAndFormatData(
-            JdbcDataSource datasource,
-            float distance = 1000,
-            String tableCommuneName = "",
-            String tableBuildIndifName = "",
-            String tableBuildIndusName = "",
-            String tableBuildRemarqName = "",
-            String tableRoadName = "",
-            String tableRailName = "",
-            String tableHydroName = "",
-            String tableVegetName = "",
-            String tableImperviousSportName = "",
-            String tableImperviousBuildSurfName = "",
-            String tableImperviousRoadSurfName = "",
-            String tableImperviousActivSurfName = "",
-            String tablePiste_AerodromeName = "",
-            String tableReservoirName = "",
-            int hLevMin = 3) {
+            if (inputTables.bati_industriel) {
+                //Extract bati_industriel
+                outputTableName = "BATI_INDUSTRIEL"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, HAUTEUR FROM ${inputTables.bati_industriel}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            }
 
+            if (inputTables.bati_remarquable) {
+                //Extract bati_remarquable
+                outputTableName = "BATI_REMARQUABLE"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, HAUTEUR FROM ${inputTables.bati_remarquable}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            }
 
+            if (inputTables.route) {
+                //Extract route
+                outputTableName = "ROUTE"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTables.route}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            } else {
+                logger.error "The route table must be provided"
+                return
+            }
+
+            if (inputTables.troncon_voie_ferree) {
+                //Extract troncon_voie_ferree
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                outputTableName = "TRONCON_VOIE_FERREE"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID,$formatting_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTables.troncon_voie_ferree}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+
+            }
+
+            if (inputTables.surface_eau) {
+                //Extract surface_eau
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                outputTableName = "SURFACE_EAU"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom FROM ${inputTables.surface_eau}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+
+            }
+
+            if (inputTables.zone_vegetation) {
+                //Extract zone_vegetation
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                outputTableName = "ZONE_VEGETATION"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName  AS SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.zone_vegetation}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+
+            }
+
+            if (inputTables.terrain_sport) {
+                //Extract terrain_sport
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                outputTableName = "TERRAIN_SPORT"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.terrain_sport}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND NATURE='Piste de sport'".toString())
+
+            }
+
+            if (inputTables.construction_surfacique) {
+                //Extract construction_surfacique
+                outputTableName = "CONSTRUCTION_SURFACIQUE"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.construction_surfacique}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier')".toString())
+            }
+
+            if (inputTables.surface_route) {
+                //Extract surface_route
+                outputTableName = "SURFACE_ROUTE"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom,NATURE  FROM ${inputTables.surface_route}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            }
+
+            if (inputTables.surface_activite) {
+                //Extract surface_activite
+                outputTableName = "SURFACE_ACTIVITE"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, CATEGORIE  FROM ${inputTables.surface_activite}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) AND (CATEGORIE='Administratif' OR CATEGORIE='Enseignement' OR CATEGORIE='Santé')".toString())
+            }
+            //Extract PISTE_AERODROME
+            if (inputTables.piste_aerodrome) {
+                outputTableName = "PISTE_AERODROME"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName  AS SELECT ID, $formatting_geom, NATURE  FROM ${inputTables.piste_aerodrome}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            }
+
+            //Extract RESERVOIR
+            if (inputTables.reservoir) {
+                outputTableName = "RESERVOIR"
+                logger.debug "Loading in the H2GIS database $outputTableName"
+                h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, NATURE, HAUTEUR  FROM ${inputTables.reservoir}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            }
+            return true
+
+        } else {
+            logger.error "Cannot find any commune with the insee code : $location"
+            return
+        }
     }
 }
 
