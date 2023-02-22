@@ -1,7 +1,6 @@
 package org.orbisgis.geoclimate.bdtopo
 
 import groovy.json.JsonOutput
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
@@ -9,7 +8,6 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.jdbc.JdbcDataSource
-import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -323,11 +321,10 @@ abstract class WorkflowAbstractTest {
             ]
             H2GIS externalDB = H2GIS.open(folder.absolutePath+File.separator+externaldb_dbProperties.databaseName, externaldb_dbProperties.user, externaldb_dbProperties.password)
             externalDB.link(filePath, "COMMUNE", true)
-            Geometry geom = externalDB.firstRow("""SELECT ST_BUFFER(ST_POINTONSURFACE(the_geom), 100) AS the_geom from commune""".toString()).the_geom
+            Geometry geom = externalDB.firstRow("""SELECT ST_BUFFER(ST_POINTONSURFACE(the_geom), 200) AS the_geom from commune""".toString()).the_geom
 
             Envelope env = geom.getEnvelopeInternal()
             def location = [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
-
 
             def outputTables = ["building_indicators": "building_indicators",
                                 "rsu_indicators"     : "rsu_indicators",
@@ -404,49 +401,4 @@ abstract class WorkflowAbstractTest {
         ]
         assertNull(BDTopo.workflow(input:bdTopoParameters, version :getVersion()))
     }
-
-    @Disabled
-    @Test
-    void workflowFolderToDatabase() {
-        def bdTopoParameters = [
-                "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
-                "geoclimatedb": [
-                        "folder": folder.absolutePath,
-                        "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
-                        "delete": true
-                ],
-                "input"       : [
-                        "folder": ["path"     : ".../processingChain",
-                                   "locations": ["-", "-"]]],
-                "output"      : [
-                        "database":
-                                ["user"    : "sa",
-                                 "password": "sa",
-                                 "url"     : "jdbc:h2://${folder.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE"}",
-                                 "tables"  : ["building_indicators": "building_indicators",
-                                              "block_indicators"   : "block_indicators",
-                                              "rsu_indicators"     : "rsu_indicators",
-                                              "rsu_lcz"            : "rsu_lcz",
-                                              "zone"               : "zone"]]],
-                "parameters"  :
-                        ["distance"    : 0,
-                         "hLevMin"     : 3,
-                         rsu_indicators: [
-                                 "indicatorUse" : ["LCZ", "TEB", "UTRF"],
-                                 "svfSimplified": true,
-                                 "mapOfWeights" :
-                                         ["sky_view_factor"             : 1,
-                                          "aspect_ratio"                : 1,
-                                          "building_surface_fraction"   : 1,
-                                          "impervious_surface_fraction" : 1,
-                                          "pervious_surface_fraction"   : 1,
-                                          "height_of_roughness_elements": 1,
-                                          "terrain_roughness_class"     : 1]]
-                        ]
-        ]
-        IProcess process = BDTopo.Workflow.workflow()
-        assertTrue(process.execute(input: bdTopoParameters, version: getVersion()))
-    }
-
-
 }
