@@ -38,9 +38,7 @@
 package org.orbisgis.geoclimate.worldpoptools
 
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
-import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 /**
@@ -52,7 +50,7 @@ import org.slf4j.LoggerFactory
  * @author Erwan Bocher CNRS LAB-STICC
  */
 
-abstract class WorldPopTools extends GroovyProcessFactory {
+abstract class WorldPopTools extends Script {
 
     def static Extract = new WorldPopExtract()
 
@@ -68,4 +66,14 @@ abstract class WorldPopTools extends GroovyProcessFactory {
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }
     static def debug = { obj -> logger.debug(obj.toString()) }
+
+    /**
+     * Postfix the given String with '_' and an UUID..
+     *
+     * @param name String to postfix
+     * @return The postfix String
+     */
+    static String postfix(String name) {
+        return name + "_" + UUID.randomUUID().toString().replaceAll("-", "_")
+    }
 }

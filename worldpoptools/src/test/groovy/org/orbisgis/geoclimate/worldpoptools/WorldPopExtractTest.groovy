@@ -9,13 +9,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
-import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.orbisgis.data.H2GIS.open
 
 class WorldPopExtractTest {
 
@@ -66,13 +65,8 @@ class WorldPopExtractTest {
      */
     @Test
     void extractGridProcess(){
-        IProcess process = WorldPopTools.Extract.extractWorldPopLayer()
-        def coverageId = "wpGlobal:ppp_2018"
-        def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
-        def epsg = 4326
-        if(process.execute([coverageId:coverageId, bbox:bbox])) {
-            assertTrue new File(process.results.outputFilePath).exists()
-        }
+        String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer( "wpGlobal:ppp_2018",[ 47.63324, -2.78087,47.65749, -2.75979])
+        assertTrue new File(outputFilePath).exists()
     }
 
     /**
@@ -80,18 +74,13 @@ class WorldPopExtractTest {
      */
     @Test
     void extractLoadGridProcess(){
-        IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
-        def coverageId = "wpGlobal:ppp_2018"
-        def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
-        [46.257614, 4.866568, 46.271828, 4.8969374]
-        def epsg = 4326
-        if(extractWorldPopLayer.execute([coverageId:coverageId, bbox:bbox])) {
-            assertTrue new File(extractWorldPopLayer.results.outputFilePath).exists()
-            IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
-            assertTrue importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
-                                              epsg            : epsg, datasource: h2GIS])
-            assertEquals(720, h2GIS.getSpatialTable(importAscGrid.results.outputTableWorldPopName).rowCount)
-            assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(importAscGrid.results.outputTableWorldPopName).columns)
+        String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer( "wpGlobal:ppp_2018", [ 47.63324, -2.78087,47.65749, -2.75979])
+        if(outputFilePath) {
+            assertTrue new File(outputFilePath).exists()
+            String outputTableWorldPopName = WorldPopTools.Extract.importAscGrid(h2GIS,outputFilePath )
+            assertNotNull outputTableWorldPopName
+            assertEquals(720, h2GIS.getSpatialTable(outputTableWorldPopName).rowCount)
+            assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(outputTableWorldPopName).columns)
         }
     }
 }

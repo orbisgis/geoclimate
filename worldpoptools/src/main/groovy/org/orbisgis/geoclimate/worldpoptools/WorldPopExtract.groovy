@@ -42,7 +42,6 @@ import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.asc.AscReaderDriver
 import org.h2gis.utilities.FileUtilities
 import org.orbisgis.data.jdbc.JdbcDataSource
-import org.orbisgis.process.api.IProcess
 
 
 @BaseScript WorldPopTools pf
@@ -52,124 +51,112 @@ import org.orbisgis.process.api.IProcess
  * This process is used to extract a grid population data from  https://www.worldpop.org
  * The grid is stored in a tmp dir.
  * If the grid already exists the file is reused.
- * @return
+ * @param coverageId coverage identifier on the server
+ * @param bbox an array of coordinates in lat/long
+ * @return the path of the extract grid, stored on a temporary directory
  */
-IProcess extractWorldPopLayer() {
-    return create {
-        title "Extract the estimated world population data on 100 X 100 m grid"
-        id "extractWorldPop"
-        inputs  coverageId:String,  bbox :[]
-        outputs outputFilePath: String
-        run { coverageId, bbox ->
-            info "Extract the world population grid"
-            def gridRequest =  createGridRequest(coverageId, bbox)
-            //hash the query to cache it
-            def queryHash = gridRequest.digest('SHA-256')
-            def outputGridFile=new File(System.getProperty("java.io.tmpdir")+File.separator+"${queryHash}.asc")
-            def popGridFilePath = outputGridFile.absolutePath
-            if(outputGridFile.exists()){
-                if(outputGridFile.length()==0){
+String extractWorldPopLayer(String coverageId, List bbox) {
+    info "Extract the world population grid"
+    def gridRequest = createGridRequest(coverageId, bbox)
+    //hash the query to cache it
+    def queryHash = gridRequest.digest('SHA-256')
+    def outputGridFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "${queryHash}.asc")
+    def popGridFilePath = outputGridFile.absolutePath
+    if (outputGridFile.exists()) {
+        if (outputGridFile.length() == 0) {
+            outputGridFile.delete()
+            if (outputGridFile.createNewFile()) {
+                if (grid(gridRequest, outputGridFile)) {
+                    info "The grid file has been downloaded at ${popGridFilePath}."
+                } else {
                     outputGridFile.delete()
-                    if(outputGridFile.createNewFile()) {
-                        if ( grid(gridRequest, outputGridFile)) {
-                            info "The grid file has been downloaded at ${popGridFilePath}."
-                        } else {
-                            outputGridFile.delete()
-                            error "Cannot extract the grid data for the query $gridRequest"
-                            return
-                        }
-                    }
-                }
-                else {
-                    debug "\nThe cached grid file ${popGridFilePath} will be re-used for the query :  \n$gridRequest."
+                    error "Cannot extract the grid data for the query $gridRequest"
+                    return
                 }
             }
-            else{
-                if(outputGridFile.createNewFile()){
-                    if (grid(gridRequest, outputGridFile)) {
-                        info "The OSM file has been downloaded at ${popGridFilePath}."
-                    } else {
-                        outputGridFile.delete()
-                        error "Cannot extract the OSM data for the query $gridRequest"
-                        return
-                    }}
+        } else {
+            debug "\nThe cached grid file ${popGridFilePath} will be re-used for the query :  \n$gridRequest."
+        }
+    } else {
+        if (outputGridFile.createNewFile()) {
+            if (grid(gridRequest, outputGridFile)) {
+                info "The OSM file has been downloaded at ${popGridFilePath}."
+            } else {
+                outputGridFile.delete()
+                error "Cannot extract the OSM data for the query $gridRequest"
+                return
             }
-            [outputFilePath: popGridFilePath]
         }
     }
+    return popGridFilePath;
 }
 
 /**
  * Process to import and asc grid into the database
- * @return
+ * @param datasource a connection to the database
+ * @param worldPopFilePath the path of the grid
+ * @param epsg SRID code set to the grid
+ * @param tableName the name of table that contains the grid data in the database
+ * @return the name of the imported table
  */
-IProcess importAscGrid() {
-    return create {
-        title "Import an asc grid into the database"
-        id "importAscGrid"
-        inputs  worldPopFilePath:String, epsg: 4326, tableName : "world_pop", datasource: JdbcDataSource
-        outputs outputTableWorldPopName: String
-        run { worldPopFilePath,epsg,tableName, datasource ->
-            info "Import the the world pop asc file"
-            // The name of the outputTableName is constructed
-            def outputTableWorldPopName = postfix tableName
-            if(!worldPopFilePath){
-                info "Create a default empty worldpop table"
-                datasource.execute("""drop table if exists $outputTableWorldPopName;
+String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int epsg = 4326, String tableName = "world_pop") {
+    info "Import the the world pop asc file"
+    // The name of the outputTableName is constructed
+    def outputTableWorldPopName = postfix tableName
+    if (!worldPopFilePath) {
+        info "Create a default empty worldpop table"
+        datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
-            }
-            AscReaderDriver ascReaderDriver = new AscReaderDriver()
-            ascReaderDriver.setAs3DPoint(false)
-            ascReaderDriver.setEncoding("UTF-8")
-            if(epsg!=4326) {
-                def importTable =  postfix "imported_grid"
-                try {
-                    ascReaderDriver.read(datasource.getConnection(), new File(worldPopFilePath), new EmptyProgressVisitor(), importTable, 4326)
-                    datasource.execute("""drop table if exists $outputTableWorldPopName;
+    }
+    AscReaderDriver ascReaderDriver = new AscReaderDriver()
+    ascReaderDriver.setAs3DPoint(false)
+    ascReaderDriver.setEncoding("UTF-8")
+    if (epsg != 4326) {
+        def importTable = postfix "imported_grid"
+        try {
+            ascReaderDriver.read(datasource.getConnection(), new File(worldPopFilePath), new EmptyProgressVisitor(), importTable, 4326)
+            datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName as select ST_TRANSFORM(THE_GEOM, $epsg) as the_geom,
                 PK AS ID_POP, Z as POP from $importTable;
                 drop table if exists $importTable""".toString())
-                }catch(Exception ex){
-                    info "Cannot find any worldpop data on the requested area"
-                    datasource.execute("""drop table if exists $outputTableWorldPopName;
+        } catch (Exception ex) {
+            info "Cannot find any worldpop data on the requested area"
+            datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
-                }
-            }else {
-                try {
-                ascReaderDriver.read(datasource.getConnection(),new File(worldPopFilePath), new EmptyProgressVisitor(), outputTableWorldPopName, 4326)
-                datasource.execute("""ALTER TABLE $outputTableWorldPopName RENAME COLUMN PK TO ID_POP;
+        }
+    } else {
+        try {
+            ascReaderDriver.read(datasource.getConnection(), new File(worldPopFilePath), new EmptyProgressVisitor(), outputTableWorldPopName, 4326)
+            datasource.execute("""ALTER TABLE $outputTableWorldPopName RENAME COLUMN PK TO ID_POP;
                                 ALTER TABLE $outputTableWorldPopName RENAME COLUMN Z TO POP;""".toString())
-                }catch(Exception ex){
-                    info "Cannot find any worldpop data on the requested area"
-                    datasource.execute("""drop table if exists $outputTableWorldPopName;
+        } catch (Exception ex) {
+            info "Cannot find any worldpop data on the requested area"
+            datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
-                }
-            }
-            [outputTableWorldPopName: outputTableWorldPopName]
         }
     }
+    return outputTableWorldPopName
 }
-
 
 
 /**
  * A method to create the WCS grid request
- * @param coverageId
- * @param bbox
+ * @param coverageId coverage identifier on the server
+ * @param bbox an array of coordinates in lat/long
  * @return
  */
 String createGridRequest(String coverageId, def bbox) {
-    if(!coverageId){
+    if (!coverageId) {
         error "The coverageId cannot be null or empty"
         return
     }
     def subset = buildSubset(bbox)
 
-    if(!subset){
+    if (!subset) {
         error "Cannot create the subset WCS filter"
         return
     }
-    def crsOutPut =  "outputCRS=http://www.opengis.net/def/crs/EPSG/0/4326"
+    def crsOutPut = "outputCRS=http://www.opengis.net/def/crs/EPSG/0/4326"
 
     def WCS_SERVER = """https://ogc.worldpop.org/geoserver/ows?service=WCS&version=2.0.1&request=GetCoverage&coverageId=$coverageId&format=ArcGrid&$subset&$crsOutPut""".toString()
 
@@ -188,20 +175,20 @@ String createGridRequest(String coverageId, def bbox) {
  *
  * @author Erwan Bocher (CNRS LAB-STICC)
  */
- boolean grid(String coverageId, def bbox, File outputGridFile) {
-     def queryUrl = createGridRequest(coverageId,bbox)
-     if(!queryUrl){
-         error "The request to the server cannot be null or empty"
-         return false
-     }
-     if(!outputGridFile){
-         error "The output Grid File cannot be null or empty"
-         return false
-     }
-     if(!FileUtilities.isExtensionWellFormated(outputGridFile, "asc")){
-         error "Only support asc (ArcGrid format) as output Grid File"
-         return false
-     }
+boolean grid(String coverageId, def bbox, File outputGridFile) {
+    def queryUrl = createGridRequest(coverageId, bbox)
+    if (!queryUrl) {
+        error "The request to the server cannot be null or empty"
+        return false
+    }
+    if (!outputGridFile) {
+        error "The output Grid File cannot be null or empty"
+        return false
+    }
+    if (!FileUtilities.isExtensionWellFormated(outputGridFile, "asc")) {
+        error "Only support asc (ArcGrid format) as output Grid File"
+        return false
+    }
     return grid(queryUrl, outputGridFile)
 }
 
@@ -216,14 +203,14 @@ String createGridRequest(String coverageId, def bbox) {
  *
  * @author Erwan Bocher (CNRS LAB-STICC)
  */
-boolean grid(String wcsRequest,  File outputGridFile) {
+boolean grid(String wcsRequest, File outputGridFile) {
     def queryUrl = new URL(wcsRequest)
 
-    if(!wcsRequest){
+    if (!wcsRequest) {
         error "The request cannot be null or empty"
         return false
     }
-    if(!FileUtilities.isExtensionWellFormated(outputGridFile, "asc")){
+    if (!FileUtilities.isExtensionWellFormated(outputGridFile, "asc")) {
         error "Only support asc (ArcGrid format) as output Grid File"
         return false
     }
@@ -232,7 +219,7 @@ boolean grid(String wcsRequest,  File outputGridFile) {
     final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
     def connection
     if (proxyHost != null) {
-        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
         connection = queryUrl.openConnection(proxy) as HttpURLConnection
     } else {
         connection = queryUrl.openConnection() as HttpURLConnection
@@ -246,12 +233,10 @@ boolean grid(String wcsRequest,  File outputGridFile) {
         info "Downloading the GridCoverage data from WorldPop server in ${outputGridFile}"
         outputGridFile << connection.inputStream
         return true
-    }
-    else if(connection.responseCode == 404){
+    } else if (connection.responseCode == 404) {
         error "The service is not available to execute the WCS query.$queryUrl"
         return false
-    }
-    else {
+    } else {
         error "Cannot execute the WCS query.$queryUrl"
         return false
     }
@@ -291,7 +276,7 @@ static String buildSubset(def bbox) {
     if (bbox.size() == 4) {
         if (UTMUtils.isValidLatitude(bbox[0]) && UTMUtils.isValidLatitude(bbox[2])
                 && UTMUtils.isValidLongitude(bbox[1]) && UTMUtils.isValidLongitude(bbox[3])) {
-            return  "subset=Lat(${bbox[0]},${bbox[2]})&subset=Long(${bbox[1]},${bbox[3]})"
+            return "subset=Lat(${bbox[0]},${bbox[2]})&subset=Long(${bbox[1]},${bbox[3]})"
         }
     }
     error("The bbox must be defined with 4 values")

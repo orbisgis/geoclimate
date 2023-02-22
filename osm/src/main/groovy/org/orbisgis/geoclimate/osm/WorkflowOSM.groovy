@@ -603,16 +603,14 @@ IProcess osm_processing() {
                             //Extract and compute population indicators for the specified year
                             //This data can be used by the grid_indicators process
                             if (worldpop_indicators) {
-                                IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
-                                def coverageId = "wpGlobal:ppp_2020"
                                 def bbox = [zones.envelope.getMinY() as Float, zones.envelope.getMinX() as Float,
                                             zones.envelope.getMaxY() as Float, zones.envelope.getMaxX() as Float]
-                                if (extractWorldPopLayer.execute([coverageId: coverageId, bbox: bbox])) {
-                                    IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
-                                    if (importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
-                                                               epsg            : srid, tableName: coverageId.replaceAll(":", "_"), datasource: h2gis_datasource])) {
-                                        results.put("population", importAscGrid.results.outputTableWorldPopName)
-
+                                String coverageId = "wpGlobal:ppp_2020"
+                                String worldPopFile = WorldPopTools.Extract.extractWorldPopLayer( coverageId, bbox)
+                                if (worldPopFile) {
+                                    String worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource, worldPopFile, srid, coverageId.replaceAll(":", "_"))
+                                    if (worldPopTableName) {
+                                        results.put("population", worldPopTableName)
                                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                                         if (!process.execute([inputBuilding  : results.building,
                                                               inputPopulation: importAscGrid.results.outputTableWorldPopName

@@ -930,16 +930,15 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             //Extract and compute population indicators for the specified year
             //This data can be used by the grid_indicators process
             if (worldpop_indicators) {
-                IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
-                def coverageId = "wpGlobal:ppp_2018"
                 def envelope = h2gis_datasource.firstRow("select st_transform(the_geom, 4326) as geom from $zone".toString()).geom.getEnvelopeInternal()
                 def bbox = [envelope.getMinY() as Float, envelope.getMinX() as Float,
                             envelope.getMaxY() as Float, envelope.getMaxX() as Float]
-                if (extractWorldPopLayer.execute([coverageId: coverageId, bbox: bbox])) {
-                    IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
-                    if (importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
-                                               epsg            : srid, tableName: coverageId.replaceAll(":", "_"), datasource: h2gis_datasource])) {
-                        results.put("population", importAscGrid.results.outputTableWorldPopName)
+                String coverageId = "wpGlobal:ppp_2018"
+                String worldPopFile = WorldPopTools.Extract.extractWorldPopLayer( coverageId, bbox)
+                if (worldPopFile) {
+                    IProcess worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource,worldPopFile, srid ,coverageId.replaceAll(":", "_"))
+                    if (worldPopTableName) {
+                        results.put("population", worldPopTableName)
 
                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                         if (!process.execute([inputBuilding         : results.building,

@@ -13,7 +13,7 @@ class WorkflowDebugTest {
     @Disabled
     @Test
     void runFromFile() {
-        BDTopo.Workflow.v2(input: '/home/ebocher/Téléchargements/formation_geoclimate/bdtopo_demo_test.json')
+        BDTopo.v2(input: '/../bdtopo_demo_test.json')
     }
 
     @Disabled
@@ -107,7 +107,7 @@ class WorkflowDebugTest {
                                      "road_traffic"  : true
                     ]
             ]
-            BDTopo.Workflow.v2(input: workflow_parameters)
+            BDTopo.v2(input: workflow_parameters)
         } else {
             println("The configuration file for the input database doesn't exist")
         }
@@ -117,9 +117,9 @@ class WorkflowDebugTest {
     //Use it for integration test with a postgis database
     @Test
     void testIntegrationFolderInput() {
-        def inputData = "/home/ebocher/Autres/data/IGN/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D022_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D022-ED182"
+        def inputData = "/../BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D022_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D022-ED182"
         def locations = ["Paimpol"]
-        String directory = "./target/bdtopo_workflow_folder_input"
+        String directory = "./../bdtopo_workflow_folder_input"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -148,7 +148,7 @@ class WorkflowDebugTest {
                          ]
                         ]
         ]
-        BDTopo.Workflow.v2(input: bdTopoParameters)
+        BDTopo.v2(input: bdTopoParameters)
 
     }
 
