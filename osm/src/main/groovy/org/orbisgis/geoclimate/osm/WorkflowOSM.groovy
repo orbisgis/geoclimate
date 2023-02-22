@@ -613,7 +613,7 @@ IProcess osm_processing() {
                                         results.put("population", worldPopTableName)
                                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
                                         if (!process.execute([inputBuilding  : results.building,
-                                                              inputPopulation: importAscGrid.results.outputTableWorldPopName
+                                                              inputPopulation: worldPopTableName
                                                               , datasource   : h2gis_datasource])) {
                                             info "Cannot compute any population data at building level"
                                         }
@@ -621,7 +621,7 @@ IProcess osm_processing() {
                                         results.put("building", process.results.buildingTableName)
 
                                     } else {
-                                        info "Cannot import the worldpop asc file $extractWorldPopLayer.results.outputFilePath"
+                                        info "Cannot import the worldpop asc file $worldPopFile"
                                         info "Create a default empty worldpop table"
                                         def outputTableWorldPopName = postfix "world_pop"
                                         h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
