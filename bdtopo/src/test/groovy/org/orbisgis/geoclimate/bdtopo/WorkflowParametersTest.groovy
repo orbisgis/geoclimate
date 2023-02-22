@@ -2,6 +2,7 @@ package org.orbisgis.geoclimate.bdtopo
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import static org.junit.jupiter.api.Assertions.assertNull
 
 class WorkflowParametersTest {
 
@@ -31,9 +32,9 @@ class WorkflowParametersTest {
                                               "rsu_lcz"            : "rsu_lcz",
                                               "zone"               : "zone"]]],
                 "parameters"  :
-                        ["distance"      : 0,
-                         "hLevMin"       : 3,
-                         rsu_indicators  : [
+                        ["distance"    : 0,
+                         "hLevMin"     : 3,
+                         rsu_indicators: [
                                  "indicatorUse" : ["LCZ", "TEB", "UTRF"],
                                  "svfSimplified": true,
                                  "mapOfWeights" :
@@ -46,6 +47,7 @@ class WorkflowParametersTest {
                                           "terrain_roughness_class"     : 1]]
                         ]
         ]
-        BDTopo.Workflow.v2(input: bdTopoParameters)
+        assertNull BDTopo.v2(input: bdTopoParameters)
+        assertNull BDTopo.v3(input: bdTopoParameters)
     }
 }

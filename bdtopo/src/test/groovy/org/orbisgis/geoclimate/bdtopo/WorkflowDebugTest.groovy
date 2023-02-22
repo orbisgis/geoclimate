@@ -13,7 +13,7 @@ class WorkflowDebugTest {
     @Disabled
     @Test
     void runFromFile() {
-        BDTopo.Workflow.v2(input:'/home/ebocher/Téléchargements/formation_geoclimate/bdtopo_demo_test.json')
+        BDTopo.Workflow.v2(input: '/home/ebocher/Téléchargements/formation_geoclimate/bdtopo_demo_test.json')
     }
 
     @Disabled

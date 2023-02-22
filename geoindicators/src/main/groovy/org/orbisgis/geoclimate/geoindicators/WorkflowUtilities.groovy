@@ -44,7 +44,7 @@ def buildOutputDBParameters(def outputDBProperties, def outputTables, def allowe
                     "${allowedOutputTables.collect { name -> [name: name] }}"
         }
     }
-    def output_datasource = createDatasource(outputDBProperties.subMap(["user", "password", "url"]))
+    def output_datasource = createDatasource(outputDBProperties.subMap(["user", "password", "url", "databaseName"]))
     if (!output_datasource) {
         error "Cannot connect to the output database"
     }
@@ -78,7 +78,13 @@ def createDatasource(def database_properties) {
         }
 
     } else {
-        error "The output database url cannot be null or empty"
+        def h2gis =  H2GIS.open(database_properties)
+        if(h2gis){
+            return h2gis
+        }else {
+            error "The output database url cannot be null or empty"
+            return
+        }
     }
 }
 

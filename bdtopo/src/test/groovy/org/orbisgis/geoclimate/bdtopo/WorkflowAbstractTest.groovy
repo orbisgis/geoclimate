@@ -1,24 +1,19 @@
 package org.orbisgis.geoclimate.bdtopo
 
 import groovy.json.JsonOutput
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.io.WKTReader
 import org.orbisgis.data.H2GIS
-import org.orbisgis.data.POSTGIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -27,22 +22,10 @@ import static org.junit.jupiter.api.Assertions.fail
 abstract class WorkflowAbstractTest {
 
     @TempDir(cleanup = CleanupMode.ON_SUCCESS)
-    static File folder //= new File("/tmp/")
+    static File folder
 
     public static Logger logger = LoggerFactory.getLogger(WorkflowAbstractTest.class)
 
-    def static postgis_dbProperties = [databaseName: 'orbisgis_db',
-                                       user        : 'orbisgis',
-                                       password    : 'orbisgis',
-                                       url         : 'jdbc:postgresql://localhost:5432/'
-    ]
-    static POSTGIS postGIS
-
-    @BeforeAll
-    static void beforeAll() {
-        postGIS = POSTGIS.open(postgis_dbProperties)
-        System.setProperty("test.postgis", Boolean.toString(postGIS != null))
-    }
 
     /**
      * Load the files to run the test
@@ -137,7 +120,7 @@ abstract class WorkflowAbstractTest {
         if (new File(getClass().getResource(getFolderName()).toURI()).isDirectory()) {
             return new File(getClass().getResource(getFolderName()).toURI()).absolutePath
         }
-        return null;
+        return null
     }
 
     @Test
@@ -226,7 +209,7 @@ abstract class WorkflowAbstractTest {
         if (filePath) {
             H2GIS  h2GIS = H2GIS.open(folder.absolutePath+File.separator+"tmpdb")
             h2GIS.link(filePath, "COMMUNE", true)
-            Geometry geom = h2GIS.firstRow("""SELECT ST_BUFFER(ST_POINTONSURFACE(the_geom), 100) AS the_geom from commune""".toString()).the_geom
+            Geometry geom = h2GIS.firstRow("""SELECT ST_BUFFER(ST_POINTONSURFACE(the_geom), 200) AS the_geom from commune""".toString()).the_geom
             h2GIS.close()
             Envelope env = geom.getEnvelopeInternal()
             def location = [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
@@ -272,23 +255,21 @@ abstract class WorkflowAbstractTest {
         }
     }
 
-
-    @Disabled
-    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
     @Test
-    void workflowPostGIS() {
+    void workflowExternalDB() {
+        def externaldb_dbProperties = [databaseName: "${folder.absolutePath+File.separator}external_db",
+                                   user        : 'sa',
+                                   password    : 'sa'
+        ]
         def outputTables = ["building_indicators": "building_indicators",
-                            "block_indicators"   : "block_indicators",
                             "rsu_indicators"     : "rsu_indicators",
                             "rsu_lcz"            : "rsu_lcz",
-                            "zone"               : "zone", "grid_indicators": "grid_indicators"]
+                            "zone"               : "zone",
+                            "grid_indicators": "grid_indicators"]
         //Drop all output tables if exist
-        postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};");
-        String directory = "./target/bdtopo_workflow_postgis"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        String dataFolder = getDataFolderPath()
+        H2GIS externalDB = H2GIS.open(folder.absolutePath+File.separator+externaldb_dbProperties.databaseName,
+                externaldb_dbProperties.user, externaldb_dbProperties.password)
+        externalDB.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};".toString())
         def bdTopoParameters = [
                 "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb": [
@@ -297,18 +278,18 @@ abstract class WorkflowAbstractTest {
                         "delete": true
                 ],
                 "input"       : [
-                        "folder": ["path"     : folder.getAbsolutePath(),
-                                   "locations": [getInseeCode()]]],
+                        "folder":  getDataFolderPath(),
+                        "locations": [getInseeCode()]],
                 "output"      : [
                         "database":
-                                ["user"    : postgis_dbProperties.user,
-                                 "password": postgis_dbProperties.password,
-                                 "url"     : postgis_dbProperties.url + postgis_dbProperties.databaseName,
+                                ["user"    : externaldb_dbProperties.user,
+                                 "password": externaldb_dbProperties.password,
+                                 "databaseName" :folder.absolutePath+File.separator+externaldb_dbProperties.databaseName,
                                  "tables"  : outputTables]],
                 "parameters"  :
                         ["distance"       : 0,
                          rsu_indicators   : [
-                                 "indicatorUse": ["LCZ", "UTRF"]
+                                 "indicatorUse": ["LCZ"]
                          ],
                          "grid_indicators": [
                                  "x_size"    : 1000,
@@ -317,71 +298,82 @@ abstract class WorkflowAbstractTest {
                          ]
                         ]
         ]
-        IProcess process = BDTopo.Workflow.workflow()
-        assertTrue(process.execute(input: bdTopoParameters, version: getVersion()))
+
+        Map process = BDTopo.workflow(input: bdTopoParameters, version: getVersion())
+        assertNotNull(process)
         //Check if the tables exist and contains at least one row
         outputTables.values().each { it ->
-            def spatialTable = postGIS.getSpatialTable(it)
+            def spatialTable = externalDB.getSpatialTable(it)
             assertNotNull(spatialTable)
+            assertEquals(2154, spatialTable.srid)
             assertTrue(spatialTable.getRowCount() > 0)
         }
+        externalDB.close()
     }
 
-    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
     @Test
-    void workflowPostGISBBox() {
-        WKTReader wktReader = new WKTReader()
-        Geometry geom = wktReader.read("POLYGON ((664540 6359900, 665430 6359900, 665430 6359110, 664540 6359110, 664540 6359900))")
-        Envelope env = geom.getEnvelopeInternal()
-
-        def outputTables = ["building_indicators": "building_indicators",
-                            "block_indicators"   : "block_indicators",
-                            "rsu_indicators"     : "rsu_indicators",
-                            "rsu_lcz"            : "rsu_lcz",
-                            "zone"               : "zone", "grid_indicators": "grid_indicators"]
-        //Drop all output tables if exist
-        postGIS.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};".toString());
-        String directory = "./target/bdtopo_workflow_postgis_bbox"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
+    void workflowExternalDBBBox() {
         String dataFolder = getDataFolderPath()
-        def bdTopoParameters = [
-                "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
-                "geoclimatedb": [
-                        "folder": "${dirFile.absolutePath}",
-                        "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
-                        "delete": true
-                ],
-                "input"       : [
-                        "folder"   : dataFolder,
-                        "locations": [[env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]]],
-                "output"      : [
-                        "database":
-                                ["user"    : postgis_dbProperties.user,
-                                 "password": postgis_dbProperties.password,
-                                 "url"     : postgis_dbProperties.url + postgis_dbProperties.databaseName,
-                                 "tables"  : outputTables]],
-                "parameters"  :
-                        ["distance"       : 0,
-                         rsu_indicators   : [
-                                 "indicatorUse": ["LCZ", "UTRF"]
-                         ],
-                         "grid_indicators": [
-                                 "x_size"    : 10,
-                                 "y_size"    : 10,
-                                 "rowCol"    : true,
-                                 "indicators": ["BUILDING_FRACTION"]
-                         ]
-                        ]
-        ]
-        IProcess process = BDTopo.Workflow.workflow()
-        assertTrue(process.execute(input: bdTopoParameters, version: getVersion()))
-        //Check if the tables exist and contains at least one row
-        outputTables.values().each { it ->
-            def spatialTable = postGIS.getSpatialTable(it)
-            assertNotNull(spatialTable)
-            assertTrue(spatialTable.getRowCount() > 0)
+        def filePath = getClass().getResource(getFolderName() + File.separator + "COMMUNE.shp")
+        // If some layers are missing, do not try to load them...
+        if (filePath) {
+            def externaldb_dbProperties = [databaseName: "${folder.absolutePath+File.separator}external_db",
+                                       user        : 'sa',
+                                       password    : 'sa'
+            ]
+            H2GIS externalDB = H2GIS.open(folder.absolutePath+File.separator+externaldb_dbProperties.databaseName, externaldb_dbProperties.user, externaldb_dbProperties.password)
+            externalDB.link(filePath, "COMMUNE", true)
+            Geometry geom = externalDB.firstRow("""SELECT ST_BUFFER(ST_POINTONSURFACE(the_geom), 100) AS the_geom from commune""".toString()).the_geom
+
+            Envelope env = geom.getEnvelopeInternal()
+            def location = [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
+
+
+            def outputTables = ["building_indicators": "building_indicators",
+                                "rsu_indicators"     : "rsu_indicators",
+                                "rsu_lcz"            : "rsu_lcz",
+                                "zone"               : "zone", "grid_indicators": "grid_indicators"]
+            //Drop all output tables if exist
+            externalDB.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};".toString())
+            def bdTopoParameters = [
+                    "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
+                    "geoclimatedb": [
+                            "folder": folder.absolutePath,
+                            "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
+                            "delete": true
+                    ],
+                    "input"       : [
+                            "folder"   : getDataFolderPath(),
+                            "locations": [location]],
+                    "output"      : [
+                            "database":
+                                    ["user"    : externaldb_dbProperties.user,
+                                     "password": externaldb_dbProperties.password,
+                                     "databaseName" :folder.absolutePath+File.separator+externaldb_dbProperties.databaseName,
+                                     "tables"  : outputTables]],
+                    "parameters"  :
+                            ["distance"       : 0,
+                             rsu_indicators   : [
+                                     "indicatorUse": ["LCZ"]
+                             ],
+                             "grid_indicators": [
+                                     "x_size"    : 10,
+                                     "y_size"    : 10,
+                                     "rowCol"    : true,
+                                     "indicators": ["BUILDING_FRACTION"]
+                             ]
+                            ]
+            ]
+            Map process = BDTopo.workflow(input: bdTopoParameters, version: getVersion())
+            assertNotNull(process)
+            //Check if the tables exist and contains at least one row
+            outputTables.values().each { it ->
+                def spatialTable = externalDB.getSpatialTable(it)
+                assertNotNull(spatialTable)
+                assertEquals(2154, spatialTable.srid)
+                assertTrue(spatialTable.getRowCount() > 0)
+            }
+            externalDB.close()
         }
     }
 

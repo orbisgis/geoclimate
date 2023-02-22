@@ -6,11 +6,14 @@ import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.slf4j.LoggerFactory
 
+/**
+ * BDTopo utils
+ */
 abstract class BDTopoUtils {
 
     public static Logger logger
 
-    BDTopoUtils(){
+    BDTopoUtils() {
         logger = LoggerFactory.getLogger(BDTopoUtils.class)
         WorkflowUtilities.setLoggerLevel("INFO")
     }
@@ -31,7 +34,7 @@ abstract class BDTopoUtils {
      * @return The postfix String
      */
     static String postfix(String name) {
-        return name + "_" + UUID.randomUUID().toString().replaceAll("-", "_");
+        return name + "_" + UUID.randomUUID().toString().replaceAll("-", "_")
     }
 
 
@@ -48,7 +51,7 @@ abstract class BDTopoUtils {
         if (distance >= 0) {
             return [y - distance, x - distance, y + distance, x + distance]
         } else {
-            throw new IllegalArgumentException("Bbox operation does not accept negative value");
+            throw new IllegalArgumentException("Bbox operation does not accept negative value")
         }
     }
 
@@ -78,6 +81,5 @@ abstract class BDTopoUtils {
             return [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
         }
     }
-
 
 }

@@ -6,12 +6,14 @@ import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.jdbc.JdbcDataSource
-import org.orbisgis.process.api.IProcess
 
 import javax.sql.DataSource
 import java.sql.Connection
 import java.sql.SQLException
 
+/**
+ * Workflow to prepare data and building geoclimate indicators with the BDTopo 2.2
+ */
 class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
 
 
@@ -22,32 +24,32 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
             logger.error "The commune table must be specified to run Geoclimate"
             return
         }
-        PostGISDBFactory dataSourceFactory = new PostGISDBFactory();
-        Connection sourceConnection = null;
+        PostGISDBFactory dataSourceFactory = new PostGISDBFactory()
+        Connection sourceConnection = null
         try {
-            Properties props = new Properties();
-            input_database_properties.forEach(props::put);
-            DataSource ds = dataSourceFactory.createDataSource(props);
+            Properties props = new Properties()
+            input_database_properties.forEach(props::put)
+            DataSource ds = dataSourceFactory.createDataSource(props)
             sourceConnection = ds.getConnection()
         } catch (SQLException e) {
-            logger.error("Cannot connect to the database to import the data ");
+            logger.error("Cannot connect to the database to import the data ")
         }
 
         if (sourceConnection == null) {
-            logger.error("Cannot connect to the database to import the data ");
+            logger.error("Cannot connect to the database to import the data ")
             return
         }
 
         //Check if the commune table exists
         if (!JDBCUtilities.tableExists(sourceConnection, commune_location)) {
-            logger.error("The commune table doesn't exist");
+            logger.error("The commune table doesn't exist")
             return
         }
 
         //Find the SRID of the commune table
         def commune_srid = GeometryTableUtilities.getSRID(sourceConnection, commune_location)
         if (commune_srid <= 0) {
-            logger.error("The commune table doesn't have any SRID");
+            logger.error("The commune table doesn't have any SRID")
             return
         }
         if (commune_srid == 0 && inputSRID) {
@@ -70,11 +72,11 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                     && ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid) and
                     st_intersects(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)))""".toString()
             logger.debug "Loading in the H2GIS database $outputTableName"
-            IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 10);
+            IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 10)
         } else if (code instanceof String) {
             String inputTableName = "(SELECT st_setsrid(the_geom, $commune_srid) as the_geom, CODE_INSEE FROM $commune_location WHERE CODE_INSEE='$code' or lower(nom)='${code.toLowerCase()}')"
             logger.debug "Loading in the H2GIS database $outputTableName"
-            IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+            IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
         }
         def count = h2gis_datasource."$outputTableName".rowCount
         if (count > 0) {
@@ -85,28 +87,28 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 //Extract bati_indifferencie
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, HAUTEUR FROM ${inputTables.bati_indifferencie}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 logger.debug "Loading in the H2GIS database $outputTableNameBatiInd"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiInd, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiInd, -1, 1000)
             }
             def outputTableNameBatiIndus = "BATI_INDUSTRIEL"
             if (inputTables.bati_industriel) {
                 //Extract bati_industriel
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, HAUTEUR FROM ${inputTables.bati_industriel}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 logger.debug "Loading in the H2GIS database $outputTableNameBatiIndus"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiIndus, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiIndus, -1, 1000)
             }
             def outputTableNameBatiRem = "BATI_REMARQUABLE"
             if (inputTables.bati_remarquable) {
                 //Extract bati_remarquable
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, HAUTEUR FROM ${inputTables.bati_remarquable}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 logger.debug "Loading in the H2GIS database $outputTableNameBatiRem"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiRem, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameBatiRem, -1, 1000)
             }
             def outputTableNameRoad = "ROUTE"
             if (inputTables.route) {
                 //Extract route
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTables.route}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 logger.debug "Loading in the H2GIS database $outputTableNameRoad"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameRoad, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameRoad, -1, 1000)
             } else {
                 error "The route table must be provided"
                 return
@@ -117,7 +119,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTables.troncon_voie_ferree}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 outputTableName = "TRONCON_VOIE_FERREE"
                 logger.debug "Loading in the H2GIS database $outputTableName"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
 
             if (inputTables.surface_eau) {
@@ -125,7 +127,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom FROM ${inputTables.surface_eau}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 outputTableName = "SURFACE_EAU"
                 logger.debug "Loading in the H2GIS database $outputTableName"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
 
             if (inputTables.zone_vegetation) {
@@ -133,7 +135,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE  FROM ${inputTables.zone_vegetation}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 outputTableName = "ZONE_VEGETATION"
                 logger.debug "Loading in the H2GIS database $outputTableName"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
 
             if (inputTables.terrain_sport) {
@@ -142,7 +144,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 outputTableName = "TERRAIN_SPORT"
                 logger.debug "Loading in the H2GIS database $outputTableName"
 
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
 
             if (inputTables.construction_surfacique) {
@@ -150,7 +152,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE  FROM ${inputTables.construction_surfacique}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY) AND (NATURE='Barrage' OR NATURE='Ecluse' OR NATURE='Escalier'))"
                 outputTableName = "CONSTRUCTION_SURFACIQUE"
                 logger.debug "Loading in the H2GIS database $outputTableName"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
 
             if (inputTables.surface_route) {
@@ -158,7 +160,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom,NATURE  FROM ${inputTables.surface_route}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 outputTableName = "SURFACE_ROUTE"
                 logger.debug "Loading in the H2GIS database $outputTableName"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
 
             if (inputTables.surface_activite) {
@@ -166,14 +168,14 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, CATEGORIE, ORIGINE  FROM ${inputTables.surface_activite}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 outputTableName = "SURFACE_ACTIVITE"
                 logger.debug "Loading in the H2GIS database $outputTableName"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
             //Extract PISTE_AERODROME
             if (inputTables.piste_aerodrome) {
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE  FROM ${inputTables.piste_aerodrome}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 outputTableName = "PISTE_AERODROME"
                 logger.debug "Loading in the H2GIS database $outputTableName"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
 
             //Extract RESERVOIR
@@ -181,10 +183,10 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
                 def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, HAUTEUR  FROM ${inputTables.reservoir}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
                 outputTableName = "RESERVOIR"
                 logger.debug "Loading in the H2GIS database $outputTableName"
-                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000);
+                IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
             }
 
-            sourceConnection.close();
+            sourceConnection.close()
 
             return commune_srid
 
@@ -211,7 +213,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
     }
 
     @Override
-    Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin ) {
+    Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin) {
         if (!hLevMin) {
             hLevMin = 3
         }
@@ -222,7 +224,7 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
         //Prepare the existing bdtopo data in the local database
         def importPreprocess = BDTopo.InputDataLoading.loadV2(datasource, layers, distance)
 
-        if(!importPreprocess) {
+        if (!importPreprocess) {
             logger.error "Cannot prepare the BDTopo data."
             return
         }
@@ -231,44 +233,44 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
 
         //Format impervious
         def processFormatting = BDTopo.InputDataFormatting.formatImperviousLayer(datasource,
-                                   importPreprocess.impervious)
+                importPreprocess.impervious)
         def finalImpervious = processFormatting.outputTableName
 
         //Format building
-        processFormatting = BDTopo.InputDataFormatting.formatBuildingLayer( datasource,
-                                    importPreprocess.building,zoneTable,
-                                    urbanAreas, hLevMin)
+        processFormatting = BDTopo.InputDataFormatting.formatBuildingLayer(datasource,
+                importPreprocess.building, zoneTable,
+                urbanAreas, hLevMin)
         def finalBuildings = processFormatting.outputTableName
 
         //Format roads
         processFormatting = BDTopo.InputDataFormatting.formatRoadLayer(datasource,
-                                    importPreprocess.road,
-                                   zoneTable)
+                importPreprocess.road,
+                zoneTable)
         def finalRoads = processFormatting.outputTableName
 
         //Format rails
-        processFormatting = BDTopo.InputDataFormatting.formatRailsLayer( datasource,
-                                   importPreprocess.rail,
-                                   zoneTable)
+        processFormatting = BDTopo.InputDataFormatting.formatRailsLayer(datasource,
+                importPreprocess.rail,
+                zoneTable)
         def finalRails = processFormatting.outputTableName
 
 
         //Format vegetation
         processFormatting = BDTopo.InputDataFormatting.formatVegetationLayer(datasource,
-                                    importPreprocess.vegetation,
-                                   zoneTable)
+                importPreprocess.vegetation,
+                zoneTable)
         def finalVeget = processFormatting.outputTableName
 
         //Format water
         processFormatting = BDTopo.InputDataFormatting.formatHydroLayer(datasource,
-                                    importPreprocess.water,
-                                   zoneTable)
+                importPreprocess.water,
+                zoneTable)
         def finalHydro = processFormatting.outputTableName
 
         logger.debug "End of the BDTopo extract transform process."
 
-        return ["building": finalBuildings, "road": finalRoads, "rail": finalRails, "water": finalHydro,
-                "vegetation"   : finalVeget, "impervious": finalImpervious, "urban_areas": urbanAreas, "zone": zoneTable]
+        return ["building"  : finalBuildings, "road": finalRoads, "rail": finalRails, "water": finalHydro,
+                "vegetation": finalVeget, "impervious": finalImpervious, "urban_areas": urbanAreas, "zone": zoneTable]
 
     }
 

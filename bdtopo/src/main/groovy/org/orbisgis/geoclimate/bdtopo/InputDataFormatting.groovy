@@ -1,6 +1,5 @@
 package org.orbisgis.geoclimate.bdtopo
 
-import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.data.H2GIS
@@ -124,7 +123,7 @@ class InputDataFormatting extends BDTopoUtils {
 
 
                 //Formating building table
-                def id_build = 1;
+                def id_build = 1
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow(queryMapper.toString()) { row ->
                         def values = row.toRowResult()

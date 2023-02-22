@@ -16,8 +16,11 @@ import org.orbisgis.geoclimate.Geoindicators
 import java.sql.Connection
 import java.sql.SQLException
 
-
-abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
+/**
+ * Abstract class that contains all methods to run the GeoClimate workflow on formated data
+ *
+ */
+abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
 
     /**
@@ -34,11 +37,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 //Check if it's a path to a file
                 def configFile = new File(input)
                 if (!configFile.isFile()) {
-                    logger.error "The configuration file doesn't exist"
+                    error "The configuration file doesn't exist"
                     return
                 }
                 if (!FileUtilities.isExtensionWellFormated(configFile, "json")) {
-                    logger.error "The configuration file must be a json file"
+                    error "The configuration file must be a json file"
                     return
                 }
                 parameters = Geoindicators.WorkflowUtilities.readJSON(configFile)
@@ -46,23 +49,23 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 parameters = input
             }
         } else {
-            logger.error "The input parameters cannot be null or empty.\n Please set a path to a configuration file or " +
+            error "The input parameters cannot be null or empty.\n Please set a path to a configuration file or " +
                     "a map with all required parameters"
             return
         }
         if (!parameters) {
-            logger.error "Wrong input parameters"
+            error "Wrong input parameters"
             return
         }
         //Store the zone identifier and the names of the tables
         def outputTableNamesResult = [:]
-        logger.debug "Reading file parameters"
-        logger.debug parameters.description
+        debug "Reading file parameters"
+        debug parameters.description
         def inputParameters = parameters.input
         def outputParameters = parameters.output
         //Default H2GIS database properties
         def databaseFolder = System.getProperty("java.io.tmpdir")
-        def databaseName = "bdtopo_"+getVersion() + UUID.randomUUID().toString().replaceAll("-", "_")
+        def databaseName = "bdtopo_" + getVersion() + UUID.randomUUID().toString().replaceAll("-", "_")
         def databasePath = databaseFolder + File.separator + databaseName
         def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
         def delete_h2gis = true
@@ -75,12 +78,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 if (!tmp_folder_db.exists()) {
                     if (!tmp_folder_db.mkdir()) {
                         h2gis_folder = null
-                        logger.error "You don't have permission to write in the folder $h2gis_folder \n" +
+                        error "You don't have permission to write in the folder $h2gis_folder \n" +
                                 "Please check the folder."
                         return
                     }
                 } else if (!tmp_folder_db.isDirectory()) {
-                    logger.error "Invalid output folder $h2gis_folder."
+                    error "Invalid output folder $h2gis_folder."
                     return
                 }
                 databaseFolder = h2gis_folder
@@ -109,30 +112,30 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
         }
 
         if (!inputParameters) {
-            logger.error "Cannot find any input parameters."
+            error "Cannot find any input parameters."
             return
         }
         def inputDataBase = inputParameters.database
         def inputFolder = inputParameters.folder
         def locations = inputParameters.locations as Set
         if (!locations) {
-            logger.error "Cannot find any locations parameter."
+            error "Cannot find any locations parameter."
             return
         }
         def inputSRID = inputParameters.srid
         if (inputSRID && inputSRID <= 0) {
-            logger.error "The input srid must be greater than 0."
+            error "The input srid must be greater than 0."
             return
         }
         if (inputFolder && inputDataBase) {
-            logger.error "Please set only one input data provider"
+            error "Please set only one input data provider"
             return
         }
 
         def inputWorkflowTableNames = getInputTables()
 
         if (!inputWorkflowTableNames) {
-            logger.error "The input table names cannot be null or empty."
+            error "The input table names cannot be null or empty."
             return
         }
 
@@ -158,12 +161,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
             if (!deleteOutputData) {
                 deleteOutputData = true
             } else if (!deleteOutputData in Boolean) {
-                logger.error "The delete parameter must be a boolean value"
+                error "The delete parameter must be a boolean value"
                 return
             }
             outputSRID = outputParameters.get("srid")
             if (outputSRID && outputSRID <= 0) {
-                logger.error "The output srid must be greater than 0"
+                error "The output srid must be greater than 0"
                 return
             }
             if (outputFolder) {
@@ -174,12 +177,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 if (!file_outputFolder.exists()) {
                     if (file_outputFolder.mkdir()) {
                         file_outputFolder = null
-                        logger.error "You don't have permission to write in the folder $outputFolder \n" +
+                        error "You don't have permission to write in the folder $outputFolder \n" +
                                 "Please check the folder."
                         return
                     }
                 } else if (!file_outputFolder.isDirectory()) {
-                    logger.error "Invalid output folder $file_outputFolder."
+                    error "Invalid output folder $file_outputFolder."
                     return
                 }
             }
@@ -197,11 +200,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
         if (inputFolder) {
             def h2gis_datasource = H2GIS.open(h2gis_properties)
             if (!h2gis_datasource) {
-                logger.error "Cannot load the local H2GIS database to run Geoclimate"
+                error "Cannot load the local H2GIS database to run Geoclimate"
                 return
             }
             def datafromFolder = linkDataFromFolder(inputFolder, inputWorkflowTableNames, h2gis_datasource, inputSRID)
-            if(!datafromFolder){
+            if (!datafromFolder) {
                 return
             }
             inputSRID = datafromFolder.inputSrid
@@ -226,7 +229,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
 
                 return [output: outputTableNamesResult]
             } else {
-                logger.error "Cannot find any data to process from the folder $inputFolder"
+                error "Cannot find any data to process from the folder $inputFolder"
                 return
             }
 
@@ -247,7 +250,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     }
                 }
                 if (inputTables_tmp.size() == 0) {
-                    logger.error "Please set a valid list of input tables as  : \n" +
+                    error "Please set a valid list of input tables as  : \n" +
                             "${inputWorkflowTableNames.collect { name -> [name: name] }}"
                     return
                 }
@@ -256,10 +259,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
 
             def h2gis_datasource = H2GIS.open(h2gis_properties)
             if (!h2gis_datasource) {
-                logger.error "Cannot load the local H2GIS database to run Geoclimate"
+                error "Cannot load the local H2GIS database to run Geoclimate"
                 return
             }
-            def nbzones = 0;
+            def nbzones = 0
             for (location in locations) {
                 nbzones++
                 inputSRID = loadDataFromPostGIS(inputDataBase.subMap(["user", "password", "url", "databaseName"]), location, processing_parameters.distance, inputTables, inputSRID, h2gis_datasource)
@@ -270,13 +273,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                         if (bdtopo_results) {
                             outputTableNamesResult.putAll(bdtopo_results)
                         } else {
-                            logger.error "Cannot execute the geoclimate processing chain on $location\n"
+                            error "Cannot execute the geoclimate processing chain on $location\n"
                         }
                     }
                 } else {
-                    logger.error "Cannot load the data for the location $location"
+                    error "Cannot load the data for the location $location"
                 }
-                logger.info "${nbzones} location(s) on ${locations.size()}"
+                info "${nbzones} location(s) on ${locations.size()}"
             }
             deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
             if (outputTableNamesResult) {
@@ -334,26 +337,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 //Load commune and check if there is some id_zones inside
                 h2gis_datasource.link(commune_file, "COMMUNE_TMP", true)
                 ISpatialTable sp_commune = h2gis_datasource.getSpatialTable("COMMUNE_TMP")
-                /*def columns = sp_commune.columns
-
-                def query = """DROP TABLE IF EXISTS COMMUNE_TMP ; CREATE TABLE COMMUNE_TMP as SELECT the_geom, """
-                //Workarround since BDTopo V3 change the column name from CODE_INSEE to INSEE_COM
-                if(columns.contains("INSEE_COM")){
-                    query+= "INSEE_COM as CODE_INSEE, NOM FROM COMMUNE_TMP_LINK "
-                }else if(columns.contains("CODE_INSEE")) {
-                    query+= "CODE_INSEE, NOM FROM COMMUNE_TMP_LINK "
-                }else{
-                    error"The commune table must contain at least a column INSEE_COM or CODE_INSEE"
-                    return null
-                }
-                h2gis_datasource.execute(query.toString())*/
                 geoFiles.remove(commune_file)
                 int srid = sp_commune.srid
                 def sourceSrid = srid
                 if (srid == 0 && inputSRID) {
                     srid = inputSRID
                 } else if (srid == 0) {
-                    logger.warn "Cannot find a SRID value for the layer commune.shp.\n" +
+                    warn "Cannot find a SRID value for the layer commune.shp.\n" +
                             "Please set a valid OGC prj or use the parameter srid to force it."
                     return null
                 }
@@ -364,7 +354,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
 
 
                 geoFiles.eachWithIndex { geoFile, index ->
-                    logger.debug "linking file $geoFile $index on $numberFiles"
+                    debug "linking file $geoFile $index on $numberFiles"
                     //We must link only the allowed tables
                     def fileName = URIUtilities.fileFromString(geoFile).getName()
                     def name = fileName.substring(0, fileName.lastIndexOf(".")).toLowerCase()
@@ -378,11 +368,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 return ["sourceSrid": sourceSrid, "inputSrid": srid, "tableNames": tableNames]
 
             } else {
-                logger.error "The input folder must contains a file named commune"
+                error "The input folder must contains a file named commune"
                 return
             }
         } else {
-            logger.error "The input folder must be a directory"
+            error "The input folder must be a directory"
             return
         }
     }
@@ -399,9 +389,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
             if (connection) {
                 connection.close()
                 DeleteDbFiles.execute(dbFolder, dbName, true)
-                logger.debug "The local H2GIS database : ${dbName} has been deleted"
+                debug "The local H2GIS database : ${dbName} has been deleted"
             } else {
-                logger.error "Cannot delete the local H2GIS database : ${dbName} "
+                error "Cannot delete the local H2GIS database : ${dbName} "
             }
         }
     }
@@ -419,7 +409,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
             return
         }
         //Create the folder to save the results
-        def folder = new File(outputFolder.getAbsolutePath() + File.separator + "bdtopo_"+getVersion()+"_" + location)
+        def folder = new File(outputFolder.getAbsolutePath() + File.separator + "bdtopo_" + getVersion() + "_" + location)
         if (!folder.exists()) {
             folder.mkdir()
         } else {
@@ -479,11 +469,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     if (allowedOutputRSUIndicators) {
                         rsu_indicators_default.indicatorUse = indicatorUseP
                     } else {
-                        logger.error "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
+                        error "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
                         return
                     }
                 } else {
-                    logger.error "The list of RSU indicator names cannot be null or empty"
+                    error "The list of RSU indicator names cannot be null or empty"
                     return
                 }
                 def snappingToleranceP = rsu_indicators.snappingTolerance
@@ -507,7 +497,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 if (mapOfWeightsP && mapOfWeightsP in Map) {
                     def defaultmapOfWeights = rsu_indicators_default.mapOfWeights
                     if ((defaultmapOfWeights + mapOfWeightsP).size() != defaultmapOfWeights.size()) {
-                        logger.error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
+                        error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
                         return
                     } else {
                         rsu_indicators_default.mapOfWeights = mapOfWeightsP
@@ -526,11 +516,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 def list_indicators = grid_indicators.indicators
                 if (x_size && y_size) {
                     if (x_size <= 0 || y_size <= 0) {
-                        logger.error "Invalid grid size padding. Must be greater that 0"
+                        error "Invalid grid size padding. Must be greater that 0"
                         return
                     }
                     if (!list_indicators) {
-                        logger.error "The list of indicator names cannot be null or empty"
+                        error "The list of indicator names cannot be null or empty"
                         return
                     }
                     def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
@@ -566,7 +556,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
 
                         defaultParameters.put("grid_indicators", grid_indicators_tmp)
                     } else {
-                        logger.error "Please set a valid list of indicator names in ${allowed_grid_indicators}"
+                        error "Please set a valid list of indicator names in ${allowed_grid_indicators}"
                         return
                     }
                 }
@@ -598,7 +588,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
     }
 
 
-    abstract  List getInputTables()
+    abstract List getInputTables()
 
     List getOutputTables() {
         return ["building_indicators",
@@ -634,7 +624,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
         } else if (locations instanceof String) {
             return locations.trim()
         } else {
-            logger.error "Invalid location input. \n" +
+            error "Invalid location input. \n" +
                     "The location input must be a string value or an array of 4 coordinates to define a bbox "
             return null
         }
@@ -660,7 +650,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
         //Add the GIS layers to the list of results
         def outputTableNamesResult = [:]
         def grid_indicators_params = processing_parameters.grid_indicators
-        def outputGrid ="geojson"
+        def outputGrid = "geojson"
         if (grid_indicators_params) {
             outputGrid = grid_indicators_params.output
         }
@@ -670,7 +660,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
         h2gis_datasource.eachRow("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE") { row ->
             Geometry geom = row.the_geom
             def code_insee = row.code_insee
-            logger.info "Processing the commune with the code insee :  ${code_insee}"
+            info "Processing the commune with the code insee :  ${code_insee}"
             def numGeom = geom.getNumGeometries()
             if (numGeom == 1) {
                 if (!geom.isEmpty()) {
@@ -687,11 +677,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     }
                 }
             } else {
-                logger.info "The location $code_insee is represented by $numGeom polygons\n. " +
+                info "The location $code_insee is represented by $numGeom polygons\n. " +
                         "GeoClimate will process each polygon individually."
                 int subAreaCount = 1
                 for (i in 0..<numGeom) {
-                    logger.info "Processing the polygon ${subAreaCount} on $numGeom "
+                    info "Processing the polygon ${subAreaCount} on $numGeom "
                     def subGeom = geom.getGeometryN(i)
                     if (!subGeom.isEmpty()) {
                         def subCommuneTableName = postfix("COMMUNE")
@@ -714,12 +704,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
         }
 
         if (tmp_results) {
-            if(tmp_results.size()==1){
+            if (tmp_results.size() == 1) {
                 def res = [:]
-                tmp_results.each{ code ->
-                    code.value.each{it->
+                tmp_results.each { code ->
+                    code.value.each { it ->
                         if (it.value) {
-                            res.put(it.key,it.value)
+                            res.put(it.key, it.value)
                         }
                     }
                 }
@@ -727,7 +717,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 outputTableNamesResult.put(location, res)
                 saveResults(h2gis_datasource, location, res, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
 
-            }else {
+            } else {
                 def tablesToMerge = ["zone"               : [],
                                      "road"               : [], "rail": [], "water": [],
                                      "vegetation"         : [], "impervious": [], "building": [],
@@ -735,11 +725,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                                      "rsu_indicators"     : [], "rsu_lcz": [],
                                      "rsu_utrf_area"      : [], "rsu_utrf_floor_area": [],
                                      "building_utrf"      : [], "population": [], "road_traffic": [],
-                                     "grid_indicators"    : [], "urban_areas":[],"ground_acoustic":[]
+                                     "grid_indicators"    : [], "urban_areas": [], "ground_acoustic": []
 
                 ]
-                tmp_results.each{ code ->
-                    code.value.each{it->
+                tmp_results.each { code ->
+                    code.value.each { it ->
                         if (it.value) {
                             tablesToMerge[it.key] << it.value
                         }
@@ -766,14 +756,14 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
  * @param h2gis_datasource
  * @return
  */
-    def mergeResultTables(def tablesToMerge, H2GIS h2gis_datasource){
+    def mergeResultTables(def tablesToMerge, H2GIS h2gis_datasource) {
         def results = [:]
-        def con =h2gis_datasource.getConnection()
+        def con = h2gis_datasource.getConnection()
         tablesToMerge.each { it ->
             def tableNames = it.value
             def queryToJoin = []
             String tmp_table
-            HashSet allColumns =new HashSet()
+            HashSet allColumns = new HashSet()
             def tableAndColumns = [:]
             tableNames.each { tableName ->
                 if (tableName) {
@@ -785,11 +775,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
             tableNames.each { tableName ->
                 def columns = tableAndColumns.get(tableName)
                 def joinColumns = []
-                allColumns.each{col ->
+                allColumns.each { col ->
                     if (!columns.contains(col)) {
-                        joinColumns<< "null as ${col}"
-                    }else {
-                        joinColumns<< col
+                        joinColumns << "null as ${col}"
+                    } else {
+                        joinColumns << col
                     }
                 }
                 queryToJoin << "SELECT ${joinColumns.join(",")} FROM $tableName"
@@ -816,7 +806,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
  * @param results
  * @return
  */
-    def computeGridIndicators(H2GIS h2gis_datasource,def id_zone, def srid, def processing_parameters, def results){
+    def computeGridIndicators(H2GIS h2gis_datasource, def id_zone, def srid, def processing_parameters, def results) {
         def grid_indicators_params = processing_parameters.grid_indicators
         //Compute the grid indicators
         if (grid_indicators_params) {
@@ -840,7 +830,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
                 }
             } else {
-                logger.info "Cannot create a grid to aggregate the indicators"
+                info "Cannot create a grid to aggregate the indicators"
             }
         }
     }
@@ -859,7 +849,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
  * @param deleteOutputData
  * @return
  */
-    def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData, def outputGrid ) {
+    def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles, def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData, def outputGrid) {
         //Check if the user decides to reproject the output data
         def reproject = false
         if (outputSRID) {
@@ -890,9 +880,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
         def results = [:]
         //Let's run the BDTopo process for the id_zone
         //Load and format the BDTopo data
-        Map layers = getInputTables().collectEntries() { [it, it=="commune"?subCommuneTableName:it] }
+        Map layers = getInputTables().collectEntries() { [it, it == "commune" ? subCommuneTableName : it] }
         Map dataFormated = formatLayers(h2gis_datasource, layers, processing_parameters.distance, processing_parameters.hLevMin)
-        if(dataFormated) {
+        if (dataFormated) {
             def buildingTableName = dataFormated.building
             def roadTableName = dataFormated.road
             def railTableName = dataFormated.rail
@@ -903,7 +893,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
             def urbanAreasTableName = dataFormated.urban_areas
 
 
-            logger.info "BDTOPO V2 GIS layers formated"
+            info "BDTOPO V2 GIS layers formated"
 
             def rsu_indicators_params = processing_parameters.rsu_indicators
             def worldpop_indicators = processing_parameters.worldpop_indicators
@@ -932,7 +922,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                         svfSimplified: rsu_indicators_params.svfSimplified, prefixName: processing_parameters.prefixName,
                         mapOfWeights: rsu_indicators_params.mapOfWeights,
                         utrfModelName: "UTRF_BDTOPO_V2_RF_2_2.model")) {
-                    logger.error "Cannot build the geoindicators for the zone $id_zone"
+                    error "Cannot build the geoindicators for the zone $id_zone"
                 } else {
                     results.putAll(geoIndicators.getResults())
                 }
@@ -948,22 +938,22 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 if (extractWorldPopLayer.execute([coverageId: coverageId, bbox: bbox])) {
                     IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
                     if (importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
-                                               epsg            : srid, tableName: coverageId.replaceAll(":", "_"), datasource: h2gis_datasource, epsg: srid])) {
+                                               epsg            : srid, tableName: coverageId.replaceAll(":", "_"), datasource: h2gis_datasource])) {
                         results.put("population", importAscGrid.results.outputTableWorldPopName)
 
                         IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                        if (!process.execute([inputBuilding  : results.building,
-                                              inputPopulation: importAscGrid.results.outputTableWorldPopName,
-                                              inputPopulationColumns  : ["pop"], datasource: h2gis_datasource])) {
-                            logger.info "Cannot compute any population data at building level"
+                        if (!process.execute([inputBuilding         : results.building,
+                                              inputPopulation       : importAscGrid.results.outputTableWorldPopName,
+                                              inputPopulationColumns: ["pop"], datasource: h2gis_datasource])) {
+                            info "Cannot compute any population data at building level"
                         }
                         //Update the building table with the population data
                         buildingTableName = process.results.buildingTableName
                         results.put("building", buildingTableName)
 
                     } else {
-                        logger.info "Cannot import the worldpop asc file $extractWorldPopLayer.results.outputFilePath"
-                        logger.info "Create a default empty worldpop table"
+                        info "Cannot import the worldpop asc file $extractWorldPopLayer.results.outputFilePath"
+                        info "Create a default empty worldpop table"
                         def outputTableWorldPopName = postfix "world_pop"
                         h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
@@ -971,7 +961,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     }
 
                 } else {
-                    logger.info "Cannot find the population grid $coverageId \n Create a default empty worldpop table"
+                    info "Cannot find the population grid $coverageId \n Create a default empty worldpop table"
                     def outputTableWorldPopName = postfix "world_pop"
                     h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
@@ -991,9 +981,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
 
             def noise_indicators = processing_parameters.noise_indicators
 
-            def geomEnv;
-            if(noise_indicators){
-                if(noise_indicators.ground_acoustic) {
+            def geomEnv
+            if (noise_indicators) {
+                if (noise_indicators.ground_acoustic) {
                     geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
                     def gridP = Geoindicators.SpatialUnits.createGrid()
                     if (gridP.execute([geometry: geomEnv, deltaX: 200, deltaY: 200, datasource: h2gis_datasource])) {
@@ -1012,9 +1002,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 }
             }
 
-            logger.info "${id_zone} has been processed"
+            info "${id_zone} has been processed"
 
-            return results;
+            return results
         }
     }
 
@@ -1121,7 +1111,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 , "", inputSRID, outputSRID, reproject)
 
 
-        con.setAutoCommit(false);
+        con.setAutoCommit(false)
 
     }
 
@@ -1142,14 +1132,14 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
             if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
                 if (output_datasource.hasTable(output_table)) {
                     //If the table exists we populate it with the last result
-                    logger.info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                    int BATCH_MAX_SIZE = 100;
+                    info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                    int BATCH_MAX_SIZE = 100
                     ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                     if (inputRes) {
-                        def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
+                        def outputColumns = output_datasource.getTable(output_table).getColumnsTypes()
                         def outputconnection = output_datasource.getConnection()
                         try {
-                            def inputColumns = inputRes.getColumnsTypes();
+                            def inputColumns = inputRes.getColumnsTypes()
                             //We check if the number of columns is not the same
                             //If there is more columns in the input table we alter the output table
                             def outPutColumnsNames = outputColumns.keySet()
@@ -1167,7 +1157,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                                 }
                                 output_datasource.execute(alterTable.toString())
                             }
-                            def finalOutputColumns = outputColumns.keySet();
+                            def finalOutputColumns = outputColumns.keySet()
 
 
                             def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
@@ -1176,11 +1166,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                                 result += ":${iter.key.toLowerCase()}"
                             }.join(",")
                             insertTable += flatList
-                            insertTable += ")";
+                            insertTable += ")"
                             //Collect all values
                             def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
                             ouputValues.put("id_zone", id_zone)
-                            outputconnection.setAutoCommit(false);
+                            outputconnection.setAutoCommit(false)
                             output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                 inputRes.eachRow { row ->
                                     //Fill the value
@@ -1196,25 +1186,25 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                                 }
                             }
                         } catch (SQLException e) {
-                            logger.error("Cannot save the table $output_table.\n", e);
-                            return false;
+                            error("Cannot save the table $output_table.\n", e)
+                            return false
                         } finally {
-                            outputconnection.setAutoCommit(true);
-                            logger.debug "The table $h2gis_table_to_save has been exported into the table $output_table"
+                            outputconnection.setAutoCommit(true)
+                            debug "The table $h2gis_table_to_save has been exported into the table $output_table"
                         }
                     }
                 } else {
                     def tmpTable = null
-                    logger.debug "Start to export the table $h2gis_table_to_save into the table $output_table"
+                    debug "Start to export the table $h2gis_table_to_save into the table $output_table"
                     if (filter) {
                         if (!reproject) {
-                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
+                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true)
                         } else {
-                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true)
                             //Because the select query reproject doesn't contain any geometry metadata
                             output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""".toString());
+                            USING ST_SetSRID(the_geom,$outputSRID);""".toString())
 
                         }
                         if (tmpTable) {
@@ -1224,23 +1214,23 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                         }
                     } else {
                         if (!reproject) {
-                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true);
+                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true)
                         } else {
-                            tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                            tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true)
                             //Because the select query reproject doesn't contain any geometry metadata
                             output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""".toString());
+                            USING ST_SetSRID(the_geom,$outputSRID);""".toString())
 
                         }
                     }
                     if (tmpTable) {
                         //Add a GID column
                         output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
-                        output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
-                        logger.debug "The table $h2gis_table_to_save has been exported into the table $output_table"
+                        output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString())
+                        debug "The table $h2gis_table_to_save has been exported into the table $output_table"
                     } else {
-                        logger.warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
+                        warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
                     }
                 }
             }
@@ -1265,15 +1255,15 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                 if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
                     if (output_datasource.hasTable(output_table)) {
                         //If the table exists we populate it with the last result
-                        logger.info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                        int BATCH_MAX_SIZE = 100;
+                        info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                        int BATCH_MAX_SIZE = 100
                         ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                         if (inputRes) {
-                            def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
+                            def outputColumns = output_datasource.getTable(output_table).getColumnsTypes()
                             outputColumns.remove("gid")
                             def outputconnection = output_datasource.getConnection()
                             try {
-                                def inputColumns = inputRes.getColumnsTypes();
+                                def inputColumns = inputRes.getColumnsTypes()
                                 //We check if the number of columns is not the same
                                 //If there is more columns in the input table we alter the output table
                                 def outPutColumnsNames = outputColumns.keySet()
@@ -1290,7 +1280,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                                     }
                                     output_datasource.execute(alterTable.toString())
                                 }
-                                def finalOutputColumns = outputColumns.keySet();
+                                def finalOutputColumns = outputColumns.keySet()
 
                                 def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
 
@@ -1298,11 +1288,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                                     result += ":${iter.key.toLowerCase()}"
                                 }.join(",")
                                 insertTable += flatList
-                                insertTable += ")";
+                                insertTable += ")"
                                 //Collect all values
                                 def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
                                 ouputValues.put("id_zone", id_zone)
-                                outputconnection.setAutoCommit(false);
+                                outputconnection.setAutoCommit(false)
                                 output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                     inputRes.eachRow { row ->
                                         //Fill the value
@@ -1319,24 +1309,24 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                                 }
 
                             } catch (SQLException e) {
-                                logger.error("Cannot save the table $output_table.\n $e");
-                                return false;
+                                error("Cannot save the table $output_table.\n $e")
+                                return false
                             } finally {
-                                logger.info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                                info "The table $h2gis_table_to_save has been exported into the table $output_table"
                             }
                         }
                     } else {
                         def tmpTable = null
-                        logger.info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                        info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                         if (filter) {
                             if (!reproject) {
-                                tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true);
+                                tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true)
                                 if (tmpTable) {
                                     //Workaround to update the SRID on resulset
                                     output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);""".toString()
                                 }
                             } else {
-                                tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true);
+                                tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true)
                                 if (tmpTable) {
                                     //Workaround to update the SRID on resulset
                                     output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);""".toString()
@@ -1344,9 +1334,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                             }
                         } else {
                             if (!reproject) {
-                                tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true);
+                                tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true)
                             } else {
-                                tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true);
+                                tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true)
                                 if (tmpTable) {
                                     //Because the select query reproject doesn't contain any geometry metadata
                                     output_datasource.execute("""ALTER TABLE $output_table 
@@ -1361,9 +1351,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                             //Add GID column
                             output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
 
-                            logger.info "The table $h2gis_table_to_save has been exported into the table $output_table"
+                            info "The table $h2gis_table_to_save has been exported into the table $output_table"
                         } else {
-                            logger.warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
+                            warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
                         }
                     }
                 }
@@ -1393,7 +1383,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     } else if (targetTableSrid != 0 && inputSRID != 0) {
                         return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(targetTableSrid)
                     } else {
-                        logger.error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
+                        error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                         return
                     }
                 }
@@ -1406,7 +1396,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     } else if (targetTableSrid != 0 && inputSRID != 0) {
                         return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
                     } else {
-                        logger.error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
+                        error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                         return
                     }
                 }
@@ -1421,7 +1411,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     } else if (targetTableSrid != 0 && inputSRID != 0) {
                         return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
                     } else {
-                        logger.error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
+                        error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                         return
                     }
                 }
@@ -1434,7 +1424,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
                     } else if (targetTableSrid != 0 && inputSRID != 0) {
                         return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
                     } else {
-                        logger.error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
+                        error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                         return
                     }
                 }
@@ -1444,17 +1434,17 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils{
 
     /**
      *
-     * @return
+     * @return the version of the BDTopo database
      */
     abstract int getVersion();
 
     /**
-     *
+     * Implement it to format the layers
      * @param datasource
      * @param layers
      * @param distance
      * @param hLevMin
      * @return
      */
-    abstract Map formatLayers(JdbcDataSource datasource,Map layers, float distance=1000, float hLevMin = 3)
+    abstract Map formatLayers(JdbcDataSource datasource, Map layers, float distance = 1000, float hLevMin = 3)
 }
