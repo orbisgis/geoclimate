@@ -36,11 +36,7 @@
  */
 package org.orbisgis.geoclimate.osmtools.utils
 
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.*
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
@@ -71,12 +67,12 @@ class UtilitiesTest extends AbstractOSMTest {
     private static def executeNominatimQuery
 
     @BeforeEach
-    final void beforeEach(TestInfo testInfo){
+    final void beforeEach(TestInfo testInfo) {
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
     }
 
     @AfterEach
-    final void afterEach(TestInfo testInfo){
+    final void afterEach(TestInfo testInfo) {
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
@@ -84,7 +80,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#arrayToCoordinate(java.lang.Object)} method.
      */
     @Test
-    void arrayToCoordinateTest(){
+    void arrayToCoordinateTest() {
         def outer = []
         outer << [0.0, 0.0, 0.0]
         outer << [10.0, 0.0]
@@ -105,7 +101,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#arrayToCoordinate(java.lang.Object)} method with bad data.
      */
     @Test
-    void badArrayToCoordinateTest(){
+    void badArrayToCoordinateTest() {
         def array1 = Utilities.arrayToCoordinate(null)
         assertNotNull array1
         assertEquals 0, array1.length
@@ -128,7 +124,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * method.
      */
     @Test
-    void parsePolygonTest(){
+    void parsePolygonTest() {
         def outer = []
         outer << [0.0, 0.0, 0.0]
         outer << [10.0, 0.0]
@@ -156,10 +152,10 @@ class UtilitiesTest extends AbstractOSMTest {
         poly2 << hole2
 
         assertEquals "POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))",
-                Utilities.parsePolygon(poly1, new GeometryFactory()).toString()
+                OSMTools.Utilities.parsePolygon(poly1, new GeometryFactory()).toString()
 
         assertEquals "POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (2 2, 8 2, 8 3, 2 2), (2 5, 8 5, 8 7, 2 5))",
-                Utilities.parsePolygon(poly2, new GeometryFactory()).toString()
+                OSMTools.Utilities.parsePolygon(poly2, new GeometryFactory()).toString()
     }
 
     /**
@@ -167,7 +163,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * method with bad data.
      */
     @Test
-    void badParsePolygonTest(){
+    void badParsePolygonTest() {
         def outer = []
         outer << [0.0, 0.0, 0.0]
         outer << [10.0, 0.0]
@@ -176,11 +172,11 @@ class UtilitiesTest extends AbstractOSMTest {
         def poly1 = []
         poly1 << outer
 
-        assertNull Utilities.parsePolygon(null, new GeometryFactory())
-        assertNull Utilities.parsePolygon([], new GeometryFactory())
-        assertNull Utilities.parsePolygon([[]], new GeometryFactory())
-        assertNull Utilities.parsePolygon([[null]], new GeometryFactory())
-        assertNull Utilities.parsePolygon(poly1, new GeometryFactory())
+        assertNull OSMTools.Utilities.parsePolygon(null, new GeometryFactory())
+        assertNull OSMTools.Utilities.parsePolygon([], new GeometryFactory())
+        assertNull OSMTools.Utilities.parsePolygon([[]], new GeometryFactory())
+        assertNull OSMTools.Utilities.parsePolygon([[null]], new GeometryFactory())
+        assertNull OSMTools.Utilities.parsePolygon(poly1, new GeometryFactory())
     }
 
     /**
@@ -189,7 +185,7 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     @Disabled
-    void getExecuteNominatimQueryTest(){
+    void getExecuteNominatimQueryTest() {
         def path = RANDOM_PATH()
         def file = new File(path)
         assertTrue Utilities.executeNominatimQuery("vannes", file)
@@ -202,7 +198,7 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     @Disabled
-    void badGetExecuteNominatimQueryTest(){
+    void badGetExecuteNominatimQueryTest() {
         def file = new File(RANDOM_PATH())
         assertFalse Utilities.executeNominatimQuery(null, file)
         assertFalse Utilities.executeNominatimQuery("", file)
@@ -213,7 +209,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#toBBox(org.locationtech.jts.geom.Geometry)} method.
      */
     @Test
-    void toBBoxTest(){
+    void toBBoxTest() {
         def factory = new GeometryFactory()
         def point = factory.createPoint(new Coordinate(1.3, 7.7))
         Coordinate[] coordinates = [new Coordinate(2.0, 2.0),
@@ -224,24 +220,24 @@ class UtilitiesTest extends AbstractOSMTest {
         def ring = factory.createLinearRing(coordinates)
         def polygon = factory.createPolygon(ring)
 
-        assertEquals "(bbox:7.7,1.3,7.7,1.3)", Utilities.toBBox(point)
-        assertEquals "(bbox:2.0,2.0,4.0,4.0)", Utilities.toBBox(ring)
-        assertEquals "(bbox:2.0,2.0,4.0,4.0)", Utilities.toBBox(polygon)
+        assertEquals "(bbox:7.7,1.3,7.7,1.3)", OSMTools.Utilities.toBBox(point)
+        assertEquals "(bbox:2.0,2.0,4.0,4.0)", OSMTools.Utilities.toBBox(ring)
+        assertEquals "(bbox:2.0,2.0,4.0,4.0)", OSMTools.Utilities.toBBox(polygon)
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#toBBox(org.locationtech.jts.geom.Geometry)} method with bad data.
      */
     @Test
-    void badToBBoxTest(){
-        assertNull Utilities.toBBox(null)
+    void badToBBoxTest() {
+        assertNull OSMTools.Utilities.toBBox(null)
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#toPoly(org.locationtech.jts.geom.Geometry)} method.
      */
     @Test
-    void toPolyTest(){
+    void toPolyTest() {
         def factory = new GeometryFactory()
         Coordinate[] coordinates = [new Coordinate(2.0, 2.0),
                                     new Coordinate(4.0, 2.0),
@@ -250,26 +246,26 @@ class UtilitiesTest extends AbstractOSMTest {
                                     new Coordinate(2.0, 2.0)]
         def ring = factory.createLinearRing(coordinates)
         def poly = factory.createPolygon(ring)
-        assertGStringEquals "(poly:\"2.0 2.0 2.0 4.0 4.0 4.0 4.0 2.0\")", Utilities.toPoly(poly)
-        }
+        assertGStringEquals "(poly:\"2.0 2.0 2.0 4.0 4.0 4.0 4.0 2.0\")", OSMTools.Utilities.toPoly(poly)
+    }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#toPoly(org.locationtech.jts.geom.Geometry)} method with bad data.
      */
     @Test
-    void badToPolyTest(){
+    void badToPolyTest() {
         def factory = new GeometryFactory()
-        assertNull Utilities.toPoly(null)
-        assertNull Utilities.toPoly(factory.createPoint(new Coordinate(0.0, 0.0)))
-        assertNull Utilities.toPoly(factory.createPolygon())
+        assertNull OSMTools.Utilities.toPoly(null)
+        assertNull OSMTools.Utilities.toPoly(factory.createPoint(new Coordinate(0.0, 0.0)))
+        assertNull OSMTools.Utilities.toPoly(factory.createPolygon())
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement [ ])}
      * method.
      */
     @Test
-    void buildOSMQueryFromEnvelopeTest(){
+    void buildOSMQueryFromEnvelopeTest() {
         def enveloppe = new Envelope(0.0, 2.3, 7.6, 8.9)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
@@ -279,37 +275,37 @@ class UtilitiesTest extends AbstractOSMTest {
                 "\tway[\"water\"];\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(enveloppe, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
+                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(enveloppe, ["building", "water"])
+                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"])
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(enveloppe, ["building", "water"], null)
+                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"], null)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(enveloppe, ["building", "water"], null)
+                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"], null)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 "\tnode;\n" +
                 "\tway;\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(enveloppe, [], OSMElement.NODE, OSMElement.WAY)
+                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, [], OSMElement.NODE, OSMElement.WAY)
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement [ ])}
      * method.
      */
     @Test
-    void buildOSMQueryAllDataFromEnvelopeTest(){
+    void buildOSMQueryAllDataFromEnvelopeTest() {
         def enveloppe = new Envelope(0.0, 2.3, 7.6, 8.9)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "((\n" +
@@ -335,20 +331,20 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement [ ])}
      * method with bad data.
      */
     @Test
-    void badBuildOSMQueryFromEnvelopeTest(){
-        assertNull Utilities.buildOSMQuery((Envelope)null, ["building"], OSMElement.NODE)
+    void badBuildOSMQueryFromEnvelopeTest() {
+        assertNull OSMTools.Utilities.buildOSMQuery((Envelope) null, ["building"], OSMElement.NODE)
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Polygon, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Polygon, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement [ ])}
      * method.
      */
     @Test
-    void buildOSMQueryFromPolygonTest(){
+    void buildOSMQueryFromPolygonTest() {
         def factory = new GeometryFactory();
         Coordinate[] coordinates = [
                 new Coordinate(0.0, 2.3),
@@ -367,134 +363,134 @@ class UtilitiesTest extends AbstractOSMTest {
                 "\tway[\"water\"](poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(polygon, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
+                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(polygon, ["building", "water"])
+                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"])
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(polygon, ["building", "water"], null)
+                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"], null)
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", Utilities.buildOSMQuery(polygon, ["building", "water"], null)
+                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"], null)
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 "\tnode(poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
                 "\tway(poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
                 ");\n" +
-                "out;", Utilities.buildOSMQuery(polygon, [], OSMElement.NODE, OSMElement.WAY)
+                "out;", OSMTools.Utilities.buildOSMQuery(polygon, [], OSMElement.NODE, OSMElement.WAY)
     }
 
     /**
-     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Polygon, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Polygon, java.lang.Object, org.orbisgis.geoclimate.osmtools.utils.OSMElement [ ])}
      * method with bad data.
      */
     @Test
-    void badBuildOSMQueryFromPolygonTest(){
-        assertNull Utilities.buildOSMQuery((Polygon)null, ["building"], OSMElement.NODE)
-        assertNull Utilities.buildOSMQuery(new GeometryFactory().createPolygon(), ["building"], OSMElement.NODE)
+    void badBuildOSMQueryFromPolygonTest() {
+        assertNull OSMTools.Utilities.buildOSMQuery((Polygon) null, ["building"], OSMElement.NODE)
+        assertNull OSMTools.Utilities.buildOSMQuery(new GeometryFactory().createPolygon(), ["building"], OSMElement.NODE)
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#readJSONParameters(java.lang.String)} method.
      */
     @Test
-    void readJSONParametersTest(){
+    void readJSONParametersTest() {
         def map = [
-                "tags" : [
+                "tags"   : [
                         "highway", "cycleway", "biclycle_road", "cyclestreet", "route", "junction"
                 ],
-                "columns":["width","highway", "surface", "sidewalk",
-                        "lane","layer","maxspeed","oneway",
-                        "h_ref","route","cycleway",
-                        "biclycle_road","cyclestreet","junction"
+                "columns": ["width", "highway", "surface", "sidewalk",
+                            "lane", "layer", "maxspeed", "oneway",
+                            "h_ref", "route", "cycleway",
+                            "biclycle_road", "cyclestreet", "junction"
                 ]
         ]
-        assertEquals map, Utilities.readJSONParameters(new File(UtilitiesTest.getResource("road_tags.json").toURI()).absolutePath)
-        assertEquals map, Utilities.readJSONParameters(UtilitiesTest.getResourceAsStream("road_tags.json"))
+        assertEquals map, OSMTools.Utilities.readJSONParameters(new File(UtilitiesTest.getResource("road_tags.json").toURI()).absolutePath)
+        assertEquals map, OSMTools.Utilities.readJSONParameters(UtilitiesTest.getResourceAsStream("road_tags.json"))
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#readJSONParameters(java.lang.Object)} method with bad data.
      */
     @Test
-    void badReadJSONParametersTest(){
-        assertNull Utilities.readJSONParameters(null)
-        assertNull Utilities.readJSONParameters("")
-        assertNull Utilities.readJSONParameters("toto")
-        assertNull Utilities.readJSONParameters("target")
-        assertNull Utilities.readJSONParameters(new File(UtilitiesTest.getResource("bad_json_params.json").toURI()).absolutePath)
-        assertNull Utilities.readJSONParameters(UtilitiesTest.getResourceAsStream("bad_json_params.json"))
+    void badReadJSONParametersTest() {
+        assertNull OSMTools.Utilities.readJSONParameters(null)
+        assertNull OSMTools.Utilities.readJSONParameters("")
+        assertNull OSMTools.Utilities.readJSONParameters("toto")
+        assertNull OSMTools.Utilities.readJSONParameters("target")
+        assertNull OSMTools.Utilities.readJSONParameters(new File(UtilitiesTest.getResource("bad_json_params.json").toURI()).absolutePath)
+        assertNull OSMTools.Utilities.readJSONParameters(UtilitiesTest.getResourceAsStream("bad_json_params.json"))
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildGeometry(java.lang.Object)} method.
      */
     @Test
-    void buildGeometryTest(){
+    void buildGeometryTest() {
         assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
-                Utilities.buildGeometry([-3.29109, 48.83535, -2.80357, 48.72223]).toString())
+                OSMTools.Utilities.buildGeometry([-3.29109, 48.83535, -2.80357, 48.72223]).toString())
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#buildGeometry(java.lang.Object)} method with bad data.
      */
     @Test
-    void badBuildGeometryTest(){
-        assertNull Utilities.buildGeometry([-3.29109, 48.83535, -2.80357])
-        assertNull Utilities.buildGeometry([-Float.MAX_VALUE, 48.83535, -2.80357, 48.72223])
-        assertNull Utilities.buildGeometry([-3.29109, Float.MAX_VALUE, -2.80357, 48.72223])
-        assertNull Utilities.buildGeometry([-3.29109, 48.83535, -Float.MAX_VALUE, 48.72223])
-        assertNull Utilities.buildGeometry([-3.29109, 48.83535, -2.80357, Float.MAX_VALUE])
-        assertNull Utilities.buildGeometry(null)
-        assertNull Utilities.buildGeometry()
-        assertNull Utilities.buildGeometry(new GeometryFactory())
+    void badBuildGeometryTest() {
+        assertNull OSMTools.Utilities.buildGeometry([-3.29109, 48.83535, -2.80357])
+        assertNull OSMTools.Utilities.buildGeometry([-Float.MAX_VALUE, 48.83535, -2.80357, 48.72223])
+        assertNull OSMTools.Utilities.buildGeometry([-3.29109, Float.MAX_VALUE, -2.80357, 48.72223])
+        assertNull OSMTools.Utilities.buildGeometry([-3.29109, 48.83535, -Float.MAX_VALUE, 48.72223])
+        assertNull OSMTools.Utilities.buildGeometry([-3.29109, 48.83535, -2.80357, Float.MAX_VALUE])
+        assertNull OSMTools.Utilities.buildGeometry(null)
+        assertNull OSMTools.Utilities.buildGeometry()
+        assertNull OSMTools.Utilities.buildGeometry(new GeometryFactory())
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#geometryFromNominatim(java.lang.Object)} method.
      */
     @Test
-    void geometryFromNominatimTest(){
+    void geometryFromNominatimTest() {
         assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
-                Utilities.geometryFromNominatim([48.83535, -3.29109, 48.72223, -2.80357]).toString())
+                OSMTools.Utilities.geometryFromNominatim([48.83535, -3.29109, 48.72223, -2.80357]).toString())
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#geometryFromNominatim(java.lang.Object)} method with bad data.
      */
     @Test
-    void badGeometryFromNominatimTest(){
-        assertNull Utilities.geometryFromNominatim([-3.29109, 48.83535, -2.80357])
-        assertNull Utilities.geometryFromNominatim(null)
-        assertNull Utilities.geometryFromNominatim()
-        assertNull Utilities.geometryFromNominatim(new GeometryFactory())
+    void badGeometryFromNominatimTest() {
+        assertNull OSMTools.Utilities.geometryFromNominatim([-3.29109, 48.83535, -2.80357])
+        assertNull OSMTools.Utilities.geometryFromNominatim(null)
+        assertNull OSMTools.Utilities.geometryFromNominatim()
+        assertNull OSMTools.Utilities.geometryFromNominatim(new GeometryFactory())
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#geometryFromValues(java.lang.Object)} method.
      */
     @Test
-    void geometryFromOverpassTest(){
+    void geometryFromOverpassTest() {
         assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
-                Utilities.geometryFromValues([48.83535, -3.29109, 48.72223, -2.80357]).toString())
+                OSMTools.Utilities.geometryFromValues([48.83535, -3.29109, 48.72223, -2.80357]).toString())
     }
 
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#geometryFromValues(java.lang.Object)} method with bad data.
      */
     @Test
-    void badGeometryFromOverpassTest(){
-        assertNull Utilities.geometryFromValues([-3.29109, 48.83535, -2.80357])
-        assertNull Utilities.geometryFromValues(null)
-        assertNull Utilities.geometryFromValues()
-        assertNull Utilities.geometryFromValues(new GeometryFactory())
+    void badGeometryFromOverpassTest() {
+        assertNull OSMTools.Utilities.geometryFromValues([-3.29109, 48.83535, -2.80357])
+        assertNull OSMTools.Utilities.geometryFromValues(null)
+        assertNull OSMTools.Utilities.geometryFromValues()
+        assertNull OSMTools.Utilities.geometryFromValues(new GeometryFactory())
     }
 
     /**
@@ -502,7 +498,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * method.
      */
     @Test
-    void dropOSMTablesTest(){
+    void dropOSMTablesTest() {
         def ds = RANDOM_DS()
         ds.execute "CREATE TABLE prefix_node"
         ds.execute "CREATE TABLE prefix_node_member"
@@ -514,7 +510,7 @@ class UtilitiesTest extends AbstractOSMTest {
         ds.execute "CREATE TABLE prefix_way_member"
         ds.execute "CREATE TABLE prefix_way_node"
         ds.execute "CREATE TABLE prefix_way_tag"
-        assertTrue Utilities.dropOSMTables("prefix", ds)
+        assertTrue OSMTools.Utilities.dropOSMTables("prefix", ds)
 
         ds.execute "CREATE TABLE _node"
         ds.execute "CREATE TABLE _node_member"
@@ -526,7 +522,7 @@ class UtilitiesTest extends AbstractOSMTest {
         ds.execute "CREATE TABLE _way_member"
         ds.execute "CREATE TABLE _way_node"
         ds.execute "CREATE TABLE _way_tag"
-        assertTrue Utilities.dropOSMTables("", ds)
+        assertTrue OSMTools.Utilities.dropOSMTables("", ds)
 
     }
 
@@ -535,10 +531,10 @@ class UtilitiesTest extends AbstractOSMTest {
      * method with bad data.
      */
     @Test
-    void badDropOSMTablesTest(){
+    void badDropOSMTablesTest() {
         def ds = RANDOM_DS()
-        assertFalse Utilities.dropOSMTables("prefix", null)
-        assertFalse Utilities.dropOSMTables(null, ds)
+        assertFalse OSMTools.Utilities.dropOSMTables("prefix", null)
+        assertFalse OSMTools.Utilities.dropOSMTables(null, ds)
     }
 
     /**
@@ -546,7 +542,7 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     @Disabled
-    void getNominatimDataTest(){
+    void getNominatimDataTest() {
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
         def data = Utilities.getNominatimData("Paimpol")
         assertTrue pattern.matcher(data["geom"].toString()).matches()
@@ -564,15 +560,15 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     @Disabled
     void badGetNominatimDataTest() {
-        assertNull Utilities.getNominatimData(null)
+        assertNull OSMTools.Utilities.getNominatimData(null)
     }
 
     /**
      * Test the {@link Utilities#getServerStatus()} method.
      */
     @Test
-    void getServerStatusTest(){
-        def status = Utilities.getServerStatus()
+    void getServerStatusTest() {
+        def status = OSMTools.Utilities.getServerStatus()
         assertNotNull status
     }
 
@@ -582,10 +578,10 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     @Disabled
-    void executeOverPassQueryTest(){
+    void executeOverPassQueryTest() {
         def file = new File("target/" + UUID.randomUUID().toString().replaceAll("-", "_"))
         assertTrue file.createNewFile()
-        assertTrue Utilities.executeOverPassQuery("(node(51.249,7.148,51.251,7.152);<;);out meta;", file)
+        assertTrue OSMTools.Utilities.executeOverPassQuery("(node(51.249,7.148,51.251,7.152);<;);out meta;", file)
         assertTrue file.exists()
         assertFalse file.text.isEmpty()
     }
@@ -595,12 +591,12 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     @Disabled
-    void badExecuteOverPassQueryTest(){
+    void badExecuteOverPassQueryTest() {
         def file = new File("target/" + UUID.randomUUID().toString().replaceAll("-", "_"))
         assertTrue file.createNewFile()
-        assertFalse Utilities.executeOverPassQuery(null, file)
+        assertFalse OSMTools.Utilities.executeOverPassQuery(null, file)
         assertTrue file.text.isEmpty()
-        assertFalse Utilities.executeOverPassQuery("query", null)
+        assertFalse OSMTools.Utilities.executeOverPassQuery("query", null)
         assertTrue file.text.isEmpty()
     }
 }

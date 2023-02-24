@@ -41,5 +41,6 @@ package org.orbisgis.geoclimate.osmtools.utils
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-enum GeometryTypes { LINES, POLYGONS
+enum GeometryTypes {
+    LINES, POLYGONS
 }

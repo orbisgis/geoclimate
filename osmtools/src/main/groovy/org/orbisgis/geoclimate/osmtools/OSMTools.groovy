@@ -38,10 +38,11 @@ package org.orbisgis.geoclimate.osmtools
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.LoggerContext
-import org.orbisgis.process.GroovyProcessFactory
 import org.orbisgis.geoclimate.osmtools.Loader as LOADER
 import org.orbisgis.geoclimate.osmtools.Transform as TRANSFORM
+import org.orbisgis.geoclimate.osmtools.utils.TransformUtils as TRANSFORM_UTILS
 import org.orbisgis.geoclimate.osmtools.utils.Utilities as UTILITIES
+import org.orbisgis.geoclimate.utils.AbstractScript
 import org.slf4j.LoggerFactory
 
 /**
@@ -52,26 +53,15 @@ import org.slf4j.LoggerFactory
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 
-abstract class OSMTools extends GroovyProcessFactory {
+abstract class OSMTools extends AbstractScript {
     def static Loader = new LOADER()
     def static Transform = new TRANSFORM()
     def static Utilities = new UTILITIES()
-    public static def logger
+    def static TransformUtils = new TRANSFORM_UTILS()
 
     OSMTools() {
-        logger = LoggerFactory.getLogger(OSMTools.class)
+        super(LoggerFactory.getLogger(OSMTools.class))
         var context = (LoggerContext) LoggerFactory.getILoggerFactory()
         context.getLogger(OSMTools.class).setLevel(Level.INFO)
     }
-
-    /** {@link Closure} returning a {@link String} prefix/suffix build from a random {@link UUID} with '-' replaced by '_'. */
-    static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
-
-    static def uuid() { getUuid() }
-
-    static def info = { obj ->
-        logger.info(obj.toString()) }
-    static def warn = { obj -> logger.warn(obj.toString()) }
-    static def error = { obj -> logger.error(obj.toString()) }
-    static def debug = { obj -> logger.debug(obj.toString()) }
 }

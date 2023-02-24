@@ -39,10 +39,9 @@ package org.orbisgis.geoclimate.osmtools
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
-import org.orbisgis.geoclimate.osmtools.utils.Utilities
-import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.osmtools.OSMTools as Tools
+import org.orbisgis.geoclimate.osmtools.utils.Utilities
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
@@ -59,15 +58,15 @@ abstract class AbstractOSMTest {
     private static final def DB_OPTION = ";AUTO_SERVER=TRUE"
 
     /** Generation of string {@link UUID}.*/
-    protected static final def uuid(){ UUID.randomUUID().toString().replaceAll("-", "_")}
+    protected static final def uuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
     /** Used to store the OSM request to ensure the good query is generated. */
     protected static def query
     /** Generation of a random named database. */
-    protected static final def RANDOM_DS = { H2GIS.open(PATH + uuid() + DB_OPTION)}
+    protected static final def RANDOM_DS = { H2GIS.open(PATH + uuid() + DB_OPTION) }
     /** Regex for the string UUID. */
     protected static def uuidRegex = "[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}"
     /** Return a random file path. **/
-    protected static def RANDOM_PATH = {"./target/file"+uuid()}
+    protected static def RANDOM_PATH = { "./target/file" + uuid() }
 
     /** The process manager. */
     protected static OSMTools = Tools
@@ -90,20 +89,18 @@ abstract class AbstractOSMTest {
      * Preparation for test execution. Signature should not be changed ({@link org.junit.jupiter.api.BeforeEach}
      * require non stattic void method.
      */
-    void beforeEach(){
+    void beforeEach() {
         //Store the modified object
         executeOverPassQuery = Utilities.&executeOverPassQuery
         getNominatimData = Utilities.&getNominatimData
         executeNominatimQuery = Utilities.&executeNominatimQuery
-        extract = OSMTools.Loader.extract()
-        load = OSMTools.Loader.load()
     }
 
     /**
      * Preparation for test execution. Signature should not be changed ({@link org.junit.jupiter.api.AfterEach}
      * require non stattic void method.
      */
-    void afterEach(){
+    void afterEach() {
         //Restore the modified object
         Utilities.metaClass.static.executeOverPassQuery = executeOverPassQuery
         Utilities.metaClass.static.getNominatimData = getNominatimData
@@ -115,8 +112,8 @@ abstract class AbstractOSMTest {
     /**
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
-    protected static void sampleExecuteNominatimPolygonQueryOverride(){
-        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+    protected static void sampleExecuteNominatimPolygonQueryOverride() {
+        Utilities.metaClass.static.executeNominatimQuery = { query, outputOSMFile ->
             AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("nominatimSamplePolygon.geojson").text
             return true
@@ -126,8 +123,8 @@ abstract class AbstractOSMTest {
     /**
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
-    protected static void sampleExecuteNominatimMultipolygonQueryOverride(){
-        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+    protected static void sampleExecuteNominatimMultipolygonQueryOverride() {
+        Utilities.metaClass.static.executeNominatimQuery = { query, outputOSMFile ->
             AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("nominatimSampleMultipolygon.geojson").text
             return true
@@ -137,8 +134,8 @@ abstract class AbstractOSMTest {
     /**
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
-    protected static void badExecuteNominatimQueryOverride(){
-        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+    protected static void badExecuteNominatimQueryOverride() {
+        Utilities.metaClass.static.executeNominatimQuery = { query, outputOSMFile ->
             return false
         }
     }
@@ -146,8 +143,8 @@ abstract class AbstractOSMTest {
     /**
      * Override the 'executeOverPassQuery' methods to avoid the call to the server
      */
-    protected static void sampleOverpassQueryOverride(){
-        Utilities.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
+    protected static void sampleOverpassQueryOverride() {
+        Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
             AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("sample.osm").text
             return true
@@ -157,8 +154,8 @@ abstract class AbstractOSMTest {
     /**
      * Override the 'executeOverPassQuery' methods to avoid the call to the server
      */
-    protected static void badOverpassQueryOverride(){
-        Utilities.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
+    protected static void badOverpassQueryOverride() {
+        Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
             AbstractOSMTest.query = query
             return false
         }
@@ -167,13 +164,13 @@ abstract class AbstractOSMTest {
     /**
      * Override the 'getNominatimData' methods to avoid the call to the server
      */
-    protected static void sampleGetNominatimData(){
-        Utilities.metaClass.static.getNominatimData = {placeName ->
+    protected static void sampleGetNominatimData() {
+        Utilities.metaClass.static.getNominatimData = { placeName ->
             def coordinates = [new Coordinate(-3.016, 48.82),
                                new Coordinate(-3.016, 48.821),
-                               new Coordinate(-3.015 ,48.821),
-                               new Coordinate(-3.015 ,48.82),
-                               new Coordinate(-3.016 ,48.82)] as Coordinate[]
+                               new Coordinate(-3.015, 48.821),
+                               new Coordinate(-3.015, 48.82),
+                               new Coordinate(-3.016, 48.82)] as Coordinate[]
             def geom = new GeometryFactory().createPolygon(coordinates)
             geom.SRID = 4326
             return ["geom": geom]
@@ -183,35 +180,10 @@ abstract class AbstractOSMTest {
     /**
      * Override the 'getNominatimData' methods to avoid the call to the server
      */
-    protected static void badGetNominatimData(){
-        Utilities.metaClass.getNominatimData = {placeName -> }
+    protected static void badGetNominatimData() {
+        Utilities.metaClass.getNominatimData = { placeName -> }
     }
 
-    /**
-     * Override the 'extract' process to make it fail
-     */
-    protected static void badExtract(){
-        OSMTools.Loader.metaClass.extract = OSMTools.Loader.create({
-            title "Extract the OSM data using the overpass api and save the result in an XML file"
-            id "extract"
-            inputs overpassQuery: String
-            outputs outputFilePath: String
-            run { overpassQuery -> }
-        })
-    }
-
-    /**
-     * Override the 'load' process to make it fail
-     */
-    protected static void badLoad(){
-        OSMTools.Loader.metaClass.load = OSMTools.Loader.create({
-            title "Load an OSM file to the current database"
-            id "load"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath: String
-            outputs datasource: JdbcDataSource
-            run { JdbcDataSource datasource, osmTablesPrefix, osmFilePath -> }
-        })
-    }
 
     /**
      * Implementation of the {@link org.junit.jupiter.api.Assertions#assertEquals(String, String)} method to take into
@@ -266,7 +238,7 @@ abstract class AbstractOSMTest {
      * @param ds Datasource where the data should be created.
      * @param prefix Prefix of the OSM tables.
      */
-    protected void createData(def ds, def prefix){
+    protected void createData(def ds, def prefix) {
         ds.execute """CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);
        INSERT INTO ${prefix}_node_tag VALUES(1, 'building', 'house'),(1, 'material', 'concrete'),
        (2, 'material', 'concrete'),(3, 'water', 'lake'),(4, 'water', 'lake'),(4, 'building', 'house');

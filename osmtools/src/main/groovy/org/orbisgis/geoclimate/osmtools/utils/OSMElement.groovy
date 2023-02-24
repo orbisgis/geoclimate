@@ -43,5 +43,5 @@ package org.orbisgis.geoclimate.osmtools.utils
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
 enum OSMElement {
-    NODE,WAY,RELATION
+    NODE, WAY, RELATION
 }

@@ -1,0 +1,32 @@
+package org.orbisgis.geoclimate.utils
+
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.LoggerContext
+import org.slf4j.LoggerFactory
+
+class LoggerUtils {
+
+
+    /**
+     * Utility class to change log level for all loggers
+     *
+     */
+    static def setLoggerLevel(String loggerLevel) {
+        if (loggerLevel) {
+            Level level
+            if (loggerLevel.equalsIgnoreCase("INFO")) {
+                level = Level.INFO
+            } else if (loggerLevel.equalsIgnoreCase("DEBUG")) {
+                level = Level.DEBUG
+            } else if (loggerLevel.equalsIgnoreCase("TRACE")) {
+                level = Level.TRACE
+            } else if (loggerLevel.equalsIgnoreCase("OFF")) {
+                level = Level.OFF
+            } else {
+                throw new RuntimeException("Invalid log level. Allowed values are : INFO, DEBUG, TRACE, OFF")
+            }
+            var context = (LoggerContext) LoggerFactory.getILoggerFactory()
+            context.getLoggerList().each { it -> it.setLevel(level) }
+        }
+    }
+}

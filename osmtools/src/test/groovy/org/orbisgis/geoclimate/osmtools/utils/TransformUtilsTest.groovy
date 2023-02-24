@@ -42,15 +42,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
-import org.orbisgis.geoclimate.osmtools.AbstractOSMTest
 import org.orbisgis.data.H2GIS
+import org.orbisgis.geoclimate.osmtools.AbstractOSMTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
 
 /**
- * Test class for the processes in {@link org.orbisgis.orbisanalysis.osm.Transform}
+ * Test class for the processes in {@link org.orbisgis.geoclimate.osmtools.Transform}
  *
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
@@ -60,67 +60,67 @@ class TransformUtilsTest extends AbstractOSMTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(TransformUtilsTest)
 
     @BeforeEach
-    final void beforeEach(TestInfo testInfo){
+    final void beforeEach(TestInfo testInfo) {
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
         super.beforeEach()
     }
 
     @AfterEach
-    final void afterEach(TestInfo testInfo){
+    final void afterEach(TestInfo testInfo) {
         super.afterEach()
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#createWhereFilter(java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#createWhereFilter(java.lang.Object)}
      * method.
      */
     @Test
-    void createWhereFilterTest(){
+    void createWhereFilterTest() {
         def tags = new HashMap<>()
         tags["material"] = ["concrete"]
         assertGStringEquals "(tag_key = 'material' AND tag_value IN ('concrete'))",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags[null] = ["tata", "tutu"]
         assertGStringEquals "(tag_value IN ('tata','tutu'))",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags[null] = "toto"
         assertGStringEquals "(tag_value IN ('toto'))",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags["null"] = null
         assertGStringEquals "(tag_key = 'null')",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags["empty"] = []
         assertGStringEquals "(tag_key = 'empty')",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags["road"] = [null, "highway"]
         assertGStringEquals "(tag_key = 'road' AND tag_value IN ('highway'))",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags["water"] = "pound"
         assertGStringEquals "(tag_key = 'water' AND tag_value IN ('pound'))",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags["pound"] = ["emilie", "big", "large"]
         assertGStringEquals "(tag_key = 'pound' AND tag_value IN ('emilie','big','large'))",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags[["river", "song"]] = ["big", "large"]
         assertGStringEquals "(tag_key IN ('river','song') AND tag_value IN ('big','large'))",
-                TransformUtils.createWhereFilter(tags)
+                OSMTools.TransformUtils.createWhereFilter(tags)
 
         tags = new HashMap<>()
         tags["material"] = ["concrete"]
@@ -139,171 +139,172 @@ class TransformUtilsTest extends AbstractOSMTest {
                 "(tag_key = 'road' AND tag_value IN ('highway')) OR " +
                 "(tag_key IN ('river','song') AND tag_value IN ('big','large')) OR " +
                 "(tag_key = 'water' AND tag_value IN ('pound')) OR " +
-                "(tag_key = 'empty')", TransformUtils.createWhereFilter(tags)
+                "(tag_key = 'empty')", OSMTools.TransformUtils.createWhereFilter(tags)
 
-        assertGStringEquals "tag_key IN ('emilie','big','large')", TransformUtils.createWhereFilter(["emilie", "big", "large", null])
+        assertGStringEquals "tag_key IN ('emilie','big','large')", OSMTools.TransformUtils.createWhereFilter(["emilie", "big", "large", null])
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#createWhereFilter(java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#createWhereFilter(java.lang.Object)}
      * method with bad data.
      */
     @Test
-    void badCreateWhereFilterTest(){
-        assertGStringEquals "", TransformUtils.createWhereFilter(null)
-        assertGStringEquals "", TransformUtils.createWhereFilter(new HashMap())
-        assertGStringEquals "", TransformUtils.createWhereFilter([])
-        assertGStringEquals "", TransformUtils.createWhereFilter([null])
+    void badCreateWhereFilterTest() {
+        assertGStringEquals "", OSMTools.TransformUtils.createWhereFilter(null)
+        assertGStringEquals "", OSMTools.TransformUtils.createWhereFilter(new HashMap())
+        assertGStringEquals "", OSMTools.TransformUtils.createWhereFilter([])
+        assertGStringEquals "", OSMTools.TransformUtils.createWhereFilter([null])
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#getColumnSelector(java.lang.Object, java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#getColumnSelector(java.lang.Object, java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
-    void badGetColumnSelectorTest(){
+    void badGetColumnSelectorTest() {
         def validTableName = "tutu"
-        def validTags = [toto:"tata"]
+        def validTags = [toto: "tata"]
         def columnsToKeep = ["col1", "col2", "col5"]
-        assertNull TransformUtils.getColumnSelector(null, validTags, columnsToKeep)
-        assertNull TransformUtils.getColumnSelector("", validTags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.getColumnSelector(null, validTags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.getColumnSelector("", validTags, columnsToKeep)
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#getColumnSelector(java.lang.Object, java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#getColumnSelector(java.lang.Object, java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
-    void getColumnSelectorTest(){
+    void getColumnSelectorTest() {
         def validTableName = "tutu"
-        def validTags = [toto:"tata"]
+        def validTags = [toto: "tata"]
         def columnsToKeep = ["col1", "col2", "col5"]
         assertGStringEquals "SELECT distinct tag_key FROM tutu WHERE tag_key IN ('toto','col1','col2','col5')",
-                TransformUtils.getColumnSelector(validTableName, validTags, columnsToKeep)
+                OSMTools.TransformUtils.getColumnSelector(validTableName, validTags, columnsToKeep)
         assertGStringEquals "SELECT distinct tag_key FROM tutu WHERE tag_key IN ('toto')",
-                TransformUtils.getColumnSelector(validTableName, validTags, null)
+                OSMTools.TransformUtils.getColumnSelector(validTableName, validTags, null)
         assertGStringEquals "SELECT distinct tag_key FROM tutu WHERE tag_key IN ('toto')",
-                TransformUtils.getColumnSelector(validTableName, validTags, [])
+                OSMTools.TransformUtils.getColumnSelector(validTableName, validTags, [])
         assertGStringEquals "SELECT distinct tag_key FROM tutu WHERE tag_key IN ('toto')",
-                TransformUtils.getColumnSelector(validTableName, validTags, [null, null])
+                OSMTools.TransformUtils.getColumnSelector(validTableName, validTags, [null, null])
         assertGStringEquals "SELECT distinct tag_key FROM tutu WHERE tag_key IN ('toto','tutu')",
-                TransformUtils.getColumnSelector(validTableName, validTags, "tutu")
+                OSMTools.TransformUtils.getColumnSelector(validTableName, validTags, "tutu")
         assertGStringEquals "SELECT distinct tag_key FROM tutu WHERE tag_key IN ('toto','tutu')",
-                TransformUtils.getColumnSelector(validTableName, validTags, "tutu")
+                OSMTools.TransformUtils.getColumnSelector(validTableName, validTags, "tutu")
         assertGStringEquals "SELECT distinct tag_key FROM tutu WHERE tag_key IN ('col1','col2','col5')",
-                TransformUtils.getColumnSelector(validTableName, null, columnsToKeep)
-        assertGStringEquals "SELECT distinct tag_key FROM tutu", TransformUtils.getColumnSelector(validTableName, null, null)
+                OSMTools.TransformUtils.getColumnSelector(validTableName, null, columnsToKeep)
+        assertGStringEquals "SELECT distinct tag_key FROM tutu", OSMTools.TransformUtils.getColumnSelector(validTableName, null, null)
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
-    void getCountTagQueryTest(){
+    void getCountTagQueryTest() {
         def osmTable = "tutu"
         assertGStringEquals "SELECT count(*) AS count FROM tutu WHERE tag_key IN ('titi','tata')",
-                TransformUtils.getCountTagsQuery(osmTable, ["titi", "tata"])
+                OSMTools.TransformUtils.getCountTagsQuery(osmTable, ["titi", "tata"])
         assertGStringEquals "SELECT count(*) AS count FROM tutu",
-                TransformUtils.getCountTagsQuery(osmTable, null)
+                OSMTools.TransformUtils.getCountTagsQuery(osmTable, null)
         assertGStringEquals "SELECT count(*) AS count FROM tutu",
-                TransformUtils.getCountTagsQuery(osmTable, [])
+                OSMTools.TransformUtils.getCountTagsQuery(osmTable, [])
         assertGStringEquals "SELECT count(*) AS count FROM tutu",
-                TransformUtils.getCountTagsQuery(osmTable, [null])
+                OSMTools.TransformUtils.getCountTagsQuery(osmTable, [null])
         assertGStringEquals "SELECT count(*) AS count FROM tutu WHERE tag_key IN ('toto')",
-                TransformUtils.getCountTagsQuery(osmTable, "toto")
+                OSMTools.TransformUtils.getCountTagsQuery(osmTable, "toto")
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
-    void badGetCountTagQueryTest(){
-        assertNull TransformUtils.getCountTagsQuery(null, ["titi", "tata"])
-        assertNull TransformUtils.getCountTagsQuery("", ["titi", "tata"])
+    void badGetCountTagQueryTest() {
+        assertNull OSMTools.TransformUtils.getCountTagsQuery(null, ["titi", "tata"])
+        assertNull OSMTools.TransformUtils.getCountTagsQuery("", ["titi", "tata"])
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
-    void createTagListTest(){
+    void createTagListTest() {
         def h2gis = RANDOM_DS()
         def osmTable = "toto"
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (0, 'material', ('concrete', 'brick'))")
         assertEquals(", MAX(CASE WHEN b.tag_key = 'material' THEN b.tag_value END) AS \"material\"",
-                TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable").toString())
+                OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable").toString())
         h2gis.execute("DROP TABLE IF EXISTS toto")
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (1, 'water', null)")
         assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'water' THEN b.tag_value END) AS \"water\"",
-                TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+                OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (2, 'road', '{}')")
         assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'road' THEN b.tag_value END) AS \"road\"",
-                TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+                OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (0, 'material', ('concrete', 'brick'))")
-        assertNull  TransformUtils.createTagList(null, "SELECT tag_key FROM $osmTable")
+        assertNull OSMTools.TransformUtils.createTagList(null, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
-    void badCreateTagListTest(){
+    void badCreateTagListTest() {
         def h2gis = RANDOM_DS()
         def osmTable = "toto"
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (3, null, ('lake', 'pound'))")
-        assertGStringEquals "", TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+        assertGStringEquals "", OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
 
         h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (4, null, null)")
-        assertGStringEquals "", TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+        assertGStringEquals "", OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
      * method with bad data.
      */
     @Test
-    void badBuildIndexesTest(){
+    void badBuildIndexesTest() {
         def h2gis = RANDOM_DS()
         def osmTable = "toto"
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse TransformUtils.buildIndexes(h2gis, null)
+        assertFalse OSMTools.TransformUtils.buildIndexes(h2gis, null)
         LOGGER.warn("An error will be thrown next")
-        assertFalse TransformUtils.buildIndexes(null, null)
+        assertFalse OSMTools.TransformUtils.buildIndexes(null, null)
         LOGGER.warn("An error will be thrown next")
-        assertFalse TransformUtils.buildIndexes(null, osmTable)
+        assertFalse OSMTools.TransformUtils.buildIndexes(null, osmTable)
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
      * method.
      */
     @Test
-    void buildIndexesTest(){
+    void buildIndexesTest() {
         def h2gis = RANDOM_DS()
         def osmTablesPrefix = "toto"
         h2gis.execute """
             CREATE TABLE ${osmTablesPrefix}_node(id_node varchar);
+            CREATE TABLE ${osmTablesPrefix}_node_tag(id_node varchar,tag_key varchar,tag_value varchar);
             CREATE TABLE ${osmTablesPrefix}_way_node(id_node varchar, node_order varchar, id_way varchar);
             CREATE TABLE ${osmTablesPrefix}_way(id_way varchar, not_taken_into_account varchar);
             CREATE TABLE ${osmTablesPrefix}_way_tag(tag_key varchar,id_way varchar,tag_value varchar);
@@ -314,7 +315,7 @@ class TransformUtilsTest extends AbstractOSMTest {
             CREATE TABLE ${osmTablesPrefix}_relation_not_taken_into_account(id_relation varchar);
         """.toString()
 
-        TransformUtils.buildIndexes(h2gis, osmTablesPrefix)
+        OSMTools.TransformUtils.buildIndexes(h2gis, osmTablesPrefix)
 
         assertNotNull h2gis.getTable("${osmTablesPrefix}_node")
         assertNotNull h2gis.getTable("${osmTablesPrefix}_node")."id_node"
@@ -368,24 +369,24 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#arrayUnion(boolean, java.util.Collection [ ])}
      * method with bad data.
      */
     @Test
-    void badArrayUnionTest(){
-        assertNotNull TransformUtils.arrayUnion(true, null)
-        assertTrue TransformUtils.arrayUnion(true, null).isEmpty()
-        assertNotNull TransformUtils.arrayUnion(true, [])
-        assertTrue TransformUtils.arrayUnion(true, []).isEmpty()
+    void badArrayUnionTest() {
+        assertNotNull OSMTools.TransformUtils.arrayUnion(true, null)
+        assertTrue OSMTools.TransformUtils.arrayUnion(true, null).isEmpty()
+        assertNotNull OSMTools.TransformUtils.arrayUnion(true, [])
+        assertTrue OSMTools.TransformUtils.arrayUnion(true, []).isEmpty()
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#arrayUnion(boolean, java.util.Collection [ ])}
      * method.
      */
     @Test
-    void arrayUnionTest(){
-        def unique = TransformUtils.arrayUnion(true, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
+    void arrayUnionTest() {
+        def unique = OSMTools.TransformUtils.arrayUnion(true, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
         assertNotNull unique
         assertEquals 6, unique.size()
         assertEquals null, unique[0]
@@ -395,7 +396,7 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertEquals "tutu", unique[4]
         assertEquals "value", unique[5]
 
-        def notUnique = TransformUtils.arrayUnion(false, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
+        def notUnique = OSMTools.TransformUtils.arrayUnion(false, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
         assertNotNull notUnique
         assertEquals 8, notUnique.size()
         assertEquals null, notUnique[0]
@@ -409,16 +410,16 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
-    void badExtractNodesAsPointsTest(){
+    void badExtractNodesAsPointsTest() {
         H2GIS ds = RANDOM_DS()
-        def prefix = "prefix"+uuid()
-        def epsgCode  = 2456
+        def prefix = "prefix" + uuid()
+        def epsgCode = 2456
         def outTable = "output"
-        def tags = [building:["toto", "house", null], material:["concrete"], road:null]
+        def tags = [building: ["toto", "house", null], material: ["concrete"], road: null]
         tags.put(null, null)
         tags.put(null, ["value1", "value2"])
         tags.put('key', null)
@@ -428,18 +429,18 @@ class TransformUtilsTest extends AbstractOSMTest {
         loadDataForNodeExtraction(ds, prefix)
 
         LOGGER.warn("An error will be thrown next")
-        assertFalse TransformUtils.extractNodesAsPoints(null, prefix, epsgCode, outTable, tags, columnsToKeep)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(null, prefix, epsgCode, outTable, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertFalse TransformUtils.extractNodesAsPoints(ds, null, epsgCode, outTable, tags, columnsToKeep)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(ds, null, epsgCode, outTable, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, -1, outTable, tags, columnsToKeep)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, -1, outTable, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, null, tags, columnsToKeep)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, null, tags, columnsToKeep)
 
-        assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [house:"false", path:'false'], null)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [house: "false", path: 'false'], null)
     }
 
-    private static loadDataForNodeExtraction(def ds, def prefix){
+    private static loadDataForNodeExtraction(def ds, def prefix) {
         ds.execute """CREATE TABLE ${prefix}_node (id_node int, the_geom geometry);
         INSERT INTO ${prefix}_node VALUES (1, 'POINT(0 0)'),
          (2, 'POINT(1 1)'),
@@ -480,16 +481,16 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
-    void extractNodesAsPointsTest(){
+    void extractNodesAsPointsTest() {
         H2GIS ds = RANDOM_DS()
-        def prefix = "prefix"+uuid()
-        def epsgCode  = 2456
+        def prefix = "prefix" + uuid()
+        def epsgCode = 2456
         def outTable = "output"
-        def tags = [building:["toto", "house", null], material:["concrete"], road:null]
+        def tags = [building: ["toto", "house", null], material: ["concrete"], road: null]
         tags.put(null, null)
         tags.put(null, ["value1", "value2"])
         tags.put('key', null)
@@ -501,28 +502,20 @@ class TransformUtilsTest extends AbstractOSMTest {
         loadDataForNodeExtraction(ds, prefix)
 
         //With tags
-        assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, tags, columnsToKeep)
-        def table = ds.getTable("output")
+        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, tags, columnsToKeep)
+        def table = ds.getTable(outTable)
         assertNotNull table
-
-        assertEquals 9, table.columnCount
-        assertNotNull ds.getTable("output").id_node
-        assertNotNull ds.getTable("output").the_geom
-        assertNotNull ds.getTable("output").building
-        assertNotNull ds.getTable("output").material
-        assertNotNull ds.getTable("output").road
-        assertNotNull ds.getTable("output").key
-        assertNotNull ds.getTable("output").key1
-        assertNotNull ds.getTable("output").key3
-        assertNotNull ds.getTable("output").key4
-        assertFalse table.columns.contains("WATER")
-        assertFalse table.columns.contains("KEY2")
-        assertFalse table.columns.contains("HOUSE")
-        assertFalse table.columns.contains("VALUES")
+        def columns = table.columns
+        assertEquals 9, columns.size()
+        assertEquals 9, columns.intersect(["ID_NODE", "THE_GEOM", "building", "material", "road", "key", "key1", "key2", "key3", "key4"]).size()
+        assertFalse columns.contains("WATER")
+        assertFalse columns.contains("KEY2")
+        assertFalse columns.contains("HOUSE")
+        assertFalse columns.contains("VALUES")
 
         assertEquals 9, table.rowCount
-        table.each {it ->
-            switch(it.row){
+        table.each { it ->
+            switch (it.row) {
                 case 1:
                     assertEquals 1, it."id_node"
                     assertNotNull it."the_geom"
@@ -627,50 +620,37 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Without tags and with column to keep
-        assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, null, ["key1", "build"])
+        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [], ["key1", "build"])
         table = ds.getTable("output")
         assertNotNull table
 
-        assertEquals 4, table.columnCount
-        assertNotNull ds.getTable("output").id_node
-        assertNotNull ds.getTable("output").the_geom
-        assertNotNull ds.getTable("output").build
-        assertNotNull ds.getTable("output").key1
-        assertFalse table.columns.contains("WATER")
-        assertFalse table.columns.contains("MATERIAL")
-        assertFalse table.columns.contains("ROAD")
-        assertFalse table.columns.contains("KEY")
-        assertFalse table.columns.contains("KEY2")
-        assertFalse table.columns.contains("KEY3")
-        assertFalse table.columns.contains("KEY4")
-        assertFalse table.columns.contains("HOUSE")
-        assertFalse table.columns.contains("BUILDING")
-        assertFalse table.columns.contains("VALUES")
+        columns = table.columns
+        assertEquals 4, columns.size()
+        assertEquals 4, columns.intersect(["ID_NODE", "THE_GEOM", "build", "key1"]).size()
+        assertFalse columns.contains("WATER")
+        assertFalse columns.contains("MATERIAL")
+        assertFalse columns.contains("ROAD")
+        assertFalse columns.contains("KEY")
+        assertFalse columns.contains("KEY2")
+        assertFalse columns.contains("KEY3")
+        assertFalse columns.contains("KEY4")
+        assertFalse columns.contains("HOUSE")
+        assertFalse columns.contains("BUILDING")
+        assertFalse columns.contains("VALUES")
 
         //Without tags and columns to keep
-        assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, null, [])
+        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [], [])
         table = ds.getTable("output")
         assertNotNull table
-
-        assertEquals 14, table.columnCount
-        assertNotNull ds.getTable("output").id_node
-        assertNotNull ds.getTable("output").the_geom
-        assertNotNull ds.getTable("output").build
-        assertNotNull ds.getTable("output").building
-        assertNotNull ds.getTable("output").house
-        assertNotNull ds.getTable("output").key
-        assertNotNull ds.getTable("output").key1
-        assertNotNull ds.getTable("output").key2
-        assertNotNull ds.getTable("output").key3
-        assertNotNull ds.getTable("output").key4
-        assertNotNull ds.getTable("output").material
-        assertNotNull ds.getTable("output").road
-        assertNotNull ds.getTable("output").values
-        assertNotNull ds.getTable("output").water
+        columns = table.columns
+        assertEquals 14, columns.size()
+        assertEquals 14, columns.intersect(["ID_NODE", "THE_GEOM", "build",
+                                            "building", "material", "road", "key", "key1", "key2",
+                                            "key3", "key4", "values", "water", "house"]).size()
 
         assertEquals 15, table.rowCount
-        table.each {it ->
-            switch(it.row){
+        table.each { it ->
+            switch (it.row) {
                 case 1:
                     assertEquals 1, it."id_node"
                     assertNotNull it."the_geom"
@@ -916,36 +896,36 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
+     * test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
-    void badToPolygonOrLineTest(){
+    void badToPolygonOrLineTest() {
         def badType = "notAType"
         def lineType = GeometryTypes.LINES
         H2GIS ds = RANDOM_DS()
-        def prefix = "OSM_"+uuid()
+        def prefix = "OSM_" + uuid()
         def epsgCode = 2145
         def badEpsgCode = -1
         def tags = [:]
         def columnsToKeep = []
 
         LOGGER.warn("An error will be thrown next")
-        assertNull TransformUtils.toPolygonOrLine(null, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(null, ds, prefix, epsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull TransformUtils.toPolygonOrLine(lineType, null, prefix, epsgCode, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, null, prefix, epsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull TransformUtils.toPolygonOrLine(lineType, ds, null, epsgCode, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, null, epsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull TransformUtils.toPolygonOrLine(lineType, ds, prefix, badEpsgCode, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, badEpsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull TransformUtils.toPolygonOrLine(lineType, ds, prefix, null, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, -1, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, null, null)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, null, null)
     }
 
     /**
-     * test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
+     * test the {@link org.orbisgis.geoclimate.osmtools.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
@@ -962,14 +942,12 @@ class TransformUtilsTest extends AbstractOSMTest {
         createData(ds, prefix)
 
         //Test line
-        def result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        def result = OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        assertTrue result.containsKey("outputTableName")
-        assertNotNull result.outputTableName
-        def table = ds.getTable(result.outputTableName)
+        def table = ds.getTable(result)
         assertEquals 2, table.rowCount
         table.each {
-            switch(it.row){
+            switch (it.row) {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "w1", it.id
@@ -986,24 +964,22 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Test polygon
-        result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        assertTrue result.containsKey("outputTableName")
-        assertNotNull result.outputTableName
-        table = ds.getTable(result.outputTableName)
+        table = ds.getTable(result)
         assertEquals 2, table.rowCount
         table.each {
-            switch(it.row){
+            switch (it.row) {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "w1", it.id
-                    assertEquals 2 ,  it.the_geom.getDimension()
+                    assertEquals 2, it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
                 case 2:
                     assertEquals "house", it.building
                     assertEquals "r1", it.id
-                    assertEquals 2 ,  it.the_geom.getDimension()
+                    assertEquals 2, it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
             }
@@ -1012,30 +988,26 @@ class TransformUtilsTest extends AbstractOSMTest {
         //Test no way tags
         ds.execute """DROP TABLE ${prefix}_way_tag;
         CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);""".toString()
-        result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        assertTrue result.containsKey("outputTableName")
-        assertNotNull result.outputTableName
-        table = ds.getTable(result.outputTableName)
+        table = ds.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
-            switch(it.row){
+            switch (it.row) {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "r1", it.id
-                    assertEquals 2 ,  it.the_geom.getDimension()
+                    assertEquals 2, it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
             }
         }
-        result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        assertTrue result.containsKey("outputTableName")
-        assertNotNull result.outputTableName
-        table = ds.getTable(result.outputTableName)
+        table = ds.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
-            switch(it.row){
+            switch (it.row) {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "r1", it.id
@@ -1053,30 +1025,26 @@ class TransformUtilsTest extends AbstractOSMTest {
         DROP TABLE ${prefix}_relation_tag;
         CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)""".toString()
 
-        result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        assertTrue result.containsKey("outputTableName")
-        assertNotNull result.outputTableName
-        table = ds.getTable(result.outputTableName)
+        table = ds.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
-            switch(it.row){
+            switch (it.row) {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "w1", it.id
-                    assertEquals 2 ,  it.the_geom.getDimension()
+                    assertEquals 2, it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
             }
         }
-        result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        assertTrue result.containsKey("outputTableName")
-        assertNotNull result.outputTableName
-        table = ds.getTable(result.outputTableName)
+        table = ds.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
-            switch(it.row){
+            switch (it.row) {
                 case 1:
                     assertEquals "house", it.building
                     assertEquals "w1", it.id
@@ -1092,10 +1060,10 @@ class TransformUtilsTest extends AbstractOSMTest {
         DROP TABLE ${prefix}_relation_tag;
         CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar);""".toString()
 
-        result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
 
-        result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
     }
 }

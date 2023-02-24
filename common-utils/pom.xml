@@ -2,14 +2,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>geoclimate-parent</artifactId>
-        <groupId>org.orbisgis.geoclimate</groupId>
-        <version>0.0.2-SNAPSHOT</version>
-        <relativePath>../</relativePath>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>osmtools</artifactId>
+
+    <parent>
+        <groupId>org.orbisgis.geoclimate</groupId>
+        <artifactId>geoclimate-parent</artifactId>
+        <version>0.0.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>common-utils</artifactId>
     <version>0.0.2-SNAPSHOT</version>
 
     <properties>
@@ -23,46 +24,8 @@
             <version>${groovy-version}</version>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis.data</groupId>
-            <artifactId>h2gis</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>h2gis-network</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-json</artifactId>
-            <version>${groovy-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-sql</artifactId>
-            <version>${groovy-version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>common-utils</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-        </dependency>
-
-        <!-- Test dependencies -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

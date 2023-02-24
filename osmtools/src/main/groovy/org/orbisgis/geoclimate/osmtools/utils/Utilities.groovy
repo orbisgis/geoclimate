@@ -64,7 +64,7 @@ import static java.nio.charset.StandardCharsets.UTF_8
  *
  * @return a New geometry.
  */
-static Map getNominatimData(def placeName) {
+Map getNominatimData(def placeName) {
     if (!placeName) {
         error "The place name should not be null or empty."
         return null
@@ -194,7 +194,7 @@ static Geometry getArea(def location) {
  *
  * @return A polygon.
  */
-static Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
+Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
     if (!coordinates in Collection || !coordinates ||
             !coordinates[0] in Collection || !coordinates[0] ||
             !coordinates[0][0] in Collection || !coordinates[0][0]) {
@@ -312,7 +312,7 @@ static boolean executeNominatimQuery(def query, def outputOSMFile) {
  *
  * @return OSM bbox.
  */
-static String toBBox(Geometry geometry) {
+String toBBox(Geometry geometry) {
     if (!geometry) {
         error "Cannot convert to an overpass bounding box."
         return null
@@ -332,7 +332,7 @@ static String toBBox(Geometry geometry) {
  *
  * @return The OSM polygon.
  */
-static String toPoly(Geometry geometry) {
+String toPoly(Geometry geometry) {
     if (!geometry) {
         error "Cannot convert to an overpass poly filter."
         return null
@@ -369,7 +369,7 @@ static String toPoly(Geometry geometry) {
  *
  * @return A string representation of the OSM query.
  */
-static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
+String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
     if (!envelope) {
         error "Cannot create the overpass query from the bbox $envelope."
         return null
@@ -432,7 +432,7 @@ static String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement..
  *
  * @return A string representation of the OSM query.
  */
-static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
+String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
     if (polygon == null) {
         error "Cannot create the overpass query from a null polygon."
         return null
@@ -475,7 +475,7 @@ static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement)
  *
  * @return A Map of parameters.
  */
-static Map readJSONParameters(def jsonFile) {
+Map readJSONParameters(def jsonFile) {
     if (!jsonFile) {
         error "The given file should not be null"
         return null
@@ -511,7 +511,7 @@ static Map readJSONParameters(def jsonFile) {
  * @return a JTS polygon
  *
  */
-static Geometry buildGeometry(def bbox) {
+Geometry buildGeometry(def bbox) {
     if (!bbox) {
         error "The BBox should not be null"
         return null
@@ -555,7 +555,7 @@ static Geometry buildGeometry(def bbox) {
  * @return a JTS polygon
  */
 //TODO why not merging methods
-static Geometry geometryFromNominatim(def bbox) {
+Geometry geometryFromNominatim(def bbox) {
     if (!bbox) {
         error "The latitude and longitude values cannot be null or empty"
         return null
@@ -588,7 +588,7 @@ static Geometry geometryFromNominatim(def bbox) {
  * @param bbox 4 values to define a bbox
  * @return a JTS polygon
  */
-static Geometry geometryFromValues(def bbox) {
+Geometry geometryFromValues(def bbox) {
     if (!bbox) {
         return null
     }
@@ -610,7 +610,7 @@ static Geometry geometryFromValues(def bbox) {
  * @param prefix Prefix of the OSM tables.
  * @param datasource Datasource where the OSM tables are.
  */
-static boolean dropOSMTables(String prefix, JdbcDataSource datasource) {
+boolean dropOSMTables(String prefix, JdbcDataSource datasource) {
     if (prefix == null) {
         error "The prefix should not be null"
         return false
@@ -643,7 +643,7 @@ static @Field int OVERPASS_TIMEOUT = 180
  * Return the status of the Overpass server.
  * @return A string representation of the overpass status.
  */
-static def getServerStatus() {
+def getServerStatus() {
     final String proxyHost = System.getProperty("http.proxyHost");
     final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
     def connection
@@ -682,7 +682,7 @@ static @Field utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-static boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
+boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
     final String proxyHost = System.getProperty("http.proxyHost");
     final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
     def connection
@@ -737,7 +737,7 @@ static boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-static boolean executeOverPassQuery(def query, def outputOSMFile) {
+boolean executeOverPassQuery(def query, def outputOSMFile) {
     if (!query) {
         error "The query should not be null or empty."
         return false

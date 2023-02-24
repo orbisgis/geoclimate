@@ -13,6 +13,7 @@
         <module>geoclimate</module>
         <module>osmtools</module>
         <module>worldpoptools</module>
+        <module>common-utils</module>
     </modules>
 
     <properties>
@@ -176,6 +177,11 @@
                 <groupId>org.orbisgis.data</groupId>
                 <artifactId>dataframe</artifactId>
                 <version>${orbisdata-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.geoclimate</groupId>
+                <artifactId>common-utils</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.orbisgis.geoclimate</groupId>

@@ -1,6 +1,6 @@
 package org.orbisgis.geoclimate
 
-
+import org.orbisgis.geoclimate.bdtopo.BDTopo
 import picocli.CommandLine
 
 import java.util.concurrent.Callable
@@ -33,7 +33,7 @@ class Geoclimate implements Callable<Integer> {
     @CommandLine.Option(names = ['-w'],
             defaultValue = "OSM",
             required = true,
-            description = "Name of workflow :  OSM (default) or BDTOPO_V2.2")
+            description = "Name of workflow :  OSM (default) BDTOPO_V2 or BDTOPO_V3")
     String workflow
 
     @CommandLine.Option(names = ["-f"],
@@ -65,18 +65,28 @@ class Geoclimate implements Callable<Integer> {
                 println("Cannot execute the OSM workflow")
                 return PROCESS_FAIL_CODE
             }
-        } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V2.2")) {
-            println("The BDTOPO_V2.2 workflow has been started.\nPlease wait...")
-            def success = BDTopo.WorkflowBDTopo_V2.workflow().execute(input: configFile.trim())
+        } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V2")) {
+            println("The BDTOPO_V2 workflow has been started.\nPlease wait...")
+            def success = BDTopo.v2(configFile.trim())
             if (success) {
-                println("The BDTOPO_V2.2 workflow has been successfully executed")
+                println("The BDTOPO_V2 workflow has been successfully executed")
                 return SUCCESS_CODE
             } else {
-                println("Cannot execute the BDTOPO_V2.2 workflow")
+                println("Cannot execute the BDTOPO_V2 workflow")
+                return PROCESS_FAIL_CODE
+            }
+        } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V3")) {
+            println("The BDTOPO_V3 workflow has been started.\nPlease wait...")
+            def success = BDTopo.v3(configFile.trim())
+            if (success) {
+                println("The BDTOPO_V3 workflow has been successfully executed")
+                return SUCCESS_CODE
+            } else {
+                println("Cannot execute the BDTOPO_V3 workflow")
                 return PROCESS_FAIL_CODE
             }
         } else {
-            System.out.println("Invalid workflow name. Supported values are OSM (default) or BDTOPO_V2.2")
+            System.out.println("Invalid workflow name. Supported values are OSM (default), BDTOPO_V2 or BDTOPO_V3")
             return PROCESS_INVALID_CODE
         }
     }

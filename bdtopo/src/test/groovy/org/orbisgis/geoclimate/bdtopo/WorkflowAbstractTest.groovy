@@ -152,7 +152,7 @@ abstract class WorkflowAbstractTest {
                 ]]
         ]
 
-        Map process = BDTopo.workflow(input: bdTopoParameters, version: getVersion())
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
         assertNotNull(process)
 
         def tableNames = process.output[getInseeCode()]
@@ -238,7 +238,7 @@ abstract class WorkflowAbstractTest {
                             ]
             ]
 
-            Map process = BDTopo.workflow(input: bdTopoParameters, version: getVersion())
+            Map process = BDTopo.workflow(bdTopoParameters, getVersion())
             assertNotNull(process)
             def tableNames = process.output.values()
             def grid_table = tableNames.grid_indicators[0]
@@ -297,7 +297,7 @@ abstract class WorkflowAbstractTest {
                         ]
         ]
 
-        Map process = BDTopo.workflow(input: bdTopoParameters, version: getVersion())
+        Map process = BDTopo.workflow( bdTopoParameters,  getVersion())
         assertNotNull(process)
         //Check if the tables exist and contains at least one row
         outputTables.values().each { it ->
@@ -361,7 +361,7 @@ abstract class WorkflowAbstractTest {
                              ]
                             ]
             ]
-            Map process = BDTopo.workflow(input: bdTopoParameters, version: getVersion())
+            Map process = BDTopo.workflow( bdTopoParameters, getVersion())
             assertNotNull(process)
             //Check if the tables exist and contains at least one row
             outputTables.values().each { it ->
@@ -399,6 +399,6 @@ abstract class WorkflowAbstractTest {
                          ]
                         ]
         ]
-        assertNull(BDTopo.workflow(input:bdTopoParameters, version :getVersion()))
+        assertNull(BDTopo.workflow(bdTopoParameters, getVersion()))
     }
 }

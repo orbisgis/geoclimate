@@ -16,7 +16,8 @@ class BDTopo extends BDTopoUtils {
      * from a configuration file or a Map.
      * The configuration file is stored in a json format
      *
-     * @param input The path of the configuration file or a Map
+     * @param input The path of the configuration file or a Map with all parameters
+     * @param version the version of the BDTopo data
      *
      * The input file or the Map supports the following entries *
      *
@@ -121,30 +122,28 @@ class BDTopo extends BDTopoUtils {
      * Meteorological Society 93, no. 12 (2012): 1879-1900.
      *
      */
-    static Map workflow(Map args) {
-        if (args.version) {
-            if (args.version == 2) {
+    static Map workflow(def input, int version ) {
+            if (version == 2) {
                 BDTopoV2Workflow bdtopo_v2_workflow = new BDTopoV2Workflow()
-                return bdtopo_v2_workflow.execute(input: args.input)
-            } else if (args.version == 3) {
+                return bdtopo_v2_workflow.execute(input)
+            } else if (version == 3) {
                 BDTopoV3Workflow bdTopoV3Workflow = new BDTopoV3Workflow()
-                return bdTopoV3Workflow.execute(input: args.input)
+                return bdTopoV3Workflow.execute(input)
             } else {
                 error "Unsupported version. Set number 2 or 3"
                 return null
             }
-        }
         return null
     }
 
-    static Map v2(Map args) {
+    static Map v2(def input) {
         BDTopoV2Workflow bdtopo_v2_workflow = new BDTopoV2Workflow()
-        return bdtopo_v2_workflow.execute(input: args.input)
+        return bdtopo_v2_workflow.execute(input)
     }
 
-    static Map v3(Map args) {
+    static Map v3(def input) {
         BDTopoV3Workflow bdtopo_v3_workflow = new BDTopoV3Workflow()
-        return bdtopo_v3_workflow.execute(input: args.input)
+        return bdtopo_v3_workflow.execute(input)
     }
 
 }

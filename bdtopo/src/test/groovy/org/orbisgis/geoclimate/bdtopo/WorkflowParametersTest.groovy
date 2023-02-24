@@ -48,7 +48,7 @@ class WorkflowParametersTest {
                                           "terrain_roughness_class"     : 1]]
                         ]
         ]
-        assertNull BDTopo.v2(input: bdTopoParameters)
-        assertNull BDTopo.v3(input: bdTopoParameters)
+        assertNull BDTopo.v2(bdTopoParameters)
+        assertNull BDTopo.v3(bdTopoParameters)
     }
 }

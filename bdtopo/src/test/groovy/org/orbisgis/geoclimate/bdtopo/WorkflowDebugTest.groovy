@@ -13,7 +13,7 @@ class WorkflowDebugTest {
     @Disabled
     @Test
     void runFromFile() {
-        BDTopo.v2(input: '/../bdtopo_demo_test.json')
+        BDTopo.v2('/../bdtopo_demo_test.json')
     }
 
     @Disabled
@@ -107,7 +107,7 @@ class WorkflowDebugTest {
                                      "road_traffic"  : true
                     ]
             ]
-            BDTopo.v2(input: workflow_parameters)
+            BDTopo.v2(workflow_parameters)
         } else {
             println("The configuration file for the input database doesn't exist")
         }
@@ -148,7 +148,7 @@ class WorkflowDebugTest {
                          ]
                         ]
         ]
-        BDTopo.v2(input: bdTopoParameters)
+        BDTopo.v2( bdTopoParameters)
 
     }
 

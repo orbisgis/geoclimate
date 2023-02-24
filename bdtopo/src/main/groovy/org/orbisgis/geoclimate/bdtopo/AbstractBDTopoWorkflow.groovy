@@ -29,8 +29,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @param input
      * @return
      */
-    Map execute(def args) {
-        def input = args.input
+    Map execute(def input) {
         Map parameters = null
         if (input) {
             if (input instanceof String) {

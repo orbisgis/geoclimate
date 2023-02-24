@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 /**
  * BDTopo utils
  */
-abstract class BDTopoUtils {
+abstract class BDTopoUtils{
 
     public static Logger logger
 
@@ -67,6 +67,7 @@ abstract class BDTopoUtils {
             Envelope env = geometry.getEnvelopeInternal()
             return [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
         }
+        return
     }
 
     /**
@@ -80,6 +81,7 @@ abstract class BDTopoUtils {
         if (env) {
             return [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
         }
+        return
     }
 
 }
