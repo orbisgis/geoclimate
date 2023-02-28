@@ -243,7 +243,7 @@ class InputDataFormattingTest {
     void extractSeaLandTest(TestInfo testInfo) {
         def epsg = 32629
         def osmBbox = [52.08484801362273, -10.75003575696209, 52.001518013622736, -10.66670575696209]
-        def geom = Utilities.geometryFromNominatim(osmBbox)
+        def geom = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.geometryFromNominatim(osmBbox)
         IProcess extractData = OSM.InputDataLoading.createGISLayers()
         extractData.execute([
                 datasource : h2GIS,

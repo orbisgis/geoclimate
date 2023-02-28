@@ -3,7 +3,7 @@ package org.orbisgis.geoclimate.bdtopo
 /**
  * Main module for BDTopo processing tasks
  */
-class BDTopo extends BDTopoUtils {
+abstract class BDTopo extends BDTopoUtils {
 
     public static InputDataLoading = new InputDataLoading()
     public static InputDataFormatting = new InputDataFormatting()

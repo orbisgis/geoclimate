@@ -4,39 +4,18 @@ import ch.qos.logback.classic.Logger
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
+import org.orbisgis.geoclimate.utils.AbstractScript
 import org.slf4j.LoggerFactory
 
 /**
  * BDTopo utils
  */
-abstract class BDTopoUtils{
-
-    public static Logger logger
+abstract class BDTopoUtils extends AbstractScript{
 
     BDTopoUtils() {
-        logger = LoggerFactory.getLogger(BDTopoUtils.class)
+        super(LoggerFactory.getLogger(BDTopoUtils.class))
         WorkflowUtilities.setLoggerLevel("INFO")
     }
-
-    static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
-
-    static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
-    static def info = { obj -> logger.info(obj.toString()) }
-    static def warn = { obj -> logger.warn(obj.toString()) }
-    static def error = { obj -> logger.error(obj.toString()) }
-    static def debug = { obj -> logger.debug(obj.toString()) }
-
-
-    /**
-     * Postfix the given String with '_' and an UUID..
-     *
-     * @param name String to postfix
-     * @return The postfix String
-     */
-    static String postfix(String name) {
-        return name + "_" + UUID.randomUUID().toString().replaceAll("-", "_")
-    }
-
 
     /**
      * Utility method to create a bbox from a point (X, Y) and a distance (in meters).

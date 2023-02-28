@@ -22,9 +22,6 @@ abstract class WorkflowAbstractTest {
     @TempDir(cleanup = CleanupMode.ON_SUCCESS)
     static File folder
 
-    public static Logger logger = LoggerFactory.getLogger(WorkflowAbstractTest.class)
-
-
     /**
      * Load the files to run the test
      * @param dbPath
@@ -79,36 +76,6 @@ abstract class WorkflowAbstractTest {
      * @return
      */
     abstract ArrayList getFileNames()
-
-
-    /**
-     * Create a configuration file
-     * @param bdTopoParameters
-     * @param directory
-     * @return
-     */
-    String createConfigFile(def bdTopoParameters, def directory) {
-        def json = JsonOutput.toJson(bdTopoParameters)
-        def configFilePath = directory + File.separator + "bdTopoConfigFile.json"
-        File configFile = new File(configFilePath)
-        if (configFile.exists()) {
-            configFile.delete()
-        }
-        configFile.write(json)
-        return configFile.absolutePath
-    }
-
-
-    /**
-     * Check if the table exist and contains at least one row
-     * @param datasource
-     * @param tableName
-     * @return
-     */
-    def checkSpatialTable(JdbcDataSource datasource, def tableName) {
-        assertTrue(datasource.hasTable(tableName))
-        assertTrue(datasource.getSpatialTable(tableName).getRowCount() > 0)
-    }
 
     /**
      * Return the path of the data sample
@@ -315,7 +282,7 @@ abstract class WorkflowAbstractTest {
         def filePath = getClass().getResource(getFolderName() + File.separator + "COMMUNE.shp")
         // If some layers are missing, do not try to load them...
         if (filePath) {
-            def externaldb_dbProperties = [databaseName: "${folder.absolutePath+File.separator}external_db",
+            def externaldb_dbProperties = [databaseName: "${folder.absolutePath+File.separator}external_db_bbox",
                                        user        : 'sa',
                                        password    : 'sa'
             ]
@@ -336,7 +303,7 @@ abstract class WorkflowAbstractTest {
                     "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                     "geoclimatedb": [
                             "folder": folder.absolutePath,
-                            "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
+                            "name"  : "bdtopo_workflow_db_bbox;AUTO_SERVER=TRUE",
                             "delete": true
                     ],
                     "input"       : [

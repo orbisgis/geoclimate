@@ -433,7 +433,7 @@ IProcess osm_processing() {
                     }
                     //Prepare OSM extraction
                     //TODO set key values ?
-                    def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQuery(zones.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                    def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + OSMTools.Utilities.buildOSMQuery(zones.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
                     if (downloadAllOSMData) {
                         //Create a custom OSM query to download all requiered data. It will take more time and resources
@@ -442,16 +442,16 @@ IProcess osm_processing() {
                                           "leisure", "highway", "natural",
                                           "landuse", "landcover",
                                           "vegetation", "waterway", "area", "aeroway", "area:aeroway"]
-                        query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                        query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                     }
 
-                    def extract = OSMTools.Loader.extract()
-                    if (extract.execute(overpassQuery: query)) {
+                    def extract = OSMTools.Loader.extract(query)
+                    if (extract) {
                         IProcess createGISLayerProcess = OSM.InputDataLoading.createGISLayers()
-                        if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract.results.outputFilePath, epsg: srid)) {
+                        if (createGISLayerProcess.execute(datasource: h2gis_datasource, osmFilePath: extract, epsg: srid)) {
                             if (deleteOSMFile) {
-                                if (new File(extract.results.outputFilePath).delete()) {
-                                    debug "The osm file ${extract.results.outputFilePath}has been deleted"
+                                if (new File(extract).delete()) {
+                                    debug "The osm file ${extract}has been deleted"
                                 }
                             }
                             def gisLayersResults = createGISLayerProcess.getResults()
@@ -706,7 +706,7 @@ IProcess osm_processing() {
 
                         } else {
                             h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
-                            error "Cannot load the OSM file ${extract.results.outputFilePath}"
+                            error "Cannot load the OSM file ${extract}"
                             return
                         }
                     } else {
@@ -741,7 +741,7 @@ def static extractOSMZone(def datasource, def zoneToExtract, def distance, def b
     def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     if (zoneToExtract) {
         def GEOMETRY_TYPE = "GEOMETRY"
-        Geometry geom = Utilities.getArea(zoneToExtract)
+        Geometry geom = OSMTools.Utilities.getArea(zoneToExtract)
         if (!geom) {
             error("Cannot find an area from the location ${zoneToExtract}")
             return null

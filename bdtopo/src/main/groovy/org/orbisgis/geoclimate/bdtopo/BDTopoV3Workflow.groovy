@@ -1,5 +1,6 @@
 package org.orbisgis.geoclimate.bdtopo
 
+import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.IOMethods
 import org.h2gis.postgis_jts.PostGISDBFactory
 import org.h2gis.utilities.GeometryTableUtilities
@@ -14,7 +15,7 @@ import java.sql.SQLException
 /**
  * Workflow to prepare data and building geoclimate indicators with the BDTopo 3.0
  */
-class BDTopoV3Workflow extends AbstractBDTopoWorkflow {
+@BaseScript AbstractBDTopoWorkflow bdTopoWorkflow
 
 
     @Override
@@ -354,7 +355,7 @@ class BDTopoV3Workflow extends AbstractBDTopoWorkflow {
 
     @Override
     List getInputTables() {
-        return ["commune", "batiment", "zone_d_activite_ou_d_interet", "terrain_de_sport,cimetiere",
+        return ["commune", "batiment", "zone_d_activite_ou_d_interet", "terrain_de_sport","cimetiere",
                 "piste_d_aerodrome", "reservoir", "construction_surfacique", "equipement_de_transport",
                 "troncon_de_route", "troncon_de_voie_ferree", "surface_hydrographique",
                 "zone_de_vegetation", "aerodrome", "limite_terre_mer"]
@@ -420,10 +421,9 @@ class BDTopoV3Workflow extends AbstractBDTopoWorkflow {
                 zoneTable)
         def finalHydro = processFormatting.outputTableName
 
-        logger.debug "End of the BDTopo extract transform process."
+        debug "End of the BDTopo extract transform process."
 
         return ["building"  : finalBuildings, "road": finalRoads, "rail": finalRails, "water": finalHydro,
                 "vegetation": finalVeget, "impervious": finalImpervious, "urban_areas": urbanAreas, "zone": zoneTable]
 
     }
-}

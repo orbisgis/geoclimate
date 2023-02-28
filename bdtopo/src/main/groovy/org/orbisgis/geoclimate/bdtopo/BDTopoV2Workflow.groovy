@@ -1,5 +1,6 @@
 package org.orbisgis.geoclimate.bdtopo
 
+import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.IOMethods
 import org.h2gis.postgis_jts.PostGISDBFactory
 import org.h2gis.utilities.GeometryTableUtilities
@@ -14,7 +15,7 @@ import java.sql.SQLException
 /**
  * Workflow to prepare data and building geoclimate indicators with the BDTopo 2.2
  */
-class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
+@BaseScript AbstractBDTopoWorkflow bdTopoWorkflow
 
 
     @Override
@@ -406,5 +407,4 @@ class BDTopoV2Workflow extends AbstractBDTopoWorkflow {
             return
         }
     }
-}
 

@@ -175,9 +175,9 @@ static List createBBox(def lat, def lon, float distance) {
 static Geometry getArea(def location) {
     Geometry geom
     if (location in Collection) {
-        return Utilities.geometryFromValues(location)
+        return OSMTools.Utilities.geometryFromValues(location)
     } else if (location instanceof String) {
-        return Utilities.getNominatimData(location)["geom"]
+        return OSMTools.Utilities.getNominatimData(location)["geom"]
     } else {
         return null;
     }
@@ -250,7 +250,7 @@ static Coordinate[] arrayToCoordinate(def coordinates) {
  * @return True if the file has been downloaded, false otherwise.
  *
  */
-static boolean executeNominatimQuery(def query, def outputOSMFile) {
+ boolean executeNominatimQuery(def query, def outputOSMFile) {
     if (!query) {
         error "The Nominatim query should not be null."
         return false

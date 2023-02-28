@@ -1,10 +1,13 @@
 package org.orbisgis.geoclimate.bdtopo
 
+import groovy.transform.BaseScript
 import org.h2gis.utilities.GeometryTableUtilities
 import org.h2gis.utilities.TableLocation
 import org.orbisgis.data.jdbc.JdbcDataSource
 
-class InputDataLoading extends BDTopoUtils {
+
+
+@BaseScript BDTopo bdTopo
 
 /**
  * This script prepares the BDTopo V2.0 data already imported in H2GIS database for a specific ZONE
@@ -637,7 +640,7 @@ class InputDataLoading extends BDTopoUtils {
             SELECT  the_geom, ID,NATURE
             FROM TMP_SURFACE_ACTIVITE where NATURE != 'unknown'
             UNION all
-            SELECT  the_geom, ID,'cemetery'
+            SELECT  ST_FORCE2D(the_geom) as the_geom, ID,'cemetery'
             FROM $cimetiere
             UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 'transport' as type
@@ -672,4 +675,3 @@ class InputDataLoading extends BDTopoUtils {
                 coastline  : coastline, zone: zoneTable
         ]
     }
-}

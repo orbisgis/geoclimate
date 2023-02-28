@@ -1,13 +1,15 @@
 package org.orbisgis.geoclimate.bdtopo
 
+import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.jdbc.JdbcDataSource
 
-class InputDataFormatting extends BDTopoUtils {
 
+
+@BaseScript BDTopo bdTopo
 
 /**
  * This process is used to format the BDTopo buildings table into a table that matches the constraints
@@ -698,7 +700,7 @@ class InputDataFormatting extends BDTopoUtils {
         def weight_values = [
                 "government": 5, "entertainment_arts_culture": 10, "education": 10, "military": 20,
                 "industrial": 20, "commercial": 20, "healthcare": 10, "transport": 15, "building": 10,
-                "sport"     : 10, "cimetiere": 10]
+                "sport"     : 10, "cemetery": 10]
 
         //We must remove all overlapping geometries and then choose the attribute TYPE to set according some priorities
         def polygonizedTable = postfix("impervious_polygonized")
@@ -732,4 +734,3 @@ class InputDataFormatting extends BDTopoUtils {
         debug('Impervious areas transformation finishes')
         return [outputTableName: outputTableName]
     }
-}
