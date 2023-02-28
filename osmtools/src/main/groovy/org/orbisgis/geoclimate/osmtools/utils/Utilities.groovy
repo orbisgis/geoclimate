@@ -288,7 +288,7 @@ static Coordinate[] arrayToCoordinate(def coordinates) {
 
     connection.connect()
 
-    debug url
+    debug url.toString()
     debug "Executing query... $query"
     //Save the result in a file
     if (connection.responseCode == 200) {

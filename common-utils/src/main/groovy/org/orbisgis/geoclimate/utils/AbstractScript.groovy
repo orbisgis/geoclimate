@@ -12,20 +12,20 @@ abstract class AbstractScript extends Script {
 
     static String uuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
 
-    void info(String message){
-        logger.info(message)
+    void info(def message){
+        logger.info(message.toString())
     }
 
-    void warn(String message){
-        logger.warn(message)
+    void warn(def message){
+        logger.warn(message.toString())
     }
 
-    void error(String message){
-        logger.error(message)
+    void error(def message){
+        logger.error(message.toString())
     }
 
-    void debug(String message){
-        logger.debug(message)
+    void debug(def message){
+        logger.debug(message.toString())
     }
 
     /**
