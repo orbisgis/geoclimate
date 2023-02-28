@@ -66,6 +66,7 @@ class WorldPopExtractTest {
     @Test
     void extractGridProcess(){
         String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer( "wpGlobal:ppp_2018",[ 47.63324, -2.78087,47.65749, -2.75979])
+        assertNotNull(outputFilePath)
         assertTrue new File(outputFilePath).exists()
     }
 
