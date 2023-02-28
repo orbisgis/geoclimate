@@ -224,7 +224,7 @@ boolean grid(String wcsRequest, File outputGridFile) {
     } else {
         connection = queryUrl.openConnection() as HttpURLConnection
     }
-    info queryUrl
+    info queryUrl.toString()
     connection.connect()
 
     info "Executing query... $queryUrl"

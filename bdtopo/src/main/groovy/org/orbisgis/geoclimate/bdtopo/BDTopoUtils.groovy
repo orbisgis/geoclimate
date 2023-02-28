@@ -5,6 +5,7 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.geoclimate.utils.AbstractScript
+import org.orbisgis.geoclimate.utils.LoggerUtils
 import org.slf4j.LoggerFactory
 
 /**
@@ -14,7 +15,7 @@ abstract class BDTopoUtils extends AbstractScript{
 
     BDTopoUtils() {
         super(LoggerFactory.getLogger(BDTopoUtils.class))
-        WorkflowUtilities.setLoggerLevel("INFO")
+        LoggerUtils.setLoggerLevel("INFO")
     }
 
     /**

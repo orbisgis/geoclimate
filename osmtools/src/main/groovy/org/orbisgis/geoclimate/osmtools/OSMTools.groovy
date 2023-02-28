@@ -36,13 +36,12 @@
  */
 package org.orbisgis.geoclimate.osmtools
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.LoggerContext
 import org.orbisgis.geoclimate.osmtools.Loader as LOADER
 import org.orbisgis.geoclimate.osmtools.Transform as TRANSFORM
 import org.orbisgis.geoclimate.osmtools.utils.TransformUtils as TRANSFORM_UTILS
 import org.orbisgis.geoclimate.osmtools.utils.Utilities as UTILITIES
 import org.orbisgis.geoclimate.utils.AbstractScript
+import org.orbisgis.geoclimate.utils.LoggerUtils
 import org.slf4j.LoggerFactory
 
 /**
@@ -61,7 +60,6 @@ abstract class OSMTools extends AbstractScript {
 
     OSMTools() {
         super(LoggerFactory.getLogger(OSMTools.class))
-        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
-        context.getLogger(OSMTools.class).setLevel(Level.INFO)
+        LoggerUtils.setLoggerLevel("INFO")
     }
 }

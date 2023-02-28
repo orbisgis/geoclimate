@@ -36,9 +36,8 @@
  */
 
 package org.orbisgis.geoclimate.worldpoptools
-
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.LoggerContext
+import org.orbisgis.geoclimate.utils.AbstractScript
+import org.orbisgis.geoclimate.utils.LoggerUtils
 import org.slf4j.LoggerFactory
 
 /**
@@ -50,30 +49,12 @@ import org.slf4j.LoggerFactory
  * @author Erwan Bocher CNRS LAB-STICC
  */
 
-abstract class WorldPopTools extends Script {
+abstract class WorldPopTools extends AbstractScript {
 
     def static Extract = new WorldPopExtract()
 
-    public static def logger
-
     WorldPopTools(){
-        logger = LoggerFactory.getLogger(WorldPopTools.class)
-        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
-        context.getLogger(WorldPopTools.class).setLevel(Level.INFO)
-    }
-
-    static def info = { obj -> logger.info(obj.toString()) }
-    static def warn = { obj -> logger.warn(obj.toString()) }
-    static def error = { obj -> logger.error(obj.toString()) }
-    static def debug = { obj -> logger.debug(obj.toString()) }
-
-    /**
-     * Postfix the given String with '_' and an UUID..
-     *
-     * @param name String to postfix
-     * @return The postfix String
-     */
-    static String postfix(String name) {
-        return name + "_" + UUID.randomUUID().toString().replaceAll("-", "_")
+        super(LoggerFactory.getLogger(WorldPopTools.class))
+        LoggerUtils.setLoggerLevel("INFO")
     }
 }

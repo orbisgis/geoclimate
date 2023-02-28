@@ -11,7 +11,7 @@ class LoggerUtils {
      * Utility class to change log level for all loggers
      *
      */
-    static def setLoggerLevel(String loggerLevel) {
+    static void setLoggerLevel(String loggerLevel) {
         if (loggerLevel) {
             Level level
             if (loggerLevel.equalsIgnoreCase("INFO")) {
