@@ -37,15 +37,19 @@
 package org.orbisgis.geoclimate.osmtools.utils
 
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.io.CleanupMode
+import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
 import org.orbisgis.data.H2GIS
-import org.orbisgis.geoclimate.osmtools.AbstractOSMTest
+import org.orbisgis.geoclimate.osmtools.AbstractOSMToolsTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.orbisgis.geoclimate.osmtools.OSMTools
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -55,19 +59,27 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
-class TransformUtilsTest extends AbstractOSMTest {
+class TransformUtilsTest extends AbstractOSMToolsTest {
+
+    @TempDir(cleanup = CleanupMode.ON_SUCCESS)
+    static File folder
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TransformUtilsTest)
+
+    static H2GIS h2gis
+
+    @BeforeAll
+    static void beforeAll(){
+        h2gis = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformUtilsTest;AUTO_SERVER=TRUE;")
+    }
 
     @BeforeEach
     final void beforeEach(TestInfo testInfo) {
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
-        super.beforeEach()
     }
 
     @AfterEach
     final void afterEach(TestInfo testInfo) {
-        super.afterEach()
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
@@ -162,7 +174,6 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void badGetColumnSelectorTest() {
-        def validTableName = "tutu"
         def validTags = [toto: "tata"]
         def columnsToKeep = ["col1", "col2", "col5"]
         assertNull OSMTools.TransformUtils.getColumnSelector(null, validTags, columnsToKeep)
@@ -230,28 +241,20 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void createTagListTest() {
-        def h2gis = RANDOM_DS()
         def osmTable = "toto"
-
-        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
+        h2gis.execute("DROP TABLE IF EXISTS TOTO; CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (0, 'material', ('concrete', 'brick'))")
         assertEquals(", MAX(CASE WHEN b.tag_key = 'material' THEN b.tag_value END) AS \"material\"",
                 OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable").toString())
-        h2gis.execute("DROP TABLE IF EXISTS toto")
-
-        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
+        h2gis.execute("DROP TABLE IF EXISTS toto; CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (1, 'water', null)")
         assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'water' THEN b.tag_value END) AS \"water\"",
                 OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
-        h2gis.execute("DROP TABLE IF EXISTS toto")
-
-        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
+        h2gis.execute("DROP TABLE IF EXISTS toto;CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (2, 'road', '{}')")
         assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'road' THEN b.tag_value END) AS \"road\"",
                 OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
-        h2gis.execute("DROP TABLE IF EXISTS toto")
-
-        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
+        h2gis.execute("DROP TABLE IF EXISTS toto; CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (0, 'material', ('concrete', 'brick'))")
         assertNull OSMTools.TransformUtils.createTagList(null, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
@@ -263,10 +266,8 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void badCreateTagListTest() {
-        def h2gis = RANDOM_DS()
         def osmTable = "toto"
-
-        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
+        h2gis.execute("DROP TABLE IF EXISTS TOTO; CREATE TABLE toto (id int, tag_key varchar, tag_value VARCHAR array[255])")
         h2gis.execute("INSERT INTO toto VALUES (3, null, ('lake', 'pound'))")
         assertGStringEquals "", OSMTools.TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
@@ -283,9 +284,7 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void badBuildIndexesTest() {
-        def h2gis = RANDOM_DS()
         def osmTable = "toto"
-
         LOGGER.warn("An error will be thrown next")
         assertFalse OSMTools.TransformUtils.buildIndexes(h2gis, null)
         LOGGER.warn("An error will be thrown next")
@@ -300,9 +299,11 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void buildIndexesTest() {
-        def h2gis = RANDOM_DS()
         def osmTablesPrefix = "toto"
         h2gis.execute """
+            DROP TABLE IF EXISTS ${osmTablesPrefix}_node, ${osmTablesPrefix}_node_tag, ${osmTablesPrefix}_way_node,
+        ${osmTablesPrefix}_way, ${osmTablesPrefix}_way_tag,  ${osmTablesPrefix}_relation_tag, ${osmTablesPrefix}_relation,
+${osmTablesPrefix}_way_member, ${osmTablesPrefix}_way_not_taken_into_account, ${osmTablesPrefix}_relation_not_taken_into_account;
             CREATE TABLE ${osmTablesPrefix}_node(id_node varchar);
             CREATE TABLE ${osmTablesPrefix}_node_tag(id_node varchar,tag_key varchar,tag_value varchar);
             CREATE TABLE ${osmTablesPrefix}_way_node(id_node varchar, node_order varchar, id_way varchar);
@@ -415,7 +416,6 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void badExtractNodesAsPointsTest() {
-        H2GIS ds = RANDOM_DS()
         def prefix = "prefix" + uuid()
         def epsgCode = 2456
         def outTable = "output"
@@ -426,22 +426,24 @@ class TransformUtilsTest extends AbstractOSMTest {
         tags.put('key1', null)
         def columnsToKeep = []
 
-        loadDataForNodeExtraction(ds, prefix)
+        loadDataForNodeExtraction(h2gis, prefix)
 
         LOGGER.warn("An error will be thrown next")
         assertFalse OSMTools.TransformUtils.extractNodesAsPoints(null, prefix, epsgCode, outTable, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(ds, null, epsgCode, outTable, tags, columnsToKeep)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, null, epsgCode, outTable, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, -1, outTable, tags, columnsToKeep)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, -1, outTable, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, null, tags, columnsToKeep)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, null, tags, columnsToKeep)
 
-        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [house: "false", path: 'false'], null)
+        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, outTable, [house: "false", path: 'false'], null)
     }
 
-    private static loadDataForNodeExtraction(def ds, def prefix) {
-        ds.execute """CREATE TABLE ${prefix}_node (id_node int, the_geom geometry);
+    private  loadDataForNodeExtraction(H2GIS ds, def prefix) {
+        ds.execute """
+        DROP TABLE IF EXISTS ${prefix}_node, ${prefix}_node_tag; 
+        CREATE TABLE ${prefix}_node (id_node int, the_geom geometry);
         INSERT INTO ${prefix}_node VALUES (1, 'POINT(0 0)'),
          (2, 'POINT(1 1)'),
          (3, 'POINT(2 2)'),
@@ -486,7 +488,6 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void extractNodesAsPointsTest() {
-        H2GIS ds = RANDOM_DS()
         def prefix = "prefix" + uuid()
         def epsgCode = 2456
         def outTable = "output"
@@ -499,11 +500,11 @@ class TransformUtilsTest extends AbstractOSMTest {
         tags.put('key4', ["value1", "value2"])
         def columnsToKeep = ["key1"]
 
-        loadDataForNodeExtraction(ds, prefix)
+        loadDataForNodeExtraction(h2gis, prefix)
 
         //With tags
-        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, tags, columnsToKeep)
-        def table = ds.getTable(outTable)
+        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, outTable, tags, columnsToKeep)
+        def table = h2gis.getTable(outTable)
         assertNotNull table
         def columns = table.columns
         assertEquals 9, columns.size()
@@ -620,8 +621,8 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Without tags and with column to keep
-        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [], ["key1", "build"])
-        table = ds.getTable("output")
+        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, outTable, [], ["key1", "build"])
+        table = h2gis.getTable("output")
         assertNotNull table
 
         columns = table.columns
@@ -639,8 +640,8 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertFalse columns.contains("VALUES")
 
         //Without tags and columns to keep
-        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [], [])
-        table = ds.getTable("output")
+        assertTrue OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, outTable, [], [])
+        table = h2gis.getTable("output")
         assertNotNull table
         columns = table.columns
         assertEquals 14, columns.size()
@@ -903,7 +904,6 @@ class TransformUtilsTest extends AbstractOSMTest {
     void badToPolygonOrLineTest() {
         def badType = "notAType"
         def lineType = GeometryTypes.LINES
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_" + uuid()
         def epsgCode = 2145
         def badEpsgCode = -1
@@ -911,17 +911,17 @@ class TransformUtilsTest extends AbstractOSMTest {
         def columnsToKeep = []
 
         LOGGER.warn("An error will be thrown next")
-        assertNull OSMTools.TransformUtils.toPolygonOrLine(null, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(null, h2gis, prefix, epsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, null, prefix, epsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, null, epsgCode, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, null, epsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, badEpsgCode, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, prefix, badEpsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, -1, tags, columnsToKeep)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, prefix, -1, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
-        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, null, null)
+        assertNull OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, prefix, epsgCode, null, null)
     }
 
     /**
@@ -932,19 +932,18 @@ class TransformUtilsTest extends AbstractOSMTest {
     void toPolygonOrLineTest() {
         def lineType = GeometryTypes.LINES
         def polygonType = GeometryTypes.POLYGONS
-        H2GIS ds = RANDOM_DS()
         def prefix = "OSM_" + uuid()
         def epsgCode = 2145
         def tags = ["building": ["house"]]
         def columnsToKeep = ["water"]
 
         //Load data
-        createData(ds, prefix)
+        createData(h2gis, prefix)
 
         //Test line
-        def result = OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        def result = OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        def table = ds.getTable(result)
+        def table = h2gis.getTable(result)
         assertEquals 2, table.rowCount
         table.each {
             switch (it.row) {
@@ -964,9 +963,9 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Test polygon
-        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        table = ds.getTable(result)
+        table = h2gis.getTable(result)
         assertEquals 2, table.rowCount
         table.each {
             switch (it.row) {
@@ -986,11 +985,11 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Test no way tags
-        ds.execute """DROP TABLE ${prefix}_way_tag;
+        h2gis.execute """DROP TABLE ${prefix}_way_tag;
         CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);""".toString()
-        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        table = ds.getTable(result)
+        table = h2gis.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
             switch (it.row) {
@@ -1002,9 +1001,9 @@ class TransformUtilsTest extends AbstractOSMTest {
                     break
             }
         }
-        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        table = ds.getTable(result)
+        table = h2gis.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
             switch (it.row) {
@@ -1018,16 +1017,16 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Test no relation tags
-        ds.execute """DROP TABLE ${prefix}_way_tag;
+        h2gis.execute """DROP TABLE ${prefix}_way_tag;
         CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);
         INSERT INTO ${prefix}_way_tag VALUES(1, 'building', 'house'),
         (1, 'material', 'concrete'),(1, 'water', 'lake');
         DROP TABLE ${prefix}_relation_tag;
         CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)""".toString()
 
-        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        table = ds.getTable(result)
+        table = h2gis.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
             switch (it.row) {
@@ -1039,9 +1038,9 @@ class TransformUtilsTest extends AbstractOSMTest {
                     break
             }
         }
-        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
-        table = ds.getTable(result)
+        table = h2gis.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
             switch (it.row) {
@@ -1055,15 +1054,15 @@ class TransformUtilsTest extends AbstractOSMTest {
         }
 
         //Test no tags
-        ds.execute """DROP TABLE ${prefix}_way_tag;
+        h2gis.execute """DROP TABLE ${prefix}_way_tag;
         CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);
         DROP TABLE ${prefix}_relation_tag;
         CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar);""".toString()
 
-        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
 
-        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        result = OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
     }
 }

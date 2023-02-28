@@ -15,40 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.fail
 
 abstract class WorkflowAbstractTest {
 
     @TempDir(cleanup = CleanupMode.ON_SUCCESS)
     static File folder
-
-    /**
-     * Load the files to run the test
-     * @param dbPath
-     * @return
-     */
-    def loadFiles(def dbPath) {
-        H2GIS h2GISDatabase = H2GIS.open(dbPath)
-
-        if (getClass().getResource(getFolderName())) {
-            // Test is the URL is a folder
-            if (new File(getClass().getResource(getFolderName()).toURI()).isDirectory()) {
-                getFileNames().each {
-                    def filePath = getClass().getResource(getFolderName() + File.separator + it + ".shp")
-                    // If some layers are missing, do not try to load them...
-                    if (filePath) {
-                        h2GISDatabase.link(filePath, it, true)
-                    }
-                }
-            } else {
-                fail("There is no folder containing shapefiles for commune insee $inseeCode")
-            }
-        } else {
-            fail("There is no folder containing shapefiles for commune insee $inseeCode")
-        }
-        return h2GISDatabase
-    }
-
 
     /**
      * Get the version of the workflow

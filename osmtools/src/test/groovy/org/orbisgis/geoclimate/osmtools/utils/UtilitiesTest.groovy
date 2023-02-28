@@ -37,13 +37,17 @@
 package org.orbisgis.geoclimate.osmtools.utils
 
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.io.CleanupMode
+import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.geoclimate.osmtools.AbstractOSMTest
+import org.orbisgis.data.H2GIS
+import org.orbisgis.geoclimate.osmtools.AbstractOSMToolsTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.orbisgis.geoclimate.osmtools.OSMTools
 
 import java.util.regex.Pattern
 
@@ -55,7 +59,10 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019-2020)
  */
-class UtilitiesTest extends AbstractOSMTest {
+class UtilitiesTest extends AbstractOSMToolsTest{
+
+    @TempDir(cleanup = CleanupMode.ON_SUCCESS)
+    static File folder
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UtilitiesTest)
 
@@ -65,6 +72,15 @@ class UtilitiesTest extends AbstractOSMTest {
     private static def getNominatimData
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeNominatimQuery
+
+
+    static H2GIS h2gis
+
+    @BeforeAll
+    static void beforeAll(){
+        h2gis = H2GIS.open(folder.getAbsolutePath() + File.separator + "UtilitiesTest;AUTO_SERVER=TRUE;")
+    }
+
 
     @BeforeEach
     final void beforeEach(TestInfo testInfo) {
@@ -76,6 +92,7 @@ class UtilitiesTest extends AbstractOSMTest {
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
+    def RANDOM_PATH(){return folder.getAbsolutePath()+File.separator + uuid() }
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#arrayToCoordinate(java.lang.Object)} method.
      */
@@ -188,7 +205,7 @@ class UtilitiesTest extends AbstractOSMTest {
     void getExecuteNominatimQueryTest() {
         def path = RANDOM_PATH()
         def file = new File(path)
-        assertTrue Utilities.executeNominatimQuery("vannes", file)
+        assertTrue OSMTools.Utilities.executeNominatimQuery("vannes", file)
         assertTrue file.exists()
         assertFalse file.text.isEmpty()
     }
@@ -200,9 +217,9 @@ class UtilitiesTest extends AbstractOSMTest {
     @Disabled
     void badGetExecuteNominatimQueryTest() {
         def file = new File(RANDOM_PATH())
-        assertFalse Utilities.executeNominatimQuery(null, file)
-        assertFalse Utilities.executeNominatimQuery("", file)
-        assertFalse Utilities.executeNominatimQuery("query", file.getAbsolutePath())
+        assertFalse OSMTools.Utilities.executeNominatimQuery(null, file)
+        assertFalse OSMTools.Utilities.executeNominatimQuery("", file)
+        assertFalse OSMTools.Utilities.executeNominatimQuery("query", file.getAbsolutePath())
     }
 
     /**
@@ -499,30 +516,29 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void dropOSMTablesTest() {
-        def ds = RANDOM_DS()
-        ds.execute "CREATE TABLE prefix_node"
-        ds.execute "CREATE TABLE prefix_node_member"
-        ds.execute "CREATE TABLE prefix_node_tag"
-        ds.execute "CREATE TABLE prefix_relation"
-        ds.execute "CREATE TABLE prefix_relation_member"
-        ds.execute "CREATE TABLE prefix_relation_tag"
-        ds.execute "CREATE TABLE prefix_way"
-        ds.execute "CREATE TABLE prefix_way_member"
-        ds.execute "CREATE TABLE prefix_way_node"
-        ds.execute "CREATE TABLE prefix_way_tag"
-        assertTrue OSMTools.Utilities.dropOSMTables("prefix", ds)
+        h2gis.execute """CREATE TABLE prefix_node;
+        CREATE TABLE prefix_node_member;
+        CREATE TABLE prefix_node_tag;
+        CREATE TABLE prefix_relation;
+        CREATE TABLE prefix_relation_member;
+        CREATE TABLE prefix_relation_tag;
+        CREATE TABLE prefix_way;
+        CREATE TABLE prefix_way_member;
+        CREATE TABLE prefix_way_node;
+        CREATE TABLE prefix_way_tag""".toString()
+        assertTrue OSMTools.Utilities.dropOSMTables("prefix", h2gis)
 
-        ds.execute "CREATE TABLE _node"
-        ds.execute "CREATE TABLE _node_member"
-        ds.execute "CREATE TABLE _node_tag"
-        ds.execute "CREATE TABLE _relation"
-        ds.execute "CREATE TABLE _relation_member"
-        ds.execute "CREATE TABLE _relation_tag"
-        ds.execute "CREATE TABLE _way"
-        ds.execute "CREATE TABLE _way_member"
-        ds.execute "CREATE TABLE _way_node"
-        ds.execute "CREATE TABLE _way_tag"
-        assertTrue OSMTools.Utilities.dropOSMTables("", ds)
+        h2gis.execute """CREATE TABLE _node;
+        CREATE TABLE _node_member;
+        CREATE TABLE _node_tag;
+        CREATE TABLE _relation;
+        CREATE TABLE _relation_member;
+        CREATE TABLE _relation_tag;
+        CREATE TABLE _way;
+        CREATE TABLE _way_member;
+        CREATE TABLE _way_node;
+        CREATE TABLE _way_tag""".toString()
+        assertTrue OSMTools.Utilities.dropOSMTables("", h2gis)
 
     }
 
@@ -532,9 +548,8 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badDropOSMTablesTest() {
-        def ds = RANDOM_DS()
         assertFalse OSMTools.Utilities.dropOSMTables("prefix", null)
-        assertFalse OSMTools.Utilities.dropOSMTables(null, ds)
+        assertFalse OSMTools.Utilities.dropOSMTables(null, h2gis)
     }
 
     /**

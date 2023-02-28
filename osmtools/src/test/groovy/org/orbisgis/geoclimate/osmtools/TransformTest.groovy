@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
-class TransformTest extends AbstractOSMTest {
+class TransformTest  extends AbstractOSMToolsTest{
 
     @TempDir
     static File folder
@@ -72,12 +72,10 @@ class TransformTest extends AbstractOSMTest {
     @BeforeEach
     final void beforeEach(TestInfo testInfo) {
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
-        super.beforeEach()
     }
 
     @AfterEach
     final void afterEach(TestInfo testInfo) {
-        super.afterEach()
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 

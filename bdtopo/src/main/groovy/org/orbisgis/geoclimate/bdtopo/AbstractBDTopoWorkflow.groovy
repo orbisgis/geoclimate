@@ -363,7 +363,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         tableNames.put(name, "${name}_tmp")
                     }
                 }
-                h2gis_datasource.execute("DROP TABLE IF EXISTS COMMUNE_TMP_LINK;")
+                h2gis_datasource.execute("DROP TABLE IF EXISTS COMMUNE_TMP_LINK;".toString())
                 return ["sourceSrid": sourceSrid, "inputSrid": srid, "tableNames": tableNames]
 
             } else {

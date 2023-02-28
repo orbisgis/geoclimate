@@ -41,6 +41,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.data.H2GIS
+import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -54,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
-class LoaderTest extends AbstractOSMTest {
+class LoaderTest extends AbstractOSMToolsTest {
 
     @TempDir
     static File folder
@@ -71,13 +72,51 @@ class LoaderTest extends AbstractOSMTest {
     @BeforeEach
     final void beforeEach(TestInfo testInfo) {
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
-        super.beforeEach()
     }
 
     @AfterEach
     final void afterEach(TestInfo testInfo) {
-        super.afterEach()
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
+    }
+
+    /** Used to store the OSM request to ensure the good query is generated. */
+     static def query
+
+    /**
+     * Override the 'executeOverPassQuery' methods to avoid the call to the server
+     */
+     void badOverpassQueryOverride() {
+        Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
+            LoaderTest.query = query
+            return false
+        }
+    }
+
+    /**
+     * Override the 'getNominatimData' methods to avoid the call to the server
+     */
+    void sampleGetNominatimData() {
+        Utilities.metaClass.static.getNominatimData = { placeName ->
+            def coordinates = [new Coordinate(-3.016, 48.82),
+                               new Coordinate(-3.016, 48.821),
+                               new Coordinate(-3.015, 48.821),
+                               new Coordinate(-3.015, 48.82),
+                               new Coordinate(-3.016, 48.82)] as Coordinate[]
+            def geom = new GeometryFactory().createPolygon(coordinates)
+            geom.SRID = 4326
+            return ["geom": geom]
+        }
+    }
+
+    /**
+     * Override the 'executeOverPassQuery' methods to avoid the call to the server
+     */
+    void sampleOverpassQueryOverride() {
+        Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
+            AbstractOSMTest.query = query
+            outputOSMFile << LoaderTest.getResourceAsStream("sample.osm").text
+            return true
+        }
     }
 
     /**

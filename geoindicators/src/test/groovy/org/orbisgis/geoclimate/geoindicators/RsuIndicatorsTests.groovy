@@ -425,8 +425,6 @@ class RsuIndicatorsTests {
                 prefixName: "test", datasource: h2GIS])
         def outputTableStats = p.results.outputTableName
 
-        h2GIS.save(outputTableStats, "/tmp/vegetation.csv")
-
         h2GIS """DROP TABLE IF EXISTS stats_rsu;
                     CREATE INDEX ON $outputTableStats (ID_RSU);
                    CREATE TABLE stats_rsu AS SELECT b.the_geom,
