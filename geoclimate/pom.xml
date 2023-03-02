@@ -82,10 +82,6 @@
             <artifactId>postgis</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>process</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.orbisgis.geoclimate</groupId>
             <artifactId>osmtools</artifactId>
         </dependency>

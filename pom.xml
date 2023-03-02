@@ -169,11 +169,6 @@
                 <version>${orbisdata-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis</groupId>
-                <artifactId>process</artifactId>
-                <version>${orbisdata-version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.orbisgis.data</groupId>
                 <artifactId>dataframe</artifactId>
                 <version>${orbisdata-version}</version>

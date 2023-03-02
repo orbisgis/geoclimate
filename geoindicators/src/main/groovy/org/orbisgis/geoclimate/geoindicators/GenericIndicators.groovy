@@ -4,7 +4,6 @@ import groovy.transform.BaseScript
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.jdbc.*
-import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -35,16 +34,8 @@ import org.orbisgis.process.api.IProcess
  *
  * @author Jérémy Bernard
  */
-IProcess unweightedOperationFromLowerScale() {
-    return create {
-        title "Unweighted statistical operations from lower scale"
-        id "unweightedOperationFromLowerScale"
-        inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, inputIdUp: String,
-                inputIdLow: String, inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputIdLow, inputVarAndOperations, prefixName,
-              datasource ->
-
+String unweightedOperationFromLowerScale(JdbcDataSource datasource, String inputLowerScaleTableName ,String  inputUpperScaleTableName, String inputIdUp,
+                                         String inputIdLow,Map inputVarAndOperations , String prefixName){
             def GEOMETRIC_FIELD_UP = "the_geom"
             def BASE_NAME = "unweighted_operation_from_lower_scale"
             def SUM = "SUM"
@@ -106,10 +97,8 @@ IProcess unweightedOperationFromLowerScale() {
 
             datasource query.toString()
 
-            [outputTableName: outputTableName]
+            return  outputTableName
         }
-    }
-}
 
 /**
  * This process is used to compute weighted average and standard deviation on a specific variable from a lower scale (for

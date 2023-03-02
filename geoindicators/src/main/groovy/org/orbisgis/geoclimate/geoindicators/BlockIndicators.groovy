@@ -3,7 +3,6 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.jdbc.*
-import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -16,18 +15,11 @@ import org.orbisgis.process.api.IProcess
  * @param blockTable the name of the input ITable where are stored the block geometries
  * @param prefixName String use as prefix to name the output table
  *
- * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ * @return Table name in which the block id and their corresponding indicator value are stored
  *
  * @author Jérémy Bernard
  */
-IProcess holeAreaDensity() {
-    return create {
-        title "Hole area ratio"
-        id "holeAreaDensity"
-        inputs blockTable: String, prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { blockTable, prefixName, datasource ->
-
+String holeAreaDensity(JdbcDataSource datasource , String blockTable, String prefixName) {
             def GEOMETRIC_FIELD = "the_geom"
             def ID_COLUMN_BL = "id_block"
             def BASE_NAME = "hole_area_density"
@@ -45,10 +37,9 @@ IProcess holeAreaDensity() {
         """
 
             datasource query.toString()
-            [outputTableName: outputTableName]
+            return outputTableName
         }
-    }
-}
+
 /**
  * The sum of the building free external area composing the block are divided by the sum of the building volume.
  * The sum of the building volume is calculated at the power 2/3 in order to have a ratio of homogeneous quantities (same unit)
@@ -63,19 +54,11 @@ IProcess holeAreaDensity() {
  * values within the "buildTable"
  * @param prefixName String use as prefix to name the output table
  *
- * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ * @return  Table name in which the block id and their corresponding indicator value are stored
  *
  * @author Jérémy Bernard
  */
-IProcess netCompactness() {
-    return create {
-        title "Block net compactness"
-        id "netCompactness"
-        inputs buildTable: String, buildingVolumeField: String, buildingContiguityField: String,
-                prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { buildTable, buildingVolumeField, buildingContiguityField, prefixName, datasource ->
-
+String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField,  String buildingContiguityField, String prefixName){
             def GEOMETRY_FIELD_BU = "the_geom"
             def ID_COLUMN_BL = "id_block"
             def HEIGHT_WALL = "height_wall"
@@ -86,7 +69,7 @@ IProcess netCompactness() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-            datasource."$buildTable".id_block.createIndex()
+            datasource."$building".id_block.createIndex()
 
             def query = """
             DROP TABLE IF EXISTS $outputTableName; 
@@ -101,15 +84,13 @@ IProcess netCompactness() {
                         SUM($buildingVolumeField), 
                         2./3) 
                     AS $BASE_NAME 
-                FROM $buildTable 
+                FROM $building 
                 GROUP BY $ID_COLUMN_BL
         """
 
             datasource query.toString()
-            [outputTableName: outputTableName]
+            return outputTableName
         }
-    }
-}
 
 
 /**
@@ -133,16 +114,10 @@ IProcess netCompactness() {
  * @param correlationTableName the name of the input ITable where are stored the relationships between blocks and buildings
  * @param prefixName String use as prefix to name the output table
  *
- * @return outputTableName Table name in which the block id and their corresponding indicator value are stored
+ * @return Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
  */
-IProcess closingness() {
-    return create {
-        title "Closingness of a block"
-        id "closingness"
-        inputs correlationTableName: String, blockTable: String, prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { correlationTableName, blockTable, prefixName, datasource ->
+String closingness(JdbcDataSource datasource, String correlationTableName, String blockTable, String prefixName){
 
             def GEOMETRY_FIELD_BU = "the_geom"
             def GEOMETRY_FIELD_BL = "the_geom"
@@ -170,7 +145,5 @@ IProcess closingness() {
                 GROUP BY b.$ID_COLUMN_BL"""
 
             datasource query.toString()
-            [outputTableName: outputTableName]
+            return  outputTableName
         }
-    }
-}

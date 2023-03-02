@@ -3,7 +3,6 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.jdbc.*
-import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -12,7 +11,7 @@ import org.orbisgis.process.api.IProcess
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param building The name of the input ITable where are stored the building geometries
  * @param operations Operations that have to be applied. These operations should be in the following list:
  *          --> "building_volume": defined as the building area multiplied by the mean of the building
  *          wall height and the building roof height.
@@ -30,14 +29,7 @@ import org.orbisgis.process.api.IProcess
  *
  * @author Jérémy Bernard
  */
-IProcess sizeProperties() {
-    return create {
-        title "Building size properties"
-        id "sizeProperties"
-        inputs inputBuildingTableName: String, operations: String[], prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputBuildingTableName, operations, prefixName, datasource ->
-
+String sizeProperties(JdbcDataSource datasource, String building, String[] operations , String prefixName){
             def OP_VOLUME = "volume"
             def OP_FLOOR_AREA = "floor_area"
             def OP_FACADE_LENGTH = "total_facade_length"
@@ -76,13 +68,11 @@ IProcess sizeProperties() {
                         break
                 }
             }
-            query += "$COLUMN_ID_BU FROM $inputBuildingTableName"
+            query += "$COLUMN_ID_BU FROM $building"
 
             datasource query.toString()
-            [outputTableName: outputTableName]
+            return  outputTableName
         }
-    }
-}
 
 
 /**
@@ -90,7 +80,7 @@ IProcess sizeProperties() {
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param building The name of the input ITable where are stored the building geometries
  * @param operations Operations that have to be applied. These operations should be in the following list:
  *              --> "building_contiguity": defined as the shared wall area divided by the total building wall area
  *              (cf. Bocher et al. - 2018)
@@ -109,14 +99,7 @@ IProcess sizeProperties() {
  *
  * @author Jérémy Bernard
  */
-IProcess neighborsProperties() {
-    return create {
-        title "Building interactions properties"
-        id "neighborsProperties"
-        inputs inputBuildingTableName: String, operations: String[], prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputBuildingTableName, operations, prefixName, datasource ->
-
+String neighborsProperties(JdbcDataSource datasource , String building, String[] operations ,String  prefixName){
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD = "id_build"
             def HEIGHT_WALL = "height_wall"
@@ -134,8 +117,8 @@ IProcess neighborsProperties() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
-            datasource."$inputBuildingTableName".the_geom.createSpatialIndex()
-            datasource."$inputBuildingTableName".id_build.createIndex()
+            datasource."$building".the_geom.createSpatialIndex()
+            datasource."$building".id_build.createIndex()
 
             def query = " CREATE TABLE $build_intersec AS SELECT "
 
@@ -168,7 +151,7 @@ IProcess neighborsProperties() {
                     ST_PERIMETER(a.$GEOMETRIC_FIELD) + ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)) AS perimeter, 
                     a.$HEIGHT_WALL AS a_height_wall, 
                     b.$HEIGHT_WALL AS b_height_wall 
-                FROM $inputBuildingTableName a, $inputBuildingTableName b 
+                FROM $building a, $building b 
                 WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD 
                     AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) 
                     AND a.$ID_FIELD <> b.$ID_FIELD)
@@ -177,23 +160,21 @@ IProcess neighborsProperties() {
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName AS 
                     SELECT  ${list.join(",")} ,  a.$ID_FIELD
-                    FROM $inputBuildingTableName a 
+                    FROM $building a 
                     LEFT JOIN $build_intersec b 
                     ON a.$ID_FIELD = b.$ID_FIELD;
                 DROP TABLE IF EXISTS $build_intersec"""
 
             datasource query.toString()
-            [outputTableName: outputTableName]
+            return  outputTableName
         }
-    }
-}
 
 /**
  * This process extract building form properties.
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param building The name of the input ITable where are stored the building geometries
  * @param operations Operations that have to be applied. These operations should be in the following list:
  *              --> "area_concavity": defined as the building area divided by the convex hull area (cf. Bocher et al. - 2018)
  *              --> "form_factor": defined as ratio between the building area divided by the square of the building
@@ -214,14 +195,7 @@ IProcess neighborsProperties() {
  *
  * @author Jérémy Bernard
  */
-IProcess formProperties() {
-    return create {
-        title "Building form properties"
-        id "formProperties"
-        inputs inputBuildingTableName: String, operations: String[], prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputBuildingTableName, operations, prefixName, datasource ->
-
+String formProperties(JdbcDataSource datasource,  String building,  String[] operations, String prefixName){
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD = "id_build"
             def HEIGHT_WALL = "height_wall"
@@ -263,13 +237,11 @@ IProcess formProperties() {
                         break
                 }
             }
-            query += "$ID_FIELD FROM $inputBuildingTableName"
+            query += "$ID_FIELD FROM $building"
 
             datasource query.toString()
-            [outputTableName: outputTableName]
+            return  outputTableName
         }
-    }
-}
 
 /**
  * This process extract the building closest distance to an other building. A buffer of defined size (bufferDist
@@ -278,7 +250,7 @@ IProcess formProperties() {
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param building The name of the input ITable where are stored the building geometries
  * @param bufferDist Distance (in meter) used to consider the neighbors of a building. If there is no building within
  * this buffer distance of a building, the minimum distance is set to this value.
  * @param prefixName String use as prefix to name the output table
@@ -288,14 +260,7 @@ IProcess formProperties() {
  * @author Jérémy Bernard
  * @author Erwan Bocher
  */
-IProcess minimumBuildingSpacing() {
-    return create {
-        title "Building minimum building spacing"
-        id "minimumBuildingSpacing"
-        inputs inputBuildingTableName: String, bufferDist: 100D, prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputBuildingTableName, bufferDist, prefixName, datasource ->
-
+String minimumBuildingSpacing(JdbcDataSource datasource ,String building,float bufferDist= 100f,String prefixName ){
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD = "id_build"
             def BASE_NAME = "minimum_building_spacing"
@@ -309,15 +274,15 @@ IProcess minimumBuildingSpacing() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-            datasource."$inputBuildingTableName".the_geom.createSpatialIndex()
-            datasource."$inputBuildingTableName".id_build.createIndex()
+            datasource."$building".the_geom.createSpatialIndex()
+            datasource."$building".id_build.createIndex()
 
             datasource """
                 DROP TABLE IF EXISTS $build_min_distance; 
                 CREATE TABLE $build_min_distance AS 
                     SELECT b.$ID_FIELD, 
                         min(ST_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)) AS min_distance 
-                    FROM $inputBuildingTableName a, $inputBuildingTableName b 
+                    FROM $building a, $building b 
                     WHERE st_expand(a.$GEOMETRIC_FIELD, $bufferDist) && b.$GEOMETRIC_FIELD 
                     AND a.$ID_FIELD <> b.$ID_FIELD 
                     GROUP BY b.$ID_FIELD;
@@ -331,15 +296,13 @@ IProcess minimumBuildingSpacing() {
                         CASE WHEN b.min_distance IS NOT NULL 
                             THEN b.min_distance 
                             ELSE 100 END 
-                    FROM $inputBuildingTableName a LEFT JOIN $build_min_distance b 
+                    FROM $building a LEFT JOIN $build_min_distance b 
                     ON a.$ID_FIELD = b.$ID_FIELD """.toString()
             // The temporary tables are deleted
             datasource "DROP TABLE IF EXISTS $build_min_distance".toString()
 
-            [outputTableName: outputTableName]
+            return  outputTableName
         }
-    }
-}
 
 /**
  * This process extract the building closest distance to a road. A buffer of defined size (bufferDist argument)
@@ -347,7 +310,7 @@ IProcess minimumBuildingSpacing() {
  *
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
- * @param inputBuildingTableName The name of the input ITable where are stored the building geometries
+ * @param building The name of the input ITable where are stored the building geometries
  * @param inputRoadTableName The name of the input ITable where are stored the road geometries
  * @param bufferDist Distance (in meter) used to consider the neighbors of a building. If there is no road within
  * this buffer distance of a building, the minimum distance to a road is set to this value.
@@ -357,14 +320,7 @@ IProcess minimumBuildingSpacing() {
  *
  * @author Jérémy Bernard
  */
-IProcess roadDistance() {
-    return create {
-        title "Building road distance"
-        id "roadDistance"
-        inputs inputBuildingTableName: String, inputRoadTableName: String, bufferDist: 100D, prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputBuildingTableName, inputRoadTableName, bufferDist, prefixName, datasource ->
-
+String roadDistance(JdbcDataSource datasource,String building, String inputRoadTableName, float  bufferDist= 100f, String prefixName){
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD_BU = "id_build"
             def ROAD_WIDTH = "width"
@@ -381,13 +337,13 @@ IProcess roadDistance() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-            datasource."$inputBuildingTableName".id_build.createIndex()
+            datasource."$building".id_build.createIndex()
 
             // The buffer is created
             datasource """DROP TABLE IF EXISTS $build_buffer;
                 CREATE TABLE $build_buffer AS
                     SELECT $ID_FIELD_BU,  ST_BUFFER($GEOMETRIC_FIELD, $bufferDist) AS $GEOMETRIC_FIELD 
-                    FROM $inputBuildingTableName;
+                    FROM $building;
                 CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $build_buffer ($GEOMETRIC_FIELD)""".toString()
             // The road surfaces are created
             datasource """
@@ -414,17 +370,15 @@ IProcess roadDistance() {
                 CREATE TABLE $outputTableName($BASE_NAME DOUBLE PRECISION, $ID_FIELD_BU INTEGER) AS (
                     SELECT COALESCE(MIN(st_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)), $bufferDist), a.$ID_FIELD_BU 
                     FROM $road_within_buffer b 
-                    RIGHT JOIN $inputBuildingTableName a 
+                    RIGHT JOIN $building a 
                     ON a.$ID_FIELD_BU = b.$ID_FIELD_BU 
                     GROUP BY a.$ID_FIELD_BU)""".toString()
 
             // The temporary tables are deleted
             datasource "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf".toString()
 
-            [outputTableName: outputTableName]
+            return  outputTableName
         }
-    }
-}
 
 /**
  * Script to compute the building closeness to a 50 m wide isolated building ("building_number_building_neighbor" = 0).
@@ -452,14 +406,7 @@ IProcess roadDistance() {
  * @author Jérémy Bernard
  *
  */
-IProcess likelihoodLargeBuilding() {
-    return create {
-        title "Building closeness to a 50 m wide building"
-        id "likelihoodLargeBuilding"
-        inputs inputBuildingTableName: String, nbOfBuildNeighbors: String, prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputBuildingTableName, nbOfBuildNeighbors, prefixName, datasource ->
-
+String likelihoodLargeBuilding(JdbcDataSource datasource ,String building, String nbOfBuildNeighbors, String prefixName){
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD_BU = "id_build"
             def BASE_NAME = "likelihood_large_building"
@@ -475,7 +422,7 @@ IProcess likelihoodLargeBuilding() {
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-            datasource.getSpatialTable(inputBuildingTableName).id_build.createIndex()
+            datasource.getSpatialTable(building).id_build.createIndex()
 
             // The calculation of the logistic function is performed only for buildings having no neighbors
             datasource """DROP TABLE IF EXISTS $outputTableName; 
@@ -486,14 +433,12 @@ IProcess likelihoodLargeBuilding() {
                             0, 
                             1/(1+$a*exp(-$r*st_maxdistance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)))) 
                         AS $BASE_NAME 
-                 FROM $inputBuildingTableName a 
-                 LEFT JOIN $inputBuildingTableName b 
+                 FROM $building a 
+                 LEFT JOIN $building b 
                  ON a.$ID_FIELD_BU = b.$ID_FIELD_BU""".toString()
 
-            [outputTableName: outputTableName]
+            return outputTableName
         }
-    }
-}
 
 /**
  * Disaggregate a set of population values to the buildings

@@ -144,15 +144,13 @@ IProcess computeBuildingsIndicators() {
                     buildTableJoinNeighbors = computeJoinNeighbors.results.outputTableName
 
                     // building_likelihood_large_building
-                    def computeLikelihoodLargeBuilding = Geoindicators.BuildingIndicators.likelihoodLargeBuilding()
-                    if (!computeLikelihoodLargeBuilding([inputBuildingTableName: buildTableJoinNeighbors,
-                                                         nbOfBuildNeighbors    : "number_building_neighbor",
-                                                         prefixName            : buildingPrefixName,
-                                                         datasource            : datasource])) {
-                        info "Cannot compute the like lihood large building indicator."
+                    def computeLikelihoodLargeBuilding = Geoindicators.BuildingIndicators.likelihoodLargeBuilding(datasource, buildTableJoinNeighbors,
+                           "number_building_neighbor", buildingPrefixName)
+                    if (!computeLikelihoodLargeBuilding) {
+                        info "Cannot compute the like likelihood large building indicator."
                         return
                     }
-                    def buildTableComputeLikelihoodLargeBuilding = computeLikelihoodLargeBuilding.results.outputTableName
+                    def buildTableComputeLikelihoodLargeBuilding = computeLikelihoodLargeBuilding
                     finalTablesToJoin.put(buildTableComputeLikelihoodLargeBuilding, idColumnBu)
                 }
             }
@@ -230,14 +228,12 @@ IProcess computeBlockIndicators() {
 
             //Ratio between the holes area and the blocks area
             // block_hole_area_density
-            def computeHoleAreaDensity = Geoindicators.BlockIndicators.holeAreaDensity()
-            if (!computeHoleAreaDensity(blockTable: inputBlockTableName,
-                    prefixName: blockPrefixName,
-                    datasource: datasource)) {
+            def computeHoleAreaDensity = Geoindicators.BlockIndicators.holeAreaDensity(datasource, inputBlockTableName, blockPrefixName)
+            if (!computeHoleAreaDensity()) {
                 info "Cannot compute the hole area density."
                 return
             }
-            finalTablesToJoin.put(computeHoleAreaDensity.results.outputTableName, id_block)
+            finalTablesToJoin.put(computeHoleAreaDensity, id_block)
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
@@ -255,27 +251,22 @@ IProcess computeBlockIndicators() {
 
 
             //Block closingness
-            def computeClosingness = Geoindicators.BlockIndicators.closingness()
-            if (!computeClosingness(correlationTableName: inputBuildingTableName,
-                    blockTable: inputBlockTableName,
-                    prefixName: blockPrefixName,
-                    datasource: datasource)) {
+            String computeClosingness = Geoindicators.BlockIndicators.closingness(datasource, inputBuildingTableName,
+                    inputBlockTableName, blockPrefixName)
+            if (!computeClosingness) {
                 info "Cannot compute closingness indicator. "
                 return
             }
             finalTablesToJoin.put(computeClosingness.results.outputTableName, id_block)
 
             //Block net compactness
-            def computeNetCompactness = Geoindicators.BlockIndicators.netCompactness()
-            if (!computeNetCompactness([buildTable             : inputBuildingTableName,
-                                        buildingVolumeField    : "volume",
-                                        buildingContiguityField: "contiguity",
-                                        prefixName             : blockPrefixName,
-                                        datasource             : datasource])) {
+            def computeNetCompactness = Geoindicators.BlockIndicators.netCompactness(datasource,   inputBuildingTableName, "volume",
+                                                                                              "contiguity",blockPrefixName)
+            if (!computeNetCompactness) {
                 info "Cannot compute the net compactness indicator. "
                 return
             }
-            finalTablesToJoin.put(computeNetCompactness.results.outputTableName, id_block)
+            finalTablesToJoin.put(computeNetCompactness, id_block)
 
             //Block mean building height
             //Block standard deviation building height

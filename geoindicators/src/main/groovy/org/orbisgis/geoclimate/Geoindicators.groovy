@@ -15,14 +15,14 @@ import org.orbisgis.geoclimate.geoindicators.SpatialUnits
 import org.orbisgis.geoclimate.geoindicators.TypologyClassification
 import org.orbisgis.geoclimate.geoindicators.WorkflowGeoIndicators
 import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
-import org.orbisgis.process.GroovyProcessFactory
+import org.orbisgis.geoclimate.utils.AbstractScript
 import org.slf4j.LoggerFactory
 
-abstract class Geoindicators  extends GroovyProcessFactory  {
+abstract class Geoindicators  extends AbstractScript  {
     public static def logger
 
     Geoindicators(){
-        logger = LoggerFactory.getLogger(Geoindicators.class)
+        super(LoggerFactory.getLogger(Geoindicators.class))
         var context = (LoggerContext) LoggerFactory.getILoggerFactory()
         context.getLogger(Geoindicators.class).setLevel(Level.INFO)
     }

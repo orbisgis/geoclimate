@@ -4,7 +4,6 @@ import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.jdbc.*
-import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -17,15 +16,7 @@ import org.orbisgis.process.api.IProcess
  *
  * @return
  */
-IProcess joinTables() {
-    create {
-        title "Utility process to join tables in one"
-        id "joinTables"
-        inputs inputTableNamesWithId: Map, outputTableName: String, datasource: JdbcDataSource,
-                prefixWithTabName: false
-        outputs outputTableName: String
-        run { inputTableNamesWithId, outputTableName, datasource, prefixWithTabName ->
-
+String joinTables(JdbcDataSource datasource , Map inputTableNamesWithId, String outputTableName , boolean prefixWithTabName= false){
             debug "Executing Utility process to join tables in one"
 
             def columnKey
@@ -73,10 +64,8 @@ IProcess joinTables() {
             datasource indexes.toString()
             datasource "CREATE TABLE $outputTableName AS SELECT $columnsAsString $leftQuery".toString()
 
-            [outputTableName: outputTableName]
+            return outputTableName
         }
-    }
-}
 
 /**
  * An utility process to save several tables in a folder
@@ -86,15 +75,9 @@ IProcess joinTables() {
  * @param directory folder to save the tables
  * @param datasource connection to the database
  *
- * @return
+ * @return the directory where the tables are saved
  */
-IProcess saveTablesAsFiles() {
-    return create {
-        title "Utility process to save tables in geojson or csv files"
-        id "saveTablesAsFiles"
-        inputs inputTableNames: String[], delete: false,directory: String, datasource: JdbcDataSource
-        outputs directory: String
-        run { inputTableNames, delete, directory, datasource ->
+String saveTablesAsFiles(JdbcDataSource datasource, String[] inputTableNames, boolean  delete= false, String directory){
             if (directory == null) {
                 error "The directory to save the data cannot be null"
                 return
@@ -119,10 +102,8 @@ IProcess saveTablesAsFiles() {
                     }
                 }
             }
-            [directory: directory]
+            return directory
         }
-    }
-}
 
 
 /**

@@ -34,11 +34,7 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 6
         """
 
-        def p = Geoindicators.BlockIndicators.holeAreaDensity()
-        assert p([
-                blockTable : "tempo_block",
-                prefixName : "test",
-                datasource : h2GIS])
+        def p = Geoindicators.BlockIndicators.holeAreaDensity(h2GIS , "tempo_block", "test")
 
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_hole_area_density"){sum += it.hole_area_density}
@@ -70,13 +66,7 @@ class BlockIndicatorsTests {
                     ON a.id_build = b.id_build
         """
 
-        p = Geoindicators.BlockIndicators.netCompactness()
-        assert p([
-                buildTable              : "tempo_build2",
-                buildingVolumeField     : "volume",
-                buildingContiguityField : "contiguity",
-                prefixName              : "test",
-                datasource              : h2GIS])
+        Geoindicators.BlockIndicators.netCompactness(h2GIS, "tempo_build2", "volume", "contiguity", "test")
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_net_compactness WHERE id_block = 4") {sum += it.net_compactness}
         assertEquals 0.51195, sum, 0.00001
@@ -91,12 +81,7 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_block = 8
         """
 
-        def p = Geoindicators.BlockIndicators.closingness()
-        p([
-                correlationTableName    : "tempo_build",
-                blockTable              : "tempo_block",
-                prefixName              : "test",
-                datasource              : h2GIS])
+        Geoindicators.BlockIndicators.closingness(h2GIS, "tempo_build", "tempo_block", "test")
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_closingness") {sum += it.closingness}
         assert 450 == sum
