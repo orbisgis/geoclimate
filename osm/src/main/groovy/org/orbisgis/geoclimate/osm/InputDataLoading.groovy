@@ -8,7 +8,6 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.data.jdbc.JdbcDataSource
-import org.orbisgis.process.api.IProcess
 import org.h2gis.utilities.GeographyUtilities
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
@@ -26,16 +25,7 @@ import org.orbisgis.geoclimate.osmtools.utils.OSMElement
   * railTableName, vegetationTableName, hydroTableName, zone, zoneEnvelopeTableName and urbanAreasTableName.
   * Note that the GIS tables are projected in a local utm projection
  */
-IProcess extractAndCreateGISLayers() {
-    return create {
-        title "Create GIS layer from the OSM data model"
-        id "extractAndCreateGISLayers"
-        inputs datasource: JdbcDataSource, zoneToExtract: Object, distance: 0, downloadAllOSMData : true
-        outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String, imperviousTableName : String,
-                urbanAreasTableName: String, zone: String,
-                zoneEnvelopeTableName: String, coastlineTableName : String
-        run { datasource, zoneToExtract, distance,downloadAllOSMData ->
+Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, float distance= 0, boolean  downloadAllOSMData = true){
             if (datasource == null) {
                 error('The datasource cannot be null')
                 return null
@@ -96,19 +86,18 @@ IProcess extractAndCreateGISLayers() {
 
                 def extract = OSMTools.Loader.extract(query)
                 if (extract) {
-                    IProcess createGISLayerProcess = createGISLayers()
-                    if (createGISLayerProcess.execute(datasource: datasource, osmFilePath: extract, epsg: epsg)) {
-                        def results =createGISLayerProcess.getResults();
-                        return [buildingTableName    : results.buildingTableName,
-                         roadTableName        : results.roadTableName,
-                         railTableName        : results.railTableName,
-                         vegetationTableName  : results.vegetationTableName,
-                         hydroTableName       : results.hydroTableName,
-                         imperviousTableName  : results.imperviousTableName,
-                         urbanAreasTableName : results.urbanAreasTableName,
+                    Map results = createGISLayers(datasource: datasource, osmFilePath: extract, epsg: epsg)
+                    if (results) {
+                        return [building   : results.buildingTableName,
+                         road       : results.roadTableName,
+                         rail        : results.railTableName,
+                         vegetation  : results.vegetationTableName,
+                         water      : results.hydroTableName,
+                         impervious  : results.imperviousTableName,
+                         urban_areas : results.urbanAreasTableName,
                          zone        : outputZoneTable,
-                         zoneEnvelopeTableName: outputZoneEnvelopeTable,
-                         coastlineTableName : results.coastlineTableName]
+                         zone_envelope: outputZoneEnvelopeTable,
+                         coastline : results.coastlineTableName]
                     } else {
                         error "Cannot load the OSM file ${extract}"
                     }
@@ -121,8 +110,6 @@ IProcess extractAndCreateGISLayers() {
                 return null
             }
         }
-    }
-}
 
 /**
  * This process is used to create the GIS layers from an OSM xml file
@@ -133,15 +120,7 @@ IProcess extractAndCreateGISLayers() {
  * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
  * railTableName, vegetationTableName, hydroTableName, imperviousTableName
  */
-IProcess createGISLayers() {
-    return create {
-        title "Create GIS layer from an OSM XML file"
-        id "createGISLayers"
-        inputs datasource: JdbcDataSource, osmFilePath: String, epsg: -1
-        outputs buildingTableName: String, roadTableName: String, railTableName: String,
-                vegetationTableName: String, hydroTableName: String, imperviousTableName: String,
-                urbanAreasTableName :String, coastlineTableName : String
-        run { datasource, osmFilePath, epsg ->
+Map createGISLayers(JdbcDataSource  datasource, String osmFilePath,int epsg= -1){
             if (epsg <= -1) {
                 error "Invalid epsg code $epsg"
                 return null
@@ -262,14 +241,12 @@ IProcess createGISLayers() {
                 //Drop the OSM tables
                 OSMTools.Utilities.dropOSMTables(prefix, datasource)
 
-                [buildingTableName  : outputBuildingTableName, roadTableName: outputRoadTableName, railTableName: outputRailTableName,
-                 vegetationTableName: outputVegetationTableName, hydroTableName: outputHydroTableName,
-                 imperviousTableName: outputImperviousTableName,  urbanAreasTableName: outputUrbanAreasTableName,
-                 coastlineTableName: outputCoastlineTableName]
+                return [building  : outputBuildingTableName, road: outputRoadTableName, rail: outputRailTableName,
+                 vegetation: outputVegetationTableName, water: outputHydroTableName,
+                 impervious: outputImperviousTableName,  urban_areas: outputUrbanAreasTableName,
+                 coastline: outputCoastlineTableName]
             }
         }
-    }
-}
 
 /**
  * Parse a json file to a Map

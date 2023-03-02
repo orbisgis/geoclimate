@@ -29,31 +29,25 @@ import org.orbisgis.process.api.IProcess
  *
  *
  * @param datasource A connexion to a DB to load the OSM file
- * @param roadTableName The road table that contains the WG_AEN types and maxspeed values
- * @param outputTablePrefix A prefix used to set the name of the output table
- * @param trafficFile A traffic properties table stored in a SQL file
+ * @param roadThe road table that contains the WG_AEN types and maxspeed values
+ * @param zone an envelope to reduce the study area
+ * @param jsonFilename A traffic properties table stored in a SQL file
  *
  * @return The name of the road table
  */
-IProcess build_road_traffic() {
-    return create {
-        title "Compute a default road traffic data according the WGAEN values"
-        id "road_traffic"
-        inputs datasource: JdbcDataSource, inputTableName: String, inputZoneEnvelopeTableName: "", epsg: int, jsonFilename: ""
-        outputs outputTableName: String
-        run { datasource, inputTableName, inputZoneEnvelopeTableName, epsg, jsonFilename ->
-            debug('Create the default traffic data')
+String build_road_traffic(JdbcDataSource datasource, String road, String zone= "", String jsonFilename= ""){
+           debug('Create the default traffic data')
             def outputTableName =  postfix"ROAD_TRAFFIC"
             datasource """
                 DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), ID_ROAD SERIAL, ID_SOURCE VARCHAR, 
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_ROAD SERIAL, ID_SOURCE VARCHAR, 
                 ROAD_TYPE VARCHAR, SOURCE_ROAD_TYPE VARCHAR, SURFACE VARCHAR, DIRECTION INTEGER, SLOPE DOUBLE PRECISION,PAVEMENT VARCHAR,
                 DAY_LV_HOUR INTEGER, DAY_HV_HOUR INTEGER, DAY_LV_SPEED INTEGER ,DAY_HV_SPEED INTEGER, 
                 NIGHT_LV_HOUR INTEGER, NIGHT_HV_HOUR INTEGER, NIGHT_LV_SPEED INTEGER, NIGHT_HV_SPEED INTEGER, 
                 EV_LV_HOUR INTEGER,EV_HV_HOUR INTEGER, EV_LV_SPEED INTEGER, EV_HV_SPEED INTEGER);
                 """.toString()
 
-            if (inputTableName) {
+            if (road) {
                 def paramsDefaultFile = this.class.getResourceAsStream("roadTrafficParams.json")
                 def traffic_flow_params = Geoindicators.DataUtils.parametersMapping(jsonFilename, paramsDefaultFile)
                 if(!traffic_flow_params){
@@ -93,7 +87,7 @@ IProcess build_road_traffic() {
 
                 //Define the mapping between the values in OSM and those used in the abstract model
                 def queryMapper = "SELECT "
-                def inputSpatialTable = datasource."$inputTableName"
+                def inputSpatialTable = datasource."$road"
                 if (inputSpatialTable.rowCount > 0) {
                     def columnNames = inputSpatialTable.columns
                     columnNames.remove("THE_GEOM")
@@ -102,18 +96,18 @@ IProcess build_road_traffic() {
                         result+= "a.\"$iter\""
                     }.join(",")
 
-                    if (inputZoneEnvelopeTableName) {
+                    if (zone) {
                         inputSpatialTable.the_geom.createSpatialIndex()
                         queryMapper += "${flatListColumns}, CASE WHEN st_overlaps(st_force2D(a.the_geom), b.the_geom) " +
                                 "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
                                 "ELSE st_force2D(a.the_geom) " +
                                 "END AS the_geom " +
                                 "FROM " +
-                                "$inputTableName AS a, $inputZoneEnvelopeTableName AS b " +
+                                "$road AS a, $zone AS b " +
                                 "WHERE " +
                                 "a.the_geom && b.the_geom and a.type not in ('track', 'path', 'cycleway', 'steps') "
                     } else {
-                        queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $inputTableName  as a where type not in ('track', 'path', 'cycleway', 'steps')"
+                        queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $road  as a where type not in ('track', 'path', 'cycleway', 'steps')"
                     }
                     datasource.withBatch(100) { stmt ->
                         datasource.eachRow(queryMapper) { row ->
@@ -132,6 +126,7 @@ IProcess build_road_traffic() {
                                 def pavement_value = getPavement(pavements, surface)
                                 def traffic_data = getNumberVehiclesPerHour(road_type, direction, flow_data, flow_period)
                                 Geometry geom = row.the_geom
+                                int epsg = geom.getSRID()
                                 if (geom) {
                                     //Explode geometries
                                     for (int i = 0; i < geom.getNumGeometries(); i++) {
@@ -169,11 +164,8 @@ IProcess build_road_traffic() {
                 }
             }
             debug('Roads traffic computed')
-            [outputTableName: outputTableName]
+           return outputTableName
         }
-    }
-}
-
 /**
  * Return a pavement identifier according the CNOSSOS-EU specification
  * @param pavements an array of pavement regarding the osm value

@@ -505,13 +505,7 @@ IProcess likelihoodLargeBuilding() {
  *
  * @author Erwan Bocher, CNRS
  */
-IProcess buildingPopulation() {
-    return create {
-        title "Compute the number of inhabitants for each building"
-        id "buildingPopulation"
-        inputs inputBuilding: String, inputPopulation: String, inputPopulationColumns :[], datasource: JdbcDataSource
-        outputs buildingTableName: String
-        run { inputBuilding, inputPopulation, inputPopulationColumns, datasource ->
+String buildingPopulation(JdbcDataSource datasource, String inputBuilding, String inputPopulation, List inputPopulationColumns  =[]){
             def BASE_NAME = "building_with_population"
             def ID_BUILDING = "id_build"
             def ID_POP = "id_pop"
@@ -569,7 +563,5 @@ IProcess buildingPopulation() {
             LEFT JOIN $inputBuildingTableName_pop_sum  b on a.$ID_BUILDING=b.$ID_BUILDING;
             drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum ;""".toString())
 
-            [buildingTableName: outputTableName]
+            return outputTableName
         }
-    }
-}

@@ -4,6 +4,7 @@ import groovy.transform.BaseScript
 import org.h2.util.StringUtils
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
+import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.process.api.IProcess
 
@@ -38,13 +39,9 @@ import org.orbisgis.process.api.IProcess
  * See https://hal.archives-ouvertes.fr/hal-00985998/document
  * @return
  */
-IProcess groundAcousticAbsorption() {
-    return create {
-        title "Compute a ground acoustic absorption table"
-        inputs zone: String, id_zone: String, building: "", road: "", water: "", vegetation: "",
-                impervious: "", datasource: H2GIS, jsonFilename: "", unknownArea: false
-        outputs ground_acoustic: String
-        run { zone, id_zone, building, road, water, vegetation, impervious, H2GIS datasource, jsonFilename, unknownArea ->
+String groundAcousticAbsorption(JdbcDataSource datasource , String zone, String id_zone,
+                                String building, String road, String water, String vegetation,
+                                String impervious, String jsonFilename= "", boolean  unknownArea= false){
             def outputTableName = postfix("GROUND_ACOUSTIC")
             datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_ground serial,G float, type VARCHAR, layer VARCHAR);""".toString()
@@ -79,9 +76,6 @@ IProcess groundAcousticAbsorption() {
                 }
             }
             debug('Ground acoustic transformation finishes')
-            [ground_acoustic: outputTableName]
+            return outputTableName
         }
-
-    }
-}
 

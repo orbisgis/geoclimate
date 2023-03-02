@@ -969,12 +969,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
             //Compute traffic flow
             if (processing_parameters.road_traffic) {
-                IProcess format = Geoindicators.RoadIndicators.build_road_traffic()
-                format.execute([
-                        datasource    : h2gis_datasource,
-                        inputTableName: roadTableName,
-                        epsg          : srid])
-                results.put("road_traffic", format.results.outputTableName)
+                String road_traffic = Geoindicators.RoadIndicators.build_road_traffic(h2gis_datasource, roadTableName)
+                results.put("road_traffic", road_traffic)
             }
 
             def noise_indicators = processing_parameters.noise_indicators
