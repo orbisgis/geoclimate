@@ -64,18 +64,10 @@ import java.util.zip.GZIPOutputStream
  *
  * @author Jérémy Bernard
  */
-IProcess identifyLczType() {
-    return create {
-        title "Set the LCZ type of each RSU"
-        id "identifyLczType"
-        inputs rsuLczIndicators: String, rsuAllIndicators: String, prefixName: String,
-                datasource: JdbcDataSource, normalisationType: "AVG",
-                mapOfWeights: ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, String rsuAllIndicators, String, prefixName, String normalisationType: "AVG",
+                Map mapOfWeights= ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-        outputs outputTableName: String
-        run { rsuLczIndicators, rsuAllIndicators, prefixName, datasource, normalisationType, mapOfWeights ->
-
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]){
             def OPS = ["AVG", "MEDIAN"]
             def ID_FIELD_RSU = "id_rsu"
             def CENTER_NAME = "center"
@@ -357,17 +349,11 @@ IProcess identifyLczType() {
 
                 // The distribution is characterized
                 datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'}""".toString()
-                def computeDistribChar = Geoindicators.GenericIndicators.distributionCharacterization()
-                computeDistribChar([distribTableName: distribLczTableWithoutLcz1,
-                                    inputId         : ID_FIELD_RSU,
-                                    initialTable    : distribLczTableWithoutLcz1,
-                                    distribIndicator: ["equality", "uniqueness"],
-                                    extremum        : "LEAST",
-                                    keep2ndCol      : true,
-                                    keepColVal      : true,
-                                    prefixName      : prefixName,
-                                    datasource      : datasource])
-                def resultsDistrib = computeDistribChar.results.outputTableName
+                def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
+                                    distribLczTableWithoutLcz1,distribLczTableWithoutLcz1,
+                                    ID_FIELD_RSU,prefixName,
+                                    ["equality", "uniqueness"], "LEAST",
+                                    true, true )
 
                 // Rename the standard indicators into names consistent with the current IProcess (LCZ type...)
                 datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
@@ -429,13 +415,11 @@ IProcess identifyLczType() {
 */
                 debug "The LCZ classification has been performed."
 
-                [outputTableName: outputTableName]
+                return outputTableName
             } else {
                 error "The 'normalisationType' argument is not valid."
             }
         }
-    }
-}
 
 /**
  * This process is used to create a random Forest model for regression or classification purpose.
@@ -579,19 +563,12 @@ IProcess createRandomForestModel() {
 
  * @param datasource A connection to a database
  *
- * @return RfModel A randomForest model (see smile library for further information about the object)
+ * @return a table that contains the result of RfModel
  *
  * @author Jérémy Bernard
  */
-IProcess applyRandomForestModel() {
-    return create {
-        title "Apply a Random Forest classification"
-        id "applyRandomForestModel"
-        inputs explicativeVariablesTableName: String, pathAndFileName: String, idName: String,
-                prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { String explicativeVariablesTableName, String pathAndFileName, String idName,
-              String prefixName, JdbcDataSource datasource ->
+String applyRandomForestModel(JdbcDataSource datasource, String explicativeVariablesTableName, String pathAndFileName, String, idName,
+                              String prefixName){
             debug "Apply a Random Forest model"
             File inputModelFile = new File(pathAndFileName)
             def modelName = FilenameUtils.getBaseName(pathAndFileName)
@@ -745,7 +722,5 @@ IProcess applyRandomForestModel() {
                 error("Cannot save the dataframe.\n", e);
                 return null;
             }
-            [outputTableName: tableName]
+            return tableName
         }
-    }
-}

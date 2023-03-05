@@ -3,7 +3,6 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -19,13 +18,7 @@ import org.orbisgis.process.api.IProcess
  *
  * @author Erwan Bocher, CNRS
  */
-IProcess gridPopulation() {
-    return create {
-        title "Process to distribute a set of population values at grid scale"
-        id "gridPopulation"
-        inputs gridTable: String, populationTable: String, populationColumns :[], datasource: JdbcDataSource
-        outputs gridTable: String
-        run { gridTable, populationTable, populationColumns, datasource ->
+String gridPopulation(JdbcDataSource datasource  , String gridTable, String populationTable,List populationColumns =[]){
             def BASE_NAME = "grid_with_population"
             def ID_RSU = "id_grid"
             def ID_POP = "id_pop"
@@ -81,7 +74,5 @@ IProcess gridPopulation() {
             LEFT JOIN $gridTable_pop_sum  b on a.$ID_RSU=b.$ID_RSU;
             drop table if exists $gridTable_pop,$gridTable_pop_sum, $gridTable_area_sum ;""".toString())
 
-            [gridTable: outputTableName]
+            return outputTableName
         }
-    }
-}

@@ -3,7 +3,6 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -15,15 +14,10 @@ import org.orbisgis.process.api.IProcess
  * @param populationColumns the list of the columns to keep
  * @param zoneTable name of a zone table to limit the population table
  * @param datasource a connexion to the database
+ * @return the name of the population table
  */
-IProcess formatPopulationTable() {
-    return create {
-        title "Format the population table"
-        inputs populationTable: String, populationColumns: [],
-                zoneTable: "",
-                datasource: JdbcDataSource
-        outputs populationTable: String
-        run { populationTable, populationColumns, zoneTable, datasource ->
+String formatPopulationTable(JdbcDataSource datasource ,String populationTable, List populationColumns= [],
+                String zoneTable= ""){
             def tablePopulation_tmp = postfix(populationTable)
             if (zoneTable) {
                 datasource.execute("""
@@ -47,8 +41,6 @@ IProcess formatPopulationTable() {
             }
             [populationTable: populationTable]
         }
-    }
-}
 
 /**
  * This process is used to aggregate population data at multiscales
@@ -59,38 +51,29 @@ IProcess formatPopulationTable() {
  * @param inputRsuTableName name of the RSU table to distribute the population columns
  * @param inputGridTableName name of the GRID table to distribute the population columns
  * @param datasource a connexion to the database that contains the input data
+ *
+ * @return a map with the population distributed on building, rsu or grid
  */
-IProcess multiScalePopulation() {
-    return create {
-        title "Process to distribute a set of population values at multiscales"
-        inputs populationTable: String, populationColumns: [],
-                buildingTable: String, rsuTable: "", gridPopTable: "",
-                datasource: JdbcDataSource
-        outputs buildingTable: String, rsuTable: String, gridTable: String
-        run { populationTable, populationColumns, buildingTable, rsuTable, gridTable, datasource ->
+Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List populationColumns= [],
+                String buildingTable, String rsuTable, String gridTable){
             if (populationTable && populationColumns) {
                 def prefixName = "pop"
                 if (buildingTable) {
-                    IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                    if (process.execute(inputBuilding: buildingTable,
-                            inputPopulation: populationTable, inputPopulationColumns: populationColumns,
-                            datasource: datasource)) {
+                    String buildingPop = Geoindicators.BuildingIndicators.buildingPopulation(datasource,buildingTable,
+                            populationTable,  populationColumns)
+                    if (buildingPop) {
                         datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
-                                ALTER TABLE ${process.results.buildingTableName} RENAME TO $buildingTable""".toString())
+                                ALTER TABLE ${buildingPop} RENAME TO $buildingTable""".toString())
                         if (rsuTable) {
                             def unweightedBuildingIndicators = [:]
                             populationColumns.each { col ->
                                 unweightedBuildingIndicators.put(col, ["sum"])
                             }
-                            def computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-                            if (computeBuildingStats([inputLowerScaleTableName: buildingTable,
-                                                      inputUpperScaleTableName: rsuTable,
-                                                      inputIdUp               : "id_rsu",
-                                                      inputIdLow              : "id_rsu",
-                                                      inputVarAndOperations   : unweightedBuildingIndicators,
-                                                      prefixName              : prefixName,
-                                                      datasource              : datasource])) {
-                                def rsu_pop_tmp = computeBuildingStats.results.outputTableName
+                            def rsu_pop_tmp = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,
+                                     buildingTable, rsuTable,
+                                     "id_rsu", "id_rsu",
+                                    unweightedBuildingIndicators,prefixName,)
+                            if (rsu_pop_tmp) {
                                 def rsu_pop_geom = postfix(rsuTable)
                                 def p = Geoindicators.DataUtils.joinTables()
                                 def tablesToJoin = [:]
@@ -143,14 +126,9 @@ IProcess multiScalePopulation() {
 
                     }
                 }
-                return [buildingTable: buildingTable, rsuTable: rsuTable, gridTable: gridTable]
+                return ["buildingTable": buildingTable, "rsuTable": rsuTable, "gridTable": gridTable]
 
             }
             warn "Please set a valid population table name and a list of population columns"
             return
         }
-    }
-}
-
-
-

@@ -1,17 +1,13 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
-import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNull
-import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
 class PopulationIndicatorsTests {
@@ -31,9 +27,7 @@ class PopulationIndicatorsTests {
         CREATE TABLE population (id serial, the_geom GEOMETRY(POLYGON), pop float, pop_old float);
         INSERT INTO population VALUES (1,'POLYGON ((105 312, 230 312, 230 200, 105 200, 105 312))'::GEOMETRY, 12, 10 ),
         (1,'POLYGON((280 170, 390 170, 390 70, 280 70, 280 170))'::GEOMETRY, 1, 200 );""")
-        IProcess process = Geoindicators.PopulationIndicators.formatPopulationTable()
-        assertTrue(process.execute(populationTable: "population", populationColumns:["pop"], datasource:h2GIS))
-        def populationTable = process.results.populationTable
+        String populationTable = Geoindicators.PopulationIndicators.formatPopulationTable(h2GIS, "population", ["pop"])
         assertEquals(2, h2GIS.firstRow("select count(*) as count from $populationTable".toString()).count)
     }
 
@@ -44,10 +38,8 @@ class PopulationIndicatorsTests {
         INSERT INTO population VALUES (1,'POLYGON ((105 312, 230 312, 230 200, 105 200, 105 312))'::GEOMETRY, 12, 10 ),
         (1,'POLYGON((280 170, 390 170, 390 70, 280 70, 280 170))'::GEOMETRY, 1, 200 );
         CREATE TABLE zone as select 'POLYGON ((70 390, 290 390, 290 270, 70 270, 70 390))'::GEOMETRY as the_geom;""")
-        IProcess process = Geoindicators.PopulationIndicators.formatPopulationTable()
-        assertTrue(process.execute(populationTable: "population", populationColumns:["pop"],
-                zoneTable : "zone", datasource:h2GIS))
-        def populationTable = process.results.populationTable
+        String populationTable = Geoindicators.PopulationIndicators.formatPopulationTable(h2GIS, "population", ["pop"],
+                 "zone")
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $populationTable".toString()).count)
     }
 
@@ -76,11 +68,8 @@ class PopulationIndicatorsTests {
         (3,'POLYGON((10 -5, 10 6, 20 6, 20 -5, 10 -5))'::GEOMETRY ),
         (4,'POLYGON((10 6, 10 20, 20 20, 20 6, 10 6))'::GEOMETRY );""".toString())
 
-        IProcess process = Geoindicators.PopulationIndicators.multiScalePopulation()
-        assertTrue process.execute(populationTable : "population" , populationColumns: ["pop"],
-                buildingTable: "building", rsuTable:"rsu", gridPopTable: "grid",
-                datasource: h2GIS)
-        def results = process.results
+        Map results = Geoindicators.PopulationIndicators.multiScalePopulation(h2GIS,  "population" ,  ["pop"],
+                "building", "rsu", "grid")
 
         results.each {it->
             h2GIS.save(it.value, "./target/${it.value}.geojson", true)

@@ -6,7 +6,6 @@ import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -55,11 +54,10 @@ String groundAcousticAbsorption(JdbcDataSource datasource , String zone, String 
             if (unknownArea) {
                 filter+= " or layer is null"
             }
-            IProcess process = Geoindicators.RsuIndicators.groundLayer()
-            if (process.execute(["zone"    : zone, "id_zone": id_zone,
-                                 "building": building, "road": road, "vegetation": vegetation,
-                                 "water"   : water, "impervious": impervious, datasource: datasource, priorities: layer_priorities])) {
-                def ground = process.results.ground
+            String ground = Geoindicators.RsuIndicators.groundLayer(datasource, zone,  id_zone,
+                                                                         building,  road,  vegetation,
+                                                                         water,  impervious,  layer_priorities)
+            if (ground) {
                 int rowcount = 1
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow("SELECT the_geom, TYPE, layer FROM $ground $filter".toString()) { row ->

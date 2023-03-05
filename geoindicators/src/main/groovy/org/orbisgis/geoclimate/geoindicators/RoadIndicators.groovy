@@ -1,11 +1,9 @@
 package org.orbisgis.geoclimate.geoindicators
 
-import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.jdbc.*
-import org.orbisgis.process.api.IProcess
 
 
 @BaseScript Geoindicators geoindicators

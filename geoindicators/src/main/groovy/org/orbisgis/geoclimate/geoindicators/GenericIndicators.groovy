@@ -321,15 +321,8 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
         datasource sqlQueryDist.toString()
 
         // The main building direction and indicators characterizing the distribution are calculated
-        def computeDistribChar = distributionCharacterization()
-        computeDistribChar([distribTableName: build_dir_dist,
-                            initialTable    : tableUp,
-                            inputId         : inputIdUp,
-                            distribIndicator: distribIndicator,
-                            extremum        : "GREATEST",
-                            prefixName      : prefixName,
-                            datasource      : datasource])
-        def resultsDistrib = computeDistribChar.results.outputTableName
+        def resultsDistrib = distributionCharacterization( datasource, build_dir_dist,
+                         tableUp, inputIdUp, prefixName, distribIndicator, "GREATEST")
 
         // Rename the standard indicators into names consistent with the current IProcess (building direction...)
         datasource """DROP TABLE IF EXISTS $outputTableName;
@@ -417,7 +410,7 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
  * @author Jérémy Bernard
  */
 String distributionCharacterization(JdbcDataSource datasource, String distribTableName,
-                                    String initialTable, String inputId, String, prefixName,
+                                    String initialTable, String inputId, String prefixName,
                                     List distribIndicator = ["equality", "uniqueness"], String extremum = "GREATEST",
                                     boolean keep2ndCol = false, boolean keepColVal = false) {
     def EQUALITY = "EQUALITY_VALUE"
@@ -657,9 +650,9 @@ static Double getEquality(def myMap, def nbDistCol) {
  *
  * @author Jérémy Bernard
  */
-String typeProportion(JdbcDataSource datasource, String inputTableName, String idField,
-                      String inputUpperTableName, Map floorAreaTypeAndComposition = [:],
-                      String typeFieldName, Map areaTypeAndComposition = [:], String prefixName) {
+String typeProportion(JdbcDataSource datasource, String inputTableName, String idField,String typeFieldName,
+                      String inputUpperTableName, Map floorAreaTypeAndComposition ,
+                      Map areaTypeAndComposition, String prefixName) {
     def GEOMETRIC_FIELD_LOW = "the_geom"
     def BASE_NAME = "type_proportion"
     def NB_LEV = "nb_lev"

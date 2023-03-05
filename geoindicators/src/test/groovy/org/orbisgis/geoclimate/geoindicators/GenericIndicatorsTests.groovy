@@ -259,18 +259,10 @@ class GenericIndicatorsTests {
         """
 
 
-        def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
-        assert p1([
-                distribTableName    : "distrib_test",
-                initialTable        : "distrib_test",
-                inputId             : "id",
-                distribIndicator    : ["equality", "uniqueness"],
-                extremum            : "GREATEST",
-                keep2ndCol          : true,
-                keepColVal          : true,
-                prefixName          : "test",
-                datasource          : h2GIS])
-        def resultTab = p1.results.outputTableName
+        def  resultTab =  Geoindicators.GenericIndicators.distributionCharacterization(h2GIS,
+                "distrib_test", "distrib_test", "id","test",
+                 ["equality", "uniqueness"],  "GREATEST",
+               true,true)
 
         assert 1        == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 1").EQUALITY_VALUE
         assert 0.25     == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 4").EQUALITY_VALUE
@@ -300,16 +292,12 @@ class GenericIndicatorsTests {
                                                 (5, 0, 0, 0, 0);
         """
 
-
-        def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
-        assert p1([
-                distribTableName    : "distrib_test",
-                initialTable        : "distrib_test",
-                inputId             : "id",
+        def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization(h2GIS,
+                 "distrib_test", "distrib_test",
+                 "id","test",
                 distribIndicator    : ["uniqueness"],
-                extremum            : "LEAST",
-                prefixName          : "test",
-                datasource          : h2GIS])
+                extremum            : "LEAST")
+        assertNotNull(p1)
 
         assert 0        == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 1")["UNIQUENESS_VALUE"]
         assertEquals 1.0/3, h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION " +
@@ -332,15 +320,9 @@ class GenericIndicatorsTests {
         """
 
 
-        def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization()
-        assert p1([
-                distribTableName    : "distrib_test",
-                initialTable        : "distrib_test",
-                inputId             : "id",
-                distribIndicator    : ["equality"],
-                extremum            : "LEAST",
-                prefixName          : "test",
-                datasource          : h2GIS])
+        def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization(h2GIS, "distrib_test",
+                "distrib_test","id","test",
+                 ["equality"], "LEAST")
 
         assert 1        == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 1")["EQUALITY_VALUE"]
         assert 0.25     == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 4")["EQUALITY_VALUE"]
@@ -358,49 +340,34 @@ class GenericIndicatorsTests {
                         WHERE a.id_build < 4;"""
 
         // Test 1
-        def  p1 =  Geoindicators.GenericIndicators.typeProportion()
-        assert p1([
-                inputTableName          : "tempo_build",
-                idField                 : "id_rsu",
-                inputUpperTableName     : "rsu_test",
-                typeFieldName           : "type",
-                areaTypeAndComposition  : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
-                prefixName              : "",
-                datasource              : h2GIS])
+        def  typeProportion =  Geoindicators.GenericIndicators.typeProportion(h2GIS,
+                 "tempo_build", "id_rsu","type","rsu_test",
+                 ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                "")
 
-        def result1 = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName}")
+        def result1 = h2GIS.firstRow("SELECT * FROM ${typeProportion}".toString())
         assert (156.0/296).trunc(3) == result1.area_fraction_industrial.trunc(3)
         assert (140.0/296).trunc(3) == result1.area_fraction_residential.trunc(3)
-        def resultNull = h2GIS.firstRow("SELECT * FROM ${p1.results.outputTableName} WHERE id_rsu = 14")
+        def resultNull = h2GIS.firstRow("SELECT * FROM ${typeProportion} WHERE id_rsu = 14")
         assert 0 == resultNull.area_fraction_industrial
         assert 0 == resultNull.area_fraction_residential
 
         // Test 2
-        def  p2 =  Geoindicators.GenericIndicators.typeProportion()
-        assert p2([
-                inputTableName                  : "tempo_build",
-                idField                         : "id_rsu",
-                inputUpperTableName             : "rsu_test",
-                typeFieldName                   : "type",
-                floorAreaTypeAndComposition     : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
-                prefixName                      : "",
-                datasource                      : h2GIS])
+        def  p2 =  Geoindicators.GenericIndicators.typeProportion(h2GIS,
+                 "tempo_build", "id_rsu", "type","rsu_test",
+                 ["industrial": ["industrial"], "residential": ["residential", "detached"]],null,
+                 "")
 
-        def result2 = h2GIS.firstRow("SELECT * FROM ${p2.results.outputTableName}")
+        def result2 = h2GIS.firstRow("SELECT * FROM ${p2}")
         assert (312.0/832).trunc(3) == result2.floor_area_fraction_industrial.trunc(3)
         assert (520.0/832).trunc(3) == result2.floor_area_fraction_residential.trunc(3)
 
         // Test 3
-        def  p3 =  Geoindicators.GenericIndicators.typeProportion()
-        assert p3([
-                inputTableName                  : "tempo_build",
-                idField                         : "id_rsu",
-                inputUpperTableName             : "rsu_test",
-                typeFieldName                   : "type",
-                areaTypeAndComposition          : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
-                floorAreaTypeAndComposition     : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
-                prefixName                      : "",
-                datasource                      : h2GIS])
+        def  p3 =  Geoindicators.GenericIndicators.typeProportion(h2GIS,
+                "tempo_build", "id_rsu","type","rsu_test",
+                ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                "")
 
         def result3 = h2GIS.firstRow("SELECT * FROM ${p3.results.outputTableName}")
         assert (156.0/296).trunc(3) == result3.area_fraction_industrial.trunc(3)
@@ -419,25 +386,11 @@ class GenericIndicatorsTests {
                         FROM building_test a, rsu_test b
                         WHERE id_build < 4;"""
         // Test 1
-        def  p =  Geoindicators.GenericIndicators.typeProportion()
-        assertFalse(p([
-                inputTableName              : "tempo_build",
-                idField                     : "id_rsu",
+        def  p =  Geoindicators.GenericIndicators.typeProportion(h2GIS,
+                "tempo_build", "id_rsu","type",
                 inputUpperTableName         : "rsu_test",
-                typeFieldName               : "type",
-                areaTypeAndComposition      : null,
-                floorAreaTypeAndComposition : null,
-                prefixName                  : "",
-                datasource                  : h2GIS]))
-        assertTrue(p([
-                inputTableName              : "tempo_build",
-                idField                     : "id_rsu",
-                inputUpperTableName         : "rsu_test",
-                typeFieldName               : "type",
-                areaTypeAndComposition      : null,
-                floorAreaTypeAndComposition : ["industrial": ["industrial"], "residential": ["residential", "detached"]],
-                prefixName                  : "",
-                datasource                  : h2GIS]))
+                 null,null, "")
+        assertNotNull(p)
     }
 
     @Test
