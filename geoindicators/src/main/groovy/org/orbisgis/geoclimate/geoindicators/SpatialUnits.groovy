@@ -9,7 +9,6 @@ import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.data.jdbc.*
-import org.orbisgis.process.api.IProcess
 
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -43,17 +42,10 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  *
  * @return A database table name and the name of the column ID
  */
-IProcess createRSU() {
-    return create {
-        title "Create reference spatial units (RSU)"
-        id "createRSU"
-        inputs inputzone: "", prefixName: "", datasource: JdbcDataSource, rsuType: "TSU",
-                area: 1d, roadTable: "", railTable: "", vegetationTable: "", hydrographicTable: "",
-                seaLandMaskTableName: "", surface_vegetation: 10000, surface_hydro: 2500
-        outputs outputTableName: String, outputIdRsu: String
-        run { inputzone, prefixName, datasource, rsuType,
-              area, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName,
-              surface_vegetation, surface_hydro ->
+String createRSU(JdbcDataSource datasource , String inputzone, String  rsuType = "TSU",
+                float  area= 1f, String roadTable, String railTable, String vegetationTable,
+                 String hydrographicTable, String seaLandMaskTableName,
+                 double  surface_vegetation, double  surface_hydro, String prefixName){
 
             def COLUMN_ID_NAME = "id_rsu"
             def BASE_NAME = "rsu"
@@ -64,32 +56,22 @@ IProcess createRSU() {
             datasource """DROP TABLE IF EXISTS $outputTableName;""".toString()
 
             if (rsuType == "TSU") {
-                def prepareTSUData = prepareTSUData()
-                if (!prepareTSUData([datasource          : datasource,
-                                     zoneTable           : inputzone,
-                                     roadTable           : roadTable,
-                                     railTable           : railTable,
-                                     vegetationTable     : vegetationTable,
-                                     hydrographicTable   : hydrographicTable,
-                                     seaLandMaskTableName: seaLandMaskTableName,
-                                     surface_vegetation  : surface_vegetation,
-                                     surface_hydro       : surface_hydro,
-                                     prefixName          : prefixName])) {
+                def tsuDataPrepared = prepareTSUData(datasource,
+                         inputzone,roadTable,railTable,
+                         vegetationTable, hydrographicTable, seaLandMaskTableName,
+                         surface_vegetation,surface_hydro, prefixName)
+                if (!tsuDataPrepared) {
                     info "Cannot prepare the data for RSU calculation."
                     return
                 }
-                def tsuDataPrepared = prepareTSUData.results.outputTableName
-
-                def createTSU = Geoindicators.SpatialUnits.createTSU()
-                if (!createTSU([datasource        : datasource,
-                                inputTableName    : tsuDataPrepared,
-                                prefixName        : prefixName,
-                                inputzone: inputzone])) {
+                def createTSU = Geoindicators.SpatialUnits.createTSU(datasource, tsuDataPrepared,inputzone,
+                                                                      area,prefixName)
+                if (!createTSU) {
                     info "Cannot compute the RSU."
                     return
                 }
-                def outputTsuTableName = createTSU.results.outputTableName
-                def outputIdTsu = createTSU.results.outputIdRsu
+                def outputTsuTableName = createTSU.outputTableName
+                def outputIdTsu = createTSU.outputIdRsu
 
                 datasource """ALTER TABLE $outputTsuTableName ALTER COLUMN $outputIdTsu RENAME TO $COLUMN_ID_NAME;""".toString()
                 datasource."$outputTsuTableName".reload()
@@ -99,10 +81,8 @@ IProcess createRSU() {
 
             debug "Reference spatial units table created"
 
-            [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
+            return  outputTableName
         }
-    }
-}
 
 /**
  * This process is used to create the Topographical Spatial Units (TSU)
@@ -115,14 +95,7 @@ IProcess createRSU() {
  * @param area TSU less or equals than area are removed
  * @return A database table name and the name of the column ID
  */
-IProcess createTSU() {
-    return create {
-        title "Create reference spatial units (TSU)"
-        id "createTSU"
-        inputs inputTableName: String, inputzone: "", prefixName: "", datasource: JdbcDataSource, area: 1d
-        outputs outputTableName: String, outputIdRsu: String
-        run { inputTableName, inputzone, prefixName, datasource, area ->
-
+Map createTSU(JdbcDataSource datasource, String inputTableName,  String inputzone, float area= 1f, String prefixName){
             def COLUMN_ID_NAME = "id_rsu"
             def BASE_NAME = "tsu"
 
@@ -167,10 +140,8 @@ IProcess createTSU() {
 
             debug "Reference spatial units table created"
 
-            [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
+            return [outputTableName: outputTableName, outputIdRsu: COLUMN_ID_NAME]
         }
-    }
-}
 
 /**
  * This process is used to prepare the input abstract model
@@ -182,26 +153,27 @@ IProcess createTSU() {
  * @param vegetationTable The vegetation table to be processed
  * @param hydrographicTable The hydrographic table to be processed
  * @param surface_vegetation A double value to select the vegetation geometry areas.
- * Expressed in geometry unit of the vegetationTable
+ * Expressed in geometry unit of the vegetationTable. 10000 m² seems correct.
  * @param seaLandMaskTableName The table to distinguish sea from land
  * @param surface_hydro A double value to select the hydrographic geometry areas.
- * Expressed in geometry unit of the vegetationTable
+ * Expressed in geometry unit of the vegetationTable. 2500 m² seems correct.
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  * @param outputTableName The name of the output table
  * @return A database table name.
  */
-IProcess prepareTSUData() {
-    return create {
-        title "Prepare the abstract model to build the TSU"
-        id "prepareTSUData"
-        inputs zoneTable: "", roadTable: "", railTable: "",
-                vegetationTable: "", hydrographicTable: "", seaLandMaskTableName: "", surface_vegetation: 10000,
-                surface_hydro: 2500, prefixName: "unified_abstract_model", datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { zoneTable, roadTable, railTable, vegetationTable, hydrographicTable, seaLandMaskTableName, surface_vegetation,
-              surface_hydrographic, prefixName, datasource ->
+String prepareTSUData(JdbcDataSource datasource, String zoneTable,String roadTable,String railTable,
+                      String vegetationTable, String hydrographicTable, String seaLandMaskTableName,
+                      float  surface_vegetation,float surface_hydro, String prefixName= "unified_abstract_model"){
 
+        if(surface_vegetation<=100){
+            error("The surface of vegetation must be greater or equal than 100 m²")
+            return
+        }
+    if(surface_hydro<=100){
+        error("The surface of water must be greater or equal than 100 m²")
+        return
+    }
             def BASE_NAME = "prepared_tsu_data"
 
             debug "Preparing the abstract model to build the TSU"
@@ -353,10 +325,8 @@ IProcess prepareTSUData() {
                 error "Cannot compute the TSU. The input zone table must have one row."
                 outputTableName = null
             }
-            [outputTableName: outputTableName]
+            return outputTableName
         }
-    }
-}
 
 /**
  * This process is used to merge the geometries that touch each other
@@ -369,13 +339,7 @@ IProcess prepareTSUData() {
  * @param outputTableName The name of the output table
  * @return A database table name and the name of the column ID
  */
-IProcess createBlocks() {
-    return create {
-        title "Merge the geometries that touch each other"
-        id "createBlocks"
-        inputs inputTableName: String, snappingTolerance: 0.0d, prefixName: "block", datasource: JdbcDataSource
-        outputs outputTableName: String, outputIdBlock: String
-        run { inputTableName, snappingTolerance, prefixName, JdbcDataSource datasource ->
+String createBlocks(JdbcDataSource datasource , String inputTableName , float snappingTolerance= 0.0f, String prefixName= "block"){
 
             def BASE_NAME = "blocks"
 
@@ -447,11 +411,8 @@ IProcess createBlocks() {
                     $subGraphBlocks, ${subGraphBlocks + "_NODE_CC"}, $subGraphTableNodes;""".toString()
 
             debug "The blocks have been created"
-            [outputTableName: outputTableName, outputIdBlock: columnIdName]
+            return  outputTableName
         }
-    }
-}
-
 /**
  * This process is used to spatially link polygons coming from two tables. It may be used to find the relationships
  * between a building and a block, a building and a RSU but also between a building from a first dataset and a building
@@ -472,19 +433,9 @@ IProcess createBlocks() {
  * has no value and thus all relations are conserved
  *
  * @return outputTableName A table name containing ID from table 1, ID from table 2 and AREA shared by the two objects (if pointOnSurface = false)
- * @return idColumnTarget The ID name of the target table
  */
-IProcess spatialJoin() {
-    return create {
-        title "Creating the spatial join between two tables of polygons"
-        id "spatialJoin"
-        inputs sourceTable: String, targetTable: String,
-                idColumnTarget: String, prefixName: String, pointOnSurface: false, nbRelations: Integer,
-                datasource: JdbcDataSource
-        outputs outputTableName: String, idColumnTarget: String
-        run { sourceTable, targetTable, idColumnTarget, prefixName, pointOnSurface,
-              nbRelations, datasource ->
-
+String spatialJoin(JdbcDataSource datasource, String sourceTable,  String targetTable,
+                   String idColumnTarget, boolean pointOnSurface= false, Integer nbRelations,  String  prefixName){
             def GEOMETRIC_COLUMN_SOURCE = "the_geom"
             def GEOMETRIC_COLUMN_TARGET = "the_geom"
 
@@ -531,10 +482,8 @@ IProcess spatialJoin() {
 
             debug "The spatial join have been performed between :  $sourceTable and $targetTable"
 
-            [outputTableName: outputTableName, idColumnTarget: idColumnTarget]
+            return  outputTableName
         }
-    }
-}
 
 /**
  * This process is used to generate a continuous cartesian grid
@@ -546,17 +495,11 @@ IProcess spatialJoin() {
  * @param tableName A Table that contains the geometry of the grid
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
- * @return outputTableName The name of the created table
+ * @return  The name of the created table
  *
  * @author Emmanuel Renault, CNRS, 2020
  * */
-IProcess createGrid() {
-    return create {
-        title "Creating a regular grid in meter"
-        id "createGrid"
-        inputs geometry: Geometry, deltaX: double, deltaY: double, rowCol: false, prefixName: "", datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { geometry, deltaX, deltaY, rowCol, prefixName, datasource ->
+String createGrid(JdbcDataSource datasource,Geometry  geometry,double deltaX, double deltaY,  boolean rowCol= false, String prefixName= ""){
             if (rowCol) {
                 if (!deltaX || !deltaY || deltaX < 1 || deltaY < 1) {
                     debug "Invalid grid size padding. Must be greater or equal than 1"
@@ -622,7 +565,5 @@ IProcess createGrid() {
                 }
             }
             debug "The table $outputTableName has been created"
-            [outputTableName: outputTableName]
+            return outputTableName
         }
-    }
-}

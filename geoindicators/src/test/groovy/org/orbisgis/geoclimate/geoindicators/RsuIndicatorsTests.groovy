@@ -70,17 +70,11 @@ class RsuIndicatorsTests {
                                                 (5, 'POLYGON((200 200, 300 200, 300 300, 200 300, 200 200))'::GEOMETRY);
         """
         // First calculate the correlation table between buildings and rsu
-        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
-        createScalesRelationsGridBl([datasource    : h2GIS,
-                                     sourceTable   : "tempo_build",
-                                     targetTable   : "tempo_rsu",
-                                     idColumnTarget: "id_rsu",
-                                     prefixName    : "test",
-                                     nbRelations   : null])
+        def buildingTableRelation = Geoindicators.SpatialUnits.spatialJoin(h2GIS,
+                                     "tempo_build", "tempo_rsu", "id_rsu",null, "test")
 
-        def buildingTableRelation = createScalesRelationsGridBl.results.outputTableName
-
-        def p = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(h2GIS,
+        assertNotNull(buildingTableRelation)
+               def p = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(h2GIS,
                buildingTableRelation,"tempo_rsu",
               "id_rsu", "test")
         assertNotNull(p)
@@ -371,23 +365,19 @@ class RsuIndicatorsTests {
         h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"), true)
 
-        def prepareData = Geoindicators.SpatialUnits.prepareTSUData()
-        assertTrue prepareData.execute([zoneTable        : 'zone_test', roadTable: 'road_test', railTable: '',
-                                        vegetationTable  : 'veget_test',
-                                        hydrographicTable: 'hydro_test',
-                                        prefixName       : "prepare_rsu", datasource: h2GIS])
-
-        def outputTableGeoms = prepareData.results.outputTableName
+        def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
+                                            'zone_test', 'road_test',  '',
+                                         'veget_test', 'hydro_test',"",
+                                        10000, 2500,"prepare_rsu")
 
         assertNotNull h2GIS.getTable(outputTableGeoms)
 
-        def rsu = Geoindicators.SpatialUnits.createTSU()
-        assertTrue rsu.execute([inputTableName: outputTableGeoms, prefixName: "rsu", datasource: h2GIS])
-        def outputTable = rsu.results.outputTableName
+        def rsu = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "rsu")
+        def outputTable = rsu.outputTableName
 
         def outputTableStats = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                outputTable,  "id_rsu",  "building_test", "road_test",  "veget_test", "hydro_test",
-                 "test")
+                outputTable,  "id_rsu",  "building_test", "road_test", "hydro_test", "veget_test","",
+                "test")
         assertNotNull(outputTableStats)
 
         h2GIS """DROP TABLE IF EXISTS stats_rsu;
@@ -640,16 +630,11 @@ class RsuIndicatorsTests {
                                                 (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY);
             """
         // First calculate the correlation table between buildings and rsu
-        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
-        createScalesRelationsGridBl([datasource    : h2GIS,
-                                     sourceTable   : "tempo_build",
-                                     targetTable   : "tempo_rsu",
-                                     idColumnTarget: "id_rsu",
-                                     prefixName    : "test",
-                                     nbRelations   : null])
-
+        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin( h2GIS,
+                                      "tempo_build","tempo_rsu", "id_rsu",null, "test")
+        assertNotNull(createScalesRelationsGridBl)
         def p = Geoindicators.RsuIndicators.roofFractionDistributionExact(h2GIS,
-                 createScalesRelationsGridBl.results.outputTableName,
+                 createScalesRelationsGridBl,
                  "tempo_rsu",
                 "id_rsu",
                  [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],"test")
@@ -687,14 +672,10 @@ class RsuIndicatorsTests {
                                                 (5, 'POLYGON((200 200, 300 200, 300 300, 200 300, 200 200))'::GEOMETRY);
             """
         // First calculate the correlation table between buildings and rsu
-        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin()
-        createScalesRelationsGridBl([datasource    : h2GIS,
-                                     sourceTable   : "tempo_build",
-                                     targetTable   : "tempo_rsu",
-                                     idColumnTarget: "id_rsu",
-                                     prefixName    : "test",
-                                     nbRelations   : null])
+        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(h2GIS,
+                                     "tempo_build", "tempo_rsu","id_rsu",null, "test")
 
+        assertNotNull(createScalesRelationsGridBl)
 
         def p = Geoindicators.RsuIndicators.frontalAreaIndexDistribution(h2GIS,
                      createScalesRelationsGridBl,
@@ -734,12 +715,10 @@ class RsuIndicatorsTests {
 
         def env = h2GIS.getSpatialTable(zone).getExtent()
         if (env) {
-            def gridP = Geoindicators.SpatialUnits.createGrid()
-            assert gridP.execute([geometry: env, deltaX: 100, deltaY: 100, datasource: h2GIS])
-            def outputTable = gridP.results.outputTableName
-            String ground = Geoindicators.RsuIndicators.groundLayer(h2GIS, outputTable, "id_grid",
+            def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS,  env, 100,  100)
+            assertNotNull(gridP)
+            String ground = Geoindicators.RsuIndicators.groundLayer(h2GIS, gridP, "id_grid",
                     "building_test", "road_test", "veget_test", "hydro_test")
-
             assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  building_test where zindex=0".toString()).area - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer = 'building'".toString()).area) < 10)
             assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer ='water'".toString()).area) < 10)
         }

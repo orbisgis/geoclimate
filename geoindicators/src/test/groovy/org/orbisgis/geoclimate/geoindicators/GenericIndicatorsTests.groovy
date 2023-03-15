@@ -495,26 +495,18 @@ class GenericIndicatorsTests {
 
         def geometry = h2GIS.getSpatialTable(indicatorTableName).getExtent(geometryColumnName)
         geometry.setSRID(h2GIS.getSpatialTable(indicatorTableName).srid)
-        def gridProcess = Geoindicators.SpatialUnits.createGrid()
-        gridProcess.execute([geometry: geometry,
-                             deltaX: 1000D,
-                             deltaY: 1000D,
-                             datasource: h2GIS])
+        def gridProcess = Geoindicators.SpatialUnits.createGrid(h2GIS, geometry,
+                             1000D, 1000D)
 
-        def targetTableName = gridProcess.results.outputTableName
-        assertEquals(4, h2GIS.getSpatialTable(targetTableName).getRowCount())
+        assertNotNull(gridProcess)
+        assertEquals(4, h2GIS.getSpatialTable(gridProcess).getRowCount())
 
-        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics()
-        upperScaleAreaStatistics.execute(
-                [upperTableName: targetTableName,
-                 upperColumnId: "id_grid",
-                 lowerTableName: indicatorTableName,
-                 lowerColumnName: indicatorName,
-                 prefixName: "agg",
-                 datasource: h2GIS])
+        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(h2GIS,
+                gridProcess,"id_grid", indicatorTableName, indicatorName, "agg")
 
-        def upperScaleTableResult = upperScaleAreaStatistics.results.outputTableName
-        ISpatialTable upperStats = h2GIS.getSpatialTable(upperScaleTableResult)
+        assertNotNull(upperScaleAreaStatistics)
+
+        ISpatialTable upperStats = h2GIS.getSpatialTable(upperScaleAreaStatistics)
         assertNotNull(upperStats)
 
         def nb_indicators = h2GIS.rows "SELECT distinct ${indicatorName} AS nb FROM $indicatorTableName"
@@ -528,7 +520,7 @@ class GenericIndicatorsTests {
             query+= "SUM($it) + "
         }
         query = query[0..-4]
-        query+=" as sum_indic from ${upperScaleTableResult} group by ID_GRID"
+        query+=" as sum_indic from ${upperScaleAreaStatistics} group by ID_GRID"
         h2GIS.execute query
 
         def values= h2GIS.firstRow "select count(*) as nb from babeth_zone where sum_indic=0"

@@ -979,19 +979,16 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             if (noise_indicators) {
                 if (noise_indicators.ground_acoustic) {
                     geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
-                    def gridP = Geoindicators.SpatialUnits.createGrid()
-                    if (gridP.execute([geometry: geomEnv, deltaX: 200, deltaY: 200, datasource: h2gis_datasource])) {
-                        def outputTable = gridP.results.outputTableName
-                        IProcess process = Geoindicators.NoiseIndicators.groundAcousticAbsorption()
-                        if (process.execute(["zone"    : outputTable, "id_zone": "id_grid",
-                                             building  : buildingTableName, road: roadTableName, vegetation: vegetationTableName,
-                                             water     : hydrographicTableName,
-                                             impervious: imperviousTableName,
-                                             datasource: h2gis_datasource])) {
+                    def gridP = Geoindicators.SpatialUnits.createGrid(h2gis_datasource,geomEnv,  200,  200)
+                    if (gridP) {
+                        String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, gridP,  "id_grid",
+                                                                                                    buildingTableName,  roadTableName,  vegetationTableName,
+                                                                                                      hydrographicTableName, imperviousTableName)
+                        if (ground_acoustic) {
 
-                            results.put("ground_acoustic", process.results.ground_acoustic)
+                            results.put("ground_acoustic", ground_acoustic)
                         }
-                        h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTable".toString())
+                        h2gis_datasource.execute("DROP TABLE IF EXISTS $gridP".toString())
                     }
                 }
             }

@@ -2261,7 +2261,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             def allInfoTableName = postfix "allInfoTableName"
             def groupedLandTypes = postfix("grouped_land_type")
             datasource """DROP TABLE IF EXISTS $allInfoTableName,$groupedLandTypes , $tmp_tables, $outputTableName;
-                                      CREATE TABLE $allInfoTableName as ${finalMerge.join(' union all ')};"""
+                                      CREATE TABLE $allInfoTableName as ${finalMerge.join(' union all ')};""".toString()
             datasource """
                                       CREATE INDEX ON $allInfoTableName (${ID_COLUMN_NAME});
                                     CREATE TABLE $groupedLandTypes as select distinct ${ID_COLUMN_NAME}, first_value(type) over(partition by ${ID_COLUMN_NAME} order by priority, area) as type, first_value(layer) over(partition by ${ID_COLUMN_NAME} order by priority, area) as layer

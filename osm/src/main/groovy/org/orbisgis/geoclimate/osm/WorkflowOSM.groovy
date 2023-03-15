@@ -565,9 +565,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     if (noise_indicators) {
                         if (noise_indicators.ground_acoustic) {
                             geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
-                            def gridP = Geoindicators.SpatialUnits.createGrid()
-                            if (gridP.execute([geometry: geomEnv, deltaX: 200, deltaY: 200, datasource: h2gis_datasource])) {
-                                def outputTable = gridP.results.outputTableName
+                            def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource,  geomEnv, 200, 200)
+                            if (outputTable) {
                                 String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource,  outputTable, "id_grid",
                                                                                                            buildingTableName,  roadTableName,hydrographicTableName,
                                                                                                             vegetationTableName,imperviousTableName)
