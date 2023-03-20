@@ -49,12 +49,9 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8
         """
 
-        def p = Geoindicators.BuildingIndicators.sizeProperties()
-        assert p([
-                inputBuildingTableName  : "tempo_build",
-                operations              : ["volume"],
-                prefixName              : "test",
-                datasource              : h2GIS])
+        def p = Geoindicators.BuildingIndicators.sizeProperties(h2GIS,
+                "tempo_build", ["volume"], "test")
+        assert p
 
         // The indicators are gathered in a same table
         h2GIS """

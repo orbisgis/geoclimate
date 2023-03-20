@@ -29,7 +29,7 @@ import org.orbisgis.data.jdbc.*
  *
  * @author Jérémy Bernard
  */
-String sizeProperties(JdbcDataSource datasource, String building, String[] operations , String prefixName){
+String sizeProperties(JdbcDataSource datasource, String building,List operations , String prefixName){
             def OP_VOLUME = "volume"
             def OP_FLOOR_AREA = "floor_area"
             def OP_FACADE_LENGTH = "total_facade_length"
@@ -99,7 +99,7 @@ String sizeProperties(JdbcDataSource datasource, String building, String[] opera
  *
  * @author Jérémy Bernard
  */
-String neighborsProperties(JdbcDataSource datasource , String building, String[] operations ,String  prefixName){
+String neighborsProperties(JdbcDataSource datasource , String building, List operations ,String  prefixName){
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD = "id_build"
             def HEIGHT_WALL = "height_wall"
@@ -195,7 +195,7 @@ String neighborsProperties(JdbcDataSource datasource , String building, String[]
  *
  * @author Jérémy Bernard
  */
-String formProperties(JdbcDataSource datasource,  String building,  String[] operations, String prefixName){
+String formProperties(JdbcDataSource datasource,  String building,  List operations, String prefixName){
             def GEOMETRIC_FIELD = "the_geom"
             def ID_FIELD = "id_build"
             def HEIGHT_WALL = "height_wall"

@@ -30,13 +30,10 @@ class TrafficFlowTests {
         (4, 'LINESTRING (85 60, 85 -1, 155 1, 148 54, 92 50, 96 -12, 119 -11, 117 -4, 78 -5)'::GEOMETRY, 10, 0, null,  'highway', 90, 1, null),
         (5, 'LINESTRING (20 100, 25 100, 25 120, 20 120)'::GEOMETRY, 6, 0, null,  'highway',50, 1, null),
         (6, 'LINESTRING (50 105, 47 99)'::GEOMETRY, 6, -1, null,  'highway', 50, 3, null);"""
-        def traffic = Geoindicators.RoadIndicators.build_road_traffic()
-        traffic.execute([
-                datasource : h2GIS,
-                inputTableName: "ROAD_TEST",
-                epsg: 2154])
-
-        assertEquals 6 , h2GIS.getTable(traffic.results.outputTableName).rowCount
+        def traffic = Geoindicators.RoadIndicators.build_road_traffic(h2GIS,
+               "ROAD_TEST")
+        assert traffic
+        assertEquals 6 , h2GIS.getTable(traffic).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${traffic.results.outputTableName} where road_type is not null").count==6
     }
 }

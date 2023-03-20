@@ -39,7 +39,7 @@ String formatPopulationTable(JdbcDataSource datasource ,String populationTable, 
                 ALTER TABLE $tablePopulation_tmp rename to $populationTable;
                 """.toString())
             }
-            [populationTable: populationTable]
+            return populationTable
         }
 
 /**
@@ -75,14 +75,12 @@ Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List
                                     unweightedBuildingIndicators,prefixName,)
                             if (rsu_pop_tmp) {
                                 def rsu_pop_geom = postfix(rsuTable)
-                                def p = Geoindicators.DataUtils.joinTables()
                                 def tablesToJoin = [:]
                                 tablesToJoin.put(rsuTable, "id_rsu")
                                 tablesToJoin.put(rsu_pop_tmp, "id_rsu")
-                                if (p([
-                                        inputTableNamesWithId: tablesToJoin,
-                                        outputTableName      : rsu_pop_geom,
-                                        datasource           : datasource])) {
+                                def p = Geoindicators.DataUtils.joinTables(datasource,
+                                         tablesToJoin, rsu_pop_geom)
+                                if (p) {
                                     datasource.execute("""DROP TABLE IF EXISTS $rsuTable, $rsu_pop_tmp;
                                     ALTER TABLE $rsu_pop_geom RENAME TO $rsuTable;
                                     DROP TABLE IF EXISTS $rsu_pop_geom;""".toString())

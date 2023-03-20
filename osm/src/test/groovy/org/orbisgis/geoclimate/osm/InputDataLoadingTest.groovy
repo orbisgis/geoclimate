@@ -5,9 +5,6 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
-import org.orbisgis.process.api.IProcess
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 

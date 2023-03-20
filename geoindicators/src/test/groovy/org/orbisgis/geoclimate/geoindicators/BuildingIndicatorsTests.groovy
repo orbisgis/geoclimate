@@ -5,9 +5,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
@@ -34,11 +34,11 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_size_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build = 7;"
 
-        def p =  Geoindicators.BuildingIndicators.sizeProperties()
-        assert p([inputBuildingTableName: "tempo_build",
-                  operations:["volume", "floor_area", "total_facade_length",
+        def p =  Geoindicators.BuildingIndicators.sizeProperties(h2GIS,  "tempo_build",
+                  ["volume", "floor_area", "total_facade_length",
                               "passive_volume_ratio"],
-                  prefixName : "test",datasource:h2GIS])
+                  "test")
+        assert p
         h2GIS.getTable("test_building_size_properties").eachRow {
             row ->
                 assertEquals(141, (int)row.volume)
@@ -54,11 +54,11 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_neighbors_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 7"
 
-        def  p =  Geoindicators.BuildingIndicators.neighborsProperties()
-        assertTrue p.execute([inputBuildingTableName: "tempo_build",
-                              operations:["contiguity","common_wall_fraction",
+        def  p =  Geoindicators.BuildingIndicators.neighborsProperties(h2GIS,  "tempo_build",
+                             ["contiguity","common_wall_fraction",
                                           "number_building_neighbor"],
-                              prefixName : "test",datasource:h2GIS])
+                                "test")
+        assert p
         def concat = ["", "", ""]
         h2GIS.eachRow("SELECT * FROM test_building_neighbors_properties WHERE id_build = 1 OR id_build = 5 " +
                 "ORDER BY id_build ASC"){row ->
@@ -77,11 +77,11 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build " +
                 "AS SELECT * FROM building_test WHERE id_build < 8 OR id_build = 30"
 
-        def  p =  Geoindicators.BuildingIndicators.formProperties()
-        assertTrue p.execute([inputBuildingTableName: "tempo_build",
-                              operations:["area_concavity","form_factor",
+        def  p =  Geoindicators.BuildingIndicators.formProperties(h2GIS,  "tempo_build",
+                             ["area_concavity","form_factor",
                                           "raw_compactness", "perimeter_convexity"],
-                              prefixName : "test",datasource:h2GIS])
+                                "test")
+        assert p
         def concat = ["", "", "", ""]
         h2GIS.eachRow("SELECT * FROM test_building_form_properties WHERE id_build = 1 OR id_build = 7 ORDER BY id_build ASC".toString()){
             row ->
@@ -107,9 +107,8 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_build, test_building_form_properties; CREATE TABLE tempo_build AS " +
                 "SELECT * FROM building_test WHERE id_build < 7"
 
-        def  p =  Geoindicators.BuildingIndicators.minimumBuildingSpacing()
-        assertTrue p.execute([inputBuildingTableName: "tempo_build", bufferDist:100, prefixName : "test",
-                              datasource:h2GIS])
+        def  p =  Geoindicators.BuildingIndicators.minimumBuildingSpacing(h2GIS,  "tempo_build", 100,   "test")
+        assert p
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_building_minimum_building_spacing WHERE id_build = 2 OR id_build = 4 " +
                 "OR id_build = 6 ORDER BY id_build ASC".toString()){
@@ -124,9 +123,9 @@ class BuildingIndicatorsTests {
         h2GIS.execute "DROP TABLE IF EXISTS tempo_road, test_building_road_distance; CREATE TABLE tempo_road " +
                 "AS SELECT * FROM road_test WHERE id_road < 5"
 
-        def  p =  Geoindicators.BuildingIndicators.roadDistance()
-        assertTrue p.execute([inputBuildingTableName: "building_test", inputRoadTableName: "tempo_road", bufferDist:100,
-                              prefixName : "test",datasource:h2GIS])
+        def  p =  Geoindicators.BuildingIndicators.roadDistance(h2GIS,"building_test",  "tempo_road", 100,
+                             "test")
+        assert p
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_building_road_distance WHERE id_build = 6 OR id_build = 33 ORDER BY id_build ASC"){
             row -> concat+= "${row.road_distance.round(4)}\n"
@@ -140,18 +139,18 @@ class BuildingIndicatorsTests {
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, tempo_build2, test_building_neighbors_properties; " +
                 "CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 29")
 
-        def  pneighb =  Geoindicators.BuildingIndicators.neighborsProperties()
-        assertTrue pneighb.execute([inputBuildingTableName: "tempo_build",
-                                    operations:["number_building_neighbor"],
-                                    prefixName : "test", datasource:h2GIS])
+        def  pneighb =  Geoindicators.BuildingIndicators.neighborsProperties(h2GIS, "tempo_build",
+                                    ["number_building_neighbor"], "test")
+
+        assertNotNull(pneighb)
 
         // The number of neighbors are added to the tempo_build table
         h2GIS.execute "CREATE TABLE tempo_build2 AS SELECT a.id_build, a.the_geom, b.number_building_neighbor" +
                 " FROM tempo_build a, test_building_neighbors_properties b WHERE a.id_build = b.id_build"
 
-        def  p =  Geoindicators.BuildingIndicators.likelihoodLargeBuilding()
-        assertTrue p.execute([inputBuildingTableName: "tempo_build2", nbOfBuildNeighbors: "number_building_neighbor",
-                              prefixName : "test", datasource:h2GIS])
+        def  p =  Geoindicators.BuildingIndicators.likelihoodLargeBuilding(h2GIS, "tempo_build2",  "number_building_neighbor",
+                              "test")
+        assertNotNull(p)
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_building_likelihood_large_building WHERE id_build = 4 OR id_build = 7 OR " +
                 "id_build = 28 ORDER BY id_build ASC"){
@@ -168,10 +167,10 @@ class BuildingIndicatorsTests {
         CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar, TYPE VARCHAR, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,1, 'residential', 'residential', 'POLYGON ((3 6, 6 6, 6 3, 3 3, 3 6))'::GEOMETRY);
         """.toString())
-        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
-                                    inputPopulationColumns :["pop"], datasource: h2GIS])
-        assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process.results.buildingTableName}").pop)
+        String process = Geoindicators.BuildingIndicators.buildingPopulation(h2GIS, "building",  "population_grid",
+                                    ["pop"])
+        assert process
+        assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process}").pop)
     }
 
     @Test
@@ -182,10 +181,9 @@ class BuildingIndicatorsTests {
         CREATE TABLE building (ID_BUILD integer, NB_LEV integer,MAIN_USE varchar,TYPE varchar, THE_GEOM GEOMETRY);
         INSERT INTO building VALUES(1,1, 'residential','residential', 'POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         """.toString())
-        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
-                                    inputPopulationColumns :["pop"],datasource: h2GIS])
-        assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process.results.buildingTableName}").pop)
+        String process = Geoindicators.BuildingIndicators.buildingPopulation(h2GIS,
+         "building",  "population_grid", ["pop"])
+        assertEquals(10f, (float)h2GIS.firstRow("select pop from ${process}").pop)
     }
 
     @Test
@@ -197,10 +195,10 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(1,1, 'residential', 'residential','POLYGON ((3 6, 1 6, 1 3, 3 3, 3 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,1, 'residential', 'residential','POLYGON ((8 6, 6 6, 6 3, 8 3, 8 6))'::GEOMETRY);
         """.toString())
-        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
-                                    inputPopulationColumns :["pop"],datasource: h2GIS])
-        def rows = h2GIS.rows("select pop from ${process.results.buildingTableName} order by id_build".toString())
+        String process = Geoindicators.BuildingIndicators.buildingPopulation(h2GIS, "building",  "population_grid",
+                                    ["pop"])
+        assert process
+        def rows = h2GIS.rows("select pop from ${process} order by id_build".toString())
         assertEquals(5f, (float)rows[0].pop)
         assertEquals(5f, (float)rows[1].pop)
     }
@@ -213,10 +211,10 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(1,1, 'residential', 'residential', 'POLYGON ((3 6, 1 6, 1 3, 3 3, 3 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,2, 'residential','residential',  'POLYGON ((8 6, 6 6, 6 3, 8 3, 8 6))'::GEOMETRY);
         """.toString())
-        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
-                                    inputPopulationColumns :["pop"],datasource: h2GIS])
-        def rows = h2GIS.rows("select pop from ${process.results.buildingTableName} order by id_build".toString())
+        String process = Geoindicators.BuildingIndicators.buildingPopulation(h2GIS,"building",  "population_grid",
+                                    ["pop"])
+        assert process
+        def rows = h2GIS.rows("select pop from ${process} order by id_build".toString())
         assertEquals(3.33f, (float)rows[0].pop, 0.01)
         assertEquals(6.666f, (float)rows[1].pop, 0.01)
     }
@@ -231,10 +229,9 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(1,1, 'residential', 'residential','POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,1, 'residential', 'residential','POLYGON ((5 6, 1 6, 1 3, 5 3, 5 6))'::GEOMETRY);
         """.toString())
-        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
-                                    inputPopulationColumns :["pop"], datasource: h2GIS])
-        def rows = h2GIS.rows("select pop, id_build from ${process.results.buildingTableName} order by id_build".toString())
+        String process = Geoindicators.BuildingIndicators.buildingPopulation(h2GIS,"building", "population_grid",
+                                    ["pop"])
+        def rows = h2GIS.rows("select pop, id_build from ${process} order by id_build".toString())
         assertEquals(13.33f, (float)rows[0].pop, 0.01)
         assertEquals(6.666f, (float)rows[1].pop, 0.01)
     }
@@ -249,10 +246,9 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(1,2, 'residential', 'residential','POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,1, 'residential', 'residential','POLYGON ((5 6, 1 6, 1 3, 5 3, 5 6))'::GEOMETRY);
         """.toString())
-        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
-                                    inputPopulationColumns :["pop"],datasource: h2GIS])
-        def rows = h2GIS.rows("select pop, id_build from ${process.results.buildingTableName} order by id_build".toString())
+        String process = Geoindicators.BuildingIndicators.buildingPopulation(h2GIS, "building",  "population_grid",
+                                    ["pop"])
+        def rows = h2GIS.rows("select pop, id_build from ${process} order by id_build".toString())
         assertEquals(15f, (float)rows[0].pop, 0.01)
         assertEquals(5f, (float)rows[1].pop, 0.01)
     }
@@ -267,10 +263,9 @@ class BuildingIndicatorsTests {
         INSERT INTO building VALUES(1,1, 'residential', 'residential','POLYGON ((12 6, 8 6, 8 3, 12 3, 12 6))'::GEOMETRY);
         INSERT INTO building VALUES(2,2, 'residential', 'residential', 'POLYGON ((5 6, 1 6, 1 3, 5 3, 5 6))'::GEOMETRY);
         """.toString())
-        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-        assertTrue process.execute([inputBuilding: "building", inputPopulation: "population_grid",
-                                    inputPopulationColumns :["pop"],datasource: h2GIS])
-        def rows = h2GIS.rows("select pop, id_build from ${process.results.buildingTableName} order by id_build".toString())
+        String process = Geoindicators.BuildingIndicators.buildingPopulation(h2GIS, "building",  "population_grid",
+                                    ["pop"])
+        def rows = h2GIS.rows("select pop, id_build from ${process} order by id_build".toString())
         assertEquals(12f, (float)rows[0].pop, 0.01)
         assertEquals(8f, (float)rows[1].pop, 0.01)
     }

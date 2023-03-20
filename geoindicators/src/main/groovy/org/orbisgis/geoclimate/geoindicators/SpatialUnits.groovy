@@ -19,16 +19,13 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
 @BaseScript Geoindicators geoindicators
 
 /**
- * This process is used to create the reference spatial units (RSU)
+ * This process is used to create the Topographical Spatial Units used reference spatial units (RSU)
  *
  * @param inputzone The zone table to keep the RSU inside
  * Default value is empty so all RSU are kept.
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
- * @param rsuType The name of the type of RSU calculated, default "TSU"
- *          --> "TSU": Topographical Spatial Units are used as RSU
  *
- * Optional parameters if 'rsuType' = "TSU" (by default table names are equal to "")
  * @param area TSU less or equals than area are removed, default 1d
  * @param roadTable The road table to be processed
  * @param railTable The rail table to be processed
@@ -42,8 +39,8 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  *
  * @return A database table name and the name of the column ID
  */
-String createRSU(JdbcDataSource datasource , String inputzone, String  rsuType = "TSU",
-                float  area= 1f, String roadTable, String railTable, String vegetationTable,
+String createTSU(JdbcDataSource datasource, String inputzone,
+                 float  area= 1f, String roadTable, String railTable, String vegetationTable,
                  String hydrographicTable, String seaLandMaskTableName,
                  double  surface_vegetation, double  surface_hydro, String prefixName){
 
@@ -55,7 +52,6 @@ String createRSU(JdbcDataSource datasource , String inputzone, String  rsuType =
             def outputTableName = prefix prefixName, BASE_NAME
             datasource """DROP TABLE IF EXISTS $outputTableName;""".toString()
 
-            if (rsuType == "TSU") {
                 def tsuDataPrepared = prepareTSUData(datasource,
                          inputzone,roadTable,railTable,
                          vegetationTable, hydrographicTable, seaLandMaskTableName,
@@ -77,7 +73,6 @@ String createRSU(JdbcDataSource datasource , String inputzone, String  rsuType =
                 datasource."$outputTsuTableName".reload()
                 datasource """ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;""".toString()
                 datasource."$outputTableName".reload()
-            }
 
             debug "Reference spatial units table created"
 
@@ -268,9 +263,9 @@ String prepareTSUData(JdbcDataSource datasource, String zoneTable,String roadTab
                         CREATE TABLE $hydrographic_unified AS (SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM 
                                 ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM
                                  $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0
-                                 AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydrographic) 
+                                 AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydro) 
                                  UNION ALL (SELECT  the_geom FROM $hydrographic_indice WHERE contact=0 AND 
-                                 st_area(the_geom)> $surface_hydrographic)""".toString()
+                                 st_area(the_geom)> $surface_hydro)""".toString()
 
 
                         datasource """CREATE SPATIAL INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified (THE_GEOM);

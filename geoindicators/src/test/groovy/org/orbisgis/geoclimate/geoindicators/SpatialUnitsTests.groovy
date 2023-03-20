@@ -83,8 +83,8 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"),true)
 
-        def createRSU = Geoindicators.SpatialUnits.createRSU(h2GIS,  "zone_test",
-                                                             "TSU",'road_test', 'rail_test',
+        def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS,  "zone_test",
+                                                             'road_test', 'rail_test',
                                                                'veget_test','hydro_test',
                                                                "", 0,0,  "block")
         if (!createRSU) {
@@ -202,11 +202,11 @@ class SpatialUnitsTests {
     @Test
     void regularGridTestPOSTGIS() {
         postGIS.execute("DROP TABLE IF EXISTS grid")
-        def gridP = Geoindicators.SpatialUnits.createGrid()
+
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
-        assert gridP.execute([geometry: box, deltaX: 1, deltaY: 1,  datasource: postGIS])
-        def outputTable = gridP.results.outputTableName
+        def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS,  box,  1,  1)
+        assert outputTable
         assert postGIS."$outputTable"
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 100 == countRows.numberOfRows

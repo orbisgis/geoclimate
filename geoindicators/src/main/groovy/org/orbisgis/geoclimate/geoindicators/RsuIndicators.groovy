@@ -65,7 +65,7 @@ String freeExternalFacadeDensity(JdbcDataSource datasource, String building, Str
 /**
  * Process used to compute the sum of all building free facades (roofs are excluded) included in a
  * Reference Spatial Unit (RSU) divided by the RSU area. The calculation is performed more accurately than
- * in the freeExternalFacadeDensity IProcess since in this process only the part of building being in the RSU
+ * in the freeExternalFacadeDensity method since in this process only the part of building being in the RSU
  * is considered in the calculation of the indicator.
  *
  * WARNING: WITH THE CURRENT METHOD, IF A BUILDING FACADE FOLLOW THE LINE SEPARATING TWO RSU, IT WILL BE COUNTED FOR BOTH RSU
@@ -1468,7 +1468,7 @@ String surfaceFractions(JdbcDataSource datasource,
     debug "Executing RSU surface fractions computation"
 
     // The name of the outputTableName is constructed
-    def outputTableName = postfix(BASE_TABLE_NAME)
+    def outputTableName =   prefix prefixName, BASE_TABLE_NAME
 
     // Temporary tables are created
     def withoutUndefined = postfix "without_undefined"
@@ -1752,10 +1752,8 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
     indicToJoin.put(tab_H[listLayersBottom.size() - 1], idRsu)
 
     // 5. Join all layers in one table
-    def joinGrids = Geoindicators.DataUtils.joinTables()
-    if (!joinGrids([inputTableNamesWithId: indicToJoin,
-                    outputTableName      : outputTableName,
-                    datasource           : datasource])) {
+    def joinGrids = Geoindicators.DataUtils.joinTables(datasource, indicToJoin, outputTableName)
+    if (!joinGrids) {
         info "Cannot merge all indicators in RSU table $outputTableName."
         return
     }
@@ -1791,7 +1789,7 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
  * @author Jérémy Bernard
  */
 String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, String rsu,
-                                    String, idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                                    String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
                                     int numberOfDirection = 12, String prefixName) {
     def GEOMETRIC_FIELD_RSU = "the_geom"
     def GEOMETRIC_FIELD_BU = "the_geom"
@@ -1968,10 +1966,8 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
         indicToJoin.put(tab_H[listLayersBottom.size() - 1], idRsu)
 
         // 5. Join all layers in one table
-        def joinGrids = Geoindicators.DataUtils.joinTables()
-        if (!joinGrids([inputTableNamesWithId: indicToJoin,
-                        outputTableName      : outputTableName,
-                        datasource           : datasource])) {
+        def joinGrids = Geoindicators.DataUtils.joinTables(datasource, indicToJoin, outputTableName)
+        if (!joinGrids) {
             info "Cannot merge all indicators in RSU table $outputTableName."
             return
         }

@@ -497,6 +497,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     //Compute the RSU indicators
                     if (rsu_indicators_params.indicatorUse) {
                         String estimateHeight = rsu_indicators_params."estimateHeight"?"BUILDING_HEIGHT_OSM_RF_2_2.model" : ""
+                        rsu_indicators_params.put("utrfModelName", "UTRF_OSM_RF_2_2.model")
+                        rsu_indicators_params.put("buildingHeightModelName", estimateHeight)
                         Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(
                                 h2gis_datasource, zone,
                                 buildingTableName,  roadTableName,
@@ -505,15 +507,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                                 buildingEstimateTableName,
                                 seaLandMaskTableName,
                                 "",
-                                rsu_indicators_params.surface_vegetation,
-                                rsu_indicators_params.surface_hydro,
-                                rsu_indicators_params.snappingTolerance,
-                                 rsu_indicators_params.indicatorUse,
-                                 rsu_indicators_params.svfSimplified,
-                                 processing_parameters.prefixName,
-                                rsu_indicators_params.mapOfWeights,
-                                 "UTRF_OSM_RF_2_2.model",
-                                estimateHeight)
+                                rsu_indicators_params,
+                                processing_parameters.prefixName)
                         if (!geoIndicators) {
                             error "Cannot build the geoindicators for the zone $id_zone"
                             h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')".toString()

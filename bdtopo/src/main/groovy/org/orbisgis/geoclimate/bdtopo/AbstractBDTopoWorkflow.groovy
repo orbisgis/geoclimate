@@ -10,7 +10,6 @@ import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
-import org.orbisgis.process.api.IProcess
 import org.orbisgis.geoclimate.Geoindicators
 
 import java.sql.Connection
@@ -811,22 +810,18 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         if (grid_indicators_params) {
             def x_size = grid_indicators_params.x_size
             def y_size = grid_indicators_params.y_size
-            IProcess gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
-            def geomEnv = h2gis_datasource.getSpatialTable(results.zone).getExtent()
-            if (gridProcess.execute(datasource: h2gis_datasource, envelope: geomEnv,
-                    x_size: x_size, y_size: y_size,
-                    srid: srid, rowCol: grid_indicators_params.rowCol)) {
-                def gridTableName = gridProcess.results.outputTableName
-                IProcess rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
-                if (rasterizedIndicators.execute(datasource: h2gis_datasource, grid: gridTableName,
-                        list_indicators: grid_indicators_params.indicators,
-                        building: results.building, road: results.road, vegetation: results.vegetation,
-                        water: results.water, impervious: results.impervious,
-                        rsu_lcz: results.rsu_lcz,
-                        rsu_utrf_area: results.rsu_utrf_area,
-                        prefixName: processing_parameters.prefixName
-                )) {
-                    results.put("grid_indicators", rasterizedIndicators.results.outputTableName)
+            Geometry geomEnv = h2gis_datasource.getSpatialTable(results.zone).getExtent()
+            String gridTableName = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, geomEnv,
+                    x_size,  y_size, srid, grid_indicators_params.rowCol)
+            if (gridTableName) {
+                String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource,  gridTableName,
+                         grid_indicators_params.indicators,
+                         results.building,  results.road, results.vegetation,
+                         results.water, results.impervious,
+                        results.rsu_lcz, results.rsu_utrf_area,
+                         processing_parameters.prefixName)
+                if (rasterizedIndicators) {
+                    results.put("grid_indicators", rasterizedIndicators)
                 }
             } else {
                 info "Cannot create a grid to aggregate the indicators"
@@ -910,20 +905,16 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             //Compute the RSU indicators
             if (rsu_indicators_params.indicatorUse) {
                 //Build the indicators
-                IProcess geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-                if (!geoIndicators.execute(datasource: h2gis_datasource, zoneTable: zone,
-                        buildingTable: buildingTableName, roadTable: roadTableName,
-                        railTable: railTableName, vegetationTable: vegetationTableName,
-                        hydrographicTable: hydrographicTableName, imperviousTable: imperviousTableName,
-                        surface_vegetation: rsu_indicators_params.surface_vegetation, surface_hydro: rsu_indicators_params.surface_hydro,
-                        snappingTolerance: rsu_indicators_params.snappingTolerance,
-                        indicatorUse: rsu_indicators_params.indicatorUse,
-                        svfSimplified: rsu_indicators_params.svfSimplified, prefixName: processing_parameters.prefixName,
-                        mapOfWeights: rsu_indicators_params.mapOfWeights,
-                        utrfModelName: "UTRF_BDTOPO_V2_RF_2_2.model")) {
+                rsu_indicators_params.put("utrfModelName", "UTRF_BDTOPO_V2_RF_2_2.model")
+                Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(h2gis_datasource,zone,
+                         buildingTableName,  roadTableName,
+                         railTableName,  vegetationTableName,
+                         hydrographicTableName,  imperviousTableName,"","","",
+                         rsu_indicators_params, processing_parameters.prefixName)
+                if (!geoIndicators) {
                     error "Cannot build the geoindicators for the zone $id_zone"
                 } else {
-                    results.putAll(geoIndicators.getResults())
+                    results.putAll(geoIndicators)
                 }
             }
             //Extract and compute population indicators for the specified year
@@ -935,18 +926,16 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 String coverageId = "wpGlobal:ppp_2018"
                 String worldPopFile = WorldPopTools.Extract.extractWorldPopLayer( coverageId, bbox)
                 if (worldPopFile) {
-                    IProcess worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource,worldPopFile, srid ,coverageId.replaceAll(":", "_"))
+                    String worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource,worldPopFile, srid ,coverageId.replaceAll(":", "_"))
                     if (worldPopTableName) {
                         results.put("population", worldPopTableName)
 
-                        IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                        if (!process.execute([inputBuilding         : results.building,
-                                              inputPopulation       : worldPopTableName,
-                                              inputPopulationColumns: ["pop"], datasource: h2gis_datasource])) {
+                        buildingTableName = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building,
+                                                                                                worldPopTableName, ["pop"])
+                        if (!buildingTableName) {
                             info "Cannot compute any population data at building level"
                         }
                         //Update the building table with the population data
-                        buildingTableName = process.results.buildingTableName
                         results.put("building", buildingTableName)
 
                     } else {

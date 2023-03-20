@@ -36,13 +36,12 @@ class DataUtilsTests {
 
     @Test
     void joinTest() {
-        def p = Geoindicators.DataUtils.joinTables()
-        assert p([
-                inputTableNamesWithId   : [tablea:"ida", tableb:"idb", tablec:"idc"],
-                outputTableName         : "test",
-                datasource              : h2GIS])
+        def p = Geoindicators.DataUtils.joinTables(h2GIS,
+                 [tablea:"ida", tableb:"idb", tablec:"idc"],
+                "test")
+        assert p
 
-        def table = h2GIS."${p.results.outputTableName}"
+        def table = h2GIS."${p}"
         assert "IDA,NAME,LAB,LOCATION" == table.columns.join(",")
         assert 1 == table.rowCount
 
@@ -51,14 +50,11 @@ class DataUtilsTests {
 
     @Test
     void joinTest2() {
-        def p = Geoindicators.DataUtils.joinTables()
-        assert p([
-                inputTableNamesWithId   : [tablea:"ida", tableb:"idb", tablec:"idc"],
-                outputTableName         : "test",
-                datasource              : h2GIS,
-                prefixWithTabName       : true])
-
-        def table = h2GIS."${p.results.outputTableName}"
+        def p = Geoindicators.DataUtils.joinTables(h2GIS,
+                [tablea:"ida", tableb:"idb", tablec:"idc"],
+                 "test",true)
+assert p
+        def table = h2GIS."${p}"
         assert "TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION" == table.columns.join(",")
         assert 1 == table.rowCount
 
@@ -68,12 +64,10 @@ class DataUtilsTests {
     @Test
     void saveTablesAsFiles() {
         def directory = "./target/savedFiles"
-        def p = Geoindicators.DataUtils.saveTablesAsFiles()
-        assert p([
-                inputTableNames : ["tablea","tablegeom"],
-                directory       : directory,
-                delete       : true,
-                datasource      : h2GIS])
+        def p = Geoindicators.DataUtils.saveTablesAsFiles(h2GIS,
+                ["tablea","tablegeom"],true,
+                directory)
+        assert p
 
         assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablegeom.geojson", true)).rowCount
         assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablea.csv", true)).rowCount

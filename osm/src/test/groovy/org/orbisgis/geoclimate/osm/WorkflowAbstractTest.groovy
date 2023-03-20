@@ -1,7 +1,6 @@
 package org.orbisgis.geoclimate.osm
 
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -29,11 +28,10 @@ class WorkflowAbstractTest {
                            String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis()
-        assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zone, buildingTable: buildingTableName,
-                                         roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
-                                         surface_hydro    : 2500, distance: 0.01, prefixName: prefixName])
+        Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis( datasource,  zone,  buildingTableName,
+                                                 roadTableName,  railTableName,  vegetationTableName,
+                                          hydrographicTableName, "", "", 100000,
+                                              2500,  0.01,  prefixName)
 
         String relationBuildings = spatialUnits.getResults().outputTableBuildingName
         String relationBlocks = spatialUnits.getResults().outputTableBlockName

@@ -8,7 +8,6 @@ import org.h2gis.utilities.TableLocation
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.dataframe.DataFrame
 import org.orbisgis.data.jdbc.*
-import org.orbisgis.process.api.IProcess
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest as RandomForestClassification
 import smile.data.type.DataType
@@ -64,10 +63,10 @@ import java.util.zip.GZIPOutputStream
  *
  * @author Jérémy Bernard
  */
-String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, String rsuAllIndicators, String, prefixName, String normalisationType: "AVG",
+String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, String rsuAllIndicators,String normalisationType= "AVG",
                 Map mapOfWeights= ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1]){
+                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1], String prefixName){
             def OPS = ["AVG", "MEDIAN"]
             def ID_FIELD_RSU = "id_rsu"
             def CENTER_NAME = "center"
@@ -454,17 +453,9 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
  *
  * @author Jérémy Bernard
  */
-IProcess createRandomForestModel() {
-    return create {
-        title "Create a Random Forest model"
-        id "createRandomForest"
-        inputs trainingTableName: String, varToModel: String, explicativeVariables: [], save: boolean, pathAndFileName: String, ntrees: int,
-                mtry: int, rule: "GINI", maxDepth: int, maxNodes: int, nodeSize: int, subsample: double,
-                datasource: JdbcDataSource, classif: true
-        outputs RfModel: RandomForestRegression
-        run { String trainingTableName, String varToModel, explicativeVariables, save, pathAndFileName, ntrees, mtry, rule, maxDepth,
-              maxNodes, nodeSize, subsample, JdbcDataSource datasource, classif ->
-
+String createRandomForestModel(JdbcDataSource datasource ,String trainingTableName, String varToModel,List explicativeVariables, boolean  save,
+                               String  pathAndFileName,int ntrees, int mtry, String rule=  "GINI", int maxDepth,
+                               int maxNodes, int nodeSize, double  subsample, boolean classif= true){
             def splitRule
             if (rule) {
                 switch (rule.toUpperCase()) {
@@ -546,11 +537,8 @@ IProcess createRandomForestModel() {
                 error "Cannot save the model", e
                 return
             }
-            [RfModel: model]
+            return model
         }
-    }
-
-}
 
 /**
  * This process is used to apply a RandomForest model on a given dataset (the model may be downloaded on a default

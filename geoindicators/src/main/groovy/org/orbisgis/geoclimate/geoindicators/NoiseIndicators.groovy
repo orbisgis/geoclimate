@@ -55,8 +55,8 @@ String groundAcousticAbsorption(JdbcDataSource datasource , String zone, String 
                 filter+= " or layer is null"
             }
             String ground = Geoindicators.RsuIndicators.groundLayer(datasource, zone,  id_zone,
-                                                                         building,  road,  vegetation,
-                                                                         water,  impervious,  layer_priorities)
+                                                                         building,  road,  water,vegetation,
+                                                                           impervious,  layer_priorities)
             if (ground) {
                 int rowcount = 1
                 datasource.withBatch(100) { stmt ->

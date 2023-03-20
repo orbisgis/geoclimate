@@ -77,7 +77,7 @@ String joinTables(JdbcDataSource datasource , Map inputTableNamesWithId, String 
  *
  * @return the directory where the tables are saved
  */
-String saveTablesAsFiles(JdbcDataSource datasource, String[] inputTableNames, boolean  delete= false, String directory){
+String saveTablesAsFiles(JdbcDataSource datasource, List inputTableNames, boolean  delete= false, String directory){
             if (directory == null) {
                 error "The directory to save the data cannot be null"
                 return

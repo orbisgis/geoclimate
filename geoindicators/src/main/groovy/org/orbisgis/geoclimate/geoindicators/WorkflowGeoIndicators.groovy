@@ -204,7 +204,7 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
 
             //Perkins SKill Score of the distribution of building direction within a block
             // block_perkins_skill_score_building_direction
-            def computePerkinsSkillScoreBuildingDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution(datasource, buildingTableName: inputBuildingTableName,
+            def computePerkinsSkillScoreBuildingDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution(datasource,  inputBuildingTableName,
                                                                                                                                       inputBlockTableName,
                                                                                                                                     id_block,
                                                                                                                                15,
@@ -989,9 +989,9 @@ Map computeTypologyIndicators( JdbcDataSource datasource, String buildingIndicat
  * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
  * @return outputTableRsuName Table name where are stored the RSU
  */
-Map createUnitsOfAnalysis(JdbcDataSource datasource,String zone, String rsuType= "TSU", String building,
+Map createUnitsOfAnalysis(JdbcDataSource datasource,String zone, String building,
                                String road, String rail, String vegetation,
-                               String water, String, sea_land_mask,
+                               String water, String sea_land_mask,
                                String rsu, float  surface_vegetation,
                 float  surface_hydro, float  snappingTolerance,List indicatorUse = ["LCZ", "UTRF", "TEB"],  String prefixName = ""){
             info "Create the units of analysis..."
@@ -999,8 +999,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource,String zone, String rsuType=
             def idRsu ="id_rsu"
             if (!rsu) {
                 // Create the RSU
-                rsu = Geoindicators.SpatialUnits.createRSU(datasource, zone,
-                                                                      rsuType, road,rail,
+                rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone, road,rail,
                                                                       vegetation,water,
                                                                       sea_land_mask, surface_vegetation,
                                                                        surface_hydro,  prefixName)
@@ -1067,9 +1066,38 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource,String zone, String rsuType=
 
 
 /**
+ * Get all default parameters used by the workflow
+ * @return
+ */
+ Map getParameters(){
+   return  [
+            "surface_vegetation" : 10000d , "surface_hydro" : 2500d ,
+            "snappingTolerance":0.01f, "indicatorUse" : ["LCZ", "UTRF", "TEB"],  "svfSimplified":false,
+            "mapOfWeights" : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                              "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                              "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+            "utrfModelName":"",   "buildingHeightModelName":"", "nbEstimatedBuildHeight":0]
+}
+
+/**
+ * Merge the input parameters with default supported parameters
+ * @param parameters
+ * @return
+ */
+ Map getParameters(Map parameters){
+    Map parm = getParameters()
+    parameters.each {it ->
+        if(parm.containsKey(it.key)){
+            parm.put(it.key, it.value)
+        }
+    }
+    return parm
+}
+/**
  * Compute all geoindicators at the 3 scales :
  * building, block and RSU
  * Compute also the LCZ classification and the urban typology
+ *
  *
  * @return 5 tables building_indicators, block_indicators, rsu_indicators,
  * rsu_lcz, buildingTableName. The first three tables contains the geoindicators and the last table the LCZ classification.
@@ -1077,31 +1105,28 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource,String zone, String rsuType=
  * This table can be empty if the user decides not to calculate it.
  *
  */
-Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String building, String roadTable , String railTable , String vegetationTable ,
-                            String hydrographicTable , String imperviousTable ,
-                            String buildingEstimateTableName , String seaLandMaskTableName , String rsuTable ,
-                            float surface_vegetation , float surface_hydro ,
-                            float snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], boolean svfSimplified, String prefixName,
-                            Map mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                            String utrfModelName,   String buildingHeightModelName) {
+Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String building, String road , String rail , String vegetation ,
+                            String water , String impervious ,
+                            String buildingEstimateTableName , String seaLandMaskTableName , String rsuTable , Map parameters = null, String prefixName) {
+    Map inputParameters = getParameters()
+    if(parameters){
+        inputParameters = getParameters(parameters)
+    }
+
+    def surface_vegetation = inputParameters.surface_vegetation
+    def surface_hydro = inputParameters.surface_hydro
+    def snappingTolerance =inputParameters.snappingTolerance
+    def buildingHeightModelName=inputParameters.buildingHeightModelName
+    def indicatorUse = inputParameters.indicatorUse
+
+    def svfSimplified = inputParameters.svfSimplified
+    def mapOfWeights=inputParameters.mapOfWeights
+    def utrfModelName = inputParameters.utrfModelName
+
     //Estimate height
-    if (buildingHeightModelName && datasource.getTable(building).getRowCount() > 0) {
+    if (inputParameters.buildingHeightModelName && datasource.getTable(building).getRowCount() > 0) {
         def start = System.currentTimeMillis()
         enableTableCache()
-        if (!surface_vegetation){
-            surface_vegetation =10000
-        }
-
-        if (!surface_hydro){
-            surface_vegetation =2500
-        }
-
-        if(!snappingTolerance){
-            snappingTolerance = 0.01
-        }
-
         def buildingTableName
         def rsuTableForHeightEst
         def buildingIndicatorsForHeightEst
@@ -1111,8 +1136,8 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 
         // Estimate building height
         Map estimHeight = estimateBuildingHeight(datasource, zone, building,
-                  railTable,  vegetationTable,
-                 hydrographicTable,  imperviousTable,
+                  rail,  vegetation,
+                 water,  impervious,
                 buildingEstimateTableName,
                 seaLandMaskTableName,
                  surface_vegetation,  surface_hydro,
@@ -1130,6 +1155,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
             nbBuildingEstimated = estimHeight.nb_building_estimated
         }
 
+        indicatorUse =  parameters.indicatorUse
         //This is a shortcut to extract building with estimated height
         if (indicatorUse.isEmpty()) {
             //Clean the System properties that stores intermediate table names
@@ -1150,9 +1176,9 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         // If the RSU is provided by the user, new relations between units should be performed
         if (rsuTable) {
             Map spatialUnitsForCalc = createUnitsOfAnalysis(datasource,  zone,
-                                                                        building,  roadTable,  rsuTable,
-                                                                            railTable, vegetationTable,
-                                                                    hydrographicTable,  seaLandMaskTableName,
+                                                                        building,  road,  rail,
+                                                                             vegetation,
+                                                                    water,  seaLandMaskTableName,rsuTable,
                                                                   surface_vegetation,
                                                                         surface_hydro,  snappingTolerance,indicatorUse,
                                                                            prefixName)
@@ -1180,8 +1206,8 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         //Compute Geoindicators (at all scales + typologies)
         Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
                 buildingForGeoCalc, blocksForGeoCalc,
-                 rsuForGeoCalc, roadTable, vegetationTable,
-                hydrographicTable,  imperviousTable,
+                 rsuForGeoCalc, road, vegetation,
+                water,  impervious,
                  indicatorUse,  svfSimplified,  mapOfWeights, utrfModelName, nbBuildingEstimated, prefixName)
         if (!geoIndicators) {
             error "Cannot build the geoindicators"
@@ -1196,9 +1222,9 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         clearTablesCache()
         //Create spatial units and relations : building, block, rsu
         Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
-                                                   building, roadTable,
-                                                    railTable,vegetationTable,
-                                                   hydrographicTable,  seaLandMaskTableName,
+                                                   building, road,
+                                                    rail,vegetation,
+                                                   water,  seaLandMaskTableName,"",
                                                   surface_vegetation,
                                               surface_hydro,  snappingTolerance,indicatorUse,
                                                        prefixName )
@@ -1212,7 +1238,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 
         Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
                  relationBuildings,  relationBlocks,
-                rsuTable,roadTable,  vegetationTable, hydrographicTable, imperviousTable,
+                rsuTable,road,  vegetation, water, impervious,
                 indicatorUse,svfSimplified,
                  mapOfWeights, utrfModelName,prefixName)
         if (!geoIndicators) {
@@ -1253,7 +1279,7 @@ String buildingEstimateTableName, String seaLandMaskTableName,
             //Create spatial units and relations : building, block, rsu
             Map spatialUnits = createUnitsOfAnalysis(datasource,  zoneTable,
                     buildingTable, roadTable, railTable, vegetationTable,
-                     hydrographicTable, seaLandMaskTableName,
+                     hydrographicTable, seaLandMaskTableName,"",
                     surface_vegetation,surface_hydro,  snappingTolerance, ["UTRF"],
                      prefixName)
             if (!spatialUnits) {
@@ -1381,12 +1407,12 @@ String buildingEstimateTableName, String seaLandMaskTableName,
  */
 Map computeGeoclimateIndicators( JdbcDataSource datasource , String zoneTable, String buildingsWithRelations, String blocksWithRelations, String rsuTable,
                                  String    roadTable, String vegetationTable,
-                                 String hydrographicTable, String imperviousTable,
-                List indicatorUse= ["LCZ", "UTRF", "TEB"], boolean  svfSimplified,
-                Map mapOfWeights= ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                                 String hydrographicTable, String imperviousTable, Map parameters =[
+                "indicatorUse": ["LCZ", "UTRF", "TEB"], "svfSimplified":false,
+                "mapOfWeights": ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                String utrfModelName= "", int nbEstimatedBuildHeight, String prefixName= ""){
+                 "utrfModelName": "",  "nbEstimatedBuildHeight":0], String prefixName= ""){
             info "Start computing the geoindicators..."
             def start = System.currentTimeMillis()
 

@@ -122,7 +122,7 @@ class RsuIndicatorsTests {
     void aspectRatioTest2() {
         def p = Geoindicators.RsuIndicators.aspectRatio(h2GIS, "rsu_test",
                 "rsu_free_external_facade_density", "rsu_building_density", "test")
-        assertTrue(p)
+        assert(p)
         def result = h2GIS.firstRow("SELECT aspect_ratio FROM test_rsu_aspect_ratio WHERE id_rsu = 17")
         assertEquals(null, result["aspect_ratio"])
     }
@@ -138,7 +138,7 @@ class RsuIndicatorsTests {
         def rangeDeg = 360 / numberOfDirection
         def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS,  "tempo_build", "rsu_test", listLayersBottom,
                                numberOfDirection,  "test")
-        assertTrue(p)
+        assertNotNull(p)
         def concat = ""
         h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_area_distribution WHERE id_rsu = 1") {
             row ->
@@ -292,7 +292,7 @@ class RsuIndicatorsTests {
 
         def p1 = Geoindicators.RsuIndicators.linearRoadOperations(h2GIS,  "rsu_test",
                              "road_test",["road_direction_distribution", "linear_road_density"],
-                               30, null,"test")
+                               30, "test")
         assertNotNull(p1)
         def t0 = h2GIS.firstRow("SELECT road_direction_distribution_d0_30 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
@@ -347,7 +347,7 @@ class RsuIndicatorsTests {
 
         def p = Geoindicators.RsuIndicators.extendedFreeFacadeFraction(h2GIS,  "tempo_build",
                               "rsu_tempo","contiguity", "total_facade_length",
-                               buffDist: 30, "test")
+                               30, "test")
         assertNotNull(p)
         def concat = 0
         h2GIS.eachRow("SELECT * FROM test_rsu_extended_free_facade_fraction WHERE id_rsu = 1") {
@@ -452,7 +452,7 @@ class RsuIndicatorsTests {
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo",  "id_rsu", "building_test",  "veget_test",  "hydro_test",
+                "rsu_tempo",  "id_rsu", "building_test",  "",  "hydro_test","veget_test","",
                 "test")
        assertNotNull(tempoTable)
 
@@ -461,7 +461,7 @@ class RsuIndicatorsTests {
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         String p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
-                "rsu_tempo",tempoTable,
+                "rsu_tempo","id_rsu", tempoTable,
                  superpositions0, priorities0, "test")
         assertNotNull(p0)
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0}")
@@ -478,7 +478,7 @@ class RsuIndicatorsTests {
         def superpositions1 = ["high_vegetation": ["building", "water", "low_vegetation", "road", "impervious"]]
         def priorities1 = ["building", "water", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p1 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
-                "rsu_tempo", tempoTable,
+                "rsu_tempo","id_rsu", tempoTable,
                 superpositions1, priorities1,
                 "test")
         assertNotNull(p1)
@@ -496,7 +496,7 @@ class RsuIndicatorsTests {
         def superpositions2 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"],
                                "building"       : ["low_vegetation"]]
         def p2 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
-                 "rsu_tempo", tempoTable,
+                 "rsu_tempo","id_rsu", tempoTable,
                  superpositions2,priorities0,
                "test")
         assertNotNull(p2)
@@ -532,10 +532,10 @@ class RsuIndicatorsTests {
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
-                 "rsu_tempo", tempoTable,
+                 "rsu_tempo", "id_rsu", tempoTable,
                  superpositions0, priorities0, "test")
         assertNotNull(p0)
-        def result0 = h2GIS.firstRow("SELECT * FROM ${p0.results.outputTableName}")
+        def result0 = h2GIS.firstRow("SELECT * FROM ${p0}")
         assertEquals(5.0 / 100, result0["road_fraction"])
         assertEquals(0.95d, result0["undefined_fraction"])
     }
@@ -556,7 +556,7 @@ class RsuIndicatorsTests {
         def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
-                 "rsu_tempo",  "smallest_geom",
+                 "rsu_tempo", "id_rsu",  "smallest_geom",
                  superpositions0, priorities0, "test")
         assertNotNull(p0)
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0} WHERE ID_RSU=1")
@@ -571,16 +571,16 @@ class RsuIndicatorsTests {
                 "CREATE TABLE rsu_tempo AS SELECT * " +
                 "FROM rsu_test WHERE id_rsu = 4"
         // Need to create the smallest geometries used as input of the surface fraction process
-        def tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
+        String tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
                 "rsu_tempo",  "id_rsu", "building_test", null,    "hydro_test","veget_test",null,
                "test")
         assertNotNull(tempoTable)
 
 
-        def superpositions0 = []
+        def superpositions0 = [:]
         def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
-                "rsu_tempo", tempoTable,
+                "rsu_tempo", "id_rsu", tempoTable,
                  superpositions0,priorities0,"test")
         assertNotNull(p0)
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0}")
@@ -630,12 +630,11 @@ class RsuIndicatorsTests {
                                                 (4, 'POLYGON((100 100, 200 100, 200 200, 100 200, 100 100))'::GEOMETRY);
             """
         // First calculate the correlation table between buildings and rsu
-        def createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin( h2GIS,
+        String createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin( h2GIS,
                                       "tempo_build","tempo_rsu", "id_rsu",null, "test")
         assertNotNull(createScalesRelationsGridBl)
         def p = Geoindicators.RsuIndicators.roofFractionDistributionExact(h2GIS,
-                 createScalesRelationsGridBl,
-                 "tempo_rsu",
+                "tempo_rsu",createScalesRelationsGridBl,
                 "id_rsu",
                  [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],"test")
 
@@ -718,7 +717,7 @@ class RsuIndicatorsTests {
             def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS,  env, 100,  100)
             assertNotNull(gridP)
             String ground = Geoindicators.RsuIndicators.groundLayer(h2GIS, gridP, "id_grid",
-                    "building_test", "road_test", "veget_test", "hydro_test")
+                    "building_test", "road_test","hydro_test", "veget_test",  "")
             assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  building_test where zindex=0".toString()).area - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer = 'building'".toString()).area) < 10)
             assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer ='water'".toString()).area) < 10)
         }

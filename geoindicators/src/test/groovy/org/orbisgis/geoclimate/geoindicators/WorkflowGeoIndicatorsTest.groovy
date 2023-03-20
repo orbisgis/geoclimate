@@ -6,7 +6,6 @@ import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.dataframe.DataFrame
 import org.orbisgis.data.H2GIS
-import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -111,47 +110,36 @@ class WorkflowGeoIndicatorsTest {
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
-        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
-        def ind_i = ["LCZ", "UTRF", "TEB"]
-        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
-                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
-                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
-                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators( datasource,  inputTableNames.zoneTable,
+                inputTableNames.buildingTable,  inputTableNames.roadTable,
+                inputTableNames.railTable,  inputTableNames.vegetationTable,
+                inputTableNames.hydrographicTable,"", "","","", prefixName)
+        assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
+        assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
+        assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(geoIndicatorsCompute_i.block_indicators).columns.sort())
 
-        if (ind_i.contains("UTRF")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.block_indicators).columns.sort())
-        }
 
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.rsu_indicators).columns
+        def realListRsu = datasource.getTable(geoIndicatorsCompute_i.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
         }
-        if (ind_i.contains("LCZ")) {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.rsu_lcz).columns.sort())
-        } else {
-            assertEquals(null, GeoIndicatorsCompute_i.results.rsu_lcz)
-        }
-        def dfRsu = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.rsu_indicators")
+            assertEquals(expectListLcz, datasource.getTable(geoIndicatorsCompute_i.rsu_lcz).columns.sort())
+
+        def dfRsu = DataFrame.of(datasource."$geoIndicatorsCompute_i.rsu_indicators")
         assertEquals dfRsu.nrows(), dfRsu.omitNullRows().nrows()
-        def dfBuild = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.building_indicators")
+        def dfBuild = DataFrame.of(datasource."$geoIndicatorsCompute_i.building_indicators")
         dfBuild = dfBuild.drop("ID_RSU")
         assertEquals dfBuild.nrows(), dfBuild.omitNullRows().nrows()
-        def dfBlock = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.block_indicators")
+        def dfBlock = DataFrame.of(datasource."$geoIndicatorsCompute_i.block_indicators")
         dfBlock = dfBlock.drop("ID_RSU")
         assertEquals dfBlock.nrows(), dfBlock.omitNullRows().nrows()
 
@@ -162,55 +150,49 @@ class WorkflowGeoIndicatorsTest {
         //Reload the building table because the original table is updated with the block and rsu identifiers
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
-        boolean svfSimplified = false
         def prefixName = ""
-        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
-        def ind_i = ["UTRF"]
-        def modelPath = "UTRF_BDTOPO_V2_RF_2_2.model"
-        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
-                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
-                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
-                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights, utrfModelName: modelPath)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource,  inputTableNames.zoneTable,
+                 inputTableNames.buildingTable, inputTableNames.roadTable,
+                 inputTableNames.railTable,  inputTableNames.vegetationTable,
+                 inputTableNames.hydrographicTable,"",
+                "","","",
+                ["indicatorUse": ["UTRF"], "utrfModelName":"UTRF_BDTOPO_V2_RF_2_2.model"], prefixName)
+        assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.block_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(geoIndicatorsCompute_i.block_indicators).columns.sort())
             // Check that the sum of proportion (or building area) for each RSU is equal to 1
-            def utrfArea = datasource."$GeoIndicatorsCompute_i.results.rsu_utrf_area"
+            def utrfArea = datasource."$geoIndicatorsCompute_i.rsu_utrf_area"
             def colUtrfArea = utrfArea.getColumns()
             colUtrfArea = colUtrfArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "TYPO_SECOND", "UNIQUENESS_VALUE"])
             def countSumAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
-                                                                    FROM ${GeoIndicatorsCompute_i.results.rsu_utrf_area}
+                                                                    FROM ${geoIndicatorsCompute_i.rsu_utrf_area}
                                                                     WHERE ${colUtrfArea.join("+")}>0.99 AND ${colUtrfArea.join("+")}<1.01""")
             def countSumAreaRemove0 = datasource.firstRow("""SELECT COUNT(*) AS NB 
-                                                                    FROM ${GeoIndicatorsCompute_i.results.rsu_utrf_floor_area}
+                                                                    FROM ${geoIndicatorsCompute_i.rsu_utrf_floor_area}
                                                                     WHERE ${colUtrfArea.join("+")}>0""")
             assertEquals countSumAreaRemove0.NB, countSumAreaEqual1.NB
 
             // Check that the sum of proportion (or building floor area) for each RSU is equal to 1
-            def utrfFloorArea = datasource."$GeoIndicatorsCompute_i.results.rsu_utrf_floor_area"
+            def utrfFloorArea = datasource."$geoIndicatorsCompute_i.rsu_utrf_floor_area"
             def colUtrfFloorArea = utrfFloorArea.getColumns()
             colUtrfFloorArea = colUtrfFloorArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "TYPO_SECOND", "UNIQUENESS_VALUE"])
             def countSumFloorAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
-                                                                    FROM ${GeoIndicatorsCompute_i.results.rsu_utrf_floor_area}
+                                                                    FROM ${geoIndicatorsCompute_i.rsu_utrf_floor_area}
                                                                     WHERE ${colUtrfFloorArea.join("+")}>0.99 AND ${colUtrfFloorArea.join("+")}<1.01""")
             def countSumFloorAreaRemove0 = datasource.firstRow("""SELECT COUNT(*) AS NB 
-                                                                    FROM ${GeoIndicatorsCompute_i.results.rsu_utrf_floor_area}
+                                                                    FROM ${geoIndicatorsCompute_i.rsu_utrf_floor_area}
                                                                     WHERE ${colUtrfFloorArea.join("+")}>0""")
             assertEquals countSumFloorAreaRemove0.NB, countSumFloorAreaEqual1.NB
 
             // Check that all buildings being in the zone have a value different than 0 (0 being no value)
-            def dfBuild = DataFrame.of(datasource."$GeoIndicatorsCompute_i.results.building_utrf")
+            def dfBuild = DataFrame.of(datasource."$geoIndicatorsCompute_i.building_utrf")
             def nbNull = datasource.firstRow("""SELECT COUNT(*) AS NB 
-                                                            FROM ${GeoIndicatorsCompute_i.results.building_utrf}
+                                                            FROM ${geoIndicatorsCompute_i.building_utrf}
                                                             WHERE I_TYPO = 'unknown'""")
             assertTrue dfBuild.nrows() > 0
             assertEquals 0, nbNull.NB
@@ -218,7 +200,7 @@ class WorkflowGeoIndicatorsTest {
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.rsu_indicators).columns
+        def realListRsu = datasource.getTable(geoIndicatorsCompute_i.results.rsu_indicators).columns
 
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
@@ -228,9 +210,9 @@ class WorkflowGeoIndicatorsTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.rsu_lcz).columns.sort())
+            assertEquals(expectListLcz, datasource.getTable(geoIndicatorsCompute_i.results.rsu_lcz).columns.sort())
         } else {
-            assertEquals(null, GeoIndicatorsCompute_i.results.rsu_lcz)
+            assertEquals(null, geoIndicatorsCompute_i.results.rsu_lcz)
         }
     }
 
@@ -247,24 +229,24 @@ class WorkflowGeoIndicatorsTest {
 
         def ind_i = ["UTRF", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
-                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
-                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
-                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators( datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable,  inputTableNames.roadTable,
+                 inputTableNames.railTable,  inputTableNames.vegetationTable,
+                 inputTableNames.hydrographicTable,  ind_i,
+                 svfSimplified,
+                 mapOfWeights, prefixName)
+        assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.block_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(geoIndicatorsCompute_i.block_indicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.rsu_indicators).columns
+        def realListRsu = datasource.getTable(geoIndicatorsCompute_i.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -273,9 +255,9 @@ class WorkflowGeoIndicatorsTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.rsu_lcz).columns.sort())
+            assertEquals(expectListLcz, datasource.getTable(geoIndicatorsCompute_i.rsu_lcz).columns.sort())
         } else {
-            assertEquals(null, GeoIndicatorsCompute_i.results.rsu_lcz)
+            assertEquals(null, geoIndicatorsCompute_i.rsu_lcz)
         }
     }
 
@@ -292,24 +274,24 @@ class WorkflowGeoIndicatorsTest {
 
         def ind_i = ["TEB"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
-                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
-                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
-                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators( datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable,  inputTableNames.roadTable,
+                 inputTableNames.railTable, inputTableNames.vegetationTable,
+                 inputTableNames.hydrographicTable,  ind_i,
+                 svfSimplified,
+                 mapOfWeights,prefixName)
+        assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.block_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(geoIndicatorsCompute_i.block_indicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.rsu_indicators).columns
+        def realListRsu = datasource.getTable(geoIndicatorsCompute_i.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -318,9 +300,9 @@ class WorkflowGeoIndicatorsTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.rsu_lcz).columns.sort())
+            assertEquals(expectListLcz, datasource.getTable(geoIndicatorsCompute_i.rsu_lcz).columns.sort())
         } else {
-            assertEquals(null, GeoIndicatorsCompute_i.results.rsu_lcz)
+            assertEquals(null, geoIndicatorsCompute_i.rsu_lcz)
         }
     }
 
@@ -337,24 +319,24 @@ class WorkflowGeoIndicatorsTest {
 
         def ind_i = ["LCZ", "TEB"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
-                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
-                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
-                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource,  inputTableNames.zoneTable,
+                 inputTableNames.buildingTable, inputTableNames.roadTable,
+                 inputTableNames.railTable,  inputTableNames.vegetationTable,
+                 inputTableNames.hydrographicTable,  ind_i,
+                 svfSimplified,
+               mapOfWeights,  prefixName)
+        assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.block_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(geoIndicatorsCompute_i.block_indicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.rsu_indicators).columns
+        def realListRsu = datasource.getTable(geoIndicatorsCompute_i.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -363,9 +345,9 @@ class WorkflowGeoIndicatorsTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.rsu_lcz).columns.sort())
+            assertEquals(expectListLcz, datasource.getTable(geoIndicatorsCompute_i.rsu_lcz).columns.sort())
         } else {
-            assertEquals(null, GeoIndicatorsCompute_i.results.rsu_lcz)
+            assertEquals(null, geoIndicatorsCompute_i.rsu_lcz)
         }
     }
 
@@ -382,24 +364,24 @@ class WorkflowGeoIndicatorsTest {
 
         def ind_i = ["UTRF", "LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
-                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
-                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
-                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName,
-                mapOfWeights: mapOfWeights)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource,  inputTableNames.zoneTable,
+                 inputTableNames.buildingTable,  inputTableNames.roadTable,
+                 inputTableNames.railTable,inputTableNames.vegetationTable,
+                 inputTableNames.hydrographicTable,  ind_i,
+                 svfSimplified,
+                 mapOfWeights, prefixName)
+        assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, GeoIndicatorsCompute_i.results.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
 
         if (ind_i.contains("UTRF")) {
-            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(GeoIndicatorsCompute_i.getResults().building_indicators).columns.sort())
-            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(GeoIndicatorsCompute_i.results.block_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
+            assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(geoIndicatorsCompute_i.block_indicators).columns.sort())
         }
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.rsu_indicators).columns
+        def realListRsu = datasource.getTable(geoIndicatorsCompute_i.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
@@ -408,9 +390,9 @@ class WorkflowGeoIndicatorsTest {
             def expectListLczTempo = listColLcz
             expectListLczTempo = expectListLczTempo + listColBasic
             def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(GeoIndicatorsCompute_i.results.rsu_lcz).columns.sort())
+            assertEquals(expectListLcz, datasource.getTable(geoIndicatorsCompute_i.rsu_lcz).columns.sort())
         } else {
-            assertEquals(null, GeoIndicatorsCompute_i.results.rsu_lcz)
+            assertEquals(null, geoIndicatorsCompute_i.rsu_lcz)
         }
     }
 
@@ -423,25 +405,25 @@ class WorkflowGeoIndicatorsTest {
         def prefixName = ""
         def ind_i = ["LCZ"]
 
-        IProcess GeoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators()
-        assertTrue GeoIndicatorsCompute_i.execute(datasource: datasource, zoneTable: inputTableNames.zoneTable,
-                buildingTable: inputTableNames.buildingTable, roadTable: inputTableNames.roadTable,
-                railTable: inputTableNames.railTable, vegetationTable: inputTableNames.vegetationTable,
-                hydrographicTable: inputTableNames.hydrographicTable, indicatorUse: ind_i,
-                svfSimplified: svfSimplified, prefixName: prefixName)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource,  inputTableNames.zoneTable,
+                 inputTableNames.buildingTable,  inputTableNames.roadTable,
+                 inputTableNames.railTable,  inputTableNames.vegetationTable,
+                 inputTableNames.hydrographicTable,  ind_i,
+                 svfSimplified,  prefixName)
+        assertNotNull(geoIndicatorsCompute_i)
 
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + ind_i.collect { listNames[it] }).flatten()
         def expectListRsu = expectListRsuTempo.toUnique()
-        def realListRsu = datasource.getTable(GeoIndicatorsCompute_i.results.rsu_indicators).columns
+        def realListRsu = datasource.getTable(geoIndicatorsCompute_i.results.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
         }
         if (ind_i.contains("LCZ")) {
-            assertEquals("ID_RSU,LCZ_EQUALITY_VALUE,LCZ_PRIMARY,LCZ_SECONDARY,LCZ_UNIQUENESS_VALUE,MIN_DISTANCE,THE_GEOM", datasource.getTable(GeoIndicatorsCompute_i.results.rsu_lcz).columns.sort().join(","))
+            assertEquals("ID_RSU,LCZ_EQUALITY_VALUE,LCZ_PRIMARY,LCZ_SECONDARY,LCZ_UNIQUENESS_VALUE,MIN_DISTANCE,THE_GEOM", datasource.getTable(geoIndicatorsCompute_i.results.rsu_lcz).columns.sort().join(","))
         } else {
-            assertEquals(null, GeoIndicatorsCompute_i.results.rsu_lcz)
+            assertEquals(null, geoIndicatorsCompute_i.results.rsu_lcz)
         }
     }
 

@@ -10,7 +10,7 @@ import org.orbisgis.geoclimate.Geoindicators
 /**
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
  * example the sum of each building volume constituting a block to calculate the block volume). Note that for
- * surface fractions it is highly recommended to use the surfaceFractions IProcess (since it considers the potential
+ * surface fractions it is highly recommended to use the surfaceFractions method (since it considers the potential
  * layer superpositions (building, high vegetation, low vegetation, etc.).
  *
  * @param inputLowerScaleTableName the table name where are stored low scale objects (e.g. buildings)
@@ -199,8 +199,8 @@ String weightedAggregatedStatistics(JdbcDataSource datasource, String inputLower
  * @return A database table name.
  * @author Erwan Bocher
  */
-String geometryProperties(JdbcDataSource datasource, String inputTableName, String[] inputFields,
-                          String[] operations, String prefixName) {
+String geometryProperties(JdbcDataSource datasource, String inputTableName, List inputFields,
+                          List operations, String prefixName) {
 
     def GEOMETRIC_FIELD = "the_geom"
     def OPS = ["st_geomtype", "st_srid", "st_length", "st_perimeter", "st_area", "st_dimension",
@@ -260,8 +260,8 @@ String geometryProperties(JdbcDataSource datasource, String inputTableName, Stri
  * @author Jérémy Bernard
  */
 String buildingDirectionDistribution(JdbcDataSource datasource, String buildingTableName,
-                                     String tableUp, String inputIdUp, float angleRangeSize = 15f, String prefixName
-                                     , List distribIndicator = ["equality", "uniqueness"]) {
+                                     String tableUp, String inputIdUp, float angleRangeSize = 15f
+                                     , List distribIndicator = ["equality", "uniqueness"],String prefixName) {
 
     def GEOMETRIC_FIELD = "the_geom"
     def ID_FIELD_BU = "id_build"
@@ -322,9 +322,9 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
 
         // The main building direction and indicators characterizing the distribution are calculated
         def resultsDistrib = distributionCharacterization( datasource, build_dir_dist,
-                         tableUp, inputIdUp, prefixName, distribIndicator, "GREATEST")
+                         tableUp, inputIdUp, distribIndicator, "GREATEST", prefixName)
 
-        // Rename the standard indicators into names consistent with the current IProcess (building direction...)
+        // Rename the standard indicators into names consistent with the current method (building direction...)
         datasource """DROP TABLE IF EXISTS $outputTableName;
                                     ALTER TABLE $resultsDistrib RENAME TO $outputTableName;
                                     ALTER TABLE $outputTableName RENAME COLUMN EXTREMUM_COL TO $BASENAME;
@@ -410,9 +410,9 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
  * @author Jérémy Bernard
  */
 String distributionCharacterization(JdbcDataSource datasource, String distribTableName,
-                                    String initialTable, String inputId, String prefixName,
+                                    String initialTable, String inputId,
                                     List distribIndicator = ["equality", "uniqueness"], String extremum = "GREATEST",
-                                    boolean keep2ndCol = false, boolean keepColVal = false) {
+                                    boolean keep2ndCol = false, boolean keepColVal = false, String prefixName) {
     def EQUALITY = "EQUALITY_VALUE"
     def UNIQUENESS = "UNIQUENESS_VALUE"
     def EXTREMUM_COL = "EXTREMUM_COL"
@@ -633,7 +633,7 @@ static Double getEquality(def myMap, def nbDistCol) {
 /**
  * This process is used to compute the area proportion of a certain type within a given object (e.g. a proportion
  * of industrial buildings within all buildings of a RSU). Note that for surface fractions within a given surface
- * you should use the surfaceFractions IProcess.
+ * you should use the surfaceFractions method.
  *
  * @param inputTableName the table name where are stored the objects having different types to characterize
  * @param idField ID of the scale used for the 'GROUP BY'
@@ -739,7 +739,7 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
  * @param blockTable the block table name (default "")
  * @param rsuTable the rsu table name
  * @param targetedScale The scale of the resulting table (either "RSU" or "BUILDING", default "RSU")
- * @param operationsToApply Operations (using 'unweightedOperationFromLowerScale' IProcess) to apply
+ * @param operationsToApply Operations (using 'unweightedOperationFromLowerScale' method) to apply
  * to building and block in case 'targetedScale'="RSU" (default ["AVG", "STD"])
  * @param areaTypeAndComposition Types that should be calculated and objects included in this type
  * (e.g. for building table could be: ["residential": ["residential", "detached"]])
@@ -753,8 +753,8 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
  * @author Jérémy Bernard
  */
 String gatherScales(JdbcDataSource datasource, String buildingTable, String blockTable, String rsuTable,
-                    String targetedScale = "RSU", List operationsToApply = ["AVG", "STD"], String prefixName,
-                    boolean removeNull = true) {
+                    String targetedScale = "RSU", List operationsToApply = ["AVG", "STD"],
+                    boolean removeNull = true, String prefixName) {
     // List of columns to remove from the analysis in building and block tables
     def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
     def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE", "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ROOF_SHAPE", "ID_SOURCE"]
@@ -922,7 +922,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
  */
 String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName,
                                 String upperColumnId, String lowerTableName,
-                                String lowerColumnName, String, prefixName, boolean keepGeometry = true) {
+                                String lowerColumnName,  boolean keepGeometry = true, String prefixName) {
     ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
     def upperGeometryColumn = upperTable.getGeometricColumns().first()
     if (!upperGeometryColumn) {

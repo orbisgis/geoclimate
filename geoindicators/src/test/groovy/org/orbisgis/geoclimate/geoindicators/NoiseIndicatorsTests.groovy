@@ -6,12 +6,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 
 import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
@@ -40,7 +36,7 @@ class NoiseIndicatorsTests {
             def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS,  env,  100,  100)
             assertNotNull(gridP)
             String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2GIS,  gridP, "id_grid",
-                             "building_test",  "road_test", "veget_test",  "hydro_test")
+                             "building_test",  "road_test",   "hydro_test","veget_test", "")
             assertTrue(h2GIS.hasTable(ground_acoustic))
         }
     }

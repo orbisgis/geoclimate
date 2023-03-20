@@ -39,6 +39,17 @@ abstract class AbstractScript extends Script {
     }
 
     /**
+     * Postfix the given String with the given postfix.
+     *
+     * @param postfix Postfix
+     * @param name String to postfix
+     * @return The postfix String
+     */
+     static String postfix(String name, String postfix) {
+        return postfix == null || postfix.isEmpty() ? name : name + "_" + postfix;
+    }
+
+    /**
      * Prefix the given String with '_' and an UUID.
      *
      * @param name String to prefix

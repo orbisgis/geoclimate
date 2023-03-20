@@ -10,6 +10,7 @@ import org.orbisgis.data.api.dataset.ISpatialTable
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertNotNull
+import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
@@ -38,53 +39,32 @@ class GenericIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8; 
                 CREATE TABLE tempo_rsu AS SELECT * FROM rsu_test WHERE id_rsu < 17"""
 
-        def  psum =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-        assert psum([
-                inputLowerScaleTableName    : "tempo_build",
-                inputUpperScaleTableName    : "block_test",
-                inputIdUp                   : "id_block",
-                inputIdLow                  : "id_build",
-                inputVarAndOperations       : ["area"   :["SUM"]],
-                prefixName                  : "first",
-                datasource                  : h2GIS])
-        def  pavg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-        assert pavg([
-                inputLowerScaleTableName    : "tempo_build",
-                inputUpperScaleTableName    : "tempo_rsu",
-                inputIdUp                   : "id_rsu",
-                inputIdLow                  : "id_build",
-                inputVarAndOperations       : ["number_building_neighbor":["AVG"]],
-                prefixName                  : "second",
-                datasource                  : h2GIS])
-        def  pgeom_avg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-        assert pgeom_avg([
-                inputLowerScaleTableName    : "tempo_build",
-                inputUpperScaleTableName    : "tempo_rsu",
-                inputIdUp                   : "id_rsu",
-                inputIdLow                  : "id_build",
-                inputVarAndOperations       : ["height_roof": ["GEOM_AVG"]],
-                prefixName                  : "third",
-                datasource                  : h2GIS])
-        def  pdens =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-        assert pdens([
-                inputLowerScaleTableName    : "tempo_build",
-                inputUpperScaleTableName    : "tempo_rsu",
-                inputIdUp                   : "id_rsu",
-                inputIdLow                  : "id_build",
-                inputVarAndOperations       : ["number_building_neighbor"   :["AVG"],
+        def  psum =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(h2GIS,
+                "tempo_build", "block_test",
+                "id_block", "id_build",
+                ["area"   :["SUM"]], "first")
+        assert psum
+        def  pavg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(h2GIS,
+                "tempo_build","tempo_rsu","id_rsu",
+                 "id_build", ["number_building_neighbor":["AVG"]],
+               "second")
+        assert pavg
+        def  pgeom_avg =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(h2GIS,
+                "tempo_build","tempo_rsu", "id_rsu",
+                 "id_build", ["height_roof": ["GEOM_AVG"]],
+                "third")
+        assert pgeom_avg
+        def  pdens =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(h2GIS,
+                 "tempo_build", "tempo_rsu","id_rsu",
+                 "id_build",["number_building_neighbor"   :["AVG"],
                                                "area"                       :["SUM", "DENS"],
                                                "building"                   :["NB_DENS"]],
-                prefixName                  : "fourth",
-                datasource                  : h2GIS])
-        def  pstd =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-        assert pstd([
-                inputLowerScaleTableName    : "tempo_build",
-                inputUpperScaleTableName    : "tempo_rsu",
-                inputIdUp                   : "id_rsu",
-                inputIdLow                  : "id_build",
-                inputVarAndOperations       : ["number_building_neighbor":["STD"]],
-                prefixName                  : "fifth",
-                datasource                  : h2GIS])
+                "fourth")
+        assert pdens
+        def  pstd =  Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(h2GIS,
+                 "tempo_build", "tempo_rsu",
+                "id_rsu", "id_build",["number_building_neighbor":["STD"]], "fifth")
+        assert pstd
 
         def values = h2GIS.rows("SELECT sum_area FROM first_unweighted_operation_from_lower_scale WHERE id_block = 1 OR id_block = 4 ORDER BY id_block ASC")
         assert [156,310] == values.collect{it.values()}.flatten()
@@ -102,8 +82,8 @@ class GenericIndicatorsTests {
         value = h2GIS.firstRow("SELECT std_number_building_neighbor FROM fifth_unweighted_operation_from_lower_scale WHERE id_rsu = 1")
         assertEquals 0.490, value.std_number_building_neighbor, 0.001
 
-        def nb_rsu = h2GIS.firstRow "SELECT COUNT(*) AS NB FROM ${pgeom_avg.results.outputTableName}"
-        def val_zero = h2GIS.firstRow "SELECT area_density AS val FROM ${pdens.results.outputTableName} WHERE id_rsu = 14"
+        def nb_rsu = h2GIS.firstRow "SELECT COUNT(*) AS NB FROM ${pgeom_avg}"
+        def val_zero = h2GIS.firstRow "SELECT area_density AS val FROM ${pdens} WHERE id_rsu = 14"
 
         assert 16 == nb_rsu.nb
         assert 0 == val_zero.val
@@ -124,31 +104,21 @@ class GenericIndicatorsTests {
                 CREATE TABLE tempo_rsu AS SELECT * FROM rsu_test WHERE id_rsu < 17;
         """
 
-        def  pavg =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
-        assert pavg([
-                inputLowerScaleTableName    : "tempo_build",
-                inputUpperScaleTableName    : "tempo_rsu",
-                inputIdUp                   : "id_rsu",
-                inputVarWeightsOperations   : ["height_roof" : ["area": ["AVG"]]],
-                prefixName                  : "one",
-                datasource                  : h2GIS])
-        def  pstd =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
-        assert pstd([
-                inputLowerScaleTableName    : "tempo_build",
-                inputUpperScaleTableName    : "tempo_rsu",
-                inputIdUp                   : "id_rsu",
-                inputVarWeightsOperations   : ["height_roof": ["area": ["STD"]]],
-                prefixName                  : "two",
-                datasource                  : h2GIS])
-        def  pall =  Geoindicators.GenericIndicators.weightedAggregatedStatistics()
-        assert pall([
-                inputLowerScaleTableName    : "tempo_build",
-                inputUpperScaleTableName    : "tempo_rsu",
-                inputIdUp                   : "id_rsu",
-                inputVarWeightsOperations   : ["height_wall": ["area": ["STD"]],
+        def  pavg =  Geoindicators.GenericIndicators.weightedAggregatedStatistics(h2GIS,
+                 "tempo_build", "tempo_rsu", "id_rsu",
+                 ["height_roof" : ["area": ["AVG"]]],"one")
+        assert pavg
+        def  pstd =  Geoindicators.GenericIndicators.weightedAggregatedStatistics(h2GIS,
+                "tempo_build","tempo_rsu", "id_rsu",
+                ["height_roof": ["area": ["STD"]]],
+                 "two")
+        assert pstd
+        def  pall =  Geoindicators.GenericIndicators.weightedAggregatedStatistics(h2GIS,
+                "tempo_build", "tempo_rsu", "id_rsu",
+                ["height_wall": ["area": ["STD"]],
                                                "height_roof": ["area": ["AVG", "STD"]]],
-                prefixName                  : "three",
-                datasource                  : h2GIS])
+                "three")
+        assert pall
         def concat = [0, 0, ""]
         h2GIS.eachRow("SELECT * FROM one_weighted_aggregated_statistics WHERE id_rsu = 1"){
             row -> concat[0]+= row.avg_height_roof_area_weighted
@@ -162,7 +132,7 @@ class GenericIndicatorsTests {
                         "${row.std_height_roof_area_weighted.round(1)}\n" +
                         "${row.std_height_wall_area_weighted.round(2)}\n"
         }
-        def nb_rsu = h2GIS.firstRow("SELECT COUNT(*) AS NB FROM ${pavg.results.outputTableName}".toString())
+        def nb_rsu = h2GIS.firstRow("SELECT COUNT(*) AS NB FROM ${pavg}".toString())
         assertEquals 10.178, concat[0], 0.001
         assertEquals 2.5, concat[1], 0.1
         assert "10.178\n2.5\n2.52\n" == concat[2]
@@ -176,14 +146,13 @@ class GenericIndicatorsTests {
                 CREATE TABLE spatial_table (id int, the_geom GEOMETRY(LINESTRING));
                 INSERT INTO spatial_table VALUES (1, 'LINESTRING(0 0, 0 10)'::GEOMETRY);
         """
-        def  p =  Geoindicators.GenericIndicators.geometryProperties()
-        assert p([
-                inputTableName  : "spatial_table",
-                inputFields     : ["id", "the_geom"],
-                operations      : ["st_issimple","st_area", "area", "st_dimension"],
-                prefixName      : "test",
-                datasource      : h2GIS])
-        assert p.results.outputTableName == "test_geometry_properties"
+        def  p =  Geoindicators.GenericIndicators.geometryProperties(h2GIS,
+                   "spatial_table",
+                      ["id", "the_geom"],
+              ["st_issimple","st_area", "area", "st_dimension"],
+                 "test")
+        assert p
+        assert p == "test_geometry_properties"
         h2GIS.test_geometry_properties.eachRow {
             row -> assert row.the_geom
                 assert row.issimple
@@ -201,15 +170,10 @@ class GenericIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9
         """
 
-        def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution()
-        assert p([
-                buildingTableName   : "tempo_build",
-                inputIdUp           : "id_block",
-                tableUp             : "block_test",
-                angleRangeSize      : 15,
-                prefixName          : "test",
-                datasource          : h2GIS,
-                distribIndicator    : ["equality", "uniqueness"]])
+        def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution(h2GIS,
+                "tempo_build","block_test","id_block",
+                 15f, ["equality", "uniqueness"],    "test")
+        assert p
 
         assertEquals 4.0/12, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_block = 4").BUILDING_DIRECTION_EQUALITY, 0.0001
@@ -227,15 +191,11 @@ class GenericIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 9
         """
 
-        def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution()
-        assert p([
-                buildingTableName   : "tempo_build",
-                tableUp             : "rsu_test",
-                inputIdUp           : "id_rsu",
-                angleRangeSize      : 15,
-                prefixName          : "test",
-                datasource          : h2GIS,
-                distribIndicator    : ["equality", "uniqueness"]])
+        def  p =  Geoindicators.GenericIndicators.buildingDirectionDistribution(h2GIS,
+                 "tempo_build", "rsu_test",
+                "id_rsu", 15,
+                "test")
+        assert p
 
         assertEquals(-1, h2GIS.firstRow("SELECT * FROM test_MAIN_BUILDING_DIRECTION " +
                 "WHERE id_rsu = 14").BUILDING_DIRECTION_EQUALITY, 0.0001)
@@ -260,9 +220,10 @@ class GenericIndicatorsTests {
 
 
         def  resultTab =  Geoindicators.GenericIndicators.distributionCharacterization(h2GIS,
-                "distrib_test", "distrib_test", "id","test",
+                "distrib_test", "distrib_test", "id",
                  ["equality", "uniqueness"],  "GREATEST",
-               true,true)
+               true,true, "test")
+        assert resultTab
 
         assert 1        == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 1").EQUALITY_VALUE
         assert 0.25     == h2GIS.firstRow("SELECT * FROM $resultTab WHERE id = 4").EQUALITY_VALUE
@@ -294,9 +255,8 @@ class GenericIndicatorsTests {
 
         def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization(h2GIS,
                  "distrib_test", "distrib_test",
-                 "id","test",
-                distribIndicator    : ["uniqueness"],
-                extremum            : "LEAST")
+                 "id",["uniqueness"],
+               "LEAST", "test")
         assertNotNull(p1)
 
         assert 0        == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 1")["UNIQUENESS_VALUE"]
@@ -321,8 +281,8 @@ class GenericIndicatorsTests {
 
 
         def  p1 =  Geoindicators.GenericIndicators.distributionCharacterization(h2GIS, "distrib_test",
-                "distrib_test","id","test",
-                 ["equality"], "LEAST")
+                "distrib_test","id",
+                 ["equality"], "LEAST", "test")
 
         assert 1        == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 1")["EQUALITY_VALUE"]
         assert 0.25     == h2GIS.firstRow("SELECT * FROM test_DISTRIBUTION_REPARTITION WHERE id = 4")["EQUALITY_VALUE"]
@@ -342,8 +302,10 @@ class GenericIndicatorsTests {
         // Test 1
         def  typeProportion =  Geoindicators.GenericIndicators.typeProportion(h2GIS,
                  "tempo_build", "id_rsu","type","rsu_test",
-                 ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                 ["industrial": ["industrial"], "residential": ["residential", "detached"]],null,
                 "")
+
+        assert typeProportion
 
         def result1 = h2GIS.firstRow("SELECT * FROM ${typeProportion}".toString())
         assert (156.0/296).trunc(3) == result1.area_fraction_industrial.trunc(3)
@@ -388,9 +350,9 @@ class GenericIndicatorsTests {
         // Test 1
         def  p =  Geoindicators.GenericIndicators.typeProportion(h2GIS,
                 "tempo_build", "id_rsu","type",
-                inputUpperTableName         : "rsu_test",
+                "rsu_test",
                  null,null, "")
-        assertNotNull(p)
+        assertNull(p)
     }
 
     @Test
@@ -423,30 +385,20 @@ class GenericIndicatorsTests {
                       "rsu_area", "rsu_building_density", "rsu_free_external_facade_density"]
 
         // Test 1
-        def applyGatherScales1 = Geoindicators.GenericIndicators.gatherScales()
-        applyGatherScales1.execute([
-                buildingTable    : "tempo_build",
-                blockTable       : "tempo_block",
-                rsuTable         : "tempo_rsu",
-                targetedScale    : "RSU",
-                operationsToApply: ["AVG", "STD"],
-                prefixName       : "test",
-                datasource       : h2GIS])
-        def gatheredScales1 = applyGatherScales1.results.outputTableName
+        def gatheredScales1 = Geoindicators.GenericIndicators.gatherScales(h2GIS,
+                "tempo_build", "tempo_block", "tempo_rsu",
+               "RSU",["AVG", "STD"],
+                "test")
+        assert gatheredScales1
         def finalColRsu = h2GIS."$gatheredScales1".columns.collect{ it.toLowerCase() }
         assertEquals colRsu.sort(), finalColRsu.sort()
 
         // Test 2
-        def applyGatherScales2 = Geoindicators.GenericIndicators.gatherScales()
-        applyGatherScales2.execute([
-                buildingTable    : "tempo_build",
-                blockTable       : "tempo_block",
-                rsuTable         : "tempo_rsu",
-                targetedScale    : "BUILDING",
-                operationsToApply: ["AVG", "STD"],
-                prefixName       : "test",
-                datasource       : h2GIS])
-        def gatheredScales2 = applyGatherScales2.results.outputTableName
+        def gatheredScales2 = Geoindicators.GenericIndicators.gatherScales(h2GIS,
+                "tempo_build","tempo_block",
+                 "tempo_rsu", "BUILDING",
+                 ["AVG", "STD"], "test")
+        assert gatheredScales2
         def finalColBuild = h2GIS."$gatheredScales2".columns.collect{ it.toLowerCase() }
         assertEquals colBuild.sort(), finalColBuild.sort()
     }
@@ -468,16 +420,10 @@ class GenericIndicatorsTests {
                                                    """
 
         // Test 1
-        def applyGatherScales1 = Geoindicators.GenericIndicators.gatherScales()
-        applyGatherScales1.execute([
-                buildingTable    : "tempo_build",
-                blockTable       : "tempo_block",
-                rsuTable         : "tempo_rsu",
-                targetedScale    : "BUILDING",
-                operationsToApply: ["AVG", "STD"],
-                prefixName       : "test",
-                datasource       : h2GIS])
-        def gatheredScales1 = applyGatherScales1.results.outputTableName
+        def gatheredScales1 = Geoindicators.GenericIndicators.gatherScales(h2GIS,
+         "tempo_build","tempo_block", "tempo_rsu",
+           "BUILDING",["AVG", "STD"], "test")
+
         // The building eing in no rsu should not be in the resulting table
         assertEquals h2GIS.firstRow("""SELECT COUNT(*) AS nb FROM $gatheredScales1""").nb, 1
     }

@@ -18,6 +18,7 @@ import smile.validation.Validation
 import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.fail
 import static org.orbisgis.data.H2GIS.open
 
@@ -35,15 +36,12 @@ class TypologyClassificationTests {
     @Test
     void identifyLczTypeTest() {
         h2GIS.executeScript(this.getClass().getResourceAsStream("data_for_tests.sql"))
-        def pavg = Geoindicators.TypologyClassification.identifyLczType()
-        assert pavg.execute([
-                rsuLczIndicators : "rsu_test_lcz_indics",
-                rsuAllIndicators : "rsu_test_all_indics_for_lcz",
-                normalisationType: "AVG",
-                prefixName       : "test",
-                datasource       : h2GIS])
+        def pavg = Geoindicators.TypologyClassification.identifyLczType(h2GIS,
+                "rsu_test_lcz_indics", "rsu_test_all_indics_for_lcz",
+               "AVG","test")
+        assertNotNull(pavg)
         def results = [:]
-        h2GIS."$pavg.results.outputTableName".eachRow { row ->
+        h2GIS."$pavg".eachRow { row ->
             def id = row.id_rsu
             results[id] = [:]
             results[id]["LCZ_PRIMARY"] = row.LCZ_PRIMARY
@@ -81,24 +79,14 @@ class TypologyClassificationTests {
                     WHERE a.id_rsu = b.id_rsu;  
         """
 
-        def pmed = Geoindicators.TypologyClassification.identifyLczType()
-        assert pmed([
-                rsuLczIndicators : "buff_rsu_test_lcz_indics",
-                rsuAllIndicators : "buff_rsu_test_all_indics_for_lcz",
-                normalisationType: "MEDIAN",
-                mapOfWeights     : ["sky_view_factor"             : 1,
-                                    "aspect_ratio"                : 1,
-                                    "building_surface_fraction"   : 1,
-                                    "impervious_surface_fraction" : 1,
-                                    "pervious_surface_fraction"   : 1,
-                                    "height_of_roughness_elements": 1,
-                                    "terrain_roughness_length"    : 1],
-                prefixName       : "test",
-                datasource       : h2GIS])
+        def pmed = Geoindicators.TypologyClassification.identifyLczType(
+                h2GIS, "buff_rsu_test_lcz_indics",
+                 "buff_rsu_test_all_indics_for_lcz",
+                "MEDIAN","test")
+        assertNotNull(pmed)
+        assert h2GIS."$pmed".columns.contains("THE_GEOM")
 
-        assert h2GIS."$pmed.results.outputTableName".columns.contains("THE_GEOM")
-
-        h2GIS."$pmed.results.outputTableName".eachRow {
+        h2GIS."$pmed".eachRow {
             row ->
                 if (row.id_rsu == 1) {
                     assert 1 == row.LCZ_PRIMARY
@@ -121,26 +109,25 @@ class TypologyClassificationTests {
                 }
         }
         // Test with real indicator values (Montreuil ID_RSU 795), (l'haye les roses ID_RSU 965 and 1026)
-        def pReal = Geoindicators.TypologyClassification.identifyLczType()
-        assert pReal([
-                rsuLczIndicators : "buff_rsu_test_lcz_indics",
-                rsuAllIndicators : "buff_rsu_test_all_indics_for_lcz",
-                normalisationType: "AVG",
-                mapOfWeights     : ["sky_view_factor"             : 4,
+        def pReal = Geoindicators.TypologyClassification.identifyLczType(h2GIS,
+                "buff_rsu_test_lcz_indics",
+                 "buff_rsu_test_all_indics_for_lcz",
+                "AVG",
+                ["sky_view_factor"             : 4,
                                     "aspect_ratio"                : 3,
                                     "building_surface_fraction"   : 8,
                                     "impervious_surface_fraction" : 0,
                                     "pervious_surface_fraction"   : 0,
                                     "height_of_roughness_elements": 6,
                                     "terrain_roughness_length"    : 0.5],
-                prefixName       : "test",
-                datasource       : h2GIS])
-        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 13").LCZ_PRIMARY
-        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 14").LCZ_PRIMARY
-        assert 4 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").LCZ_PRIMARY
-        assert 5 == h2GIS.firstRow("SELECT LCZ_SECONDARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 15").LCZ_SECONDARY
-        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 16").LCZ_PRIMARY
-        assert 102 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal.results.outputTableName} WHERE ID_RSU = 17").LCZ_PRIMARY
+                 "test")
+        assertNotNull(pReal)
+        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal} WHERE ID_RSU = 13").LCZ_PRIMARY
+        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal} WHERE ID_RSU = 14").LCZ_PRIMARY
+        assert 4 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal} WHERE ID_RSU = 15").LCZ_PRIMARY
+        assert 5 == h2GIS.firstRow("SELECT LCZ_SECONDARY FROM ${pReal} WHERE ID_RSU = 15").LCZ_SECONDARY
+        assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal} WHERE ID_RSU = 16").LCZ_PRIMARY
+        assert 102 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal} WHERE ID_RSU = 17").LCZ_PRIMARY
     }
 
     @Test
@@ -175,21 +162,18 @@ class TypologyClassificationTests {
         //Reload the table due to the schema modification
         trainingTable.reload()
 
-        def pmed = Geoindicators.TypologyClassification.createRandomForestModel()
-        assert pmed.execute([
-                trainingTableName: trainingTableName,
-                varToModel       : var2model,
-                save             : true,
-                pathAndFileName  : savePath,
-                ntrees           : 300,
-                mtry             : 7,
-                rule             : "GINI",
-                maxDepth         : 100,
-                maxNodes         : 300,
-                nodeSize         : 5,
-                subsample        : 0.25,
-                datasource       : h2GIS])
-        def model = pmed.results.RfModel
+        def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
+                trainingTableName,
+                        var2model,[],
+                              true,
+                  savePath,
+                           300,
+                             7,
+                "GINI",
+                100,
+                300,
+                5,
+                0.25)
         assert model
         assert model instanceof DataFrameClassifier
 
@@ -425,22 +409,18 @@ class TypologyClassificationTests {
                             FROM tempo"""
 
             assert h2GIS."$trainingTableName"
-            def pmed = Geoindicators.TypologyClassification.createRandomForestModel()
-            assert pmed.execute([
-                    trainingTableName: trainingTableName,
-                    varToModel       : var2ModelFinal,
-                    save             : true,
-                    pathAndFileName  : savePath,
-                    ntrees           : 500,
-                    mtry             : 15,
-                    rule             : "GINI",
-                    maxDepth         : 80,
-                    maxNodes         : 300,
-                    nodeSize         : 1,
-                    subsample        : 1.0,
-                    datasource       : h2GIS,
-                    classif          : classif])
-            def model = pmed.results.RfModel
+            def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
+                    trainingTableName,
+                            var2ModelFinal,[],
+                                  true,
+                       savePath,
+                                500,
+                                  15,
+                                  "GINI",
+                              80,
+                              300,
+                              1,
+                            1.0)
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
@@ -504,22 +484,18 @@ class TypologyClassificationTests {
             def max_leaf_nodes = 1100
 
             assert h2GIS."$trainingTableName"
-            def pmed = Geoindicators.TypologyClassification.createRandomForestModel()
-            assert pmed.execute([
-                    trainingTableName: trainingTableName,
-                    varToModel       : var2ModelFinal,
-                    save             : true,
-                    pathAndFileName  : savePath,
-                    ntrees           : ntree,
-                    mtry             : nb_var_tree,
-                    rule             : "GINI",
-                    maxDepth         : max_depth,
-                    maxNodes         : max_leaf_nodes,
-                    nodeSize         : min_size_node,
-                    subsample        : 1.0,
-                    datasource       : h2GIS,
-                    classif          : false])
-            def model = pmed.results.RfModel
+            def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
+                     trainingTableName,
+                            var2ModelFinal,[],
+                                  true,
+                       savePath,
+                                ntree,
+                                  nb_var_tree,
+                                  "GINI",
+                              max_depth,
+                              max_leaf_nodes,
+                              min_size_node,
+                             1.0)
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
@@ -583,22 +559,18 @@ class TypologyClassificationTests {
             def max_leaf_nodes = 400
 
             assert h2GIS."$trainingTableName"
-            def pmed = Geoindicators.TypologyClassification.createRandomForestModel()
-            assert pmed.execute([
-                    trainingTableName: trainingTableName,
-                    varToModel       : var2ModelFinal,
-                    save             : true,
-                    pathAndFileName  : savePath,
-                    ntrees           : ntree,
-                    mtry             : nb_var_tree,
-                    rule             : "GINI",
-                    maxDepth         : max_depth,
-                    maxNodes         : max_leaf_nodes,
-                    nodeSize         : min_size_node,
-                    subsample        : 1.0,
-                    datasource       : h2GIS,
-                    classif          : true])
-            def model = pmed.results.RfModel
+            def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
+                    trainingTableName,
+                            var2ModelFinal,[],
+                                  true,savePath,
+                                ntree,
+                                  nb_var_tree,
+                                  "GINI",
+                              max_depth,
+                              max_leaf_nodes,
+                              min_size_node,
+                             1.0,
+                               true)
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
@@ -664,22 +636,18 @@ class TypologyClassificationTests {
             def max_leaf_nodes = 300
 
             assert h2GIS."$trainingTableName"
-            def pmed = Geoindicators.TypologyClassification.createRandomForestModel()
-            assert pmed.execute([
-                    trainingTableName: trainingTableName,
-                    varToModel       : var2ModelFinal,
-                    save             : true,
-                    pathAndFileName  : savePath,
-                    ntrees           : ntree,
-                    mtry             : nb_var_tree,
-                    rule             : "GINI",
-                    maxDepth         : max_depth,
-                    maxNodes         : max_leaf_nodes,
-                    nodeSize         : min_size_node,
-                    subsample        : 1.0,
-                    datasource       : h2GIS,
-                    classif          : true])
-            def model = pmed.results.RfModel
+            def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
+                     trainingTableName,
+                            var2ModelFinal,[],
+                                  true,
+                       savePath,
+                               ntree,
+                                  nb_var_tree,
+                                  "GINI",
+                              max_depth,
+                              max_leaf_nodes,
+                              min_size_node,
+                             1.0)
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
