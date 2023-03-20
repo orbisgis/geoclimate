@@ -136,7 +136,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                     "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0,0.00035);"
             */
 
-                // LCZ types need to be String when using the IProcess 'distributionCHaracterization',
+                // LCZ types need to be String when using the method 'distributionCHaracterization',
                 // thus need to define a correspondence table
                 def correspondenceMap = [   "LCZ1": 1,
                                             "LCZ2": 2,
@@ -354,7 +354,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                     ["equality", "uniqueness"], "LEAST",
                                     true, true )
 
-                // Rename the standard indicators into names consistent with the current IProcess (LCZ type...)
+                // Rename the standard indicators into names consistent with the current method (LCZ type...)
                 datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EQUALITY_VALUE TO LCZ_EQUALITY_VALUE;

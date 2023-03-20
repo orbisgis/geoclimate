@@ -176,7 +176,7 @@ String prepareTSUData(JdbcDataSource datasource, String zoneTable,String roadTab
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 
-            // Create temporary table names (for tables that will be removed at the end of the IProcess)
+            // Create temporary table names (for tables that will be removed at the end of the method)
             def vegetation_indice
             def vegetation_unified
             def vegetation_tmp
@@ -351,7 +351,7 @@ String createBlocks(JdbcDataSource datasource , String inputTableName , float sn
 
             debug "Building spatial clusters..."
 
-            // Create temporary table names (for tables that will be removed at the end of the IProcess)
+            // Create temporary table names (for tables that will be removed at the end of the method)
             def graphTable = postfix "spatial_clusters"
             def subGraphTableNodes = postfix graphTable, "NODE_CC"
             def subGraphTableEdges = postfix graphTable, "EDGE_CC"

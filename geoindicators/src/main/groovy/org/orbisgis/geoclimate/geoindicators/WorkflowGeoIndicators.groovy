@@ -447,7 +447,7 @@ String computeRSUIndicators(JdbcDataSource datasource ,String buildingTable,
             }
             finalTablesToJoin.put(surfaceFractions, columnIdRsu)
 
-            // Get all column names from the surfaceFraction IProcess to make verifications
+            // Get all column names from the surfaceFraction method to make verifications
             def surfFracList = datasource.getTable(surfaceFractions).getColumns()
             def indicatorUse = parameters.indicatorUse
             def utrfSurfFraction = parameters.utrfSurfFraction
@@ -1558,7 +1558,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                          upperScaleAreaStatistics, ["equality", "uniqueness"],
                          "GREATEST",true, true,
                            "lcz")
-                // Rename the standard indicators into names consistent with the current IProcess (LCZ type...)
+                // Rename the standard indicators into names consistent with the current method (LCZ type...)
                 datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EQUALITY_VALUE TO LCZ_EQUALITY_VALUE;
@@ -1571,7 +1571,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 def casewhenQuery1 = ""
                 def casewhenQuery2 = ""
                 def parenthesis = ""
-                // LCZ types need to be String when using the IProcess 'distributionCHaracterization',
+                // LCZ types need to be String when using the method 'distributionCHaracterization',
                 // thus need to define a correspondence table
                 def correspondenceMap = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 101, 102, 103, 104, 105, 106, 107]
 

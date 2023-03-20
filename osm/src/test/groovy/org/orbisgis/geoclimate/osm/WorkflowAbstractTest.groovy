@@ -33,15 +33,14 @@ class WorkflowAbstractTest {
                                           hydrographicTableName, "", "", 100000,
                                               2500,  0.01,  prefixName)
 
-        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
-        String relationBlocks = spatialUnits.getResults().outputTableBlockName
-        String relationRSU = spatialUnits.getResults().outputTableRsuName
+        String relationBuildings = spatialUnits.building
+        String relationBlocks = spatialUnits.block
+        String relationRSU = spatialUnits.rsu
 
         if (saveResults) {
             logger.debug("Saving spatial units")
-            IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: spatialUnits.getResults().values(), delete: true
-                                , directory    : directory, datasource: datasource])
+            Geoindicators.DataUtils.saveTablesAsFiles(datasource,  spatialUnits.values(),
+                    true,directory)
         }
 
         def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())
