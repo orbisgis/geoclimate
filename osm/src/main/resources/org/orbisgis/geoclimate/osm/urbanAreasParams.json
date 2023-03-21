@@ -1,29 +1,37 @@
-{"tags" : {
-    "landuse":["commercial", "residential", "retail", "industrial"]
-
-},
-    "columns":[ "landuse","industrial"],
-    "type": {
-        "commercial": {
-            "landuse": [
-                "commercial",
-                "retail"
-            ]
-        },
-        "residential": {
-            "landuse": [
-                "residential"
-            ]
-        },
-        "heavy_industry:industrial": {
-            "industrial": [
-                "refinery"
-            ]
-        },
-        "light_industry:industrial": {
-            "landuse": [
-                "industrial"
-            ]
-        }
+{
+  "tags": {
+    "landuse": [
+      "commercial",
+      "residential",
+      "retail",
+      "industrial"
+    ]
+  },
+  "columns": [
+    "landuse",
+    "industrial"
+  ],
+  "type": {
+    "commercial": {
+      "landuse": [
+        "commercial",
+        "retail"
+      ]
+    },
+    "residential": {
+      "landuse": [
+        "residential"
+      ]
+    },
+    "heavy_industry:industrial": {
+      "industrial": [
+        "refinery"
+      ]
+    },
+    "light_industry:industrial": {
+      "landuse": [
+        "industrial"
+      ]
     }
+  }
 }

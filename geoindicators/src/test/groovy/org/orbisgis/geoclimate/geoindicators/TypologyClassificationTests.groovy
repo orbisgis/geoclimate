@@ -6,20 +6,18 @@ import com.thoughtworks.xstream.security.NoTypePermission
 import com.thoughtworks.xstream.security.NullPermission
 import com.thoughtworks.xstream.security.PrimitiveTypePermission
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.dataframe.DataFrame
+import org.orbisgis.geoclimate.Geoindicators
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
+
 import java.util.zip.GZIPInputStream
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.fail
+import static org.junit.jupiter.api.Assertions.*
 import static org.orbisgis.data.H2GIS.open
 
 class TypologyClassificationTests {
@@ -30,7 +28,7 @@ class TypologyClassificationTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open(folder.getAbsolutePath()+File.separator+"typologyClassificationTests;AUTO_SERVER=TRUE")
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "typologyClassificationTests;AUTO_SERVER=TRUE")
     }
 
     @Test
@@ -38,7 +36,7 @@ class TypologyClassificationTests {
         h2GIS.executeScript(this.getClass().getResourceAsStream("data_for_tests.sql"))
         def pavg = Geoindicators.TypologyClassification.identifyLczType(h2GIS,
                 "rsu_test_lcz_indics", "rsu_test_all_indics_for_lcz",
-               "AVG","test")
+                "AVG", "test")
         assertNotNull(pavg)
         def results = [:]
         h2GIS."$pavg".eachRow { row ->
@@ -81,8 +79,8 @@ class TypologyClassificationTests {
 
         def pmed = Geoindicators.TypologyClassification.identifyLczType(
                 h2GIS, "buff_rsu_test_lcz_indics",
-                 "buff_rsu_test_all_indics_for_lcz",
-                "MEDIAN","test")
+                "buff_rsu_test_all_indics_for_lcz",
+                "MEDIAN", "test")
         assertNotNull(pmed)
         assert h2GIS."$pmed".columns.contains("THE_GEOM")
 
@@ -111,16 +109,16 @@ class TypologyClassificationTests {
         // Test with real indicator values (Montreuil ID_RSU 795), (l'haye les roses ID_RSU 965 and 1026)
         def pReal = Geoindicators.TypologyClassification.identifyLczType(h2GIS,
                 "buff_rsu_test_lcz_indics",
-                 "buff_rsu_test_all_indics_for_lcz",
+                "buff_rsu_test_all_indics_for_lcz",
                 "AVG",
                 ["sky_view_factor"             : 4,
-                                    "aspect_ratio"                : 3,
-                                    "building_surface_fraction"   : 8,
-                                    "impervious_surface_fraction" : 0,
-                                    "pervious_surface_fraction"   : 0,
-                                    "height_of_roughness_elements": 6,
-                                    "terrain_roughness_length"    : 0.5],
-                 "test")
+                 "aspect_ratio"                : 3,
+                 "building_surface_fraction"   : 8,
+                 "impervious_surface_fraction" : 0,
+                 "pervious_surface_fraction"   : 0,
+                 "height_of_roughness_elements": 6,
+                 "terrain_roughness_length"    : 0.5],
+                "test")
         assertNotNull(pReal)
         assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal} WHERE ID_RSU = 13").LCZ_PRIMARY
         assert 6 == h2GIS.firstRow("SELECT LCZ_PRIMARY FROM ${pReal} WHERE ID_RSU = 14").LCZ_PRIMARY
@@ -145,7 +143,7 @@ class TypologyClassificationTests {
         def trainingURL = TypologyClassificationTests.getResource("model/rf/training_data.shp")
 
         def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
-        def savePath = new File(folder,"geoclimate_rf_${uuid}.model").getAbsolutePath()
+        def savePath = new File(folder, "geoclimate_rf_${uuid}.model").getAbsolutePath()
 
         def trainingTable = h2GIS.table(h2GIS.load(trainingURL, trainingTableName, true))
         assert trainingTable
@@ -164,11 +162,11 @@ class TypologyClassificationTests {
 
         def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
                 trainingTableName,
-                        var2model,[],
-                              true,
-                  savePath,
-                           300,
-                             7,
+                var2model, [],
+                true,
+                savePath,
+                300,
+                7,
                 "GINI",
                 100,
                 300,
@@ -203,10 +201,10 @@ class TypologyClassificationTests {
         xs.addPermission(PrimitiveTypePermission.PRIMITIVES);
         xs.allowTypeHierarchy(Collection.class);
         // allow any type from the packages
-        xs.allowTypesByWildcard(new String[] {
-                TypologyClassification.class.getPackage().getName()+".*",
-                "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
-                "smile.base.cart.*","smile.classification.*","java.lang.*","java.util.*"
+        xs.allowTypesByWildcard(new String[]{
+                TypologyClassification.class.getPackage().getName() + ".*",
+                "smile.regression.*", "smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
+                "smile.base.cart.*", "smile.classification.*", "java.lang.*", "java.util.*"
         })
         def fileInputStream = new FileInputStream(savePath)
         assert fileInputStream
@@ -411,16 +409,16 @@ class TypologyClassificationTests {
             assert h2GIS."$trainingTableName"
             def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
                     trainingTableName,
-                            var2ModelFinal,[],
-                                  true,
-                       savePath,
-                                500,
-                                  15,
-                                  "GINI",
-                              80,
-                              300,
-                              1,
-                            1.0)
+                    var2ModelFinal, [],
+                    true,
+                    savePath,
+                    500,
+                    15,
+                    "GINI",
+                    80,
+                    300,
+                    1,
+                    1.0)
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
@@ -462,7 +460,6 @@ class TypologyClassificationTests {
             h2GIS.execute('''DROP TABLE IF EXISTS tempo; CREATE TABLE tempo as select * from tempo_a union all select * from tempo_b''')
 
 
-
             // Remove unnecessary column
             h2GIS "ALTER TABLE tempo DROP COLUMN the_geom;"
             //Reload the table due to the schema modification
@@ -485,17 +482,17 @@ class TypologyClassificationTests {
 
             assert h2GIS."$trainingTableName"
             def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
-                     trainingTableName,
-                            var2ModelFinal,[],
-                                  true,
-                       savePath,
-                                ntree,
-                                  nb_var_tree,
-                                  "GINI",
-                              max_depth,
-                              max_leaf_nodes,
-                              min_size_node,
-                             1.0)
+                    trainingTableName,
+                    var2ModelFinal, [],
+                    true,
+                    savePath,
+                    ntree,
+                    nb_var_tree,
+                    "GINI",
+                    max_depth,
+                    max_leaf_nodes,
+                    min_size_node,
+                    1.0)
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
@@ -561,16 +558,16 @@ class TypologyClassificationTests {
             assert h2GIS."$trainingTableName"
             def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
                     trainingTableName,
-                            var2ModelFinal,[],
-                                  true,savePath,
-                                ntree,
-                                  nb_var_tree,
-                                  "GINI",
-                              max_depth,
-                              max_leaf_nodes,
-                              min_size_node,
-                             1.0,
-                               true)
+                    var2ModelFinal, [],
+                    true, savePath,
+                    ntree,
+                    nb_var_tree,
+                    "GINI",
+                    max_depth,
+                    max_leaf_nodes,
+                    min_size_node,
+                    1.0,
+                    true)
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
@@ -637,17 +634,17 @@ class TypologyClassificationTests {
 
             assert h2GIS."$trainingTableName"
             def model = Geoindicators.TypologyClassification.createRandomForestModel(h2GIS,
-                     trainingTableName,
-                            var2ModelFinal,[],
-                                  true,
-                       savePath,
-                               ntree,
-                                  nb_var_tree,
-                                  "GINI",
-                              max_depth,
-                              max_leaf_nodes,
-                              min_size_node,
-                             1.0)
+                    trainingTableName,
+                    var2ModelFinal, [],
+                    true,
+                    savePath,
+                    ntree,
+                    nb_var_tree,
+                    "GINI",
+                    max_depth,
+                    max_leaf_nodes,
+                    min_size_node,
+                    1.0)
             assert model
 
             // Test that the model has been correctly calibrated (that it can be applied to the same dataset)
@@ -663,4 +660,4 @@ class TypologyClassificationTests {
             println("The model has not been create because the output directory doesn't exist")
         }
     }
-   }
+}

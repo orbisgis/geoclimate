@@ -148,7 +148,7 @@ class WorkflowDebugTest {
                          ]
                         ]
         ]
-        BDTopo.v2( bdTopoParameters)
+        BDTopo.v2(bdTopoParameters)
 
     }
 

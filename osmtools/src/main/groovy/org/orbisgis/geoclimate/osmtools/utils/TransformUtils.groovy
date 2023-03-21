@@ -73,13 +73,13 @@
 package org.orbisgis.geoclimate.osmtools.utils
 
 import groovy.transform.BaseScript
+import org.orbisgis.data.jdbc.JdbcDataSource
 
 /**
  * Class containing utility methods for the {@link org.orbisgis.geoclimate.osmtools.Transform} script to keep only processes inside
  * the groovy script.
  */
 
-import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.osmtools.OSMTools
 
 @BaseScript OSMTools pf

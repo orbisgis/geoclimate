@@ -13,19 +13,20 @@ class InputDataLoadingTest {
     @TempDir
     static File folder
 
-    static  H2GIS h2GIS
+    static H2GIS h2GIS
 
     @BeforeAll
-    static  void loadDb(){
+    static void loadDb() {
         h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "osm_inputDataLoadingTest;AUTO_SERVER=TRUE;")
     }
 
-    @Disabled //enable it to test data extraction from the overpass api
+    @Disabled
+    //enable it to test data extraction from the overpass api
     @Test
     void extractAndCreateGISLayers() {
         Map extract = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, "Île de la Nouvelle-Amsterdam")
-        extract.each {it ->
-            if(it.value!=null){
+        extract.each { it ->
+            if (it.value != null) {
                 h2GIS.getTable(it.value).save(new File(folder, "${it.value}.shp").absolutePath, true)
             }
         }

@@ -36,12 +36,8 @@
  */
 package org.orbisgis.geoclimate.osmtools
 
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.GeometryFactory
+
 import org.locationtech.jts.io.WKTReader
-import org.orbisgis.data.H2GIS
-import org.orbisgis.geoclimate.osmtools.OSMTools as Tools
-import org.orbisgis.geoclimate.osmtools.utils.Utilities
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 

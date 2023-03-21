@@ -1,8 +1,7 @@
 package org.orbisgis.geoclimate.geoindicators
 
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.LoggerContext
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.PRJUtil
@@ -10,10 +9,6 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
 import org.slf4j.LoggerFactory
-
-import java.util.logging.FileHandler
-import java.util.logging.Handler
-import java.util.logging.LogManager
 
 @BaseScript Geoindicators geoindicators
 
@@ -78,10 +73,10 @@ def createDatasource(def database_properties) {
         }
 
     } else {
-        def h2gis =  H2GIS.open(database_properties)
-        if(h2gis){
+        def h2gis = H2GIS.open(database_properties)
+        if (h2gis) {
             return h2gis
-        }else {
+        } else {
             error "The output database url cannot be null or empty"
             return
         }

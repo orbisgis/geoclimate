@@ -5,7 +5,6 @@ import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.orbisgis.process.GroovyProcessFactory
 import org.slf4j.LoggerFactory
 
 /**

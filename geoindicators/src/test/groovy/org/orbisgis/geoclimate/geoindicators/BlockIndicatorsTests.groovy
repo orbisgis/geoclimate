@@ -17,12 +17,12 @@ class BlockIndicatorsTests {
     private static def h2GIS
 
     @BeforeAll
-    static void beforeAll(){
-        h2GIS = open(folder.getAbsolutePath()+File.separator+"blockIndicatorsTests;AUTO_SERVER=TRUE")
+    static void beforeAll() {
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "blockIndicatorsTests;AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
-    void beforeEach(){
+    void beforeEach() {
         h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
     }
 
@@ -34,11 +34,11 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 6
         """
 
-        def p = Geoindicators.BlockIndicators.holeAreaDensity(h2GIS , "tempo_block", "test")
+        def p = Geoindicators.BlockIndicators.holeAreaDensity(h2GIS, "tempo_block", "test")
 
         def sum = 0
-        h2GIS.eachRow("SELECT * FROM test_block_hole_area_density"){sum += it.hole_area_density}
-        assertEquals 3.0/47, sum, 0.00001
+        h2GIS.eachRow("SELECT * FROM test_block_hole_area_density") { sum += it.hole_area_density }
+        assertEquals 3.0 / 47, sum, 0.00001
     }
 
     @Test
@@ -65,7 +65,7 @@ class BlockIndicatorsTests {
 
         Geoindicators.BlockIndicators.netCompactness(h2GIS, "tempo_build2", "volume", "contiguity", "test")
         def sum = 0
-        h2GIS.eachRow("SELECT * FROM test_block_net_compactness WHERE id_block = 4") {sum += it.net_compactness}
+        h2GIS.eachRow("SELECT * FROM test_block_net_compactness WHERE id_block = 4") { sum += it.net_compactness }
         assertEquals 0.51195, sum, 0.00001
     }
 
@@ -80,7 +80,7 @@ class BlockIndicatorsTests {
 
         Geoindicators.BlockIndicators.closingness(h2GIS, "tempo_build", "tempo_block", "test")
         def sum = 0
-        h2GIS.eachRow("SELECT * FROM test_block_closingness") {sum += it.closingness}
+        h2GIS.eachRow("SELECT * FROM test_block_closingness") { sum += it.closingness }
         assert 450 == sum
     }
 }

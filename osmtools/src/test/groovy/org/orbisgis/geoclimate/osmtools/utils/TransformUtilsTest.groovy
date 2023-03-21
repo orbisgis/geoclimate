@@ -36,20 +36,16 @@
  */
 package org.orbisgis.geoclimate.osmtools.utils
 
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.osmtools.AbstractOSMToolsTest
+import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.orbisgis.geoclimate.osmtools.OSMTools
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -69,7 +65,7 @@ class TransformUtilsTest extends AbstractOSMToolsTest {
     static H2GIS h2gis
 
     @BeforeAll
-    static void beforeAll(){
+    static void beforeAll() {
         h2gis = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformUtilsTest;AUTO_SERVER=TRUE;")
     }
 
@@ -440,7 +436,7 @@ ${osmTablesPrefix}_way_member, ${osmTablesPrefix}_way_not_taken_into_account, ${
         assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, outTable, [house: "false", path: 'false'], null)
     }
 
-    private  loadDataForNodeExtraction(H2GIS ds, def prefix) {
+    private loadDataForNodeExtraction(H2GIS ds, def prefix) {
         ds.execute """
         DROP TABLE IF EXISTS ${prefix}_node, ${prefix}_node_tag; 
         CREATE TABLE ${prefix}_node (id_node int, the_geom geometry);

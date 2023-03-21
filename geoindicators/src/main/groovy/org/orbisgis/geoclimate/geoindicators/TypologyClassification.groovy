@@ -1,27 +1,29 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import com.thoughtworks.xstream.XStream
-import com.thoughtworks.xstream.security.*
 import com.thoughtworks.xstream.io.xml.StaxDriver
+import com.thoughtworks.xstream.security.NoTypePermission
+import com.thoughtworks.xstream.security.NullPermission
+import com.thoughtworks.xstream.security.PrimitiveTypePermission
 import groovy.transform.BaseScript
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.FilenameUtils
 import org.h2gis.utilities.TableLocation
-import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.dataframe.DataFrame
-import org.orbisgis.data.jdbc.*
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.geoclimate.Geoindicators
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest as RandomForestClassification
+import smile.data.formula.Formula
 import smile.data.type.DataType
 import smile.data.type.DataTypes
 import smile.data.vector.DoubleVector
-import smile.regression.RandomForest as RandomForestRegression
-import smile.data.formula.Formula
 import smile.data.vector.IntVector
+import smile.regression.RandomForest as RandomForestRegression
 import smile.regression.RegressionTree
 import smile.validation.Accuracy
 import smile.validation.RMSE
 import smile.validation.Validation
-import org.apache.commons.io.FileUtils
-import org.apache.commons.io.FilenameUtils
 
 import java.sql.Connection
 import java.sql.PreparedStatement
@@ -31,7 +33,6 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 @BaseScript Geoindicators geoindicators
-
 
 
 /**
@@ -63,50 +64,50 @@ import java.util.zip.GZIPOutputStream
  *
  * @author Jérémy Bernard
  */
-String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, String rsuAllIndicators,String normalisationType= "AVG",
-                Map mapOfWeights= ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1], String prefixName){
-            def OPS = ["AVG", "MEDIAN"]
-            def ID_FIELD_RSU = "id_rsu"
-            def CENTER_NAME = "center"
-            def VARIABILITY_NAME = "variability"
-            def BASE_NAME = "RSU_LCZ"
-            def GEOMETRIC_FIELD = "THE_GEOM"
+String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, String rsuAllIndicators, String normalisationType = "AVG",
+                       Map mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                                           "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1], String prefixName) {
+    def OPS = ["AVG", "MEDIAN"]
+    def ID_FIELD_RSU = "id_rsu"
+    def CENTER_NAME = "center"
+    def VARIABILITY_NAME = "variability"
+    def BASE_NAME = "RSU_LCZ"
+    def GEOMETRIC_FIELD = "THE_GEOM"
 
-            debug "Set the LCZ type of each RSU"
+    debug "Set the LCZ type of each RSU"
 
-            // List of possible operations
+    // List of possible operations
 
-            if (OPS.contains(normalisationType)) {
-                def centerValue = [:]
-                def variabilityValue = [:]
-                def queryRangeNorm = ""
-                def queryValuesNorm = ""
+    if (OPS.contains(normalisationType)) {
+        def centerValue = [:]
+        def variabilityValue = [:]
+        def queryRangeNorm = ""
+        def queryValuesNorm = ""
 
-                // The name of the outputTableName is constructed
-                def outputTableName = postfix(BASE_NAME)
+        // The name of the outputTableName is constructed
+        def outputTableName = postfix(BASE_NAME)
 
-                // To avoid overwriting the output files of this step, a unique identifier is created
-                // Temporary table names are defined
-                def LCZ_classes = postfix "LCZ_classes"
-                def normalizedValues = postfix "normalizedValues"
-                def normalizedRange = postfix "normalizedRange"
-                def distribLczTable = postfix "distribLczTable"
-                def distribLczTableWithoutLcz1 = postfix "distribLczTableWithout_lcz_primary"
-                def distribLczTableInt = postfix "distribLczTableInt"
-                def ruralLCZ = postfix "ruralLCZ"
-                def classifiedRuralLCZ = postfix "classifiedRuralLCZ"
-                def urbanLCZ = postfix "urbanLCZ"
-                def urbanLCZExceptIndus = postfix "urbanLCZExceptIndus"
-                def classifiedLcz = postfix "classifiedLcz"
-                def classifiedIndustrialCommercialLcz = postfix "classifiedIndustrialLcz"
-                def ruralAndIndustrialCommercialLCZ = postfix "ruralAndIndustrialLCZ"
+        // To avoid overwriting the output files of this step, a unique identifier is created
+        // Temporary table names are defined
+        def LCZ_classes = postfix "LCZ_classes"
+        def normalizedValues = postfix "normalizedValues"
+        def normalizedRange = postfix "normalizedRange"
+        def distribLczTable = postfix "distribLczTable"
+        def distribLczTableWithoutLcz1 = postfix "distribLczTableWithout_lcz_primary"
+        def distribLczTableInt = postfix "distribLczTableInt"
+        def ruralLCZ = postfix "ruralLCZ"
+        def classifiedRuralLCZ = postfix "classifiedRuralLCZ"
+        def urbanLCZ = postfix "urbanLCZ"
+        def urbanLCZExceptIndus = postfix "urbanLCZExceptIndus"
+        def classifiedLcz = postfix "classifiedLcz"
+        def classifiedIndustrialCommercialLcz = postfix "classifiedIndustrialLcz"
+        def ruralAndIndustrialCommercialLCZ = postfix "ruralAndIndustrialLCZ"
 
 
-                // The LCZ definitions are created in a Table of the DataBase (note that the "terrain_roughness_class"
-                // is replaced by the "terrain_roughness_length" in order to have a continuous interval of values)
-                datasource.execute("""DROP TABLE IF EXISTS $LCZ_classes; 
+        // The LCZ definitions are created in a Table of the DataBase (note that the "terrain_roughness_class"
+        // is replaced by the "terrain_roughness_length" in order to have a continuous interval of values)
+        datasource.execute("""DROP TABLE IF EXISTS $LCZ_classes; 
                         CREATE TABLE $LCZ_classes(name VARCHAR,
                         sky_view_factor_low FLOAT, sky_view_factor_upp FLOAT,
                          aspect_ratio_low FLOAT,  aspect_ratio_upp FLOAT, 
@@ -125,35 +126,35 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                         ('7',0.2,0.5,1.0,2.0,0.6,0.9,0.0,0.2,0.0,0.3,2.0,4.0,0.175,0.375),
                         ('8',0.7,1.0,0.1,0.3,0.3,0.5,0.4,0.5,0.0,0.2,3.0,10.0,0.175,0.375),
                         ('9',0.8,1.0,0.1,0.3,0.1,0.2,0.0,0.2,0.6,0.8,3.0,10.0,0.175,0.75);""".toString())
-                /* The rural LCZ types (AND INDUSTRIAL) are excluded from the algorithm, they have their own one
-                    "('10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,0.175,0.75),"
-                    "('101',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,1.5,null)," +
-                    "('102',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,0.175,0.75)," +
-                    "('103',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,0.065,0.375)," +
-                    "('104',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,1.0,0.01525,0.175)," +
-                    "('105',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0,0.01525)," +
-                    "('106',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0,0.01525)," +
-                    "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0,0.00035);"
-            */
+        /* The rural LCZ types (AND INDUSTRIAL) are excluded from the algorithm, they have their own one
+            "('10',0.6,0.9,0.2,0.5,0.2,0.3,0.2,0.4,0.4,0.5,5.0,15.0,0.175,0.75),"
+            "('101',0.0,0.4,1.0,null,0.0,0.1,0.0,0.1,0.9,1.0,3.0,30.0,1.5,null)," +
+            "('102',0.5,0.8,0.3,0.8,0.0,0.1,0.0,0.1,0.9,1.0,3.0,15.0,0.175,0.75)," +
+            "('103',0.7,0.9,0.3,1.0,0.0,0.1,0.0,0.1,0.9,1.0,0.0,2.0,0.065,0.375)," +
+            "('104',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,1.0,0.01525,0.175)," +
+            "('105',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0,0.01525)," +
+            "('106',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.3,0,0.01525)," +
+            "('107',0.9,1.0,0.0,0.1,0.0,0.1,0.0,0.1,0.9,1.0,0.0,0.0,0,0.00035);"
+    */
 
-                // LCZ types need to be String when using the method 'distributionCHaracterization',
-                // thus need to define a correspondence table
-                def correspondenceMap = [   "LCZ1": 1,
-                                            "LCZ2": 2,
-                                            "LCZ3": 3,
-                                            "LCZ4": 4,
-                                            "LCZ5": 5,
-                                            "LCZ6": 6,
-                                            "LCZ7": 7,
-                                            "LCZ8": 8,
-                                            "LCZ9": 9]
+        // LCZ types need to be String when using the method 'distributionCHaracterization',
+        // thus need to define a correspondence table
+        def correspondenceMap = ["LCZ1": 1,
+                                 "LCZ2": 2,
+                                 "LCZ3": 3,
+                                 "LCZ4": 4,
+                                 "LCZ5": 5,
+                                 "LCZ6": 6,
+                                 "LCZ7": 7,
+                                 "LCZ8": 8,
+                                 "LCZ9": 9]
 
-                // I. Rural LCZ types are classified according to a "manual" decision tree
-                datasource."$rsuAllIndicators".BUILDING_FRACTION_LCZ.createIndex()
-                datasource."$rsuAllIndicators".ASPECT_RATIO.createIndex()
-                datasource."$rsuAllIndicators"."$ID_FIELD_RSU".createIndex()
+        // I. Rural LCZ types are classified according to a "manual" decision tree
+        datasource."$rsuAllIndicators".BUILDING_FRACTION_LCZ.createIndex()
+        datasource."$rsuAllIndicators".ASPECT_RATIO.createIndex()
+        datasource."$rsuAllIndicators"."$ID_FIELD_RSU".createIndex()
 
-                datasource """
+        datasource """
                     DROP TABLE IF EXISTS $ruralLCZ; 
                     CREATE TABLE $ruralLCZ AS 
                         SELECT $ID_FIELD_RSU, 
@@ -172,12 +173,12 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                         WHERE (BUILDING_FRACTION_LCZ < 0.1 OR BUILDING_FRACTION_LCZ IS NULL) 
                         AND ASPECT_RATIO < 0.1;""".toString()
 
-                datasource."$ruralLCZ"."$ID_FIELD_RSU".createIndex()
-                datasource."$ruralLCZ".IMPERVIOUS_FRACTION_LCZ.createIndex()
-                datasource."$ruralLCZ".PERVIOUS_FRACTION_LCZ.createIndex()
-                datasource."$ruralLCZ".HIGH_ALL_VEGETATION.createIndex()
-                datasource."$ruralLCZ".ALL_VEGETATION.createIndex()
-                datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
+        datasource."$ruralLCZ"."$ID_FIELD_RSU".createIndex()
+        datasource."$ruralLCZ".IMPERVIOUS_FRACTION_LCZ.createIndex()
+        datasource."$ruralLCZ".PERVIOUS_FRACTION_LCZ.createIndex()
+        datasource."$ruralLCZ".HIGH_ALL_VEGETATION.createIndex()
+        datasource."$ruralLCZ".ALL_VEGETATION.createIndex()
+        datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
                                                 CASE WHEN IMPERVIOUS_FRACTION_LCZ>ALL_VEGETATION AND IMPERVIOUS_FRACTION_LCZ>WATER_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.1
@@ -196,10 +197,10 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                                 null AS LCZ_UNIQUENESS_VALUE, 
                                                 null AS LCZ_EQUALITY_VALUE
                                         FROM $ruralLCZ""".toString()
-                // II. Urban LCZ types are classified
+        // II. Urban LCZ types are classified
 
-                // Keep only the RSU that have not been classified as rural
-                datasource """DROP TABLE IF EXISTS $urbanLCZ;
+        // Keep only the RSU that have not been classified as rural
+        datasource """DROP TABLE IF EXISTS $urbanLCZ;
                                 CREATE TABLE $urbanLCZ
                                         AS SELECT   a.*, 
                                                     a.AREA_FRACTION_COMMERCIAL + a.AREA_FRACTION_LIGHT_INDUSTRY AS AREA_FRACTION_LOWRISE_TYPO
@@ -208,10 +209,10 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                         ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
                                         WHERE b.$ID_FIELD_RSU IS NULL;""".toString()
 
-                // 0. Set as industrial areas or large low-rise (commercial) having more of industrial or commercial than residential
-                // and at least 1/3 of fraction
-                if (datasource."$urbanLCZ".hasColumn("AREA_FRACTION_HEAVY_INDUSTRY")) {
-                    datasource """DROP TABLE IF EXISTS $classifiedIndustrialCommercialLcz;
+        // 0. Set as industrial areas or large low-rise (commercial) having more of industrial or commercial than residential
+        // and at least 1/3 of fraction
+        if (datasource."$urbanLCZ".hasColumn("AREA_FRACTION_HEAVY_INDUSTRY")) {
+            datasource """DROP TABLE IF EXISTS $classifiedIndustrialCommercialLcz;
                                 CREATE TABLE $classifiedIndustrialCommercialLcz
                                         AS SELECT   $ID_FIELD_RSU,
                                                     CASE WHEN AREA_FRACTION_HEAVY_INDUSTRY > AREA_FRACTION_LOWRISE_TYPO
@@ -234,13 +235,13 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                         UNION ALL 
                                             SELECT *
                                             FROM $classifiedRuralLCZ""".toString()
-                } else {
-                    datasource """ALTER TABLE $classifiedRuralLCZ RENAME TO $ruralAndIndustrialCommercialLCZ""".toString()
-                }
-                datasource."$ruralAndIndustrialCommercialLCZ"."$ID_FIELD_RSU".createIndex()
-                datasource."$rsuLczIndicators"."$ID_FIELD_RSU".createIndex()
+        } else {
+            datasource """ALTER TABLE $classifiedRuralLCZ RENAME TO $ruralAndIndustrialCommercialLCZ""".toString()
+        }
+        datasource."$ruralAndIndustrialCommercialLCZ"."$ID_FIELD_RSU".createIndex()
+        datasource."$rsuLczIndicators"."$ID_FIELD_RSU".createIndex()
 
-                datasource """DROP TABLE IF EXISTS $urbanLCZExceptIndus;
+        datasource """DROP TABLE IF EXISTS $urbanLCZExceptIndus;
                                 CREATE TABLE $urbanLCZExceptIndus
                                         AS SELECT a.*
                                         FROM $rsuLczIndicators a
@@ -248,95 +249,95 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                         ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
                                         WHERE b.$ID_FIELD_RSU IS NULL;""".toString()
 
-                // 1. Each dimension (each of the 7 indicators) is normalized according to average and standard deviation
-                // (or median and median of the variability)
+        // 1. Each dimension (each of the 7 indicators) is normalized according to average and standard deviation
+        // (or median and median of the variability)
 
-                // For each LCZ indicator...
-                def urbanLCZExceptIndusColumns = datasource."$urbanLCZExceptIndus".columns
-                urbanLCZExceptIndusColumns.collect { indicCol ->
-                    if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
-                        // The values used for normalization ("mean" and "standard deviation") are calculated
-                        // (for each column) and stored into maps
-                        centerValue[indicCol] = datasource.firstRow("""SELECT ${normalisationType}(all_val) 
+        // For each LCZ indicator...
+        def urbanLCZExceptIndusColumns = datasource."$urbanLCZExceptIndus".columns
+        urbanLCZExceptIndusColumns.collect { indicCol ->
+            if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
+                // The values used for normalization ("mean" and "standard deviation") are calculated
+                // (for each column) and stored into maps
+                centerValue[indicCol] = datasource.firstRow("""SELECT ${normalisationType}(all_val) 
                                 AS $CENTER_NAME FROM (SELECT ${indicCol}_low AS all_val FROM $LCZ_classes 
                                 WHERE ${indicCol}_low IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val 
                                 FROM $LCZ_classes WHERE ${indicCol}_upp IS NOT NULL)""".toString())."$CENTER_NAME"
-                        if (normalisationType == "AVG") {
-                            variabilityValue[indicCol] = datasource.firstRow("""SELECT STDDEV_POP(all_val) 
+                if (normalisationType == "AVG") {
+                    variabilityValue[indicCol] = datasource.firstRow("""SELECT STDDEV_POP(all_val) 
                                     AS $VARIABILITY_NAME FROM (SELECT ${indicCol}_low AS all_val 
                                     FROM $LCZ_classes WHERE ${indicCol}_low IS NOT NULL UNION ALL 
                                     SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes WHERE ${indicCol}_upp 
                                     IS NOT NULL)""".toString())."$VARIABILITY_NAME"
-                        } else {
-                            variabilityValue[indicCol] = datasource.firstRow("""SELECT MEDIAN(ABS(all_val-
+                } else {
+                    variabilityValue[indicCol] = datasource.firstRow("""SELECT MEDIAN(ABS(all_val-
                                     ${centerValue[indicCol]})) AS $VARIABILITY_NAME FROM 
                                     (SELECT ${indicCol}_low AS all_val FROM $LCZ_classes WHERE ${indicCol}_low 
                                     IS NOT NULL UNION ALL SELECT ${indicCol}_upp AS all_val FROM $LCZ_classes 
                                     WHERE ${indicCol}_upp IS NOT NULL)""".toString())."$VARIABILITY_NAME"
-                        }
-                        // Piece of query useful for normalizing the LCZ indicator intervals
-                        queryRangeNorm += " (${indicCol}_low-${centerValue[indicCol]})/${variabilityValue[indicCol]}" +
-                                " AS ${indicCol}_low, (${indicCol}_upp-${centerValue[indicCol]})/" +
-                                "${variabilityValue[indicCol]} AS ${indicCol}_upp, "
-
-                        // Piece of query useful for normalizing the LCZ input values
-                        queryValuesNorm += " ($indicCol-${centerValue[indicCol]})/${variabilityValue[indicCol]} AS " +
-                                "$indicCol, "
-                    }
                 }
-                // The indicator interval of the LCZ types are normalized according to "center" and "variability" values
-                datasource """DROP TABLE IF EXISTS $normalizedRange; CREATE TABLE $normalizedRange 
+                // Piece of query useful for normalizing the LCZ indicator intervals
+                queryRangeNorm += " (${indicCol}_low-${centerValue[indicCol]})/${variabilityValue[indicCol]}" +
+                        " AS ${indicCol}_low, (${indicCol}_upp-${centerValue[indicCol]})/" +
+                        "${variabilityValue[indicCol]} AS ${indicCol}_upp, "
+
+                // Piece of query useful for normalizing the LCZ input values
+                queryValuesNorm += " ($indicCol-${centerValue[indicCol]})/${variabilityValue[indicCol]} AS " +
+                        "$indicCol, "
+            }
+        }
+        // The indicator interval of the LCZ types are normalized according to "center" and "variability" values
+        datasource """DROP TABLE IF EXISTS $normalizedRange; CREATE TABLE $normalizedRange 
                         AS SELECT name, ${queryRangeNorm[0..-3]} FROM $LCZ_classes""".toString()
 
-                // The input indicator values are normalized according to "center" and "variability" values
-                datasource """DROP TABLE IF EXISTS $normalizedValues; CREATE TABLE $normalizedValues 
+        // The input indicator values are normalized according to "center" and "variability" values
+        datasource """DROP TABLE IF EXISTS $normalizedValues; CREATE TABLE $normalizedValues 
                         AS SELECT $ID_FIELD_RSU, ${queryValuesNorm[0..-3]} FROM $urbanLCZExceptIndus""".toString()
 
 
-                // 2. The distance of each RSU to each of the LCZ types is calculated in the normalized interval.
-                // The two LCZ types being the closest to the RSU indicators are associated to this RSU. An indicator
-                // of uncertainty based on the Perkin Skill Score method is also associated to this "assignment".
+        // 2. The distance of each RSU to each of the LCZ types is calculated in the normalized interval.
+        // The two LCZ types being the closest to the RSU indicators are associated to this RSU. An indicator
+        // of uncertainty based on the Perkin Skill Score method is also associated to this "assignment".
 
-                // For each LCZ type...
-                def queryLczDistance = ""
-                datasource.eachRow("SELECT * FROM $normalizedRange".toString()) { LCZ ->
-                    queryLczDistance += "SQRT("
-                    // For each indicator...
-                    urbanLCZExceptIndusColumns.collect { indic ->
-                        if (!indic.equalsIgnoreCase(ID_FIELD_RSU) && !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
-                            // Define columns names where are stored lower and upper range values of the current LCZ
-                            // and current indicator
-                            def valLow = indic + "_low"
-                            def valUpp = indic + "_upp"
-                            // Piece of query useful for calculating the RSU distance to the current LCZ
-                            // for the current indicator
-                            queryLczDistance +=
-                                    "${mapOfWeights[indic.toLowerCase()]}*POWER(CASEWHEN(${LCZ[valLow]} IS NULL," +
-                                            "CASEWHEN($indic<${LCZ[valUpp]}, 0, ${LCZ[valUpp]}-$indic)," +
-                                            "CASEWHEN(${LCZ[valUpp]} IS NULL," +
-                                            "CASEWHEN($indic>${LCZ[valLow]},0,${LCZ[valLow]}-$indic)," +
-                                            "CASEWHEN($indic<${LCZ[valLow]},${LCZ[valLow]}-$indic," +
-                                            "CASEWHEN($indic<${LCZ[valUpp]},0,${LCZ[valUpp]}-$indic)))),2)+"
-                        }
-                    }
-
-                    queryLczDistance = "${queryLczDistance[0..-2]}) AS LCZ${LCZ.name},"
+        // For each LCZ type...
+        def queryLczDistance = ""
+        datasource.eachRow("SELECT * FROM $normalizedRange".toString()) { LCZ ->
+            queryLczDistance += "SQRT("
+            // For each indicator...
+            urbanLCZExceptIndusColumns.collect { indic ->
+                if (!indic.equalsIgnoreCase(ID_FIELD_RSU) && !indic.equalsIgnoreCase(GEOMETRIC_FIELD)) {
+                    // Define columns names where are stored lower and upper range values of the current LCZ
+                    // and current indicator
+                    def valLow = indic + "_low"
+                    def valUpp = indic + "_upp"
+                    // Piece of query useful for calculating the RSU distance to the current LCZ
+                    // for the current indicator
+                    queryLczDistance +=
+                            "${mapOfWeights[indic.toLowerCase()]}*POWER(CASEWHEN(${LCZ[valLow]} IS NULL," +
+                                    "CASEWHEN($indic<${LCZ[valUpp]}, 0, ${LCZ[valUpp]}-$indic)," +
+                                    "CASEWHEN(${LCZ[valUpp]} IS NULL," +
+                                    "CASEWHEN($indic>${LCZ[valLow]},0,${LCZ[valLow]}-$indic)," +
+                                    "CASEWHEN($indic<${LCZ[valLow]},${LCZ[valLow]}-$indic," +
+                                    "CASEWHEN($indic<${LCZ[valUpp]},0,${LCZ[valUpp]}-$indic)))),2)+"
                 }
+            }
 
-                // Create the distribution table (the distance to each LCZ type - as column - is calculated for each RSU - as row)
-                datasource  """DROP TABLE IF EXISTS $distribLczTable;
+            queryLczDistance = "${queryLczDistance[0..-2]}) AS LCZ${LCZ.name},"
+        }
+
+        // Create the distribution table (the distance to each LCZ type - as column - is calculated for each RSU - as row)
+        datasource """DROP TABLE IF EXISTS $distribLczTable;
                             CREATE TABLE $distribLczTable 
                                     AS SELECT   $ID_FIELD_RSU, ${queryLczDistance[0..-2]}
                                     FROM        $normalizedValues;""".toString()
 
-                // Specific behavior for LCZ type 1 (compact high rise): we suppose it is impossible to have a LCZ1 if
-                // the mean average nb of building level in the RSU <10 (we set LCZ1 value to -9999.99 in this case)
-                def colDistribTable = datasource.getTable(distribLczTable).getColumns()
-                colDistribTable=colDistribTable.minus(["LCZ1"])
-                datasource."$distribLczTable"."$ID_FIELD_RSU".createIndex()
-                datasource."$urbanLCZ"."$ID_FIELD_RSU".createIndex()
-                datasource."$urbanLCZ".AVG_NB_LEV_AREA_WEIGHTED.createIndex()
-                datasource """  DROP TABLE IF EXISTS $distribLczTableWithoutLcz1;
+        // Specific behavior for LCZ type 1 (compact high rise): we suppose it is impossible to have a LCZ1 if
+        // the mean average nb of building level in the RSU <10 (we set LCZ1 value to -9999.99 in this case)
+        def colDistribTable = datasource.getTable(distribLczTable).getColumns()
+        colDistribTable = colDistribTable.minus(["LCZ1"])
+        datasource."$distribLczTable"."$ID_FIELD_RSU".createIndex()
+        datasource."$urbanLCZ"."$ID_FIELD_RSU".createIndex()
+        datasource."$urbanLCZ".AVG_NB_LEV_AREA_WEIGHTED.createIndex()
+        datasource """  DROP TABLE IF EXISTS $distribLczTableWithoutLcz1;
                                 CREATE TABLE $distribLczTableWithoutLcz1 
                                     AS SELECT   a.${colDistribTable.join(", a.")},
                                                 CASE WHEN b.AVG_NB_LEV_AREA_WEIGHTED < 10 
@@ -346,65 +347,65 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                     LEFT JOIN   $urbanLCZ b
                                         ON a.$ID_FIELD_RSU=b.$ID_FIELD_RSU;""".toString()
 
-                // The distribution is characterized
-                datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'}""".toString()
-                def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
-                                    distribLczTableWithoutLcz1,distribLczTableWithoutLcz1,
-                                    ID_FIELD_RSU,prefixName,
-                                    ["equality", "uniqueness"], "LEAST",
-                                    true, true )
+        // The distribution is characterized
+        datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'}""".toString()
+        def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
+                distribLczTableWithoutLcz1, distribLczTableWithoutLcz1,
+                ID_FIELD_RSU, prefixName,
+                ["equality", "uniqueness"], "LEAST",
+                true, true)
 
-                // Rename the standard indicators into names consistent with the current method (LCZ type...)
-                datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
+        // Rename the standard indicators into names consistent with the current method (LCZ type...)
+        datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EQUALITY_VALUE TO LCZ_EQUALITY_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL2 TO LCZ_SECONDARY;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;""".toString()
 
-                // Need to replace the string LCZ values by an integer
-                datasource."$resultsDistrib".lcz_primary.createIndex()
-                datasource."$resultsDistrib".lcz_secondary.createIndex()
-                def casewhenQuery1 = ""
-                def casewhenQuery2 = ""
-                def parenthesis = ""
-                correspondenceMap.each{lczString, lczInt ->
-                    casewhenQuery1 += "CASEWHEN(LCZ_PRIMARY = '$lczString', $lczInt, "
-                    casewhenQuery2 += "CASEWHEN(LCZ_SECONDARY = '$lczString', $lczInt, "
-                    parenthesis += ")"
-                }
-                datasource """  DROP TABLE IF EXISTS $distribLczTableInt;
+        // Need to replace the string LCZ values by an integer
+        datasource."$resultsDistrib".lcz_primary.createIndex()
+        datasource."$resultsDistrib".lcz_secondary.createIndex()
+        def casewhenQuery1 = ""
+        def casewhenQuery2 = ""
+        def parenthesis = ""
+        correspondenceMap.each { lczString, lczInt ->
+            casewhenQuery1 += "CASEWHEN(LCZ_PRIMARY = '$lczString', $lczInt, "
+            casewhenQuery2 += "CASEWHEN(LCZ_SECONDARY = '$lczString', $lczInt, "
+            parenthesis += ")"
+        }
+        datasource """  DROP TABLE IF EXISTS $distribLczTableInt;
                                 CREATE TABLE $distribLczTableInt
                                         AS SELECT   $ID_FIELD_RSU, $casewhenQuery1 null$parenthesis AS LCZ_PRIMARY,
                                                     $casewhenQuery2 null$parenthesis AS LCZ_SECONDARY, 
                                                     MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
                                         FROM $resultsDistrib""".toString()
 
-                // Then urban and rural LCZ types are merged into a single table
-                datasource """DROP TABLE IF EXISTS $classifiedLcz;
+        // Then urban and rural LCZ types are merged into a single table
+        datasource """DROP TABLE IF EXISTS $classifiedLcz;
                                 CREATE TABLE $classifiedLcz 
                                         AS SELECT   * 
                                         FROM        $distribLczTableInt
                                         UNION ALL   SELECT * FROM $ruralAndIndustrialCommercialLCZ b;""".toString()
-                datasource."$classifiedLcz"."$ID_FIELD_RSU".createIndex()
+        datasource."$classifiedLcz"."$ID_FIELD_RSU".createIndex()
 
-                // If the input tables contain a geometric field, we add it to the output table
-                if (datasource."$rsuAllIndicators".hasColumn(GEOMETRIC_FIELD)) {
-                    datasource """DROP TABLE IF EXISTS $outputTableName;
+        // If the input tables contain a geometric field, we add it to the output table
+        if (datasource."$rsuAllIndicators".hasColumn(GEOMETRIC_FIELD)) {
+            datasource """DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName
                                             AS SELECT   a.*, b.$GEOMETRIC_FIELD
                                             FROM        $classifiedLcz a
                                             LEFT JOIN   $rsuAllIndicators b
                                             ON          a.$ID_FIELD_RSU=b.$ID_FIELD_RSU""".toString()
-                } else if (datasource."$rsuLczIndicators".hasColumn(GEOMETRIC_FIELD)) {
-                    datasource """DROP TABLE IF EXISTS $outputTableName;
+        } else if (datasource."$rsuLczIndicators".hasColumn(GEOMETRIC_FIELD)) {
+            datasource """DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName
                                             AS SELECT   a.*, b.$GEOMETRIC_FIELD
                                             FROM        $classifiedLcz a
                                             LEFT JOIN   $rsuLczIndicators b
                                             ON          a.$ID_FIELD_RSU=b.$ID_FIELD_RSU""".toString()
-                } else {
-                    datasource """DROP TABLE IF EXISTS $outputTableName; ALTER TABLE $classifiedLcz RENAME TO $outputTableName;""".toString()
-                }
+        } else {
+            datasource """DROP TABLE IF EXISTS $outputTableName; ALTER TABLE $classifiedLcz RENAME TO $outputTableName;""".toString()
+        }
 /*
                 // Temporary tables are deleted
                 datasource """DROP TABLE IF EXISTS ${prefixName}_distribution_repartition,
@@ -412,13 +413,13 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                     $distribLczTable, $distribLczTableInt, $allLczTable, $pivotedTable, $mainLczTable,
                     $classifiedLcz, $classifiedUrbanLcz, $classifiedRuralLCZ, $distribLczTableWithoutLcz1;"""
 */
-                debug "The LCZ classification has been performed."
+        debug "The LCZ classification has been performed."
 
-                return outputTableName
-            } else {
-                error "The 'normalisationType' argument is not valid."
-            }
-        }
+        return outputTableName
+    } else {
+        error "The 'normalisationType' argument is not valid."
+    }
+}
 
 /**
  * This process is used to create a random Forest model for regression or classification purpose.
@@ -453,92 +454,90 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
  *
  * @author Jérémy Bernard
  */
-String createRandomForestModel(JdbcDataSource datasource ,String trainingTableName, String varToModel,List explicativeVariables, boolean  save,
-                               String  pathAndFileName,int ntrees, int mtry, String rule=  "GINI", int maxDepth,
-                               int maxNodes, int nodeSize, double  subsample, boolean classif= true){
-            def splitRule
-            if (rule) {
-                switch (rule.toUpperCase()) {
-                    case "GINI":
-                    case "ENTROPY":
-                        splitRule = SplitRule.valueOf(rule)
-                        break
-                    default:
-                        error "The rule value ${rule} is not supported. Please use 'GINI' or 'ENTROPY'"
-                        return
-                }
-            } else {
-                error "The rule value cannot be null or empty. Please use 'GINI' or 'ENTROPY'"
+String createRandomForestModel(JdbcDataSource datasource, String trainingTableName, String varToModel, List explicativeVariables,
+                               boolean save,
+                               String pathAndFileName, int ntrees, int mtry, String rule = "GINI", int maxDepth,
+                               int maxNodes, int nodeSize, double subsample, boolean classif = true) {
+    def splitRule
+    if (rule) {
+        switch (rule.toUpperCase()) {
+            case "GINI":
+            case "ENTROPY":
+                splitRule = SplitRule.valueOf(rule)
+                break
+            default:
+                error "The rule value ${rule} is not supported. Please use 'GINI' or 'ENTROPY'"
                 return
-            }
-            debug "Create a Random Forest model"
-
-            def trainingTable = datasource."$trainingTableName"
-
-            //Check if the column names exists
-            if (!trainingTable.hasColumn(varToModel)) {
-                error "The training table should have a column named $varToModel"
-                return
-            }
-            // If needed, select only some specific columns for the training in the dataframe
-            def df
-            if (explicativeVariables){
-                def tabFin = datasource.getTable(trainingTableName).columns(explicativeVariables).getTable()
-                df = DataFrame.of(tabFin)
-            }
-            else{
-                def tabFin = datasource.getTable(trainingTableName)
-                df = DataFrame.of(tabFin)
-            }
-            def formula = Formula.lhs(varToModel)
-            def columnTypes = df.getColumnsTypes()
-            def dfFactorized = df.omitNullRows()
-
-            // Identify columns being string (thus needed to be factorized)
-            columnTypes.each{colName, colType ->
-                if(colType == "String"){
-                    dfFactorized = dfFactorized.factorize(colName)
-                }
-            }
-            // Create the randomForest
-            def model
-            if(classif){
-                model = RandomForestClassification.fit(formula, dfFactorized, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
-            }
-            else{
-                model = RandomForestRegression.fit(formula, dfFactorized, ntrees, mtry, maxDepth, maxNodes, nodeSize, subsample)
-            }
-
-
-            // Calculate the prediction using the same sample in order to identify what is the
-            // data rate that has been well classified
-            def prediction = Validation.test(model, dfFactorized)
-            def truth
-            if(DataType.isDouble(dfFactorized.schema().field(varToModel).type)){
-                truth = dfFactorized.apply(varToModel).toDoubleArray()
-                def rmse = RMSE.of(truth, prediction)
-                error "The root mean square error is : ${rmse}"
-            }
-            else{
-                truth = dfFactorized.apply(varToModel).toIntArray()
-                def accuracy = Accuracy.of(truth, prediction)
-                debug "The percentage of the data that have been well classified is : ${accuracy * 100}%"
-            }
-
-            try {
-                if (save) {
-                    def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName))
-                    def xs = new XStream(new StaxDriver())
-                    xs.toXML(model, zOut)
-                    zOut.close()
-                }
-            }
-            catch (Exception e) {
-                error "Cannot save the model", e
-                return
-            }
-            return model
         }
+    } else {
+        error "The rule value cannot be null or empty. Please use 'GINI' or 'ENTROPY'"
+        return
+    }
+    debug "Create a Random Forest model"
+
+    def trainingTable = datasource."$trainingTableName"
+
+    //Check if the column names exists
+    if (!trainingTable.hasColumn(varToModel)) {
+        error "The training table should have a column named $varToModel"
+        return
+    }
+    // If needed, select only some specific columns for the training in the dataframe
+    def df
+    if (explicativeVariables) {
+        def tabFin = datasource.getTable(trainingTableName).columns(explicativeVariables).getTable()
+        df = DataFrame.of(tabFin)
+    } else {
+        def tabFin = datasource.getTable(trainingTableName)
+        df = DataFrame.of(tabFin)
+    }
+    def formula = Formula.lhs(varToModel)
+    def columnTypes = df.getColumnsTypes()
+    def dfFactorized = df.omitNullRows()
+
+    // Identify columns being string (thus needed to be factorized)
+    columnTypes.each { colName, colType ->
+        if (colType == "String") {
+            dfFactorized = dfFactorized.factorize(colName)
+        }
+    }
+    // Create the randomForest
+    def model
+    if (classif) {
+        model = RandomForestClassification.fit(formula, dfFactorized, ntrees, mtry, splitRule, maxDepth, maxNodes, nodeSize, subsample)
+    } else {
+        model = RandomForestRegression.fit(formula, dfFactorized, ntrees, mtry, maxDepth, maxNodes, nodeSize, subsample)
+    }
+
+
+    // Calculate the prediction using the same sample in order to identify what is the
+    // data rate that has been well classified
+    def prediction = Validation.test(model, dfFactorized)
+    def truth
+    if (DataType.isDouble(dfFactorized.schema().field(varToModel).type)) {
+        truth = dfFactorized.apply(varToModel).toDoubleArray()
+        def rmse = RMSE.of(truth, prediction)
+        error "The root mean square error is : ${rmse}"
+    } else {
+        truth = dfFactorized.apply(varToModel).toIntArray()
+        def accuracy = Accuracy.of(truth, prediction)
+        debug "The percentage of the data that have been well classified is : ${accuracy * 100}%"
+    }
+
+    try {
+        if (save) {
+            def zOut = new GZIPOutputStream(new FileOutputStream(pathAndFileName))
+            def xs = new XStream(new StaxDriver())
+            xs.toXML(model, zOut)
+            zOut.close()
+        }
+    }
+    catch (Exception e) {
+        error "Cannot save the model", e
+        return
+    }
+    return model
+}
 
 /**
  * This process is used to apply a RandomForest model on a given dataset (the model may be downloaded on a default
@@ -556,159 +555,159 @@ String createRandomForestModel(JdbcDataSource datasource ,String trainingTableNa
  * @author Jérémy Bernard
  */
 String applyRandomForestModel(JdbcDataSource datasource, String explicativeVariablesTableName, String pathAndFileName, String, idName,
-                              String prefixName){
-            debug "Apply a Random Forest model"
-            File inputModelFile = new File(pathAndFileName)
-            def modelName = FilenameUtils.getBaseName(pathAndFileName)
-            def model = getModel(modelName)
-            if(!model){
-            if (!inputModelFile.exists()) {
-                //We try to find this model in geoclimate
-                def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
-                def localInputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
-                // The model doesn't exist on the local folder we download it
+                              String prefixName) {
+    debug "Apply a Random Forest model"
+    File inputModelFile = new File(pathAndFileName)
+    def modelName = FilenameUtils.getBaseName(pathAndFileName)
+    def model = getModel(modelName)
+    if (!model) {
+        if (!inputModelFile.exists()) {
+            //We try to find this model in geoclimate
+            def modelURL = "https://github.com/orbisgis/geoclimate/raw/master/models/${modelName}.model"
+            def localInputModelFile = new File(System.getProperty("user.home") + File.separator + ".geoclimate" + File.separator + modelName + ".model")
+            // The model doesn't exist on the local folder we download it
+            if (!localInputModelFile.exists()) {
+                FileUtils.copyURLToFile(new URL(modelURL), localInputModelFile)
                 if (!localInputModelFile.exists()) {
-                    FileUtils.copyURLToFile(new URL(modelURL), localInputModelFile)
-                    if (!localInputModelFile.exists()) {
-                        error "Cannot find any model file to apply the classification tree"
-                        return null
-                    }
-                }
-                inputModelFile=localInputModelFile;
-            } else {
-                if(FilenameUtils.isExtension(pathAndFileName, "model")){
-                    modelName = FilenameUtils.getBaseName(pathAndFileName)
-                }
-                else{
-                    error "The extension of the model file must be .model"
+                    error "Cannot find any model file to apply the classification tree"
                     return null
                 }
             }
-            def fileInputStream = new FileInputStream(inputModelFile)
-            // Load the RandomForest model
-            def xs = new XStream(new StaxDriver())
-            // clear out existing permissions and start a whitelist
-            xs.addPermission(NoTypePermission.NONE);
-            // allow some basics
-            xs.addPermission(NullPermission.NULL);
-            xs.addPermission(PrimitiveTypePermission.PRIMITIVES);
-            xs.allowTypeHierarchy(Collection.class);
-            // allow any type from the packages
-            xs.allowTypesByWildcard(new String[] {
-                    TypologyClassification.class.getPackage().getName()+".*",
-                    "smile.regression.*","smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
-                    "smile.base.cart.*","smile.classification.*","java.lang.*","java.util.*"
-            })
-            // Load the model and recover the name of the variable to model
-            def gzipInputStream = new GZIPInputStream(fileInputStream)
-                model = xs.fromXML(gzipInputStream)
-                putModel(modelName, model)
+            inputModelFile = localInputModelFile;
+        } else {
+            if (FilenameUtils.isExtension(pathAndFileName, "model")) {
+                modelName = FilenameUtils.getBaseName(pathAndFileName)
+            } else {
+                error "The extension of the model file must be .model"
+                return null
             }
-            if(!model){
-                error "Cannot find the requiered columns to apply the model"
-                return
-            }
+        }
+        def fileInputStream = new FileInputStream(inputModelFile)
+        // Load the RandomForest model
+        def xs = new XStream(new StaxDriver())
+        // clear out existing permissions and start a whitelist
+        xs.addPermission(NoTypePermission.NONE);
+        // allow some basics
+        xs.addPermission(NullPermission.NULL);
+        xs.addPermission(PrimitiveTypePermission.PRIMITIVES);
+        xs.allowTypeHierarchy(Collection.class);
+        // allow any type from the packages
+        xs.allowTypesByWildcard(new String[]{
+                TypologyClassification.class.getPackage().getName() + ".*",
+                "smile.regression.*", "smile.data.formula.*", "smile.data.type.*", "smile.data.measure.*", "smile.data.measure.*",
+                "smile.base.cart.*", "smile.classification.*", "java.lang.*", "java.util.*"
+        })
+        // Load the model and recover the name of the variable to model
+        def gzipInputStream = new GZIPInputStream(fileInputStream)
+        model = xs.fromXML(gzipInputStream)
+        putModel(modelName, model)
+    }
+    if (!model) {
+        error "Cannot find the requiered columns to apply the model"
+        return
+    }
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, modelName.toLowerCase();
+    // The name of the outputTableName is constructed
+    def outputTableName = prefix prefixName, modelName.toLowerCase();
 
-            def varType
-            def var2model
-            def tree = model.trees[0]
-            def modelColumnNames =[]
-            if(tree instanceof RegressionTree){
-                def response = tree.response
-                varType = response.type
-                var2model = response.name
-                modelColumnNames = tree.schema.fields.collect {
-                    it.name
-                }
-            }else{
-                def response = tree.tree.response
-                varType = response.type
-                var2model = response.name
-                modelColumnNames = tree.tree.schema.fields.collect {
-                    it.name
-                }
-            }
-            //Check the column names before building the dataframe and apply the model
-            def inputColumns = datasource."$explicativeVariablesTableName".getColumnsTypes()
+    def varType
+    def var2model
+    def tree = model.trees[0]
+    def modelColumnNames = []
+    if (tree instanceof RegressionTree) {
+        def response = tree.response
+        varType = response.type
+        var2model = response.name
+        modelColumnNames = tree.schema.fields.collect {
+            it.name
+        }
+    } else {
+        def response = tree.tree.response
+        varType = response.type
+        var2model = response.name
+        modelColumnNames = tree.tree.schema.fields.collect {
+            it.name
+        }
+    }
+    //Check the column names before building the dataframe and apply the model
+    def inputColumns = datasource."$explicativeVariablesTableName".getColumnsTypes()
 
-            def allowedColumnNames = modelColumnNames.intersect(inputColumns.keySet())
-            def notSameColumnNames = allowedColumnNames.size() != modelColumnNames.size()
-            if (!allowedColumnNames && notSameColumnNames) {
-                error "Cannot find the requiered columns to apply the model"
-                return
-            }
-            def isDouble = false
-            if(DataType.isDouble(varType)){
-                isDouble=true
-            }
-            // Read the table containing the explicative variables as a DataFrame
-            def dfNofactorized = DataFrame.of(datasource.getTable("""(SELECT ${modelColumnNames.join(",")}, 
-            ${isDouble?"CAST (0 AS DOUBLE PRECISION) AS "+var2model:"CAST(0 AS INTEGER) AS "+ var2model},
+    def allowedColumnNames = modelColumnNames.intersect(inputColumns.keySet())
+    def notSameColumnNames = allowedColumnNames.size() != modelColumnNames.size()
+    if (!allowedColumnNames && notSameColumnNames) {
+        error "Cannot find the requiered columns to apply the model"
+        return
+    }
+    def isDouble = false
+    if (DataType.isDouble(varType)) {
+        isDouble = true
+    }
+    // Read the table containing the explicative variables as a DataFrame
+    def dfNofactorized = DataFrame.of(datasource.getTable("""(SELECT ${modelColumnNames.join(",")}, 
+            ${isDouble ? "CAST (0 AS DOUBLE PRECISION) AS " + var2model : "CAST(0 AS INTEGER) AS " + var2model},
             $idName from $explicativeVariablesTableName)""".toString()))
 
-            def df = dfNofactorized
-            //Factorize only string field
-             df.schema().fields().each{field->
-                if(DataTypes.StringType.equals(field.type)){
-                    df = df.factorize(field.name)
-                }}
-
-            // Remove the id for the application of the randomForest
-            def df_var = df.drop(idName.toUpperCase())
-
-            def prediction = Validation.test(model, df_var)
-            // We need to add the remove the initial predicted variable in order to not have duplicated...
-            df=df.drop(var2model)
-            df=df.merge(isDouble?DoubleVector.of(var2model, prediction):IntVector.of(var2model, prediction))
-
-            //TODO change this after SMILE answer's
-            // Keep only the id and the value of the classification
-            df = df.select(idName.toUpperCase(), var2model.toUpperCase())
-            String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType()).toString();
-            try {
-                PreparedStatement preparedStatement = null;
-                Connection outputconnection = datasource.getConnection();
-                try {
-                    Statement outputconnectionStatement = outputconnection.createStatement();
-                    outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
-                    def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} ${isDouble?"DOUBLE PRECISION":"INTEGER"})" ;
-                    def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
-                    outputconnection.setAutoCommit(false);
-                    outputconnectionStatement.execute(create_table_.toString());
-                    preparedStatement = outputconnection.prepareStatement(insertTable.toString());
-                    long batch_size = 0
-                    int batchSize = 100
-                    while (df.next()) {
-                        def id = df.getString(0)
-                        def predictedValue = df.getObject(1)
-                        preparedStatement.setObject( 1, id);
-                        preparedStatement.setObject( 2, predictedValue)
-                        preparedStatement.addBatch();
-                        batch_size++;
-                        if (batch_size >= batchSize) {
-                            preparedStatement.executeBatch()
-                            preparedStatement.clearBatch()
-                            batchSize = 0
-                        }
-                    }
-                    if (batch_size > 0) {
-                        preparedStatement.executeBatch();
-                    }
-                } catch (SQLException e) {
-                    error("Cannot save the dataframe.\n", e);
-                    return null;
-                } finally {
-                    outputconnection.setAutoCommit(true);
-                    if (preparedStatement != null) {
-                        preparedStatement.close();
-                    }
-                }
-            } catch (SQLException e) {
-                error("Cannot save the dataframe.\n", e);
-                return null;
-            }
-            return tableName
+    def df = dfNofactorized
+    //Factorize only string field
+    df.schema().fields().each { field ->
+        if (DataTypes.StringType.equals(field.type)) {
+            df = df.factorize(field.name)
         }
+    }
+
+    // Remove the id for the application of the randomForest
+    def df_var = df.drop(idName.toUpperCase())
+
+    def prediction = Validation.test(model, df_var)
+    // We need to add the remove the initial predicted variable in order to not have duplicated...
+    df = df.drop(var2model)
+    df = df.merge(isDouble ? DoubleVector.of(var2model, prediction) : IntVector.of(var2model, prediction))
+
+    //TODO change this after SMILE answer's
+    // Keep only the id and the value of the classification
+    df = df.select(idName.toUpperCase(), var2model.toUpperCase())
+    String tableName = TableLocation.parse(outputTableName, datasource.getDataBaseType()).toString();
+    try {
+        PreparedStatement preparedStatement = null;
+        Connection outputconnection = datasource.getConnection();
+        try {
+            Statement outputconnectionStatement = outputconnection.createStatement();
+            outputconnectionStatement.execute("DROP TABLE IF EXISTS " + tableName);
+            def create_table_ = "CREATE TABLE ${tableName} (${idName.toUpperCase()} INTEGER, ${var2model.toUpperCase()} ${isDouble ? "DOUBLE PRECISION" : "INTEGER"})";
+            def insertTable = "INSERT INTO ${tableName}  VALUES(?,?)";
+            outputconnection.setAutoCommit(false);
+            outputconnectionStatement.execute(create_table_.toString());
+            preparedStatement = outputconnection.prepareStatement(insertTable.toString());
+            long batch_size = 0
+            int batchSize = 100
+            while (df.next()) {
+                def id = df.getString(0)
+                def predictedValue = df.getObject(1)
+                preparedStatement.setObject(1, id);
+                preparedStatement.setObject(2, predictedValue)
+                preparedStatement.addBatch();
+                batch_size++;
+                if (batch_size >= batchSize) {
+                    preparedStatement.executeBatch()
+                    preparedStatement.clearBatch()
+                    batchSize = 0
+                }
+            }
+            if (batch_size > 0) {
+                preparedStatement.executeBatch();
+            }
+        } catch (SQLException e) {
+            error("Cannot save the dataframe.\n", e);
+            return null;
+        } finally {
+            outputconnection.setAutoCommit(true);
+            if (preparedStatement != null) {
+                preparedStatement.close();
+            }
+        }
+    } catch (SQLException e) {
+        error("Cannot save the dataframe.\n", e);
+        return null;
+    }
+    return tableName
+}

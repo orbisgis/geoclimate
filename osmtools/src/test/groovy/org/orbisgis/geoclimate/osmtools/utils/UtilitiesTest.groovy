@@ -45,9 +45,9 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.osmtools.AbstractOSMToolsTest
+import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.orbisgis.geoclimate.osmtools.OSMTools
 
 import java.util.regex.Pattern
 
@@ -59,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019-2020)
  */
-class UtilitiesTest extends AbstractOSMToolsTest{
+class UtilitiesTest extends AbstractOSMToolsTest {
 
     @TempDir(cleanup = CleanupMode.ON_SUCCESS)
     static File folder
@@ -77,7 +77,7 @@ class UtilitiesTest extends AbstractOSMToolsTest{
     static H2GIS h2gis
 
     @BeforeAll
-    static void beforeAll(){
+    static void beforeAll() {
         h2gis = H2GIS.open(folder.getAbsolutePath() + File.separator + "UtilitiesTest;AUTO_SERVER=TRUE;")
     }
 
@@ -92,7 +92,7 @@ class UtilitiesTest extends AbstractOSMToolsTest{
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
-    def RANDOM_PATH(){return folder.getAbsolutePath()+File.separator + uuid() }
+    def RANDOM_PATH() { return folder.getAbsolutePath() + File.separator + uuid() }
     /**
      * Test the {@link org.orbisgis.geoclimate.osmtools.utils.Utilities#arrayToCoordinate(java.lang.Object)} method.
      */

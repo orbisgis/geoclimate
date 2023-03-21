@@ -1,31 +1,46 @@
 {
-    "description" :"Example of configuration file to run the OSM workflow with an output folder",
-    "geoclimatedb" : {
-        "folder" : "/tmp/",
-        "name": "geoclimate_db;AUTO_SERVER=TRUE",
-        "delete" :true
-    },
-    "input" : {
-        "locations" : ["plourivo", [38.89557963573336,-77.03930318355559,38.89944983078282,-77.03364372253417]]},
-    "output" :{
-     "folder" : "/tmp/..."},
-    "parameters":
-    {"distance" : 1000,
-        "prefixName": "",
-        "hLevMin": 3,
-        "rsu_indicators": {
-        "indicatorUse": ["LCZ", "UTRF", "TEB"],
-        "svfSimplified": false,
-        "mapOfWeights":
-        {"sky_view_factor": 1,
-            "aspect_ratio": 1,
-            "building_surface_fraction": 1,
-            "impervious_surface_fraction" : 1,
-            "pervious_surface_fraction": 1,
-            "height_of_roughness_elements": 1,
-            "terrain_roughness_class": 1,
-            "lczRandomForest": false},
-        "estimateHeight" : false
-        }
+  "description": "Example of configuration file to run the OSM workflow with an output folder",
+  "geoclimatedb": {
+    "folder": "/tmp/",
+    "name": "geoclimate_db;AUTO_SERVER=TRUE",
+    "delete": true
+  },
+  "input": {
+    "locations": [
+      "plourivo",
+      [
+        38.89557963573336,
+        -77.03930318355559,
+        38.89944983078282,
+        -77.03364372253417
+      ]
+    ]
+  },
+  "output": {
+    "folder": "/tmp/..."
+  },
+  "parameters": {
+    "distance": 1000,
+    "prefixName": "",
+    "hLevMin": 3,
+    "rsu_indicators": {
+      "indicatorUse": [
+        "LCZ",
+        "UTRF",
+        "TEB"
+      ],
+      "svfSimplified": false,
+      "mapOfWeights": {
+        "sky_view_factor": 1,
+        "aspect_ratio": 1,
+        "building_surface_fraction": 1,
+        "impervious_surface_fraction": 1,
+        "pervious_surface_fraction": 1,
+        "height_of_roughness_elements": 1,
+        "terrain_roughness_class": 1,
+        "lczRandomForest": false
+      },
+      "estimateHeight": false
     }
+  }
 }

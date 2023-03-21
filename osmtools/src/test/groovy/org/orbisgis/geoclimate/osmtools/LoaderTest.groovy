@@ -80,12 +80,12 @@ class LoaderTest extends AbstractOSMToolsTest {
     }
 
     /** Used to store the OSM request to ensure the good query is generated. */
-     static def query
+    static def query
 
     /**
      * Override the 'executeOverPassQuery' methods to avoid the call to the server
      */
-     void badOverpassQueryOverride() {
+    void badOverpassQueryOverride() {
         Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
             LoaderTest.query = query
             return false

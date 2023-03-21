@@ -15,8 +15,8 @@ class DataUtilsTests {
     private static def h2GIS
 
     @BeforeAll
-    static void beforeAll(){
-        h2GIS = open(folder.getAbsolutePath()+File.separator+"dataUtilsTests;AUTO_SERVER=TRUE")
+    static void beforeAll() {
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "dataUtilsTests;AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
@@ -37,7 +37,7 @@ class DataUtilsTests {
     @Test
     void joinTest() {
         def p = Geoindicators.DataUtils.joinTables(h2GIS,
-                 [tablea:"ida", tableb:"idb", tablec:"idc"],
+                [tablea: "ida", tableb: "idb", tablec: "idc"],
                 "test")
         assert p
 
@@ -51,9 +51,9 @@ class DataUtilsTests {
     @Test
     void joinTest2() {
         def p = Geoindicators.DataUtils.joinTables(h2GIS,
-                [tablea:"ida", tableb:"idb", tablec:"idc"],
-                 "test",true)
-assert p
+                [tablea: "ida", tableb: "idb", tablec: "idc"],
+                "test", true)
+        assert p
         def table = h2GIS."${p}"
         assert "TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION" == table.columns.join(",")
         assert 1 == table.rowCount
@@ -65,11 +65,11 @@ assert p
     void saveTablesAsFiles() {
         def directory = "./target/savedFiles"
         def p = Geoindicators.DataUtils.saveTablesAsFiles(h2GIS,
-                ["tablea","tablegeom"],true,
+                ["tablea", "tablegeom"], true,
                 directory)
         assert p
 
-        assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablegeom.geojson", true)).rowCount
-        assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablea.csv", true)).rowCount
+        assert 1 == h2GIS.table(h2GIS.load(directory + File.separator + "tablegeom.geojson", true)).rowCount
+        assert 1 == h2GIS.table(h2GIS.load(directory + File.separator + "tablea.csv", true)).rowCount
     }
 }

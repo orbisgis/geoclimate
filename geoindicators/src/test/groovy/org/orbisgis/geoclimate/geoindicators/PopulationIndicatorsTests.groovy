@@ -18,7 +18,7 @@ class PopulationIndicatorsTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open(folder.getAbsolutePath()+File.separator+"populationIndicatorsTests;AUTO_SERVER=TRUE")
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "populationIndicatorsTests;AUTO_SERVER=TRUE")
     }
 
     @Test
@@ -39,7 +39,7 @@ class PopulationIndicatorsTests {
         (1,'POLYGON((280 170, 390 170, 390 70, 280 70, 280 170))'::GEOMETRY, 1, 200 );
         CREATE TABLE zone as select 'POLYGON ((70 390, 290 390, 290 270, 70 270, 70 390))'::GEOMETRY as the_geom;""")
         String populationTable = Geoindicators.PopulationIndicators.formatPopulationTable(h2GIS, "population", ["pop"],
-                 "zone")
+                "zone")
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $populationTable".toString()).count)
     }
 
@@ -68,10 +68,10 @@ class PopulationIndicatorsTests {
         (3,'POLYGON((10 -5, 10 6, 20 6, 20 -5, 10 -5))'::GEOMETRY ),
         (4,'POLYGON((10 6, 10 20, 20 20, 20 6, 10 6))'::GEOMETRY );""".toString())
 
-        Map results = Geoindicators.PopulationIndicators.multiScalePopulation(h2GIS,  "population" ,  ["pop"],
+        Map results = Geoindicators.PopulationIndicators.multiScalePopulation(h2GIS, "population", ["pop"],
                 "building", "rsu", "grid")
 
-        results.each {it->
+        results.each { it ->
             h2GIS.save(it.value, "./target/${it.value}.geojson", true)
         }
 
@@ -88,6 +88,6 @@ class PopulationIndicatorsTests {
         assertEquals(10, rows[0].SUM_POP, 0.1)
         assertEquals(10, rows[1].SUM_POP, 0.1)
         assertEquals(10, rows[2].SUM_POP, 0.1)
-        assertNull( rows[3].SUM_POP)
+        assertNull(rows[3].SUM_POP)
     }
-    }
+}

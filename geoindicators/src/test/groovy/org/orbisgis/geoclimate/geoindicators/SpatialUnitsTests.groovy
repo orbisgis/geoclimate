@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.io.WKTReader
-import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.POSTGIS
+import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
@@ -28,14 +28,14 @@ class SpatialUnitsTests {
     private static def h2GIS
 
     @BeforeAll
-    static void beforeAll(){
-        h2GIS = open(folder.getAbsolutePath()+File.separator+"spatialUnitsTests;AUTO_SERVER=TRUE")
+    static void beforeAll() {
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "spatialUnitsTests;AUTO_SERVER=TRUE")
         postGIS = POSTGIS.open(dbProperties)
         System.setProperty("test.postgis", Boolean.toString(postGIS != null));
     }
 
     @BeforeEach
-    void beforeEach(){
+    void beforeEach() {
         h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
     }
 
@@ -45,8 +45,7 @@ class SpatialUnitsTests {
                 DROP TABLE IF EXISTS roads_tsu;
                 CREATE TABLE roads_tsu AS SELECT * FROM road_test WHERE id_road <5
         """.toString()
-        def tsu = Geoindicators.SpatialUnits.createTSU(h2GIS, "roads_tsu","", "")
-        def outputTable = tsu.outputTableName
+        def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, "roads_tsu", "", "")
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 9 == countRows.numberOfRows
     }
@@ -57,20 +56,19 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.getResource("rail_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"),true)
+        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
-                'zone_test', 'road_test','rail_test',
-                 'veget_test','hydro_test', "",
+                'zone_test', 'road_test', 'rail_test',
+                'veget_test', 'hydro_test', "",
                 10000, 2500, "block")
 
         assertNotNull(outputTableGeoms)
 
         assert h2GIS."$outputTableGeoms"
 
-        def tsu = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms,"",  "tsu")
-        def outputTable = tsu.outputTableName
-        assert h2GIS.getSpatialTable(outputTable).save(new File(folder,"tsu.shp").getAbsolutePath(),true)
+        def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "tsu")
+        assert h2GIS.getSpatialTable(outputTable).save(new File(folder, "tsu.shp").getAbsolutePath(), true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 235 == countRows.numberOfRows
     }
@@ -81,17 +79,15 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.getResource("rail_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"),true)
+        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
 
-        def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS,  "zone_test",
-                                                             'road_test', 'rail_test',
-                                                               'veget_test','hydro_test',
-                                                               "", 0,0,  "block")
-        if (!createRSU) {
-            info "Cannot compute the RSU."
-            return
-        }
-        assert h2GIS.getSpatialTable(createRSU).save(new File(folder,"rsu.shp").getAbsolutePath(),true)
+        def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_test",
+                'road_test', 'rail_test',
+                'veget_test', 'hydro_test',
+                "", 0, 0, "block")
+        assert createRSU
+
+        assert h2GIS.getSpatialTable(createRSU).save(new File(folder, "rsu.shp").getAbsolutePath(), true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $createRSU"
         assert 235 == countRows.numberOfRows
     }
@@ -103,7 +99,7 @@ class SpatialUnitsTests {
                 DROP TABLE IF EXISTS build_tempo; 
                 CREATE TABLE build_tempo AS SELECT * FROM building_test WHERE id_build <27
         """.toString()
-        def outputTable = Geoindicators.SpatialUnits.createBlocks(h2GIS, "build_tempo",0.01, "block")
+        def outputTable = Geoindicators.SpatialUnits.createBlocks(h2GIS, "build_tempo", 0.01, "block")
         assertNotNull(outputTable)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 12 == countRows.numberOfRows
@@ -118,20 +114,20 @@ class SpatialUnitsTests {
                     WHERE id_build < 9 OR id_build > 28 AND id_build < 30
         """
         String idColumnTarget = "id_rsu"
-        def pRsu =  Geoindicators.SpatialUnits.spatialJoin(h2GIS,
-                 "build_tempo", "rsu_test", idColumnTarget,
-                   false, 1, "test")
-                assertNotNull(pRsu)
-        h2GIS.eachRow("SELECT * FROM ${pRsu}"){
+        def pRsu = Geoindicators.SpatialUnits.spatialJoin(h2GIS,
+                "build_tempo", "rsu_test", idColumnTarget,
+                false, 1, "test")
+        assertNotNull(pRsu)
+        h2GIS.eachRow("SELECT * FROM ${pRsu}") {
             row ->
                 def expected = h2GIS.firstRow("SELECT ${idColumnTarget} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
                 assert row[idColumnTarget] == expected[idColumnTarget]
         }
-        idColumnTarget= "id_block"
-        def pBlock =  Geoindicators.SpatialUnits.spatialJoin(h2GIS, "build_tempo",
-                 "block_test", "id_block", false, 1, "test")
+        idColumnTarget = "id_block"
+        def pBlock = Geoindicators.SpatialUnits.spatialJoin(h2GIS, "build_tempo",
+                "block_test", "id_block", false, 1, "test")
 
-        h2GIS.eachRow("SELECT * FROM ${pBlock}".toString()){
+        h2GIS.eachRow("SELECT * FROM ${pBlock}".toString()) {
             row ->
                 def expected = h2GIS.firstRow "SELECT ${idColumnTarget} FROM block_build_corr WHERE id_build = ${row.id_build}".toString()
                 assert row[idColumnTarget] == expected[idColumnTarget]
@@ -150,15 +146,15 @@ class SpatialUnitsTests {
                 INSERT INTO tab2 VALUES (1, 'POLYGON((0 0, 20 0, 20 20, 0 20, 0 0))'),
                                         (2, 'POLYGON((20 0, 30 0, 30 20, 20 20, 20 0))');
         """
-        def pNbRelationsAll =  Geoindicators.SpatialUnits.spatialJoin(h2GIS, "tab1", "tab2",
+        def pNbRelationsAll = Geoindicators.SpatialUnits.spatialJoin(h2GIS, "tab1", "tab2",
                 "id2", false, null, "test")
         assertEquals 1, h2GIS.firstRow("SELECT count(*) as count FROM ${pNbRelationsAll} WHERE ID1 = 1 AND ID2=1").count
         assertEquals 1, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE ID1 = 2 AND ID2=1").count
         assertEquals 2, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE (ID1 = 3 AND ID2=1) or (ID1 = 3 AND ID2=2)").count
 
 
-        def pPointOnSurface =  Geoindicators.SpatialUnits.spatialJoin(h2GIS,"tab1",
-                 "tab2","id2",true, null, "test")
+        def pPointOnSurface = Geoindicators.SpatialUnits.spatialJoin(h2GIS, "tab1",
+                "tab2", "id2", true, null, "test")
         assert h2GIS.getTable(pPointOnSurface).getRowCount() == 2
     }
 
@@ -168,18 +164,17 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.class.class.getResource("rail_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.class.getResource("veget_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.class.class.getResource("hydro_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("zone_test.geojson"),true)
+        h2GIS.load(SpatialUnitsTests.class.class.getResource("zone_test.geojson"), true)
 
-        def  outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
-                 'zone_test', 'road_test', 'rail_test', 'veget_test',
-                'hydro_test',"", 10000, 2500, "block")
+        def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
+                'zone_test', 'road_test', 'rail_test', 'veget_test',
+                'hydro_test', "", 10000, 2500, "block")
 
 
-       assertNotNull(outputTableGeoms)
+        assertNotNull(outputTableGeoms)
 
         assert h2GIS."$outputTableGeoms"
-        def tsu = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms,"", "tsu")
-        def outputTable = tsu.outputTableName
+        def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "tsu")
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
         assert 235 == countRows.numberOfRows
@@ -191,7 +186,7 @@ class SpatialUnitsTests {
 
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
-        def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 1,  1)
+        def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 1, 1)
         assertNotNull(gridP)
         assert h2GIS."$gridP"
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $gridP".toString()
@@ -205,7 +200,7 @@ class SpatialUnitsTests {
 
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
-        def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS,  box,  1,  1)
+        def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS, box, 1, 1)
         assert outputTable
         assert postGIS."$outputTable"
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"

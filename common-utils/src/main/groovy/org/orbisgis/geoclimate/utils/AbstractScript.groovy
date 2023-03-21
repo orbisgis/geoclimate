@@ -12,19 +12,19 @@ abstract class AbstractScript extends Script {
 
     static String uuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
 
-    void info(def message){
+    void info(def message) {
         logger.info(message.toString())
     }
 
-    void warn(def message){
+    void warn(def message) {
         logger.warn(message.toString())
     }
 
-    void error(def message){
+    void error(def message) {
         logger.error(message.toString())
     }
 
-    void debug(def message){
+    void debug(def message) {
         logger.debug(message.toString())
     }
 
@@ -45,7 +45,7 @@ abstract class AbstractScript extends Script {
      * @param name String to postfix
      * @return The postfix String
      */
-     static String postfix(String name, String postfix) {
+    static String postfix(String name, String postfix) {
         return postfix == null || postfix.isEmpty() ? name : name + "_" + postfix;
     }
 

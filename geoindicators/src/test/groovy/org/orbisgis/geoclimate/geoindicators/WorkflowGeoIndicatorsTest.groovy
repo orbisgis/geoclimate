@@ -3,15 +3,13 @@ package org.orbisgis.geoclimate.geoindicators
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.data.dataframe.DataFrame
 import org.orbisgis.data.H2GIS
+import org.orbisgis.data.dataframe.DataFrame
+import org.orbisgis.geoclimate.Geoindicators
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.*
 import static org.orbisgis.data.H2GIS.open
 
 class WorkflowGeoIndicatorsTest {
@@ -90,8 +88,8 @@ class WorkflowGeoIndicatorsTest {
     public static def inputTableNames
 
     @BeforeAll
-    static void beforeAll(){
-        datasource = open(folder.getAbsolutePath()+File.separator+"workflowGeoIndicatorsTest;AUTO_SERVER=TRUE")
+    static void beforeAll() {
+        datasource = open(folder.getAbsolutePath() + File.separator + "workflowGeoIndicatorsTest;AUTO_SERVER=TRUE")
         assertNotNull(datasource)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ROAD.geojson"), "ROAD", true)
@@ -110,10 +108,10 @@ class WorkflowGeoIndicatorsTest {
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
-        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators( datasource,  inputTableNames.zoneTable,
-                inputTableNames.buildingTable,  inputTableNames.roadTable,
-                inputTableNames.railTable,  inputTableNames.vegetationTable,
-                inputTableNames.hydrographicTable,"", "","","", prefixName)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable, inputTableNames.roadTable,
+                inputTableNames.railTable, inputTableNames.vegetationTable,
+                inputTableNames.hydrographicTable, "", "", "", "", prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
@@ -129,10 +127,10 @@ class WorkflowGeoIndicatorsTest {
         for (i in expectListRsu) {
             assertTrue realListRsu.contains(i)
         }
-            def expectListLczTempo = listColLcz
-            expectListLczTempo = expectListLczTempo + listColBasic
-            def expectListLcz = expectListLczTempo.sort()
-            assertEquals(expectListLcz, datasource.getTable(geoIndicatorsCompute_i.rsu_lcz).columns.sort())
+        def expectListLczTempo = listColLcz
+        expectListLczTempo = expectListLczTempo + listColBasic
+        def expectListLcz = expectListLczTempo.sort()
+        assertEquals(expectListLcz, datasource.getTable(geoIndicatorsCompute_i.rsu_lcz).columns.sort())
 
         def dfRsu = DataFrame.of(datasource."$geoIndicatorsCompute_i.rsu_indicators")
         assertEquals dfRsu.nrows(), dfRsu.omitNullRows().nrows()
@@ -152,12 +150,12 @@ class WorkflowGeoIndicatorsTest {
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
         def prefixName = ""
 
-        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource,  inputTableNames.zoneTable,
-                 inputTableNames.buildingTable, inputTableNames.roadTable,
-                 inputTableNames.railTable,  inputTableNames.vegetationTable,
-                 inputTableNames.hydrographicTable,"",
-                "","","",
-                ["indicatorUse": ["UTRF"], "utrfModelName":"UTRF_BDTOPO_V2_RF_2_2.model"], prefixName)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable, inputTableNames.roadTable,
+                inputTableNames.railTable, inputTableNames.vegetationTable,
+                inputTableNames.hydrographicTable, "",
+                "", "", "",
+                ["indicatorUse": ["UTRF"], "utrfModelName": "UTRF_BDTOPO_V2_RF_2_2.model"], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
@@ -229,12 +227,12 @@ class WorkflowGeoIndicatorsTest {
 
         def ind_i = ["UTRF", "TEB"]
 
-        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators( datasource, inputTableNames.zoneTable,
-                inputTableNames.buildingTable,  inputTableNames.roadTable,
-                 inputTableNames.railTable,  inputTableNames.vegetationTable,
-                 inputTableNames.hydrographicTable,  ind_i,
-                 svfSimplified,
-                 mapOfWeights, prefixName)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable, inputTableNames.roadTable,
+                inputTableNames.railTable, inputTableNames.vegetationTable,
+                inputTableNames.hydrographicTable, ind_i,
+                svfSimplified,
+                mapOfWeights, prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
@@ -274,12 +272,12 @@ class WorkflowGeoIndicatorsTest {
 
         def ind_i = ["TEB"]
 
-        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators( datasource, inputTableNames.zoneTable,
-                inputTableNames.buildingTable,  inputTableNames.roadTable,
-                 inputTableNames.railTable, inputTableNames.vegetationTable,
-                 inputTableNames.hydrographicTable,  ind_i,
-                 svfSimplified,
-                 mapOfWeights,prefixName)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable, inputTableNames.roadTable,
+                inputTableNames.railTable, inputTableNames.vegetationTable,
+                inputTableNames.hydrographicTable, ind_i,
+                svfSimplified,
+                mapOfWeights, prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
@@ -319,12 +317,12 @@ class WorkflowGeoIndicatorsTest {
 
         def ind_i = ["LCZ", "TEB"]
 
-        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource,  inputTableNames.zoneTable,
-                 inputTableNames.buildingTable, inputTableNames.roadTable,
-                 inputTableNames.railTable,  inputTableNames.vegetationTable,
-                 inputTableNames.hydrographicTable,  ind_i,
-                 svfSimplified,
-               mapOfWeights,  prefixName)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable, inputTableNames.roadTable,
+                inputTableNames.railTable, inputTableNames.vegetationTable,
+                inputTableNames.hydrographicTable, ind_i,
+                svfSimplified,
+                mapOfWeights, prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
@@ -356,20 +354,18 @@ class WorkflowGeoIndicatorsTest {
         //Reload the building table because the original table is updated with the block and rsu identifiers
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
-        boolean svfSimplified = false
+
         def prefixName = ""
-        def mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                            "height_of_roughness_elements": 1, "terrain_roughness_length": 1]
 
         def ind_i = ["UTRF", "LCZ"]
 
-        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource,  inputTableNames.zoneTable,
-                 inputTableNames.buildingTable,  inputTableNames.roadTable,
-                 inputTableNames.railTable,inputTableNames.vegetationTable,
-                 inputTableNames.hydrographicTable,  ind_i,
-                 svfSimplified,
-                 mapOfWeights, prefixName)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators
+                .computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable, inputTableNames.roadTable,
+                inputTableNames.railTable, inputTableNames.vegetationTable,
+                inputTableNames.hydrographicTable, "", "","","",
+                        ["indicatorUse":ind_i, "svfSimplified":false],
+                prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
@@ -405,11 +401,11 @@ class WorkflowGeoIndicatorsTest {
         def prefixName = ""
         def ind_i = ["LCZ"]
 
-        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource,  inputTableNames.zoneTable,
-                 inputTableNames.buildingTable,  inputTableNames.roadTable,
-                 inputTableNames.railTable,  inputTableNames.vegetationTable,
-                 inputTableNames.hydrographicTable,  ind_i,
-                 svfSimplified,  prefixName)
+        Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.buildingTable, inputTableNames.roadTable,
+                inputTableNames.railTable, inputTableNames.vegetationTable,
+                inputTableNames.hydrographicTable, ind_i,
+                svfSimplified, prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         def expectListRsuTempo = listColBasic + listColCommon
@@ -476,8 +472,8 @@ class WorkflowGeoIndicatorsTest {
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())
         assertEquals(0, countResult.count)
 
-        if(save){
-            datasource.getTable(tableName).save(new File(folder,"${rsuIndicatorsTableName}.geojson".toString()))
+        if (save) {
+            datasource.getTable(tableName).save(new File(folder, "${rsuIndicatorsTableName}.geojson".toString()))
         }
     }
 

@@ -1,8 +1,8 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
+import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.data.jdbc.*
 
 @BaseScript Geoindicators geoindicators
 
@@ -19,26 +19,26 @@ import org.orbisgis.data.jdbc.*
  *
  * @author Jérémy Bernard
  */
-String holeAreaDensity(JdbcDataSource datasource , String blockTable, String prefixName) {
-            def GEOMETRIC_FIELD = "the_geom"
-            def ID_COLUMN_BL = "id_block"
-            def BASE_NAME = "hole_area_density"
+String holeAreaDensity(JdbcDataSource datasource, String blockTable, String prefixName) {
+    def GEOMETRIC_FIELD = "the_geom"
+    def ID_COLUMN_BL = "id_block"
+    def BASE_NAME = "hole_area_density"
 
-            debug "Executing Hole area ratio"
+    debug "Executing Hole area ratio"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
+    // The name of the outputTableName is constructed
+    def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-            def query = """
+    def query = """
             DROP TABLE IF EXISTS $outputTableName; 
             CREATE TABLE $outputTableName AS 
                 SELECT $ID_COLUMN_BL, ST_AREA(ST_HOLES($GEOMETRIC_FIELD))/ST_AREA($GEOMETRIC_FIELD) AS $BASE_NAME 
                 FROM $blockTable
         """
 
-            datasource query.toString()
-            return outputTableName
-        }
+    datasource query.toString()
+    return outputTableName
+}
 
 /**
  * The sum of the building free external area composing the block are divided by the sum of the building volume.
@@ -54,24 +54,24 @@ String holeAreaDensity(JdbcDataSource datasource , String blockTable, String pre
  * values within the "buildTable"
  * @param prefixName String use as prefix to name the output table
  *
- * @return  Table name in which the block id and their corresponding indicator value are stored
+ * @return Table name in which the block id and their corresponding indicator value are stored
  *
  * @author Jérémy Bernard
  */
-String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField,  String buildingContiguityField, String prefixName){
-            def GEOMETRY_FIELD_BU = "the_geom"
-            def ID_COLUMN_BL = "id_block"
-            def HEIGHT_WALL = "height_wall"
-            def BASE_NAME = "net_compactness"
+String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField, String buildingContiguityField, String prefixName) {
+    def GEOMETRY_FIELD_BU = "the_geom"
+    def ID_COLUMN_BL = "id_block"
+    def HEIGHT_WALL = "height_wall"
+    def BASE_NAME = "net_compactness"
 
-            debug "Executing Block net net_compactness"
+    debug "Executing Block net net_compactness"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
+    // The name of the outputTableName is constructed
+    def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-            datasource."$building".id_block.createIndex()
+    datasource."$building".id_block.createIndex()
 
-            def query = """
+    def query = """
             DROP TABLE IF EXISTS $outputTableName; 
             CREATE TABLE $outputTableName AS 
                 SELECT $ID_COLUMN_BL, 
@@ -88,9 +88,9 @@ String netCompactness(JdbcDataSource datasource, String building, String buildin
                 GROUP BY $ID_COLUMN_BL
         """
 
-            datasource query.toString()
-            return outputTableName
-        }
+    datasource query.toString()
+    return outputTableName
+}
 
 
 /**
@@ -117,22 +117,22 @@ String netCompactness(JdbcDataSource datasource, String building, String buildin
  * @return Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
  */
-String closingness(JdbcDataSource datasource, String correlationTableName, String blockTable, String prefixName){
+String closingness(JdbcDataSource datasource, String correlationTableName, String blockTable, String prefixName) {
 
-            def GEOMETRY_FIELD_BU = "the_geom"
-            def GEOMETRY_FIELD_BL = "the_geom"
-            def ID_COLUMN_BL = "id_block"
-            def BASE_NAME = "closingness"
+    def GEOMETRY_FIELD_BU = "the_geom"
+    def GEOMETRY_FIELD_BL = "the_geom"
+    def ID_COLUMN_BL = "id_block"
+    def BASE_NAME = "closingness"
 
-            debug "Executing Closingness of a block"
+    debug "Executing Closingness of a block"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
+    // The name of the outputTableName is constructed
+    def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-            datasource."$blockTable".id_block.createIndex()
-            datasource."$correlationTableName".id_block.createIndex()
+    datasource."$blockTable".id_block.createIndex()
+    datasource."$correlationTableName".id_block.createIndex()
 
-            def query = """
+    def query = """
             DROP TABLE IF EXISTS $outputTableName; 
             CREATE TABLE $outputTableName AS 
                 SELECT b.$ID_COLUMN_BL, 
@@ -144,6 +144,6 @@ String closingness(JdbcDataSource datasource, String correlationTableName, Strin
                 WHERE a.$ID_COLUMN_BL = b.$ID_COLUMN_BL 
                 GROUP BY b.$ID_COLUMN_BL"""
 
-            datasource query.toString()
-            return  outputTableName
-        }
+    datasource query.toString()
+    return outputTableName
+}

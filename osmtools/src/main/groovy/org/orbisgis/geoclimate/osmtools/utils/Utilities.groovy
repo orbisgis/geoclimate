@@ -250,7 +250,7 @@ static Coordinate[] arrayToCoordinate(def coordinates) {
  * @return True if the file has been downloaded, false otherwise.
  *
  */
- boolean executeNominatimQuery(def query, def outputOSMFile) {
+boolean executeNominatimQuery(def query, def outputOSMFile) {
     if (!query) {
         error "The Nominatim query should not be null."
         return false

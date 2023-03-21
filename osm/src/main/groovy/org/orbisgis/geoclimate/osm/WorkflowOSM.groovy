@@ -340,7 +340,7 @@ Map workflow(def input) {
         }
         def logTableZones = postfix("log_zones")
         Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters, locations.findAll { it }, file_outputFolder, outputFileTables,
-                outputDatasource, outputTables,  outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, osm_size_area,
+                outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, osm_size_area,
                 overpass_timeout, overpass_maxsize)
         if (!osmprocessing) {
             h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder + File.separator}logzones.geojson")
@@ -378,11 +378,11 @@ Map workflow(def input) {
  * @return the identifier of the zone and the list of the output tables computed and stored in the local database for this zone
  */
 Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, def id_zones,
-                        File outputFolder, def ouputTableFiles , def output_datasource , def outputTableNames ,
-                        def outputSRID, def downloadAllOSMData,
-                        def deleteOutputData , def deleteOSMFile ,
-                        def logTableZones, def bbox_size,
-                        def overpass_timeout , def overpass_maxsize ) {
+                   File outputFolder, def ouputTableFiles, def output_datasource, def outputTableNames,
+                   def outputSRID, def downloadAllOSMData,
+                   def deleteOutputData, def deleteOSMFile,
+                   def logTableZones, def bbox_size,
+                   def overpass_timeout, def overpass_maxsize) {
     //Store the zone identifier and the names of the tables
     def outputTableNamesResult = [:]
     //Create the table to log on the processed zone
@@ -440,34 +440,34 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                     debug "Formating OSM GIS layers"
                     //Format urban areas
-                    String urbanAreasTable = OSM.InputDataFormatting.formatUrbanAreas(h2gis_datasource,gisLayersResults.urban_areas, zoneEnvelopeTableName)
+                    String urbanAreasTable = OSM.InputDataFormatting.formatUrbanAreas(h2gis_datasource, gisLayersResults.urban_areas, zoneEnvelopeTableName)
 
                     Map formatBuilding = OSM.InputDataFormatting.formatBuildingLayer(
                             h2gis_datasource, gisLayersResults.building,
-                            zoneEnvelopeTableName,urbanAreasTable,
-                            processing_parameters.hLevMin )
+                            zoneEnvelopeTableName, urbanAreasTable,
+                            processing_parameters.hLevMin)
 
                     def buildingTableName = formatBuilding.building
                     def buildingEstimateTableName = formatBuilding.building_estimated
 
-                    String railTableName = OSM.InputDataFormatting.formatRailsLayer(h2gis_datasource,gisLayersResults.rail, zoneEnvelopeTableName)
+                    String railTableName = OSM.InputDataFormatting.formatRailsLayer(h2gis_datasource, gisLayersResults.rail, zoneEnvelopeTableName)
 
-                    String vegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(h2gis_datasource,gisLayersResults.vegetation, zoneEnvelopeTableName)
+                    String vegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(h2gis_datasource, gisLayersResults.vegetation, zoneEnvelopeTableName)
 
                     String hydrographicTableName = OSM.InputDataFormatting.formatWaterLayer(
-                            h2gis_datasource,gisLayersResults.water,
+                            h2gis_datasource, gisLayersResults.water,
                             zoneEnvelopeTableName)
 
                     String imperviousTableName = OSM.InputDataFormatting.formatImperviousLayer(
-                            h2gis_datasource,gisLayersResults.impervious, zoneEnvelopeTableName)
+                            h2gis_datasource, gisLayersResults.impervious, zoneEnvelopeTableName)
 
                     //Sea/Land mask
                     String seaLandMaskTableName = OSM.InputDataFormatting.formatSeaLandMask(
-                            h2gis_datasource,gisLayersResults.coastline, zoneEnvelopeTableName)
+                            h2gis_datasource, gisLayersResults.coastline, zoneEnvelopeTableName)
 
                     //Merge the Sea/Land mask with water table
                     hydrographicTableName = OSM.InputDataFormatting.mergeWaterAndSeaLandTables(
-                            h2gis_datasource,seaLandMaskTableName, hydrographicTableName)
+                            h2gis_datasource, seaLandMaskTableName, hydrographicTableName)
 
                     //Format road
                     String roadTableName = OSM.InputDataFormatting.formatRoadLayer(
@@ -490,20 +490,20 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                     //Compute traffic flow
                     if (road_traffic) {
-                        String format_traffic = Geoindicators.RoadIndicators.build_road_traffic(h2gis_datasource,roadTableName)
+                        String format_traffic = Geoindicators.RoadIndicators.build_road_traffic(h2gis_datasource, roadTableName)
                         results.put("road_traffic", format_traffic)
                     }
 
                     //Compute the RSU indicators
                     if (rsu_indicators_params.indicatorUse) {
-                        String estimateHeight = rsu_indicators_params."estimateHeight"?"BUILDING_HEIGHT_OSM_RF_2_2.model" : ""
+                        String estimateHeight = rsu_indicators_params."estimateHeight" ? "BUILDING_HEIGHT_OSM_RF_2_2.model" : ""
                         rsu_indicators_params.put("utrfModelName", "UTRF_OSM_RF_2_2.model")
                         rsu_indicators_params.put("buildingHeightModelName", estimateHeight)
                         Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(
                                 h2gis_datasource, zone,
-                                buildingTableName,  roadTableName,
+                                buildingTableName, roadTableName,
                                 railTableName, vegetationTableName,
-                                 hydrographicTableName, imperviousTableName,
+                                hydrographicTableName, imperviousTableName,
                                 buildingEstimateTableName,
                                 seaLandMaskTableName,
                                 "",
@@ -530,7 +530,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             String worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource, worldPopFile, srid, coverageId.replaceAll(":", "_"))
                             if (worldPopTableName) {
                                 results.put("population", worldPopTableName)
-                                String buildingWithPop = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource,results.building,worldPopTableName)
+                                String buildingWithPop = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building, worldPopTableName)
                                 if (!buildingWithPop) {
                                     info "Cannot compute any population data at building level"
                                 }
@@ -560,11 +560,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     if (noise_indicators) {
                         if (noise_indicators.ground_acoustic) {
                             geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
-                            def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource,  geomEnv, 200, 200)
+                            def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, geomEnv, 200, 200)
                             if (outputTable) {
-                                String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource,  outputTable, "id_grid",
-                                                                                                           buildingTableName,  roadTableName,hydrographicTableName,
-                                                                                                            vegetationTableName,imperviousTableName)
+                                String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, outputTable, "id_grid",
+                                        buildingTableName, roadTableName, hydrographicTableName,
+                                        vegetationTableName, imperviousTableName)
                                 if (ground_acoustic) {
                                     results.put("ground_acoustic", ground_acoustic)
                                 }
@@ -581,18 +581,18 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         outputGrid = grid_indicators_params.output
                         def x_size = grid_indicators_params.x_size
                         def y_size = grid_indicators_params.y_size
-                        String grid = Geoindicators.WorkflowGeoIndicators.createGrid( h2gis_datasource, geomEnv,
-                                 x_size,  y_size, srid,  grid_indicators_params.rowCol)
+                        String grid = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, geomEnv,
+                                x_size, y_size, srid, grid_indicators_params.rowCol)
                         if (grid) {
-                            String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators( h2gis_datasource,  grid,
+                            String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                                     grid_indicators_params.indicators,
-                                     buildingTableName,  roadTableName, vegetationTableName,
-                                     hydrographicTableName, imperviousTableName,
-                                     results.rsu_lcz,
-                                     results.rsu_utrf_area,
-                                     results.rsu_utrf_floor_area,
-                                     seaLandMaskTableName,
-                                     processing_parameters.prefixName)
+                                    buildingTableName, roadTableName, vegetationTableName,
+                                    hydrographicTableName, imperviousTableName,
+                                    results.rsu_lcz,
+                                    results.rsu_utrf_area,
+                                    results.rsu_utrf_floor_area,
+                                    seaLandMaskTableName,
+                                    processing_parameters.prefixName)
                             if (rasterizedIndicators) {
                                 results.put("grid_indicators", rasterizedIndicators)
                             }
@@ -692,10 +692,10 @@ def static extractOSMZone(def datasource, def zoneToExtract, def distance, def b
         INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
         """.toString()
 
-        return ["zone"        : outputZoneTable,
+        return ["zone"         : outputZoneTable,
                 "zone_envelope": outputZoneEnvelopeTable,
-                "envelope"               : envelope,
-                "geometry"               : geom
+                "envelope"     : envelope,
+                "geometry"     : geom
         ]
     } else {
         error "The zone to extract cannot be null or empty"
@@ -1349,7 +1349,7 @@ Map buildGeoclimateLayers(JdbcDataSource datasource, Object zoneToExtract,
     }
 
     debug "Building OSM GIS layers"
-    Map res = OSM.InputDataLoading.extractAndCreateGISLayers( datasource, zoneToExtract, distance)
+    Map res = OSM.InputDataLoading.extractAndCreateGISLayers(datasource, zoneToExtract, distance)
     if (res) {
         debug "OSM GIS layers created"
         def buildingTableName = res.building
@@ -1366,23 +1366,23 @@ Map buildGeoclimateLayers(JdbcDataSource datasource, Object zoneToExtract,
             Map buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(datasource, buildingTableName, zoneEnvelopeTableName)
             buildingTableName = buildingLayers.building
 
-            roadTableName = OSM.InputDataFormatting.formatRoadLayer(datasource,roadTableName,zoneEnvelopeTableName)
+            roadTableName = OSM.InputDataFormatting.formatRoadLayer(datasource, roadTableName, zoneEnvelopeTableName)
 
-            railTableName = OSM.InputDataFormatting.formatRailsLayer(datasource,railTableName,zoneEnvelopeTableName)
+            railTableName = OSM.InputDataFormatting.formatRailsLayer(datasource, railTableName, zoneEnvelopeTableName)
 
-            vegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(datasource,vegetationTableName, zoneEnvelopeTableName)
+            vegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(datasource, vegetationTableName, zoneEnvelopeTableName)
 
-            hydroTableName = OSM.InputDataFormatting.formatWaterLayer(datasource,hydroTableName, zoneEnvelopeTableName)
+            hydroTableName = OSM.InputDataFormatting.formatWaterLayer(datasource, hydroTableName, zoneEnvelopeTableName)
 
-            imperviousTableName = OSM.InputDataFormatting.formatImperviousLayer(datasource,imperviousTableName, zoneEnvelopeTableName)
+            imperviousTableName = OSM.InputDataFormatting.formatImperviousLayer(datasource, imperviousTableName, zoneEnvelopeTableName)
 
             debug "OSM GIS layers formated"
         }
 
-        return [building: buildingTableName, road: roadTableName,
-                rail    : railTableName, water: hydroTableName,
-                vegetation   : vegetationTableName, impervious: imperviousTableName,
-                zone    : zone, zone_envelope: zoneEnvelopeTableName]
+        return [building  : buildingTableName, road: roadTableName,
+                rail      : railTableName, water: hydroTableName,
+                vegetation: vegetationTableName, impervious: imperviousTableName,
+                zone      : zone, zone_envelope: zoneEnvelopeTableName]
 
     }
 }

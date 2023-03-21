@@ -17,7 +17,7 @@ class TrafficFlowTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open(folder.getAbsolutePath()+File.separator+"trafficFlowTests;AUTO_SERVER=TRUE")
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "trafficFlowTests;AUTO_SERVER=TRUE")
     }
 
     @Test
@@ -31,9 +31,9 @@ class TrafficFlowTests {
         (5, 'LINESTRING (20 100, 25 100, 25 120, 20 120)'::GEOMETRY, 6, 0, null,  'highway',50, 1, null),
         (6, 'LINESTRING (50 105, 47 99)'::GEOMETRY, 6, -1, null,  'highway', 50, 3, null);"""
         def traffic = Geoindicators.RoadIndicators.build_road_traffic(h2GIS,
-               "ROAD_TEST")
+                "ROAD_TEST")
         assert traffic
-        assertEquals 6 , h2GIS.getTable(traffic).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${traffic.results.outputTableName} where road_type is not null").count==6
+        assertEquals 6, h2GIS.getTable(traffic).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${traffic.results.outputTableName} where road_type is not null").count == 6
     }
 }

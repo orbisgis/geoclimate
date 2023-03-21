@@ -28,10 +28,10 @@ class WorkflowAbstractTest {
                            String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
-        Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis( datasource,  zone,  buildingTableName,
-                                                 roadTableName,  railTableName,  vegetationTableName,
-                                          hydrographicTableName, "", "", 100000,
-                                              2500,  0.01,  prefixName)
+        Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis(datasource, zone, buildingTableName,
+                roadTableName, railTableName, vegetationTableName,
+                hydrographicTableName, "", "", 100000,
+                2500, 0.01, prefixName)
 
         String relationBuildings = spatialUnits.building
         String relationBlocks = spatialUnits.block
@@ -39,8 +39,8 @@ class WorkflowAbstractTest {
 
         if (saveResults) {
             logger.debug("Saving spatial units")
-            Geoindicators.DataUtils.saveTablesAsFiles(datasource,  spatialUnits.values(),
-                    true,directory)
+            Geoindicators.DataUtils.saveTablesAsFiles(datasource, spatialUnits.values(),
+                    true, directory)
         }
 
         def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())

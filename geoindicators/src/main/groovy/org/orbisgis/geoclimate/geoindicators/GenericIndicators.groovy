@@ -261,7 +261,7 @@ String geometryProperties(JdbcDataSource datasource, String inputTableName, List
  */
 String buildingDirectionDistribution(JdbcDataSource datasource, String buildingTableName,
                                      String tableUp, String inputIdUp, float angleRangeSize = 15f
-                                     , List distribIndicator = ["equality", "uniqueness"],String prefixName) {
+                                     , List distribIndicator = ["equality", "uniqueness"], String prefixName) {
 
     def GEOMETRIC_FIELD = "the_geom"
     def ID_FIELD_BU = "id_build"
@@ -321,8 +321,8 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
         datasource sqlQueryDist.toString()
 
         // The main building direction and indicators characterizing the distribution are calculated
-        def resultsDistrib = distributionCharacterization( datasource, build_dir_dist,
-                         tableUp, inputIdUp, distribIndicator, "GREATEST", prefixName)
+        def resultsDistrib = distributionCharacterization(datasource, build_dir_dist,
+                tableUp, inputIdUp, distribIndicator, "GREATEST", prefixName)
 
         // Rename the standard indicators into names consistent with the current method (building direction...)
         datasource """DROP TABLE IF EXISTS $outputTableName;
@@ -650,8 +650,8 @@ static Double getEquality(def myMap, def nbDistCol) {
  *
  * @author Jérémy Bernard
  */
-String typeProportion(JdbcDataSource datasource, String inputTableName, String idField,String typeFieldName,
-                      String inputUpperTableName, Map floorAreaTypeAndComposition ,
+String typeProportion(JdbcDataSource datasource, String inputTableName, String idField, String typeFieldName,
+                      String inputUpperTableName, Map floorAreaTypeAndComposition,
                       Map areaTypeAndComposition, String prefixName) {
     def GEOMETRIC_FIELD_LOW = "the_geom"
     def BASE_NAME = "type_proportion"
@@ -922,7 +922,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
  */
 String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName,
                                 String upperColumnId, String lowerTableName,
-                                String lowerColumnName,  boolean keepGeometry = true, String prefixName) {
+                                String lowerColumnName, boolean keepGeometry = true, String prefixName) {
     ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
     def upperGeometryColumn = upperTable.getGeometricColumns().first()
     if (!upperGeometryColumn) {

@@ -3,6 +3,7 @@ package org.orbisgis.geoclimate.bdtopo
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
+
 import static org.junit.jupiter.api.Assertions.assertNull
 
 class WorkflowParametersTest {

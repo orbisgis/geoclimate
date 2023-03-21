@@ -1468,7 +1468,7 @@ String surfaceFractions(JdbcDataSource datasource,
     debug "Executing RSU surface fractions computation"
 
     // The name of the outputTableName is constructed
-    def outputTableName =   prefix prefixName, BASE_TABLE_NAME
+    def outputTableName = prefix prefixName, BASE_TABLE_NAME
 
     // Temporary tables are created
     def withoutUndefined = postfix "without_undefined"

@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
-class TransformTest  extends AbstractOSMToolsTest{
+class TransformTest extends AbstractOSMToolsTest {
 
     @TempDir
     static File folder

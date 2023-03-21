@@ -1,7 +1,6 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
@@ -20,7 +19,7 @@ class NoiseIndicatorsTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open(folder.absolutePath+File.separator+"NoiseIndicatorsTests;AUTO_SERVER=TRUE")
+        h2GIS = open(folder.absolutePath + File.separator + "NoiseIndicatorsTests;AUTO_SERVER=TRUE")
     }
 
     @Test
@@ -33,10 +32,10 @@ class NoiseIndicatorsTests {
 
         def env = h2GIS.getSpatialTable(zone).getExtent()
         if (env) {
-            def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS,  env,  100,  100)
+            def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS, env, 100, 100)
             assertNotNull(gridP)
-            String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2GIS,  gridP, "id_grid",
-                             "building_test",  "road_test",   "hydro_test","veget_test", "")
+            String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2GIS, gridP, "id_grid",
+                    "building_test", "road_test", "hydro_test", "veget_test", "")
             assertTrue(h2GIS.hasTable(ground_acoustic))
         }
     }

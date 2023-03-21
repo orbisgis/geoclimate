@@ -1,9 +1,8 @@
 package org.orbisgis.geoclimate.bdtopo
 
-import ch.qos.logback.classic.Logger
+
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.geoclimate.utils.AbstractScript
 import org.orbisgis.geoclimate.utils.LoggerUtils
 import org.slf4j.LoggerFactory
@@ -11,7 +10,7 @@ import org.slf4j.LoggerFactory
 /**
  * BDTopo utils
  */
-abstract class BDTopoUtils extends AbstractScript{
+abstract class BDTopoUtils extends AbstractScript {
 
     BDTopoUtils() {
         super(LoggerFactory.getLogger(BDTopoUtils.class))

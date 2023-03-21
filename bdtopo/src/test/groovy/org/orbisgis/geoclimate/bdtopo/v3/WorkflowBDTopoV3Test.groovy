@@ -22,7 +22,7 @@ class WorkflowBDTopoV3Test extends WorkflowAbstractTest {
 
     @Override
     ArrayList getFileNames() {
-        return ["COMMUNE", "BATIMENT", "ZONE_D_ACTIVITE_OU_D_INTERET", "TERRAIN_DE_SPORT","CIMETIERE",
+        return ["COMMUNE", "BATIMENT", "ZONE_D_ACTIVITE_OU_D_INTERET", "TERRAIN_DE_SPORT", "CIMETIERE",
                 "PISTE_D_AERODROME", "RESERVOIR", "CONSTRUCTION_SURFACIQUE", "EQUIPEMENT_DE_TRANSPORT",
                 "TRONCON_DE_ROUTE", "TRONCON_DE_VOIE_FERREE", "SURFACE_HYDROGRAPHIQUE",
                 "ZONE_DE_VEGETATION", "AERODROME"]

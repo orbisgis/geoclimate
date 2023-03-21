@@ -1,6 +1,6 @@
 name: JOSS
 
-on: [push]
+on: [ push ]
 
 jobs:
   paper:

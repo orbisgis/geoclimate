@@ -51,27 +51,27 @@ class GeoclimateTest {
     @Test
     void runCLIWorkflow() {
         def osmParameters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultst in a folder",
-                "geoclimatedb" : [
-                        "folder" : folder.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :true
+                "description" : "Example of configuration file to run the OSM workflow and store the resultst in a folder",
+                "geoclimatedb": [
+                        "folder": folder.absolutePath,
+                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete": true
                 ],
-                "input" : [
-                        "locations" : ["Pont de veyle"]],
-                "output" :[
-                        "folder" : folder.absolutePath],
-                "parameters":
+                "input"       : [
+                        "locations": ["Pont de veyle"]],
+                "output"      : [
+                        "folder": folder.absolutePath],
+                "parameters"  :
                         [
-                                "indicatorUse": ["TEB"],
+                                "indicatorUse" : ["TEB"],
                                 "svfSimplified": true,
-                                "hLevMin": 3,
+                                "hLevMin"      : 3,
                         ]
         ]
 
         def json = JsonOutput.toJson(osmParameters)
-        def configFile = File.createTempFile("osmConfigFile",".json")
-        if(configFile.exists()){
+        def configFile = File.createTempFile("osmConfigFile", ".json")
+        if (configFile.exists()) {
             configFile.delete()
         }
         configFile.write(json)
@@ -89,26 +89,26 @@ class GeoclimateTest {
     @Test
     void runOSMWorkflow() {
         def osmParameters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultset in a folder",
-                "geoclimatedb" : [
-                        "folder" : folder.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :true
+                "description" : "Example of configuration file to run the OSM workflow and store the resultset in a folder",
+                "geoclimatedb": [
+                        "folder": folder.absolutePath,
+                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete": true
                 ],
-                "input" : [
-                        "locations" : ["Pont de veyle"]],
-                "output" :[
-                        "folder" : folder.absolutePath],
-                "parameters":[
-                        "rsu_indicators":[
-                                "indicatorUse": ["LCZ"],
-                                "svfSimplified": false,
-                                "estimateHeight":false
+                "input"       : [
+                        "locations": ["Pont de veyle"]],
+                "output"      : [
+                        "folder": folder.absolutePath],
+                "parameters"  : [
+                        "rsu_indicators" : [
+                                "indicatorUse"  : ["LCZ"],
+                                "svfSimplified" : false,
+                                "estimateHeight": false
                         ],
                         "grid_indicators": [
-                                "x_size": 1000,
-                                "y_size": 1000,
-                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                "x_size"    : 1000,
+                                "y_size"    : 1000,
+                                "indicators": ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
                         ]
                 ]
@@ -120,25 +120,25 @@ class GeoclimateTest {
     @Test
     void runBDTopoWorkflow() {
         def wParameters = [
-                "description" :"Example of configuration file to run the OSM workflow and store the resultset in a folder",
-                "geoclimatedb" : [
-                        "folder" : folder.absolutePath,
-                        "name" : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete" :true
+                "description" : "Example of configuration file to run the OSM workflow and store the resultset in a folder",
+                "geoclimatedb": [
+                        "folder": folder.absolutePath,
+                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete": true
                 ],
-                "input" :[
-                        "folder": ["path" :"../geoclimate/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/sample_12174",
-                                   "locations":["12174"]]],
-                "output" :[
-                        "folder" : folder.absolutePath],
-                "parameters":[
-                        "rsu_indicators":[
+                "input"       : [
+                        "folder": ["path"     : "../geoclimate/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/sample_12174",
+                                   "locations": ["12174"]]],
+                "output"      : [
+                        "folder": folder.absolutePath],
+                "parameters"  : [
+                        "rsu_indicators" : [
                                 "indicatorUse": ["LCZ"]
                         ],
                         "grid_indicators": [
-                                "x_size": 1000,
-                                "y_size": 1000,
-                                "indicators": ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                "x_size"    : 1000,
+                                "y_size"    : 1000,
+                                "indicators": ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "LCZ_FRACTION"]
                         ]
                 ]
