@@ -225,7 +225,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
                 deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
 
-                return [output: outputTableNamesResult]
+                return outputTableNamesResult
             } else {
                 error "Cannot find any data to process from the folder $inputFolder"
                 return
@@ -281,10 +281,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             }
             deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
             if (outputTableNamesResult) {
-                return [output: outputTableNamesResult]
+                return outputTableNamesResult
             }
         }
-        return [output: null]
+        return null
     }
 
     /**
@@ -818,7 +818,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         grid_indicators_params.indicators,
                         results.building, results.road, results.vegetation,
                         results.water, results.impervious,
-                        results.rsu_lcz, results.rsu_utrf_area,
+                        results.rsu_lcz, results.rsu_utrf_area,"","",
                         processing_parameters.prefixName)
                 if (rasterizedIndicators) {
                     results.put("grid_indicators", rasterizedIndicators)
@@ -971,8 +971,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     def gridP = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, geomEnv, 200, 200)
                     if (gridP) {
                         String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, gridP, "id_grid",
-                                buildingTableName, roadTableName, vegetationTableName,
-                                hydrographicTableName, imperviousTableName)
+                                buildingTableName, roadTableName,hydrographicTableName, vegetationTableName,
+                                 imperviousTableName)
                         if (ground_acoustic) {
 
                             results.put("ground_acoustic", ground_acoustic)

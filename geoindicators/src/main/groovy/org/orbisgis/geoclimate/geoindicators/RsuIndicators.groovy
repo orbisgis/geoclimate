@@ -1479,10 +1479,8 @@ String surfaceFractions(JdbcDataSource datasource,
 
     // Need to set priority number for future sorting
     def prioritiesMap = [:]
-    def i = 0
-    priorities.each { val ->
-        prioritiesMap[val] = i
-        i++
+    priorities.eachWithIndex { val, index ->
+        prioritiesMap.put(index, val)
     }
 
     def query = """DROP TABLE IF EXISTS $withoutUndefined; CREATE TABLE $withoutUndefined AS SELECT b.${id_rsu} """

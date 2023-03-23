@@ -386,40 +386,34 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
     def urbanAreas = importPreprocess.urban_areas
 
     //Format impervious
-    def processFormatting = BDTopo.InputDataFormatting.formatImperviousLayer(datasource,
+    def finalImpervious = BDTopo.InputDataFormatting.formatImperviousLayer(datasource,
             importPreprocess.impervious)
-    def finalImpervious = processFormatting.outputTableName
 
     //Format building
-    processFormatting = BDTopo.InputDataFormatting.formatBuildingLayer(datasource,
+    def finalBuildings  = BDTopo.InputDataFormatting.formatBuildingLayer(datasource,
             importPreprocess.building, zoneTable,
             urbanAreas, hLevMin)
-    def finalBuildings = processFormatting.outputTableName
 
     //Format roads
-    processFormatting = BDTopo.InputDataFormatting.formatRoadLayer(datasource,
+    def finalRoads =  BDTopo.InputDataFormatting.formatRoadLayer(datasource,
             importPreprocess.road,
             zoneTable)
-    def finalRoads = processFormatting.outputTableName
 
     //Format rails
-    processFormatting = BDTopo.InputDataFormatting.formatRailsLayer(datasource,
+    def finalRails = BDTopo.InputDataFormatting.formatRailsLayer(datasource,
             importPreprocess.rail,
             zoneTable)
-    def finalRails = processFormatting.outputTableName
 
 
     //Format vegetation
-    processFormatting = BDTopo.InputDataFormatting.formatVegetationLayer(datasource,
+    def finalVeget = BDTopo.InputDataFormatting.formatVegetationLayer(datasource,
             importPreprocess.vegetation,
             zoneTable)
-    def finalVeget = processFormatting.outputTableName
 
     //Format water
-    processFormatting = BDTopo.InputDataFormatting.formatHydroLayer(datasource,
+    def finalHydro =  BDTopo.InputDataFormatting.formatHydroLayer(datasource,
             importPreprocess.water,
             zoneTable)
-    def finalHydro = processFormatting.outputTableName
 
     debug "End of the BDTopo extract transform process."
 

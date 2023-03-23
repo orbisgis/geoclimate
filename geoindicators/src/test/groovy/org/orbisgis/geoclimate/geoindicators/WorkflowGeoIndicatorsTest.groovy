@@ -89,7 +89,6 @@ class WorkflowGeoIndicatorsTest {
 
     @BeforeAll
     static void beforeAll() {
-        folder = new File("/tmp/")
         datasource = open(folder.getAbsolutePath() + File.separator + "workflowGeoIndicatorsTest;AUTO_SERVER=TRUE")
         assertNotNull(datasource)
         datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)

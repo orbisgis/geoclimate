@@ -86,7 +86,7 @@ abstract class WorkflowAbstractTest {
         Map process = BDTopo.workflow(bdTopoParameters, getVersion())
         assertNotNull(process)
 
-        def tableNames = process.output[getInseeCode()]
+        def tableNames = process[getInseeCode()]
         assertTrue(tableNames.size() > 0)
         H2GIS h2gis = H2GIS.open(folder.absolutePath + File.separator + "testFullWorflow;AUTO_SERVER=TRUE")
 
@@ -171,7 +171,7 @@ abstract class WorkflowAbstractTest {
 
             Map process = BDTopo.workflow(bdTopoParameters, getVersion())
             assertNotNull(process)
-            def tableNames = process.output.values()
+            def tableNames = process.values()
             def grid_table = tableNames.grid_indicators[0]
             assertNotNull(grid_table)
             H2GIS h2gis = H2GIS.open("${folder.absolutePath + File.separator}testFullWorflowSRID;AUTO_SERVER=TRUE")

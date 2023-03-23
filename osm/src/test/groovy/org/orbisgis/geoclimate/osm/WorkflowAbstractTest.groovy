@@ -53,13 +53,10 @@ class WorkflowAbstractTest {
         assertEquals(countRSU.count, maxRSUBlocks.max)
 
         //Compute building indicators
-        def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
-        assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: relationBuildings,
-                                                       inputRoadTableName    : roadTableName,
-                                                       indicatorUse          : indicatorUse,
-                                                       prefixName            : prefixName])
-        String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
+        String buildingIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators(datasource, relationBuildings,
+                                                                                                         roadTableName, indicatorUse,
+                                                                                                         prefixName)
+        assert buildingIndicators
         assertTrue(datasource.getSpatialTable(buildingIndicators).srid > 0)
         if (saveResults) {
             logger.debug("Saving building indicators")
@@ -89,17 +86,16 @@ class WorkflowAbstractTest {
             assertTrue(datasource.getSpatialTable(blockIndicators).srid > 0)
         }
 
+        Map parameters = Geoindicators.WorkflowGeoIndicators.getParameters(["indicatorUse":indicatorUse, "svfSimplified":svfSimplified])
         //Compute RSU indicators
-        def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators()
-        assertTrue computeRSUIndicators.execute([datasource       : datasource,
-                                                 buildingTable    : buildingIndicators,
-                                                 rsuTable         : relationRSU,
-                                                 vegetationTable  : vegetationTableName,
-                                                 roadTable        : roadTableName,
-                                                 hydrographicTable: hydrographicTableName,
-                                                 indicatorUse     : indicatorUse,
-                                                 prefixName       : prefixName,
-                                                 svfSimplified    : svfSimplified])
+        def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators( datasource, buildingIndicators,
+                                                                                             relationRSU,
+                                                                                              vegetationTableName,
+                                                                                              roadTableName,
+                                                                                             hydrographicTableName,null,
+                                                                                              parameters,
+                                                                                              prefixName)
+        assertTrue computeRSUIndicators.execute()
         String rsuIndicators = computeRSUIndicators.getResults().outputTableName
         if (saveResults) {
             logger.debug("Saving RSU indicators")

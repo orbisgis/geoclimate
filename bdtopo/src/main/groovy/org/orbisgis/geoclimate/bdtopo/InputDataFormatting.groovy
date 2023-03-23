@@ -16,10 +16,9 @@ import org.orbisgis.data.jdbc.JdbcDataSource
  * @param datasource A connexion to a DB containing the raw buildings table
  * @param building The name of the raw buildings table in the DB
  * @param hLevMin Minimum building level height
- * @return outputTableName The name of the final buildings table
- * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
+ * @return The name of the final buildings table
  */
-Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
+String formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
                         String urban_areas = "", float h_lev_min = 3) {
     if (!h_lev_min) {
         h_lev_min = 3
@@ -210,7 +209,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
         }
     }
     debug 'Buildings transformation finishes'
-    return [outputTableName: outputTableName]
+    return  outputTableName
 }
 
 /**
@@ -247,9 +246,9 @@ static String[] getTypeAndUse(def main_type, def main_use, def types_and_uses) {
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw roads table
  * @param road The name of the raw roads table in the DB
- * @return outputTableName The name of the final roads table
+ * @return  The name of the final roads table
  */
-Map formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") {
+String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") {
     debug('Formating road layer')
     def outputTableName = postfix "ROAD"
     datasource """
@@ -379,7 +378,7 @@ Map formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") {
         }
     }
     debug('Roads transformation finishes')
-    return [outputTableName: outputTableName]
+    return outputTableName
 }
 
 /**
@@ -387,9 +386,9 @@ Map formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") {
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw hydro table
  * @param water The name of the raw hydro table in the DB
- * @return outputTableName The name of the final hydro table
+ * @return The name of the final hydro table
  */
-Map formatHydroLayer(JdbcDataSource datasource, String water, String zone = "") {
+String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "") {
     debug('Hydro transformation starts')
     def outputTableName = postfix("HYDRO")
     datasource.execute """Drop table if exists $outputTableName;
@@ -431,7 +430,7 @@ Map formatHydroLayer(JdbcDataSource datasource, String water, String zone = "") 
         }
     }
     debug('Hydro transformation finishes')
-    return [outputTableName: outputTableName]
+    return outputTableName
 }
 
 /**
@@ -439,9 +438,9 @@ Map formatHydroLayer(JdbcDataSource datasource, String water, String zone = "") 
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw rails table
  * @param rail The name of the raw rails table in the DB
- * @return outputTableName The name of the final rails table
+ * @return The name of the final rails table
  */
-Map formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") {
+String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") {
     debug('Rails transformation starts')
     def outputTableName = postfix("RAILS")
     datasource.execute """ drop table if exists $outputTableName;
@@ -517,7 +516,7 @@ Map formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") {
         }
     }
     debug('Rails transformation finishes')
-    return [outputTableName: outputTableName]
+    return  outputTableName
 }
 
 
@@ -526,9 +525,9 @@ Map formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") {
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw vegetation table
  * @param vegetation The name of the raw vegetation table in the DB
- * @return outputTableName The name of the final vegetation table
+ * @return The name of the final vegetation table
  */
-Map formatVegetationLayer(JdbcDataSource datasource, String vegetation, String zone = "") {
+String formatVegetationLayer(JdbcDataSource datasource, String vegetation, String zone = "") {
     debug('Vegetation transformation starts')
     def outputTableName = postfix "VEGET"
     datasource """ 
@@ -621,7 +620,7 @@ Map formatVegetationLayer(JdbcDataSource datasource, String vegetation, String z
         }
     }
     debug('Vegetation transformation finishes')
-    return [outputTableName: outputTableName]
+    return outputTableName
 }
 
 
@@ -688,7 +687,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
  * @param impervious The name of the impervious table in the DB
  * @return outputTableName The name of the final impervious table
  */
-Map formatImperviousLayer(H2GIS datasource, String impervious) {
+String formatImperviousLayer(H2GIS datasource, String impervious) {
     debug('Impervious layer')
     def outputTableName = postfix("IMPERVIOUS")
     datasource.execute """ drop table if exists $outputTableName;
@@ -730,5 +729,5 @@ Map formatImperviousLayer(H2GIS datasource, String impervious) {
     }
     datasource.execute("DROP TABLE IF EXISTS $polygonizedTable".toString())
     debug('Impervious areas transformation finishes')
-    return [outputTableName: outputTableName]
+    return outputTableName
 }
