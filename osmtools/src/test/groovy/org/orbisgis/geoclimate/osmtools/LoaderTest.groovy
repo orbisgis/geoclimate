@@ -64,6 +64,7 @@ class LoaderTest extends AbstractOSMToolsTest {
 
     static H2GIS ds
 
+
     @BeforeAll
     static void loadDb() {
         ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "LoaderTest;AUTO_SERVER=TRUE;")
@@ -113,7 +114,7 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     void sampleOverpassQueryOverride() {
         Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
-            AbstractOSMTest.query = query
+            this.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("sample.osm").text
             return true
         }

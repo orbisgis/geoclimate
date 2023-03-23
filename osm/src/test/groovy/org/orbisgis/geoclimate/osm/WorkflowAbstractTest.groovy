@@ -30,8 +30,8 @@ class WorkflowAbstractTest {
         //Create spatial units and relations : building, block, rsu
         Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis(datasource, zone, buildingTableName,
                 roadTableName, railTableName, vegetationTableName,
-                hydrographicTableName, "", "", 100000,
-                2500, 0.01, prefixName)
+                hydrographicTableName, "", "", 10000,
+                2500, 0.01, indicatorUse, prefixName)
 
         String relationBuildings = spatialUnits.building
         String relationBlocks = spatialUnits.block
@@ -88,15 +88,14 @@ class WorkflowAbstractTest {
 
         Map parameters = Geoindicators.WorkflowGeoIndicators.getParameters(["indicatorUse":indicatorUse, "svfSimplified":svfSimplified])
         //Compute RSU indicators
-        def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators( datasource, buildingIndicators,
+        def rsuIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators( datasource, buildingIndicators,
                                                                                              relationRSU,
                                                                                               vegetationTableName,
                                                                                               roadTableName,
                                                                                              hydrographicTableName,null,
                                                                                               parameters,
                                                                                               prefixName)
-        assertTrue computeRSUIndicators.execute()
-        String rsuIndicators = computeRSUIndicators.getResults().outputTableName
+        assert rsuIndicators
         if (saveResults) {
             logger.debug("Saving RSU indicators")
             datasource.getSpatialTable(rsuIndicators).save(directory + File.separator + "${rsuIndicators}.geojson", true)

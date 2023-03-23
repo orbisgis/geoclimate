@@ -643,7 +643,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
  * @param distance to expand the OSM bbox
  * @return
  */
-def static extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_size) {
+def  extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_size) {
     def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}".toString()
     def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}".toString()
     if (zoneToExtract) {
@@ -712,7 +712,7 @@ def static extractOSMZone(def datasource, def zoneToExtract, def distance, def b
  * @param processing_parameters the file parameters
  * @return a filled map of parameters
  */
-def static extractProcessingParameters(def processing_parameters) {
+def  extractProcessingParameters(def processing_parameters) {
     def defaultParameters = [distance: 0f, prefixName: "",
                              hLevMin : 3]
     def rsu_indicators_default = [indicatorUse      : [],

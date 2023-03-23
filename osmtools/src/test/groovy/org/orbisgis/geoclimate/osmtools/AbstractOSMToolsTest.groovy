@@ -58,6 +58,8 @@ abstract class AbstractOSMToolsTest {
     /** Generation of string {@link UUID}.*/
     protected static final def uuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
 
+
+
     /**
      * Implementation of the {@link org.junit.jupiter.api.Assertions#assertEquals(String, String)} method to take into
      * account GString
