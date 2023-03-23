@@ -36,7 +36,7 @@ import org.orbisgis.geoclimate.Geoindicators
  *
  * @return Table name in which the block id and their corresponding indicator value are stored
  *
- * @author Jérémy Bernard
+ * @author Jérémy Bernard 
  */
 String holeAreaDensity(JdbcDataSource datasource, String blockTable, String prefixName) {
     def GEOMETRIC_FIELD = "the_geom"

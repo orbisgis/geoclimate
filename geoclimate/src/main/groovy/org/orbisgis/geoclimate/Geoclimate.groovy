@@ -27,8 +27,8 @@ import java.util.concurrent.Callable
 /**
  * Root access point to the Geoclimate processes.
  *
- * @author Erwan Bocher (CNRS 2020)
- * @author Sylvain Palominos (UBS chaire GEOTERA)
+ * @author Erwan Bocher (CNRS 2020-2023)
+ * @author Sylvain Palominos (UBS chaire GEOTERA 2020)
  */
 @CommandLine.Command(name = "Geoclimate",
         sortOptions = false,

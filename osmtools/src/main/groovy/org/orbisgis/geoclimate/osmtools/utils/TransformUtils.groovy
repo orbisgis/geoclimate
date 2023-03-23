@@ -1,87 +1,34 @@
-/*
- * Bundle OSM is part of the OrbisGIS platform
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
  *
- * OrbisGIS is a java GIS application dedicated to research in GIScience.
- * OrbisGIS is developed by the GIS group of the DECIDE team of the
- * Lab-STICC CNRS laboratory, see <http://www.lab-sticc.fr/>.
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
  *
- * The GIS group of the DECIDE team is located at :
- *
- * Laboratoire Lab-STICC – CNRS UMR 6285
- * Equipe DECIDE
- * UNIVERSITÉ DE BRETAGNE-SUD
- * Institut Universitaire de Technologie de Vannes
- * 8, Rue Montaigne - BP 561 56017 Vannes Cedex
- *
- * OSM is distributed under LGPL 3 license.
- *
- * Copyright (C) 2019 CNRS (Lab-STICC UMR CNRS 6285)
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
  *
  *
- * OSM is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
  *
- * OSM is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License along with
- * OSM. If not, see <http://www.gnu.org/licenses/>.
- *
- * For more information, please consult: <http://www.orbisgis.org/>
- * or contact directly:
- * info_at_ orbisgis.org
- */
-/*
- * Bundle OSMTools is part of the GeoClimate tool
- *
- * GeoClimate is a geospatial processing toolbox for environmental and climate studies .
- * GeoClimate is developed by the GIS group of the DECIDE team of the
- * Lab-STICC CNRS laboratory, see <http://www.lab-sticc.fr/>.
- *
- * The GIS group of the DECIDE team is located at :
- *
- * Laboratoire Lab-STICC – CNRS UMR 6285
- * Equipe DECIDE
- * UNIVERSITÉ DE BRETAGNE-SUD
- * Institut Universitaire de Technologie de Vannes
- * 8, Rue Montaigne - BP 561 56017 Vannes Cedex
- *
- * OSMTools is distributed under LGPL 3 license.
- *
- * Copyright (C) 2019-2021 CNRS (Lab-STICC UMR CNRS 6285)
- *
- *
- * OSMTools is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
- *
- * OSMTools is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License along with
- * OSMTools. If not, see <http://www.gnu.org/licenses/>.
- *
- * For more information, please consult: <https://github.com/orbisgis/geoclimate>
- * or contact directly:
- * info_at_ orbisgis.org
  */
 package org.orbisgis.geoclimate.osmtools.utils
 
 import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.geoclimate.osmtools.OSMTools
+
 
 /**
  * Class containing utility methods for the {@link org.orbisgis.geoclimate.osmtools.Transform} script to keep only processes inside
  * the groovy script.
+ * @author Erwan Bocher (CNRS LAB-STICC)
  */
-
-import org.orbisgis.geoclimate.osmtools.OSMTools
-
 @BaseScript OSMTools pf
 
 

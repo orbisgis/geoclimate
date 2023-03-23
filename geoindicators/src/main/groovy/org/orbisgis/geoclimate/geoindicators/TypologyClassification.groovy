@@ -82,6 +82,7 @@ import java.util.zip.GZIPOutputStream
  * @return A database table name.
  *
  * @author Jérémy Bernard
+ * @author Erwan Bocher, CNRS
  */
 String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, String rsuAllIndicators, String normalisationType = "AVG",
                        Map mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,

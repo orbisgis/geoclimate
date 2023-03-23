@@ -31,7 +31,7 @@ import java.util.regex.Pattern
  * Test class dedicated to {@link Geoclimate}.
  *
  * @author Erwan Bocher (CNRS 2020)
- * @author Sylvain PALOMINOS (UBS chaire GEOTERA)
+ * @author Sylvain PALOMINOS (UBS chaire GEOTERA 2020)
  */
 class GeoclimateTest {
 
