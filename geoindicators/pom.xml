@@ -16,7 +16,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <smile-version>2.5.3</smile-version>
     </properties>
 
     <dependencies>
@@ -54,11 +53,6 @@
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
             <version>1.4.19</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.haifengl</groupId>
-            <artifactId>smile-data</artifactId>
-            <version>${smile-version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

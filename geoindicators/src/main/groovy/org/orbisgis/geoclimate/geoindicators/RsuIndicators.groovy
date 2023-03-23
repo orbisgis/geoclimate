@@ -891,7 +891,7 @@ String effectiveTerrainRoughnessLength(JdbcDataSource datasource, String rsuTabl
  *
  * @author Jérémy Bernard
  */
-String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String roadTable, List operations, float angleRangeSize = 30,
+String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String roadTable, List operations, int angleRangeSize = 30,
                             List levelConsiderated = [0], String prefixName) {
     def OPS = ["road_direction_distribution", "linear_road_density"]
     def GEOMETRIC_COLUMN_RSU = "the_geom"
@@ -1004,7 +1004,7 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                             " FROM $roadExpl GROUP BY id_rsu;" +
                             "CREATE INDEX IF NOT EXISTS id_d ON $roadDistrib (id_rsu);" +
                             "DROP TABLE IF EXISTS $roadDistTot; CREATE TABLE $roadDistTot($ID_COLUMN_RSU INTEGER," +
-                            "${nameDistrib.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
+                            "${nameDistrib.join(" double precision,")} double precision) AS (SELECT a.$ID_COLUMN_RSU," +
                             "COALESCE(b.${nameDistrib.join(",0),COALESCE(b.")},0)  " +
                             "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$ID_COLUMN_RSU=b.id_rsu);"
                     datasource queryDistrib.toString()

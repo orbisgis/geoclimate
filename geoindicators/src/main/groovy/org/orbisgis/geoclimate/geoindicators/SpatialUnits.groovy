@@ -40,7 +40,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * @return A database table name and the name of the column ID
  */
 String createTSU(JdbcDataSource datasource, String zone,
-                 float area = 1f, String roadTable, String railTable, String vegetationTable,
+                 double area = 1f, String roadTable, String railTable, String vegetationTable,
                  String hydrographicTable, String seaLandMaskTableName,
                  double surface_vegetation, double surface_hydro, String prefixName) {
     def BASE_NAME = "rsu"
@@ -52,8 +52,7 @@ String createTSU(JdbcDataSource datasource, String zone,
 
     def tsuDataPrepared = prepareTSUData(datasource,
             zone, roadTable, railTable,
-            vegetationTable, hydrographicTable, seaLandMaskTableName,
-            surface_vegetation, surface_hydro, prefixName)
+            vegetationTable, hydrographicTable, seaLandMaskTableName, surface_vegetation, surface_hydro, prefixName)
     if (!tsuDataPrepared) {
         info "Cannot prepare the data for RSU calculation."
         return
@@ -83,7 +82,7 @@ String createTSU(JdbcDataSource datasource, String zone,
  * @param area TSU less or equals than area are removed
  * @return A database table name and the name of the column ID
  */
-String createTSU(JdbcDataSource datasource, String inputTableName, String inputzone, float area = 1f, String prefixName) {
+String createTSU(JdbcDataSource datasource, String inputTableName, String inputzone, double area = 1d, String prefixName) {
     def COLUMN_ID_NAME = "id_rsu"
     def BASE_NAME = "tsu"
 
@@ -152,7 +151,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
  */
 String prepareTSUData(JdbcDataSource datasource, String zone, String road, String rail,
                       String vegetation, String water, String sea_land_mask,
-                      float surface_vegetation, float surface_hydro, String prefixName = "unified_abstract_model") {
+                      double surface_vegetation, double surface_hydro, String prefixName = "unified_abstract_model") {
 
     if (surface_vegetation <= 100) {
         error("The surface of vegetation must be greater or equal than 100 m²")
@@ -327,7 +326,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
  * @param outputTableName The name of the output table
  * @return A database table name and the name of the column ID
  */
-String createBlocks(JdbcDataSource datasource, String inputTableName, float snappingTolerance = 0.0f, String prefixName = "block") {
+String createBlocks(JdbcDataSource datasource, String inputTableName, double snappingTolerance = 0.0d, String prefixName = "block") {
 
     def BASE_NAME = "blocks"
 

@@ -14,7 +14,6 @@ import org.orbisgis.geoclimate.Geoindicators
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
-
 import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.*
@@ -130,6 +129,7 @@ class TypologyClassificationTests {
 
     @Test
     void createRandomForestClassifTest() {
+        h2GIS.executeScript(this.getClass().getResourceAsStream("data_for_tests.sql"))
         h2GIS """
                 DROP TABLE IF EXISTS tempo_rsu_for_lcz;
                 CREATE TABLE tempo_rsu_for_lcz AS 
@@ -143,7 +143,7 @@ class TypologyClassificationTests {
         def trainingURL = TypologyClassificationTests.getResource("model/rf/training_data.shp")
 
         def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
-        def savePath = new File(folder, "geoclimate_rf_${uuid}.model").getAbsolutePath()
+        String savePath = new File(folder, "geoclimate_rf_${uuid}.model").getAbsolutePath()
 
         def trainingTable = h2GIS.table(h2GIS.load(trainingURL, trainingTableName, true))
         assert trainingTable

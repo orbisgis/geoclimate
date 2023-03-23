@@ -298,8 +298,8 @@ class GenericIndicatorsTests {
 
         // Test 1
         def typeProportion = Geoindicators.GenericIndicators.typeProportion(h2GIS,
-                "tempo_build", "id_rsu", "type", "rsu_test",null,
-                ["industrial": ["industrial"], "residential": ["residential", "detached"]],
+                "tempo_build", "id_rsu", "type", "rsu_test",
+                ["industrial": ["industrial"], "residential": ["residential", "detached"]], null,
                 "")
 
         assert typeProportion
@@ -313,8 +313,8 @@ class GenericIndicatorsTests {
 
         // Test 2
         def p2 = Geoindicators.GenericIndicators.typeProportion(h2GIS,
-                "tempo_build", "id_rsu", "type", "rsu_test",
-                ["industrial": ["industrial"], "residential": ["residential", "detached"]], null,
+                "tempo_build", "id_rsu", "type", "rsu_test",null,
+                ["industrial": ["industrial"], "residential": ["residential", "detached"]],
                 "")
 
         def result2 = h2GIS.firstRow("SELECT * FROM ${p2}")

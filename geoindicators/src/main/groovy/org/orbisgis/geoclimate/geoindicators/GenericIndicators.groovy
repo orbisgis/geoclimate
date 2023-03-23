@@ -651,8 +651,8 @@ static Double getEquality(def myMap, def nbDistCol) {
  * @author Jérémy Bernard
  */
 String typeProportion(JdbcDataSource datasource, String inputTableName, String idField, String typeFieldName,
-                      String inputUpperTableName, Map floorAreaTypeAndComposition,
-                      Map areaTypeAndComposition, String prefixName) {
+                      String inputUpperTableName, Map areaTypeAndComposition,Map floorAreaTypeAndComposition,
+                       String prefixName) {
     def GEOMETRIC_FIELD_LOW = "the_geom"
     def BASE_NAME = "type_proportion"
     def NB_LEV = "nb_lev"

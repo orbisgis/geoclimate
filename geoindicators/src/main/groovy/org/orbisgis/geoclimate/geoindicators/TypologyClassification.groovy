@@ -351,9 +351,9 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'}""".toString()
         def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
                 distribLczTableWithoutLcz1, distribLczTableWithoutLcz1,
-                ID_FIELD_RSU, prefixName,
+                ID_FIELD_RSU,
                 ["equality", "uniqueness"], "LEAST",
-                true, true)
+                true, true, prefixName)
 
         // Rename the standard indicators into names consistent with the current method (LCZ type...)
         datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
@@ -454,7 +454,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
  *
  * @author Jérémy Bernard
  */
-String createRandomForestModel(JdbcDataSource datasource, String trainingTableName, String varToModel, List explicativeVariables,
+def createRandomForestModel(JdbcDataSource datasource, String trainingTableName, String varToModel, List explicativeVariables,
                                boolean save,
                                String pathAndFileName, int ntrees, int mtry, String rule = "GINI", int maxDepth,
                                int maxNodes, int nodeSize, double subsample, boolean classif = true) {
@@ -554,7 +554,7 @@ String createRandomForestModel(JdbcDataSource datasource, String trainingTableNa
  *
  * @author Jérémy Bernard
  */
-String applyRandomForestModel(JdbcDataSource datasource, String explicativeVariablesTableName, String pathAndFileName, String, idName,
+String applyRandomForestModel(JdbcDataSource datasource, String explicativeVariablesTableName, String pathAndFileName, String idName,
                               String prefixName) {
     debug "Apply a Random Forest model"
     File inputModelFile = new File(pathAndFileName)

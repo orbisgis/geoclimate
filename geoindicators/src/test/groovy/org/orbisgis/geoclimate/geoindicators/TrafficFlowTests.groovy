@@ -34,6 +34,6 @@ class TrafficFlowTests {
                 "ROAD_TEST")
         assert traffic
         assertEquals 6, h2GIS.getTable(traffic).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${traffic.results.outputTableName} where road_type is not null").count == 6
+        assertTrue h2GIS.firstRow("select count(*) as count from ${traffic} where road_type is not null").count == 6
     }
 }

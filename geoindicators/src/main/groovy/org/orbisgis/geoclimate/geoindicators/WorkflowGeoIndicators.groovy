@@ -134,17 +134,15 @@ String computeBuildingsIndicators(JdbcDataSource datasource, String building, St
         }
     }
 
-    def buildingTableJoin = Geoindicators.DataUtils.joinTables()
-    if (!buildingTableJoin([inputTableNamesWithId: finalTablesToJoin,
-                            outputTableName      : buildingPrefixName,
-                            datasource           : datasource])) {
+    def buildingTableJoin = Geoindicators.DataUtils.joinTables(datasource, finalTablesToJoin, buildingPrefixName)
+    if (!buildingTableJoin) {
         info "Cannot merge all indicator in the table $buildingPrefixName."
         return
     }
 
     // Rename the last table to the right output table name
     datasource.execute """DROP TABLE IF EXISTS $outputTableName;
-                    ALTER TABLE ${buildingTableJoin.results.outputTableName} RENAME TO $outputTableName""".toString()
+                    ALTER TABLE ${buildingTableJoin} RENAME TO $outputTableName""".toString()
 
     // Remove all intermediate tables (indicators alone in one table)
     // Recover all created tables in an array
@@ -186,7 +184,7 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
                        "floor_area": ["SUM"],
                        "volume"    : ["SUM"]],
             blockPrefixName)
-    if (!computeSimpleStats()) {
+    if (!computeSimpleStats) {
         info "Cannot compute the sum of of the building area, building volume and block floor area."
         return
     }
@@ -196,7 +194,7 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
     //Ratio between the holes area and the blocks area
     // block_hole_area_density
     def computeHoleAreaDensity = Geoindicators.BlockIndicators.holeAreaDensity(datasource, inputBlockTableName, blockPrefixName)
-    if (!computeHoleAreaDensity()) {
+    if (!computeHoleAreaDensity) {
         info "Cannot compute the hole area density."
         return
     }
@@ -223,7 +221,7 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
         info "Cannot compute closingness indicator. "
         return
     }
-    finalTablesToJoin.put(computeClosingness id_block)
+    finalTablesToJoin.put(computeClosingness, id_block)
 
     //Block net compactness
     def computeNetCompactness = Geoindicators.BlockIndicators.netCompactness(datasource, inputBuildingTableName, "volume",
@@ -285,11 +283,11 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
  * Compute the geoindicators at RSU scale
  *
  * @param buildingTable The table where are stored informations concerning buildings (and the id of the corresponding rsu)
- * @param rsuTable The table where are stored informations concerning RSU
- * @param roadTable The table where are stored informations concerning roads
- * @param vegetationTable The table where are stored informations concerning vegetation
- * @param hydrographicTable The table where are stored informations concerning water
- * @param imperviousTable The table where are stored the impervious areas
+ * @param rsu The table where are stored informations concerning RSU
+ * @param road The table where are stored informations concerning roads
+ * @param vegetation The table where are stored informations concerning vegetation
+ * @param water The table where are stored informations concerning water
+ * @param impervious The table where are stored the impervious areas
  * @param facadeDensListLayersBottom the list of height corresponding to the bottom of each vertical layers used for calculation
  * of the rsu_projected_facade_area_density which is then used to calculate the height of roughness (default [0, 10, 20, 30, 40, 50])
  * @param facadeDensNumberOfDirection The number of directions used for the calculation - according to the method used it should
@@ -335,7 +333,7 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
  * @return
  */
 String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
-                            String rsuTable, String vegetationTable, String roadTable, String hydrographicTable, String imperviousTable, Map parameters =
+                            String rsu, String vegetation, String road, String water, String impervious, Map parameters =
                                     [facadeDensListLayersBottom    : [0, 10, 20, 30, 40, 50],
                                      facadeDensNumberOfDirection   : 12,
                                      svfPointDensity               : 0.008,
@@ -343,7 +341,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                      heightColumnName              : "height_roof",
                                      inputFields                   : ["id_build", "the_geom"],
                                      levelForRoads                 : [0], angleRangeSizeBuDirection: 30,
-                                     svfSimplified                 : false,
+                                     svfSimplified                 : true,
                                      indicatorUse                  : ["LCZ", "UTRF", "TEB"],
                                      surfSuperpositions            : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
                                      surfPriorities                : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
@@ -403,8 +401,8 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // Maps for intermediate or final joins
     def finalTablesToJoin = [:]
     def intermediateJoin = [:]
-    finalTablesToJoin.put(rsuTable, columnIdRsu)
-    intermediateJoin.put(rsuTable, columnIdRsu)
+    finalTablesToJoin.put(rsu, columnIdRsu)
+    intermediateJoin.put(rsu, columnIdRsu)
 
     // Name of the output table
     def outputTableName = postfix(BASE_NAME)
@@ -428,15 +426,15 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         // Calculate all surface fractions indicators
         // Need to create the smallest geometries used as input of the surface fraction process
         def superpositionsTable = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
-                rsuTable, "id_rsu", buildingTable, roadTable, hydrographicTable, vegetationTable,
-                imperviousTable, temporaryPrefName)
+                rsu, "id_rsu", buildingTable, road, water, vegetation,
+                impervious, temporaryPrefName)
         if (!superpositionsTable) {
             info "Cannot compute the smallest commun geometries"
             return
         }
         // Calculate the surface fractions from the commun geom
         def computeSurfaceFractions = Geoindicators.RsuIndicators.surfaceFractions(
-                datasource, rsuTable, superpositionsTable,
+                datasource, rsu, "id_rsu", superpositionsTable,
                 parameters.surfSuperpositions,
                 parameters.surfPriorities, temporaryPrefName)
         if (!computeSurfaceFractions) {
@@ -499,7 +497,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // building type fractions
     if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
         def rsuTableTypeProportion = Geoindicators.GenericIndicators.typeProportion(datasource, buildingTable,
-                columnIdRsu, "type", rsuTable, parameters.buildingAreaTypeAndComposition,
+                columnIdRsu, "type", rsu, parameters.buildingAreaTypeAndComposition,
                 parameters.floorAreaTypeAndComposition, temporaryPrefName)
         if (!rsuTableTypeProportion) {
             info "Cannot compute the building type proportion of the RSU"
@@ -510,7 +508,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
 
     // rsu_area (note that the uuid is used as prefix for intermediate tables - indicator alone in a table)
     if (indicatorUse*.toUpperCase().contains("UTRF")) {
-        def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties(datasource, rsuTable, [columnIdRsu],
+        def computeGeometryProperties = Geoindicators.GenericIndicators.geometryProperties(datasource, rsu, [columnIdRsu],
                 ["st_area"], temporaryPrefName)
         if (!computeGeometryProperties) {
             info "Cannot compute the area of the RSU"
@@ -522,7 +520,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
 
     // Building free external facade density
     if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
-        def rsu_free_ext_density = Geoindicators.RsuIndicators.freeExternalFacadeDensity(datasource, buildingTable, rsuTable,
+        def rsu_free_ext_density = Geoindicators.RsuIndicators.freeExternalFacadeDensity(datasource, buildingTable, rsu,
                 "contiguity", "total_facade_length",
                 temporaryPrefName)
         if (!rsu_free_ext_density) {
@@ -551,7 +549,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                           "pop"                     : ["SUM", "DENS"]]
     }
     def rsuStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource, buildingTable,
-            rsuTable, columnIdRsu, columnIdBuild,
+            rsu, columnIdRsu, columnIdBuild,
             inputVarAndOperations, temporaryPrefName)
     if (!rsuStatisticsUnweighted) {
         info "Cannot compute the statistics : building, building volume densities, building number density" +
@@ -565,7 +563,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
     if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
         def rsuStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, buildingTable,
-                rsuTable, columnIdRsu,
+                rsu, columnIdRsu,
                 ["height_roof": ["area": ["AVG", "STD"]],
                  "nb_lev"     : ["area": ["AVG"]]], temporaryPrefName)
         if (!rsuStatisticsWeighted) {
@@ -582,10 +580,9 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         if (indicatorUse*.toUpperCase().contains("TEB")) {
             roadOperations = ["road_direction_distribution", "linear_road_density"]
         }
-        def linearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations(datasource, rsuTable,
-                roadTable, roadOperations,
-                [0], temporaryPrefName)
-        if (!linearRoadOperations()) {
+        def linearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations(datasource, rsu,
+                road, roadOperations, 30, [0], temporaryPrefName)
+        if (!linearRoadOperations) {
             info "Cannot compute the linear road density and road direction distribution"
             return
         }
@@ -597,7 +594,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
 
     // rsu_free_vertical_roof_area_distribution + rsu_free_non_vertical_roof_area_distribution
     if (indicatorUse*.toUpperCase().contains("TEB")) {
-        def roofAreaDist = Geoindicators.RsuIndicators.roofAreaDistribution(datasource, rsuTable,
+        def roofAreaDist = Geoindicators.RsuIndicators.roofAreaDistribution(datasource, rsu,
                 buildingTable, facadeDensListLayersBottom,
                 temporaryPrefName)
         if (!roofAreaDist) {
@@ -615,7 +612,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
             facadeDensNumberOfDirection: 8
         }
         def projFacadeDist = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(datasource, buildingTable,
-                rsuTable, facadeDensListLayersBottom,
+                rsu, facadeDensListLayersBottom,
                 facadeDensNumberOfDirection, temporaryPrefName)
         if (!projFacadeDist) {
             info "Cannot compute the projected facade distribution. "
@@ -657,7 +654,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // rsu_ground_sky_view_factor
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
         // If the fast version is chosen (SVF derived from extended RSU free facade fraction
-        if (svfSimplified == true) {
+        if (parameters.svfSimplified == true) {
             computeExtFF = Geoindicators.RsuIndicators.extendedFreeFacadeFraction(datasource, buildingTable, intermediateJoinTable,
                     "contiguity", "total_facade_length",
                     10, temporaryPrefName)
@@ -709,7 +706,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // rsu_perkins_skill_score_building_direction_variability
     if (indicatorUse*.toUpperCase().contains("UTRF")) {
         def perkinsDirection = Geoindicators.GenericIndicators.buildingDirectionDistribution(datasource, buildingTable,
-                rsuTable, columnIdRsu,
+                rsu, columnIdRsu,
                 parameters.angleRangeSizeBuDirection, temporaryPrefName)
         if (!perkinsDirection) {
             info "Cannot compute the perkins Skill Score building direction distribution."
@@ -747,8 +744,8 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     def interTabNames = removeAllCachedTableNames(intermediateJoin.keySet())
     def finTabNames = removeAllCachedTableNames(finalTablesToJoin.keySet())
     // Remove the RSU table from the list of "tables to remove" (since it needs to be conserved)
-    interTabNames = interTabNames - rsuTable
-    finTabNames = finTabNames - rsuTable
+    interTabNames = interTabNames - rsu
+    finTabNames = finTabNames - rsu
     datasource.execute """DROP TABLE IF EXISTS ${interTabNames.join(",")}, 
                                                 ${finTabNames.join(",")}, $SVF""".toString()
 
@@ -762,9 +759,9 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
 /**
  * Compute the typology indicators
  *
- * @param buildingIndicators The table where are stored indicators values at building scale
- * @param blockIndicators The table where are stored indicators values at block scale
- * @param rsuIndicators The table where are stored indicators values at rsu scale
+ * @param building_indicators The table where are stored indicators values at building scale
+ * @param block_indicators The table where are stored indicators values at block scale
+ * @param rsu_indicators The table where are stored indicators values at rsu scale
  * @param prefixName A prefix used to name the output table
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
@@ -774,14 +771,13 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
  *
  * @return 4 tables: rsu_lcz, rsu_utrf_area, rsu_utrf_floor_area, building_utrf
  */
-Map computeTypologyIndicators(JdbcDataSource datasource, String buildingIndicators, String blockIndicators,
-                              String rsuIndicators, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName,
-                              Map mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                                                  "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                                                  "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-                              String utrfModelName) {
+Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicators, String block_indicators,
+                              String rsu_indicators, Map parameters, String prefixName) {
     info "Start computing Typology indicators..."
 
+    def indicatorUse = parameters.indicatorUse
+    def utrfModelName = parameters.utrfModelName
+    def mapOfWeights = parameters.mapOfWeights
     //Sanity check for URTF model
     def runUTRFTypology = true
     if (indicatorUse*.toUpperCase().contains("UTRF")) {
@@ -810,7 +806,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String buildingIndicato
     def utrfFloorArea = baseNameUtrfRsu + "FLOOR_AREA"
 
     if (indicatorUse.contains("LCZ")) {
-        info """ The LCZ classification is performed """
+        info """ The LCZ classification will be performed """
         def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                              "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
                              "ASPECT_RATIO"                      : "ASPECT_RATIO",
@@ -828,21 +824,18 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String buildingIndicato
         datasource.execute """DROP TABLE IF EXISTS $lczIndicTable;
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${queryReplaceNames.join(",")} 
-                                        FROM ${rsuIndicators};""".toString()
+                                        FROM ${rsu_indicators};""".toString()
 
         // The classification algorithm is called
-        def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType()
-        if (!classifyLCZ([rsuLczIndicators : lczIndicTable,
-                          rsuAllIndicators : rsuIndicators,
-                          normalisationType: "AVG",
-                          mapOfWeights     : mapOfWeights,
-                          prefixName       : prefixName,
-                          datasource       : datasource,
-                          prefixName       : prefixName])) {
+        def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType(datasource, lczIndicTable,
+                rsu_indicators, "AVG",
+                mapOfWeights, prefixName)
+        if (!classifyLCZ) {
+            datasource.execute "DROP TABLE IF EXISTS $lczIndicTable".toString()
             info "Cannot compute the LCZ classification."
             return
         }
-        rsuLcz = classifyLCZ.results.outputTableName
+        rsuLcz = classifyLCZ
         datasource.execute "DROP TABLE IF EXISTS $lczIndicTable".toString()
 
     }
@@ -851,9 +844,9 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String buildingIndicato
     if (indicatorUse.contains("UTRF") && runUTRFTypology) {
         info """ The URBAN TYPOLOGY classification is performed """
         def gatheredScales = Geoindicators.GenericIndicators.gatherScales(datasource,
-                buildingIndicators, blockIndicators,
-                rsuIndicators, "BUILDING",
-                ["AVG", "STD"], prefixName, datasource)
+                building_indicators, block_indicators,
+                rsu_indicators, "BUILDING",
+                ["AVG", "STD"], prefixName)
         if (!datasource.getTable(gatheredScales).isEmpty()) {
             def utrfBuild = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
                     gatheredScales, utrfModelName, COLUMN_ID_BUILD, prefixName)
@@ -885,12 +878,12 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String buildingIndicato
             queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
             utrfBuilding = postfix "UTRF_BUILDING"
             datasource."$utrfBuild"."$COLUMN_ID_BUILD".createIndex()
-            datasource."$buildingIndicators"."$COLUMN_ID_BUILD".createIndex()
+            datasource."$building_indicators"."$COLUMN_ID_BUILD".createIndex()
             datasource """  DROP TABLE IF EXISTS $utrfBuilding;
                                 CREATE TABLE $utrfBuilding
                                     AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
                                                 $queryCaseWhenReplace AS I_TYPO
-                                    FROM $buildingIndicators a LEFT JOIN $utrfBuild b
+                                    FROM $building_indicators a LEFT JOIN $utrfBuild b
                                     ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
                                     WHERE a.$COLUMN_ID_RSU IS NOT NULL""".toString()
 
@@ -905,32 +898,32 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String buildingIndicato
                     querySum = querySum + " COALESCE(b.TYPO_${typoCol}/(b.TYPO_${listTypos.join("+b.TYPO_")}), 0) AS TYPO_$typoCol,"
                 }
                 // Calculates the distribution per RSU
-                datasource."$buildingIndicators"."$COLUMN_ID_RSU".createIndex()
+                datasource."$building_indicators"."$COLUMN_ID_RSU".createIndex()
                 datasource."$utrfBuilding"."$COLUMN_ID_BUILD".createIndex()
                 datasource.execute """  DROP TABLE IF EXISTS $distribNotPercent;
                                             CREATE TABLE $distribNotPercent
                                                 AS SELECT   b.$COLUMN_ID_RSU,
                                                             ${queryCasewhen[ind][0..-2]} 
-                                                FROM $utrfBuilding a RIGHT JOIN $buildingIndicators b
+                                                FROM $utrfBuilding a RIGHT JOIN $building_indicators b
                                                 ON a.$COLUMN_ID_BUILD = b.$COLUMN_ID_BUILD
                                                 WHERE b.$COLUMN_ID_RSU IS NOT NULL 
                                                 GROUP BY b.$COLUMN_ID_RSU
                                                 """.toString()
                 // Calculates the frequency by RSU
                 datasource."$distribNotPercent"."$COLUMN_ID_RSU".createIndex()
-                datasource."$rsuIndicators"."$COLUMN_ID_RSU".createIndex()
+                datasource."$rsu_indicators"."$COLUMN_ID_RSU".createIndex()
                 datasource.execute """  DROP TABLE IF EXISTS TEMPO_DISTRIB;
                                             CREATE TABLE TEMPO_DISTRIB
                                                 AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
                                                             ${querySum[0..-2]} 
-                                                FROM $rsuIndicators a LEFT JOIN $distribNotPercent b
+                                                FROM $rsu_indicators a LEFT JOIN $distribNotPercent b
                                                 ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
 
                 // Characterize the distribution to identify the 2 most frequent type within a RSU
                 def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(
-                        datasource, "TEMPO_DISTRIB", COLUMN_ID_RSU,
-                        "TEMPO_DISTRIB", "${prefixName}$ind", ["uniqueness"],
-                        "GREATEST", true, false)
+                        datasource, "TEMPO_DISTRIB",
+                        "TEMPO_DISTRIB",COLUMN_ID_RSU,  ["uniqueness"],
+                        "GREATEST", true, false, "${prefixName}$ind")
 
                 // Join main typo table with distribution table and replace typo by null when it has been set
                 // while there is no building in the RSU
@@ -985,15 +978,15 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String buildingIndicato
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
  *
- * @return outputTableBuildingName Table name where are stored the buildings and the RSU and block ID
- * @return outputTableBlockName Table name where are stored the blocks and the RSU ID
- * @return outputTableRsuName Table name where are stored the RSU
+ * @return building Table name where are stored the buildings and the RSU and block ID
+ * @return block Table name where are stored the blocks and the RSU ID
+ * @return rsu Table name where are stored the RSU
  */
 Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String building,
                           String road, String rail, String vegetation,
                           String water, String sea_land_mask,
-                          String rsu, float surface_vegetation,
-                          float surface_hydro, float snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
+                          String rsu, double surface_vegetation,
+                          double surface_hydro, double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
     info "Create the units of analysis..."
 
     def idRsu = "id_rsu"
@@ -1071,13 +1064,71 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
  */
 Map getParameters() {
     return [
-            "surface_vegetation": 10000d, "surface_hydro": 2500d,
-            "snappingTolerance" : 0.01f, "indicatorUse": ["LCZ", "UTRF", "TEB"], "svfSimplified": false,
-            "mapOfWeights"      : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                                   "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                                   "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-            "utrfModelName"     : "", "buildingHeightModelName": "", "nbEstimatedBuildHeight": 0,
-            "svfSimplified":true]
+            "surface_vegetation"            : 10000d, "surface_hydro": 2500d,
+            "snappingTolerance"             : 0.01d, "indicatorUse": ["LCZ", "UTRF", "TEB"],
+            "mapOfWeights"                  : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+            "utrfModelName"                 : "",
+            "buildingHeightModelName": "",
+            "nbEstimatedBuildHeight": 0,
+            "svfSimplified"                 : true,
+            "facadeDensListLayersBottom"    : [0, 10, 20, 30, 40, 50],
+            "facadeDensNumberOfDirection"   : 12,
+            "svfPointDensity"               : 0.008,
+            "svfRayLength"                  : 100,
+            "svfNumberOfDirection"          : 60,
+            "heightColumnName"              : "height_roof",
+            "inputFields"                   : ["id_build", "the_geom"],
+            "levelForRoads"                 : [0],
+            "angleRangeSizeBuDirection"     : 30,
+            "surfSuperpositions"            : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
+            "surfPriorities"                : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+            "buildingAreaTypeAndComposition": ["light_industry": ["light_industry"],
+                                               "heavy_industry": ["heavy_industry"],
+                                               "commercial"    : ["commercial"],
+                                               "residential"   : ["residential"]],
+            "floorAreaTypeAndComposition"   : ["residential": ["residential"]],
+            "utrfSurfFraction"              : ["vegetation_fraction_utrf"                : ["high_vegetation_fraction",
+                                                                                            "low_vegetation_fraction",
+                                                                                            "high_vegetation_low_vegetation_fraction",
+                                                                                            "high_vegetation_road_fraction",
+                                                                                            "high_vegetation_impervious_fraction",
+                                                                                            "high_vegetation_water_fraction",
+                                                                                            "high_vegetation_building_fraction"],
+                                               "low_vegetation_fraction_utrf"            : ["low_vegetation_fraction"],
+                                               "high_vegetation_impervious_fraction_utrf": ["high_vegetation_road_fraction",
+                                                                                            "high_vegetation_impervious_fraction"],
+                                               "high_vegetation_pervious_fraction_utrf"  : ["high_vegetation_fraction",
+                                                                                            "high_vegetation_low_vegetation_fraction",
+                                                                                            "high_vegetation_water_fraction"],
+                                               "road_fraction_utrf"                      : ["road_fraction",
+                                                                                            "high_vegetation_road_fraction"],
+                                               "impervious_fraction_utrf"                : ["road_fraction",
+                                                                                            "high_vegetation_road_fraction",
+                                                                                            "impervious_fraction",
+                                                                                            "high_vegetation_impervious_fraction"]],
+            "lczSurfFraction"               : ["building_fraction_lcz"       : ["building_fraction",
+                                                                                "high_vegetation_building_fraction"],
+                                               "pervious_fraction_lcz"       : ["high_vegetation_fraction",
+                                                                                "low_vegetation_fraction",
+                                                                                "water_fraction",
+                                                                                "high_vegetation_low_vegetation_fraction",
+                                                                                "high_vegetation_water_fraction"],
+                                               "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
+                                                                                "high_vegetation_low_vegetation_fraction",
+                                                                                "high_vegetation_road_fraction",
+                                                                                "high_vegetation_impervious_fraction",
+                                                                                "high_vegetation_water_fraction",
+                                                                                "high_vegetation_building_fraction"],
+                                               "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
+                                               "impervious_fraction_lcz"     : ["impervious_fraction",
+                                                                                "road_fraction",
+                                                                                "high_vegetation_impervious_fraction",
+                                                                                "high_vegetation_road_fraction"],
+                                               "water_fraction_lcz"          : ["water_fraction",
+                                                                                "high_vegetation_water_fraction"]],
+            "buildingFractions"             : ["high_vegetation_building_fraction", "building_fraction"]]
 
 }
 
@@ -1108,7 +1159,7 @@ Map getParameters(Map parameters) {
  *
  */
 Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String building, String road, String rail, String vegetation,
-                            String water, String impervious,String buildingEstimateTableName,
+                            String water, String impervious, String buildingEstimateTableName,
                             String seaLandMaskTableName, String rsuTable,
                             Map parameters = [:], String prefixName) {
     Map inputParameters = getParameters()
@@ -1139,7 +1190,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 
         // Estimate building height
         Map estimHeight = estimateBuildingHeight(datasource, zone, building,
-                rail, vegetation,
+                road, rail, vegetation,
                 water, impervious,
                 buildingEstimateTableName,
                 seaLandMaskTableName,
@@ -1158,7 +1209,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
             nbBuildingEstimated = estimHeight.nb_building_estimated
         }
 
-        indicatorUse = parameters.indicatorUse
+        indicatorUse = inputParameters.indicatorUse
         //This is a shortcut to extract building with estimated height
         if (indicatorUse.isEmpty()) {
             //Clean the System properties that stores intermediate table names
@@ -1241,9 +1292,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 
         Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
                 relationBuildings, relationBlocks,
-                rsuTable, road, vegetation, water, impervious,
-                indicatorUse, svfSimplified,
-                mapOfWeights, utrfModelName, prefixName)
+                rsuTable, road, vegetation, water, impervious, inputParameters, prefixName)
         if (!geoIndicators) {
             error "Cannot build the geoindicators"
             return
@@ -1263,13 +1312,13 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
  *          1 integer being the number of buildings having their height estimated
  *
  */
-Map estimateBuildingHeight(JdbcDataSource datasource, String zoneTable, String buildingTable,
-                           String roadTable, String railTable, String vegetationTable,
-                           String hydrographicTable, String imperviousTable,
-                           String buildingEstimateTableName, String seaLandMaskTableName,
-                           float surface_vegetation, float surface_hydro,
-                           float snappingTolerance, String buildingHeightModelName, String prefixName = "") {
-    if (!buildingEstimateTableName) {
+Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String building,
+                           String road, String rail, String vegetation,
+                           String water, String impervious,
+                           String building_estimate, String sea_land_mask,
+                           double surface_vegetation, double surface_hydro,
+                           double snappingTolerance, String buildingHeightModelName, String prefixName = "") {
+    if (!building_estimate) {
         error "To estimate the building height a table that contains the list of building to estimate must be provided"
         return
     }
@@ -1280,9 +1329,9 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zoneTable, String b
     info "Geoclimate will try to estimate the building heights with the model $buildingHeightModelName."
 
     //Create spatial units and relations : building, block, rsu
-    Map spatialUnits = createUnitsOfAnalysis(datasource, zoneTable,
-            buildingTable, roadTable, railTable, vegetationTable,
-            hydrographicTable, seaLandMaskTableName, "",
+    Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
+            building, road, rail, vegetation,
+            water, sea_land_mask, "",
             surface_vegetation, surface_hydro, snappingTolerance, ["UTRF"],
             prefixName)
     if (!spatialUnits) {
@@ -1294,9 +1343,9 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zoneTable, String b
     def rsuTable = spatialUnits.rsu
 
     // Calculates indicators needed for the building height estimation algorithm
-    Map geoIndicatorsEstH = computeGeoclimateIndicators(datasource, zoneTable,
-            relationBuildings, relationBlocks, rsuTable, roadTable,
-            vegetationTable, hydrographicTable, imperviousTable,
+    Map geoIndicatorsEstH = computeGeoclimateIndicators(datasource, zone,
+            relationBuildings, relationBlocks, rsuTable, road,
+            vegetation, water, impervious,
             ["UTRF"], true,
             "", prefixName)
     if (!geoIndicatorsEstH) {
@@ -1310,7 +1359,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zoneTable, String b
     def buildingIndicatorsForHeightEst = geoIndicatorsEstH.building_indicators
     def blockIndicatorsForHeightEst = geoIndicatorsEstH.block_indicators
     def rsuIndicatorsForHeightEst = geoIndicatorsEstH.rsu_indicators
-    datasource.getTable(buildingEstimateTableName).id_build.createIndex()
+    datasource.getTable(building_estimate).id_build.createIndex()
     datasource.getTable(buildingIndicatorsForHeightEst).id_build.createIndex()
     datasource.getTable(buildingIndicatorsForHeightEst).id_rsu.createIndex()
 
@@ -1320,7 +1369,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zoneTable, String b
                                                CREATE TABLE $estimated_building_with_indicators 
                                                         AS SELECT a.*
                                                         FROM $buildingIndicatorsForHeightEst a 
-                                                            RIGHT JOIN $buildingEstimateTableName b 
+                                                            RIGHT JOIN $building_estimate b 
                                                             ON a.id_build=b.id_build
                                                         WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
 
@@ -1408,9 +1457,9 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zoneTable, String b
  * This table can be empty if the user decides not to calculate it.
  *
  */
-Map computeGeoclimateIndicators(JdbcDataSource datasource, String zoneTable, String buildingsWithRelations, String blocksWithRelations, String rsuTable,
-                                String roadTable, String vegetationTable,
-                                String hydrographicTable, String imperviousTable, Map parameters = [
+Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String buildingsWithRelations, String blocksWithRelations, String rsu,
+                                String road, String vegetation,
+                                String water, String impervious, Map parameters = [
         "indicatorUse" : ["LCZ", "UTRF", "TEB"], "svfSimplified": false,
         "mapOfWeights" : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                           "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1419,9 +1468,10 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zoneTable, Str
     info "Start computing the geoindicators..."
     def start = System.currentTimeMillis()
 
+    def indicatorUse = parameters.indicatorUse
     //Compute building indicators
     String buildingIndicators = computeBuildingsIndicators(datasource, buildingsWithRelations,
-            roadTable, indicatorUse, prefixName)
+            road, indicatorUse, prefixName)
     if (!buildingIndicators) {
         error "Cannot compute the building indicators"
         return null
@@ -1439,10 +1489,9 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zoneTable, Str
 
     //Compute RSU indicators
     def rsuIndicators = computeRSUIndicators(datasource, buildingIndicators,
-            rsuTable, vegetationTable,
-            roadTable, hydrographicTable,
-            imperviousTable, ["indicatorUse" : indicatorUse,
-                              "svfSimplified": svfSimplified], prefixName)
+            rsu, vegetation,
+            road, water,
+            impervious, parameters, prefixName)
     if (!rsuIndicators) {
         error "Cannot compute the RSU indicators"
         return null
@@ -1451,9 +1500,7 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zoneTable, Str
     // Compute the typology indicators (LCZ and UTRF)
     Map computeTypologyIndicators = Geoindicators.WorkflowGeoIndicators.computeTypologyIndicators(datasource,
             buildingIndicators, blockIndicators,
-            rsuIndicators, prefixName,
-            mapOfWeights, indicatorUse,
-            utrfModelName)
+            rsuIndicators, parameters, prefixName)
     if (!computeTypologyIndicators) {
         info "Cannot compute the Typology indicators."
         return
@@ -1473,8 +1520,8 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zoneTable, Str
     }
     def nbRSU = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString()).count
     //Alter the zone table to add statics
-    if (!datasource.getSpatialTable(zoneTable).getColumns().contains("NB_ESTIMATED_BUILDING")) {
-        datasource.execute """ALTER TABLE ${zoneTable} ADD COLUMN (
+    if (!datasource.getSpatialTable(zone).getColumns().contains("NB_ESTIMATED_BUILDING")) {
+        datasource.execute """ALTER TABLE ${zone} ADD COLUMN (
                     NB_BUILDING INTEGER,
                     NB_ESTIMATED_BUILDING INTEGER,
                     NB_BLOCK INTEGER,
@@ -1484,9 +1531,9 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zoneTable, Str
                     )""".toString()
     }
 
-
+    def nbEstimatedBuildHeight = parameters.nbEstimatedBuildHeight
     //Update reporting to the zone table
-    datasource.execute """update ${zoneTable} 
+    datasource.execute """update ${zone} 
                 set nb_estimated_building = ${nbEstimatedBuildHeight}, 
                 nb_building = ${nbBuilding}, 
                 nb_block =  ${nbBlock},
@@ -1501,7 +1548,7 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zoneTable, Str
             "block_indicators"   : blockIndicators,
             "rsu_indicators"     : rsuIndicators,
             "rsu_lcz"            : rsuLcz,
-            "zone"               : zoneTable,
+            "zone"               : zone,
             "rsu_utrf_area"      : utrfArea,
             "rsu_utrf_floor_area": utrfFloorArea,
             "building_utrf"      : utrfBuilding]

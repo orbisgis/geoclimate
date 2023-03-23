@@ -292,7 +292,7 @@ class RsuIndicatorsTests {
 
         def p1 = Geoindicators.RsuIndicators.linearRoadOperations(h2GIS, "rsu_test",
                 "road_test", ["road_direction_distribution", "linear_road_density"],
-                30, "test")
+                30, null,"test")
         assertNotNull(p1)
         def t0 = h2GIS.firstRow("SELECT road_direction_distribution_d0_30 " +
                 "FROM test_rsu_road_linear_properties WHERE id_rsu = 14")
