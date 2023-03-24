@@ -594,7 +594,12 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                                     'Bois'                     : 'forest',
                                     'Bananeraie'               : 'banana_plants',
                                     'Mangrove'                 : 'mangrove',
-                                    'Canne à sucre'            : 'sugar_cane']
+                                    'Canne à sucre'            : 'sugar_cane',
+                                    'Houblonnière'             : 'hops',
+                                    'Rizière'                  : 'rice_field',
+                                    'Piste en herbe'           : 'grass',
+                                    'Terrain de football'      : 'grass',
+                                    'Terrain de rugby': 'grass']
 
             def vegetation_classes = [
                     'tree'         : 'high',
@@ -610,7 +615,10 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                     'vineyard'     : 'low',
                     'banana_plants': 'high',
                     'sugar_cane'   : 'low',
-                    'unclassified' : 'low'
+                    'unclassified' : 'low',
+                    'hops'         : 'low',
+                    'rice_field'   :'low',
+                    'grass'        : 'low'
             ]
 
             int rowcount = 1
