@@ -29,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
+import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 
 import static org.junit.jupiter.api.Assertions.*
@@ -552,7 +553,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def nominatim = Utilities.getNominatimData("Pont-de-Veyle")
+
+
+       // def nominatim = OSMTools.Utilities.getNominatimData("Pont-de-Veyle")
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",

@@ -549,7 +549,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             String worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource, worldPopFile, srid, coverageId.replaceAll(":", "_"))
                             if (worldPopTableName) {
                                 results.put("population", worldPopTableName)
-                                String buildingWithPop = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building, worldPopTableName)
+                                String buildingWithPop = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building, worldPopTableName, ["pop"])
                                 if (!buildingWithPop) {
                                     info "Cannot compute any population data at building level"
                                 }

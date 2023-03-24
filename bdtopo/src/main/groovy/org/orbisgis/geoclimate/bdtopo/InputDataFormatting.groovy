@@ -97,7 +97,8 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                      "Sportif"                           : ["sport": "sport"],
                      "Annexe"                            : ["annex": "building"],
                      "Industriel, agricole ou commercial": ["commercial": "commercial"],
-                     "Bâtiment"                          : ["building": "building"]
+                     "Bâtiment"                          : ["building": "building"],
+                      "Industrie lourde"                 :["heavy_industry":"industrial"]
                     ]
 
             def building_type_level = ["building"                  : 1,
@@ -147,6 +148,9 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                 datasource.eachRow(queryMapper.toString()) { row ->
                     def values = row.toRowResult()
                     def id_source = values.ID_SOURCE
+                    if(id_source=="RESERVOI0000000046957308"){
+                        println(id_source)
+                    }
                     def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
                     def feature_type = type_use[0]
                     def feature_main_use = type_use[1]
@@ -490,13 +494,18 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
 
             def rail_types = ['LGV'                       : 'highspeed',
                               'Principale'                : 'rail',
+                               'Voie ferrée principale' :  'rail',
                               'Voie de service'           : 'service_track',
                               'Voie non exploitée'        : 'disused',
                               'Transport urbain'          : 'tram',
                               'Funiculaire ou crémaillère': 'funicular',
                               'Metro'                     : 'subway',
+                               'Métro': 'subway',
                               'Tramway'                   : 'tram',
-                              'Pont'                      : 'bridge', 'Tunnel': 'tunnel', 'NC': null]
+                              'Pont'                      : 'bridge',
+                              'Tunnel': 'tunnel',
+                              'Sans objet' : null,
+                              'NC': null]
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->

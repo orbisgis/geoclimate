@@ -127,30 +127,30 @@ class WorkflowDebugTest {
                     ]
             ]
             BDTopo.v2(workflow_parameters)
+
         } else {
             println("The configuration file for the input database doesn't exist")
         }
     }
 
     @Disabled
-    //Use it for integration test with a postgis database
     @Test
     void testIntegrationFolderInput() {
-        def inputData = "/../BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D022_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D022-ED182"
-        def locations = ["Paimpol"]
-        String directory = "./../bdtopo_workflow_folder_input"
+        def input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo2/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D035_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D035-ED182"
+        def locations = ["Redon"]
+        String directory = "/tmp/bdtopo2"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         def bdTopoParameters = [
                 "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb": [
-                        "folder": "${dirFile.absolutePath}",
+                        "folder": dirFile.absolutePath,
                         "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
                 "input"       : [
-                        "folder"   : inputData,
+                        "folder"   : input_data,
                         "locations": locations,
                         "srid"     : 2154],
                 "output"      : [
@@ -167,6 +167,30 @@ class WorkflowDebugTest {
                          ]
                         ]
         ]
+        BDTopo.v2(bdTopoParameters)
+
+        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-0_TOUSTHEMES_SHP_LAMB93_D035_2022-09-15/BDTOPO/1_DONNEES_LIVRAISON_2022-09-00418/BDT_3-0_SHP_LAMB93_D035-ED2022-09-15"
+
+        directory = "/tmp/bdtopo3"
+        dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        bdTopoParameters.input.folder=input_data
+        bdTopoParameters.output.folder.path=directory
+
+        BDTopo.v3(bdTopoParameters)
+
+        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo_2010/BDTOPO_2-0_TOUSTHEMES_SHP_LAMB93_D035_2010-04-14/BDTOPO/1_DONNEES_LIVRAISON_2021-10-00016/BDT_2-0_SHP_LAMB93_D035-ED101"
+
+        directory = "/tmp/bdtopo2010"
+        dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        bdTopoParameters.input.folder=input_data
+        bdTopoParameters.output.folder.path=directory
+
         BDTopo.v2(bdTopoParameters)
 
     }
