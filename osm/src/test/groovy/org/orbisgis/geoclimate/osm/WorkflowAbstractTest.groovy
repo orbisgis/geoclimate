@@ -1,12 +1,29 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.osm
 
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.*
 
 class WorkflowAbstractTest {
 
@@ -30,21 +47,19 @@ class WorkflowAbstractTest {
                            String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "") {
         //Create spatial units and relations : building, block, rsu
-        IProcess spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis()
-        assertTrue spatialUnits.execute([datasource       : datasource, zoneTable: zone, buildingTable: buildingTableName,
-                                         roadTable        : roadTableName, railTable: railTableName, vegetationTable: vegetationTableName,
-                                         hydrographicTable: hydrographicTableName, surface_vegetation: 100000,
-                                         surface_hydro    : 2500, distance: 0.01, prefixName: prefixName])
+        Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis(datasource, zone, buildingTableName,
+                roadTableName, railTableName, vegetationTableName,
+                hydrographicTableName, "", "", 10000,
+                2500, 0.01, indicatorUse, prefixName)
 
-        String relationBuildings = spatialUnits.getResults().outputTableBuildingName
-        String relationBlocks = spatialUnits.getResults().outputTableBlockName
-        String relationRSU = spatialUnits.getResults().outputTableRsuName
+        String relationBuildings = spatialUnits.building
+        String relationBlocks = spatialUnits.block
+        String relationRSU = spatialUnits.rsu
 
         if (saveResults) {
             logger.debug("Saving spatial units")
-            IProcess saveTables = Geoindicators.DataUtils.saveTablesAsFiles()
-            saveTables.execute([inputTableNames: spatialUnits.getResults().values(), delete:true
-                                , directory    : directory, datasource: datasource])
+            Geoindicators.DataUtils.saveTablesAsFiles(datasource, spatialUnits.values(),
+                    true, directory)
         }
 
         def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())
@@ -57,14 +72,11 @@ class WorkflowAbstractTest {
         assertEquals(countRSU.count, maxRSUBlocks.max)
 
         //Compute building indicators
-        def computeBuildingsIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators()
-        assertTrue computeBuildingsIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: relationBuildings,
-                                                       inputRoadTableName    : roadTableName,
-                                                       indicatorUse          : indicatorUse,
-                                                       prefixName            : prefixName])
-        String buildingIndicators = computeBuildingsIndicators.getResults().outputTableName
-        assertTrue(datasource.getSpatialTable(buildingIndicators).srid>0)
+        String buildingIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators(datasource, relationBuildings,
+                roadTableName, indicatorUse,
+                prefixName)
+        assert buildingIndicators
+        assertTrue(datasource.getSpatialTable(buildingIndicators).srid > 0)
         if (saveResults) {
             logger.debug("Saving building indicators")
             datasource.getSpatialTable(buildingIndicators).save(directory + File.separator + "${buildingIndicators}.geojson", true)
@@ -77,12 +89,11 @@ class WorkflowAbstractTest {
 
         //Compute block indicators
         if (indicatorUse.contains("UTRF")) {
-            def computeBlockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators()
-            assertTrue computeBlockIndicators.execute([datasource            : datasource,
-                                                       inputBuildingTableName: buildingIndicators,
-                                                       inputBlockTableName   : relationBlocks,
-                                                       prefixName            : prefixName])
-            String blockIndicators = computeBlockIndicators.getResults().outputTableName
+            def blockIndicators = Geoindicators.WorkflowGeoIndicators.computeBlockIndicators(datasource,
+                    buildingIndicators,
+                    relationBlocks,
+                    prefixName)
+            assertNotNull(blockIndicators)
             if (saveResults) {
                 logger.debug("Saving block indicators")
                 datasource.getSpatialTable(blockIndicators).save(directory + File.separator + "${blockIndicators}.geojson", true)
@@ -91,21 +102,19 @@ class WorkflowAbstractTest {
             def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
             def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
             assertEquals(countRelationBlocks.count, countBlocksIndicators.count)
-            assertTrue(datasource.getSpatialTable(blockIndicators).srid>0)
+            assertTrue(datasource.getSpatialTable(blockIndicators).srid > 0)
         }
 
+        Map parameters = Geoindicators.WorkflowGeoIndicators.getParameters(["indicatorUse": indicatorUse, "svfSimplified": svfSimplified])
         //Compute RSU indicators
-        def computeRSUIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators()
-        assertTrue computeRSUIndicators.execute([datasource       : datasource,
-                                                 buildingTable    : buildingIndicators,
-                                                 rsuTable         : relationRSU,
-                                                 vegetationTable  : vegetationTableName,
-                                                 roadTable        : roadTableName,
-                                                 hydrographicTable: hydrographicTableName,
-                                                 indicatorUse     : indicatorUse,
-                                                 prefixName       : prefixName,
-                                                 svfSimplified    : svfSimplified])
-        String rsuIndicators = computeRSUIndicators.getResults().outputTableName
+        def rsuIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators(datasource, buildingIndicators,
+                relationRSU,
+                vegetationTableName,
+                roadTableName,
+                hydrographicTableName, null,
+                parameters,
+                prefixName)
+        assert rsuIndicators
         if (saveResults) {
             logger.debug("Saving RSU indicators")
             datasource.getSpatialTable(rsuIndicators).save(directory + File.separator + "${rsuIndicators}.geojson", true)
@@ -115,6 +124,6 @@ class WorkflowAbstractTest {
         def countRelationRSU = datasource.firstRow("select count(*) as count from ${relationRSU}".toString())
         def countRSUIndicators = datasource.firstRow("select count(*) as count from ${rsuIndicators}".toString())
         assertEquals(countRelationRSU.count, countRSUIndicators.count)
-        assertTrue(datasource.getSpatialTable(rsuIndicators).srid>0)
+        assertTrue(datasource.getSpatialTable(rsuIndicators).srid > 0)
     }
 }

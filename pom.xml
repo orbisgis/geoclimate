@@ -8,11 +8,12 @@
     <version>0.0.2-SNAPSHOT</version>
     <modules>
         <module>geoindicators</module>
-        <module>bdtopo_v2</module>
+        <module>bdtopo</module>
         <module>osm</module>
         <module>geoclimate</module>
         <module>osmtools</module>
         <module>worldpoptools</module>
+        <module>common-utils</module>
     </modules>
 
     <properties>
@@ -29,9 +30,9 @@
         <!-- Dependencies versions -->
         <junit-version>5.9.1</junit-version>
         <jts-version>1.19.0</jts-version>
-        <h2gis-version>2.2.0-SNAPSHOT</h2gis-version>
+        <h2gis-version>2.2.0</h2gis-version>
         <h2-version>2.1.214</h2-version>
-        <cts-version>1.6.0</cts-version>
+        <cts-version>1.7.0</cts-version>
         <orbisdata-version>2.0.0</orbisdata-version>
         <slf4j-version>2.0.4</slf4j-version>
         <logback-version>1.4.5</logback-version>
@@ -168,14 +169,14 @@
                 <version>${orbisdata-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.orbisgis</groupId>
-                <artifactId>process</artifactId>
-                <version>${orbisdata-version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.orbisgis.data</groupId>
                 <artifactId>dataframe</artifactId>
                 <version>${orbisdata-version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.orbisgis.geoclimate</groupId>
+                <artifactId>common-utils</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.orbisgis.geoclimate</groupId>
@@ -184,7 +185,7 @@
             </dependency>
             <dependency>
                 <groupId>org.orbisgis.geoclimate</groupId>
-                <artifactId>bdtopo_v2</artifactId>
+                <artifactId>bdtopo</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

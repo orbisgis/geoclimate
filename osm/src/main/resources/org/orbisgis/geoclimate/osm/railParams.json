@@ -1,52 +1,67 @@
 {
-    "tags" : ["railway"],
-    "columns":["highspeed","railway","service",
-        "tunnel","layer","bridge"],
-    "type" :
-    {
+  "tags": [
+    "railway"
+  ],
+  "columns": [
+    "highspeed",
+    "railway",
+    "service",
+    "tunnel",
+    "layer",
+    "bridge"
+  ],
+  "type": {
     "highspeed": {
-        "highspeed": [
-            "yes"
-        ]
+      "highspeed": [
+        "yes"
+      ]
     },
     "rail": {
-        "railway": [
-            "rail",
-            "light_rail",
-            "narrow_gauge"
-        ]
+      "railway": [
+        "rail",
+        "light_rail",
+        "narrow_gauge"
+      ]
     },
     "service_track": {
-        "service": [
-            "yard",
-            "siding",
-            "spur",
-            "crossover"
-        ]
+      "service": [
+        "yard",
+        "siding",
+        "spur",
+        "crossover"
+      ]
     },
     "disused": {
-        "railway": [
-            "disused"
-        ]
+      "railway": [
+        "disused"
+      ]
     },
     "funicular": {
-        "railway": [
-            "funicular"
-        ]
+      "railway": [
+        "funicular"
+      ]
     },
     "subway": {
-        "railway": [
-            "subway"
-        ]
+      "railway": [
+        "subway"
+      ]
     },
     "tram": {
-        "railway": [
-            "tram"
-        ]
+      "railway": [
+        "tram"
+      ]
     }
-},
-    "crossing":{"bridge" :
-    ["yes", "aqueduct", "cantilever", "covered", "low_water_crossing", "movable", "trestle",
-        "viaduct"]}
-
+  },
+  "crossing": {
+    "bridge": [
+      "yes",
+      "aqueduct",
+      "cantilever",
+      "covered",
+      "low_water_crossing",
+      "movable",
+      "trestle",
+      "viaduct"
+    ]
+  }
 }

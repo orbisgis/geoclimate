@@ -16,7 +16,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <smile-version>2.5.3</smile-version>
     </properties>
 
     <dependencies>
@@ -38,10 +37,6 @@
             <artifactId>postgis</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>process</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.orbisgis.data</groupId>
             <artifactId>dataframe</artifactId>
         </dependency>
@@ -60,11 +55,6 @@
             <version>1.4.19</version>
         </dependency>
         <dependency>
-            <groupId>com.github.haifengl</groupId>
-            <artifactId>smile-data</artifactId>
-            <version>${smile-version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
@@ -81,6 +71,10 @@
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-sql</artifactId>
             <version>${groovy-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis.geoclimate</groupId>
+            <artifactId>common-utils</artifactId>
         </dependency>
 
         <!-- Test dependencies -->

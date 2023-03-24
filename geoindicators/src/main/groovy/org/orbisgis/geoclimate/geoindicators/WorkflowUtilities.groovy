@@ -1,8 +1,26 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.geoindicators
 
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.LoggerContext
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.PRJUtil
@@ -10,10 +28,6 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
 import org.slf4j.LoggerFactory
-
-import java.util.logging.FileHandler
-import java.util.logging.Handler
-import java.util.logging.LogManager
 
 @BaseScript Geoindicators geoindicators
 
@@ -44,7 +58,7 @@ def buildOutputDBParameters(def outputDBProperties, def outputTables, def allowe
                     "${allowedOutputTables.collect { name -> [name: name] }}"
         }
     }
-    def output_datasource = createDatasource(outputDBProperties.subMap(["user", "password", "url"]))
+    def output_datasource = createDatasource(outputDBProperties.subMap(["user", "password", "url", "databaseName"]))
     if (!output_datasource) {
         error "Cannot connect to the output database"
     }
@@ -78,7 +92,13 @@ def createDatasource(def database_properties) {
         }
 
     } else {
-        error "The output database url cannot be null or empty"
+        def h2gis = H2GIS.open(database_properties)
+        if (h2gis) {
+            return h2gis
+        } else {
+            error "The output database url cannot be null or empty"
+            return
+        }
     }
 }
 

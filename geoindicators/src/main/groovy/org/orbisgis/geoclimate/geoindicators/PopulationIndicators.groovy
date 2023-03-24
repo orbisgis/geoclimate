@@ -1,9 +1,27 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 
 @BaseScript Geoindicators geoindicators
 
@@ -15,18 +33,13 @@ import org.orbisgis.process.api.IProcess
  * @param populationColumns the list of the columns to keep
  * @param zoneTable name of a zone table to limit the population table
  * @param datasource a connexion to the database
+ * @return the name of the population table
  */
-IProcess formatPopulationTable() {
-    return create {
-        title "Format the population table"
-        inputs populationTable: String, populationColumns: [],
-                zoneTable: "",
-                datasource: JdbcDataSource
-        outputs populationTable: String
-        run { populationTable, populationColumns, zoneTable, datasource ->
-            def tablePopulation_tmp = postfix(populationTable)
-            if (zoneTable) {
-                datasource.execute("""
+String formatPopulationTable(JdbcDataSource datasource, String populationTable, List populationColumns = [],
+                             String zoneTable = "") {
+    def tablePopulation_tmp = postfix(populationTable)
+    if (zoneTable) {
+        datasource.execute("""
                 CREATE SPATIAL INDEX ON $populationTable(the_geom);
                 CREATE SPATIAL INDEX ON $zoneTable(the_geom);
                 DROP TABLE IF EXISTS $tablePopulation_tmp ;
@@ -36,18 +49,16 @@ IProcess formatPopulationTable() {
                 DROP TABLE IF EXISTS $populationTable;
                 ALTER TABLE $tablePopulation_tmp rename to $populationTable;
                 """.toString())
-            } else {
-                datasource.execute("""
+    } else {
+        datasource.execute("""
                 DROP TABLE IF EXISTS $tablePopulation_tmp ;
                 CREATE TABLE $tablePopulation_tmp AS SELECT rownum() as id_pop, ST_MAKEVALID(the_geom) as the_geom , 
                 ${populationColumns.join(",")} from $populationTable ;
                 DROP TABLE IF EXISTS $populationTable;
                 ALTER TABLE $tablePopulation_tmp rename to $populationTable;
                 """.toString())
-            }
-            [populationTable: populationTable]
-        }
     }
+    return populationTable
 }
 
 /**
@@ -59,77 +70,66 @@ IProcess formatPopulationTable() {
  * @param inputRsuTableName name of the RSU table to distribute the population columns
  * @param inputGridTableName name of the GRID table to distribute the population columns
  * @param datasource a connexion to the database that contains the input data
+ *
+ * @return a map with the population distributed on building, rsu or grid
  */
-IProcess multiScalePopulation() {
-    return create {
-        title "Process to distribute a set of population values at multiscales"
-        inputs populationTable: String, populationColumns: [],
-                buildingTable: String, rsuTable: "", gridPopTable: "",
-                datasource: JdbcDataSource
-        outputs buildingTable: String, rsuTable: String, gridTable: String
-        run { populationTable, populationColumns, buildingTable, rsuTable, gridTable, datasource ->
-            if (populationTable && populationColumns) {
-                def prefixName = "pop"
-                if (buildingTable) {
-                    IProcess process = Geoindicators.BuildingIndicators.buildingPopulation()
-                    if (process.execute(inputBuilding: buildingTable,
-                            inputPopulation: populationTable, inputPopulationColumns: populationColumns,
-                            datasource: datasource)) {
-                        datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
-                                ALTER TABLE ${process.results.buildingTableName} RENAME TO $buildingTable""".toString())
-                        if (rsuTable) {
-                            def unweightedBuildingIndicators = [:]
-                            populationColumns.each { col ->
-                                unweightedBuildingIndicators.put(col, ["sum"])
-                            }
-                            def computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-                            if (computeBuildingStats([inputLowerScaleTableName: buildingTable,
-                                                      inputUpperScaleTableName: rsuTable,
-                                                      inputIdUp               : "id_rsu",
-                                                      inputIdLow              : "id_rsu",
-                                                      inputVarAndOperations   : unweightedBuildingIndicators,
-                                                      prefixName              : prefixName,
-                                                      datasource              : datasource])) {
-                                def rsu_pop_tmp = computeBuildingStats.results.outputTableName
-                                def rsu_pop_geom = postfix(rsuTable)
-                                def p = Geoindicators.DataUtils.joinTables()
-                                def tablesToJoin = [:]
-                                tablesToJoin.put(rsuTable, "id_rsu")
-                                tablesToJoin.put(rsu_pop_tmp, "id_rsu")
-                                if (p([
-                                        inputTableNamesWithId: tablesToJoin,
-                                        outputTableName      : rsu_pop_geom,
-                                        datasource           : datasource])) {
-                                    datasource.execute("""DROP TABLE IF EXISTS $rsuTable, $rsu_pop_tmp;
+Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List populationColumns = [],
+                         String buildingTable, String rsuTable, String gridTable) {
+    if (populationTable && populationColumns) {
+        def prefixName = "pop"
+        if (buildingTable) {
+            String buildingPop = Geoindicators.BuildingIndicators.buildingPopulation(datasource, buildingTable,
+                    populationTable, populationColumns)
+            if (buildingPop) {
+                datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
+                                ALTER TABLE ${buildingPop} RENAME TO $buildingTable""".toString())
+                if (rsuTable) {
+                    def unweightedBuildingIndicators = [:]
+                    populationColumns.each { col ->
+                        unweightedBuildingIndicators.put(col, ["sum"])
+                    }
+                    def rsu_pop_tmp = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,
+                            buildingTable, rsuTable,
+                            "id_rsu", "id_rsu",
+                            unweightedBuildingIndicators, prefixName,)
+                    if (rsu_pop_tmp) {
+                        def rsu_pop_geom = postfix(rsuTable)
+                        def tablesToJoin = [:]
+                        tablesToJoin.put(rsuTable, "id_rsu")
+                        tablesToJoin.put(rsu_pop_tmp, "id_rsu")
+                        def p = Geoindicators.DataUtils.joinTables(datasource,
+                                tablesToJoin, rsu_pop_geom)
+                        if (p) {
+                            datasource.execute("""DROP TABLE IF EXISTS $rsuTable, $rsu_pop_tmp;
                                     ALTER TABLE $rsu_pop_geom RENAME TO $rsuTable;
                                     DROP TABLE IF EXISTS $rsu_pop_geom;""".toString())
-                                }
-
-                            }
                         }
-                        if (gridTable) {
-                            def sum_popColumns = []
-                            def popColumns = []
-                            populationColumns.each { col ->
-                                sum_popColumns << "sum($col*area_intersects/area_building) as SUM_$col"
-                                popColumns << "b.${col}"
-                            }
-                            //Here the population from the building to a grid
-                            // Create the relations between grid cells and buildings
-                            datasource."$buildingTable".the_geom.createSpatialIndex()
-                            datasource."$gridTable".the_geom.createSpatialIndex()
-                            def buildingGrid_inter = postfix("building_grid_inter")
-                            datasource.execute("""
+
+                    }
+                }
+                if (gridTable) {
+                    def sum_popColumns = []
+                    def popColumns = []
+                    populationColumns.each { col ->
+                        sum_popColumns << "sum($col*area_intersects/area_building) as SUM_$col"
+                        popColumns << "b.${col}"
+                    }
+                    //Here the population from the building to a grid
+                    // Create the relations between grid cells and buildings
+                    datasource."$buildingTable".the_geom.createSpatialIndex()
+                    datasource."$gridTable".the_geom.createSpatialIndex()
+                    def buildingGrid_inter = postfix("building_grid_inter")
+                    datasource.execute("""
                                 DROP TABLE IF EXISTS $buildingGrid_inter;
                                 CREATE TABLE $buildingGrid_inter AS SELECT ST_AREA(ST_INTERSECTION(a.the_geom, b.the_geom)) 
                                 AS area_intersects, st_area(b.the_geom) as area_building, ${popColumns.join(",")},a.id_grid from $gridTable as a, $buildingTable as b
                                 where a.the_geom && b.the_geom and ST_Intersects(a.the_geom, b.the_geom);                                
                             """.toString())
 
-                            //Compute the population by cells
-                            def buildingPopGrid_tmp = postfix("building_grid_pop_tmp")
-                            def buildingPopGrid = postfix("building_grid_pop")
-                            datasource.execute("""DROP TABLE IF EXISTS $buildingPopGrid_tmp, $buildingPopGrid;
+                    //Compute the population by cells
+                    def buildingPopGrid_tmp = postfix("building_grid_pop_tmp")
+                    def buildingPopGrid = postfix("building_grid_pop")
+                    datasource.execute("""DROP TABLE IF EXISTS $buildingPopGrid_tmp, $buildingPopGrid;
                                 CREATE INDEX ON $buildingGrid_inter (ID_GRID);
                                 CREATE TABLE $buildingPopGrid_tmp AS SELECT ${sum_popColumns.join(",")}, ID_GRID FROM ${buildingGrid_inter} GROUP BY ID_GRID;
                                 CREATE INDEX ON $buildingPopGrid_tmp (ID_GRID);
@@ -139,18 +139,13 @@ IProcess multiScalePopulation() {
                                 ALTER TABLE $buildingPopGrid RENAME TO $gridTable;
                                 DROP TABLE IF EXISTS $buildingPopGrid;
                                 """.toString())
-                        }
-
-                    }
                 }
-                return [buildingTable: buildingTable, rsuTable: rsuTable, gridTable: gridTable]
 
             }
-            warn "Please set a valid population table name and a list of population columns"
-            return
         }
+        return ["buildingTable": buildingTable, "rsuTable": rsuTable, "gridTable": gridTable]
+
     }
+    warn "Please set a valid population table name and a list of population columns"
+    return
 }
-
-
-

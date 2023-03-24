@@ -1,21 +1,33 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.worldpoptools
 
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.asc.AscReaderDriver
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
-import org.orbisgis.process.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.orbisgis.data.H2GIS.open
+import static org.junit.jupiter.api.Assertions.*
 
 class WorldPopExtractTest {
 
@@ -26,17 +38,17 @@ class WorldPopExtractTest {
     private static H2GIS h2GIS
 
     @BeforeAll
-    static void beforeAll(){
+    static void beforeAll() {
         h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "WorldPopExtractTest;AUTO_SERVER=TRUE;")
     }
 
     @BeforeEach
-    final void beforeEach(TestInfo testInfo){
+    final void beforeEach(TestInfo testInfo) {
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
     }
 
     @AfterEach
-    final void afterEach(TestInfo testInfo){
+    final void afterEach(TestInfo testInfo) {
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
@@ -44,14 +56,14 @@ class WorldPopExtractTest {
      * Test to extract a grid as an ascii file and load it in H2GIS
      */
     @Test
-    void extractGrid(){
-        def outputGridFile = new File(folder,"extractGrid.asc")
-        if(outputGridFile.exists()){
+    void extractGrid() {
+        def outputGridFile = new File(folder, "extractGrid.asc")
+        if (outputGridFile.exists()) {
             outputGridFile.delete()
         }
         def coverageId = "wpGlobal:ppp_2018"
-        def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
-        if(WorldPopTools.Extract.grid(coverageId, bbox, outputGridFile)) {
+        def bbox = [47.63324, -2.78087, 47.65749, -2.75979]
+        if (WorldPopTools.Extract.grid(coverageId, bbox, outputGridFile)) {
             AscReaderDriver ascReaderDriver = new AscReaderDriver()
             ascReaderDriver.setAs3DPoint(false)
             ascReaderDriver.setEncoding("UTF-8")
@@ -65,33 +77,24 @@ class WorldPopExtractTest {
      * Test to extract a grid from process
      */
     @Test
-    void extractGridProcess(){
-        IProcess process = WorldPopTools.Extract.extractWorldPopLayer()
-        def coverageId = "wpGlobal:ppp_2018"
-        def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
-        def epsg = 4326
-        if(process.execute([coverageId:coverageId, bbox:bbox])) {
-            assertTrue new File(process.results.outputFilePath).exists()
-        }
+    void extractGridProcess() {
+        String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer("wpGlobal:ppp_2018", [47.63324, -2.78087, 47.65749, -2.75979])
+        assertNotNull(outputFilePath)
+        assertTrue new File(outputFilePath).exists()
     }
 
     /**
      * Test to extract a grid and load it in database
      */
     @Test
-    void extractLoadGridProcess(){
-        IProcess extractWorldPopLayer = WorldPopTools.Extract.extractWorldPopLayer()
-        def coverageId = "wpGlobal:ppp_2018"
-        def bbox =[ 47.63324, -2.78087,47.65749, -2.75979]
-        [46.257614, 4.866568, 46.271828, 4.8969374]
-        def epsg = 4326
-        if(extractWorldPopLayer.execute([coverageId:coverageId, bbox:bbox])) {
-            assertTrue new File(extractWorldPopLayer.results.outputFilePath).exists()
-            IProcess importAscGrid = WorldPopTools.Extract.importAscGrid()
-            assertTrue importAscGrid.execute([worldPopFilePath: extractWorldPopLayer.results.outputFilePath,
-                                              epsg            : epsg, datasource: h2GIS])
-            assertEquals(720, h2GIS.getSpatialTable(importAscGrid.results.outputTableWorldPopName).rowCount)
-            assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(importAscGrid.results.outputTableWorldPopName).columns)
+    void extractLoadGridProcess() {
+        String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer("wpGlobal:ppp_2018", [47.63324, -2.78087, 47.65749, -2.75979])
+        if (outputFilePath) {
+            assertTrue new File(outputFilePath).exists()
+            String outputTableWorldPopName = WorldPopTools.Extract.importAscGrid(h2GIS, outputFilePath)
+            assertNotNull outputTableWorldPopName
+            assertEquals(720, h2GIS.getSpatialTable(outputTableWorldPopName).rowCount)
+            assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(outputTableWorldPopName).columns)
         }
     }
 }

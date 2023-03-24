@@ -27,6 +27,12 @@
     "marsh": 0.4,
     "saltmarsh": 0.9
   },
-  "layer_priorities": ["building", "road", "water", "high_vegetation", "low_vegetation", "impervious"]
-
+  "layer_priorities": [
+    "building",
+    "road",
+    "water",
+    "high_vegetation",
+    "low_vegetation",
+    "impervious"
+  ]
 }

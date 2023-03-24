@@ -1,50 +1,30 @@
-/*
- * Bundle OSMTools is part of the GeoClimate tool
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
  *
- * GeoClimate is a geospatial processing toolbox for environmental and climate studies .
- * GeoClimate is developed by the GIS group of the DECIDE team of the
- * Lab-STICC CNRS laboratory, see <http://www.lab-sticc.fr/>.
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
  *
- * The GIS group of the DECIDE team is located at :
- *
- * Laboratoire Lab-STICC – CNRS UMR 6285
- * Equipe DECIDE
- * UNIVERSITÉ DE BRETAGNE-SUD
- * Institut Universitaire de Technologie de Vannes
- * 8, Rue Montaigne - BP 561 56017 Vannes Cedex
- *
- * OSMTools is distributed under LGPL 3 license.
- *
- * Copyright (C) 2019-2021 CNRS (Lab-STICC UMR CNRS 6285)
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
  *
  *
- * OSMTools is free software: you can redistribute it and/or modify it under the
- * terms of the GNU Lesser General Public License as published by the Free Software
- * Foundation, either version 3 of the License, or (at your option) any later
- * version.
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
  *
- * OSMTools is distributed in the hope that it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
- * A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License along with
- * OSMTools. If not, see <http://www.gnu.org/licenses/>.
- *
- * For more information, please consult: <https://github.com/orbisgis/geoclimate>
- * or contact directly:
- * info_at_ orbisgis.org
  */
 package org.orbisgis.geoclimate.osmtools
 
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.data.H2GIS
+import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -58,62 +38,96 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
-class LoaderTest extends AbstractOSMTest {
+class LoaderTest extends AbstractOSMToolsTest {
 
     @TempDir
     static File folder
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoaderTest)
 
-    static  H2GIS ds
+    static H2GIS ds
+
 
     @BeforeAll
-    static  void loadDb(){
+    static void loadDb() {
         ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "LoaderTest;AUTO_SERVER=TRUE;")
     }
 
     @BeforeEach
-    final void beforeEach(TestInfo testInfo){
+    final void beforeEach(TestInfo testInfo) {
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
-        super.beforeEach()
     }
 
     @AfterEach
-    final void afterEach(TestInfo testInfo){
-        super.afterEach()
+    final void afterEach(TestInfo testInfo) {
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
+    }
+
+    /** Used to store the OSM request to ensure the good query is generated. */
+    static def query
+
+    /**
+     * Override the 'executeOverPassQuery' methods to avoid the call to the server
+     */
+    void badOverpassQueryOverride() {
+        Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
+            LoaderTest.query = query
+            return false
+        }
+    }
+
+    /**
+     * Override the 'getNominatimData' methods to avoid the call to the server
+     */
+    void sampleGetNominatimData() {
+        Utilities.metaClass.static.getNominatimData = { placeName ->
+            def coordinates = [new Coordinate(-3.016, 48.82),
+                               new Coordinate(-3.016, 48.821),
+                               new Coordinate(-3.015, 48.821),
+                               new Coordinate(-3.015, 48.82),
+                               new Coordinate(-3.016, 48.82)] as Coordinate[]
+            def geom = new GeometryFactory().createPolygon(coordinates)
+            geom.SRID = 4326
+            return ["geom": geom]
+        }
+    }
+
+    /**
+     * Override the 'executeOverPassQuery' methods to avoid the call to the server
+     */
+    void sampleOverpassQueryOverride() {
+        Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
+            this.query = query
+            outputOSMFile << LoaderTest.getResourceAsStream("sample.osm").text
+            return true
+        }
     }
 
     /**
      * Test the OSMTools.Loader.fromArea() process with bad data.
      */
     @Test
-    void badFromAreaTest(){
+    void badFromAreaTest() {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
-        def fromArea = OSMTools.Loader.fromArea()
         def geomFacto = new GeometryFactory()
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
                                                new Coordinate(4, 8),
                                                new Coordinate(7, 5),
                                                new Coordinate(0, 0)] as Coordinate[])
 
-        assertFalse fromArea(datasource: null, filterArea: polygon)
-        assertTrue fromArea.results.isEmpty()
-        assertFalse fromArea(datasource: ds, filterArea: null)
-        assertTrue fromArea.results.isEmpty()
-        assertFalse fromArea(datasource: ds, filterArea: "A string")
-        assertTrue fromArea.results.isEmpty()
+        assertNull OSMTools.Loader.fromArea(null, polygon)
+        assertNull OSMTools.Loader.fromArea(ds, null)
+        assertNull OSMTools.Loader.fromArea(ds, "A string")
     }
 
     /**
      * Test the OSMTools.Loader.fromArea() process.
      */
     @Test
-    void fromAreaNoDistTest(){
+    void fromAreaNoDistTest() {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
-        def fromArea = OSMTools.Loader.fromArea()
         def geomFacto = new GeometryFactory()
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
                                                new Coordinate(4, 8),
@@ -129,9 +143,8 @@ class LoaderTest extends AbstractOSMTest {
         def env = polygon.getEnvelopeInternal()
 
         //With polygon
-        assertTrue fromArea(datasource: ds, filterArea: polygon)
+        Map r = OSMTools.Loader.fromArea(ds, polygon)
 
-        def r = fromArea.results
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
@@ -157,9 +170,8 @@ class LoaderTest extends AbstractOSMTest {
         assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zoneEnv.getGeometry(1).toText()
 
         //With Envelope
-        assertTrue fromArea(datasource: ds, filterArea: env)
+        r = OSMTools.Loader.fromArea(ds, env)
 
-        r = fromArea.results
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
@@ -189,10 +201,9 @@ class LoaderTest extends AbstractOSMTest {
      * Test the OSMTools.Loader.fromArea() process.
      */
     @Test
-    void fromAreaWithDistTest(){
+    void fromAreaWithDistTest() {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
-        def fromArea = OSMTools.Loader.fromArea()
         def geomFacto = new GeometryFactory()
         def dist = 1000
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
@@ -210,9 +221,8 @@ class LoaderTest extends AbstractOSMTest {
         def env = polygon.getEnvelopeInternal()
 
         //With polygon
-        assertTrue fromArea(datasource: ds, filterArea: polygon, distance: dist)
+        Map r = OSMTools.Loader.fromArea(ds, polygon, dist)
 
-        def r = fromArea.results
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
@@ -237,9 +247,8 @@ class LoaderTest extends AbstractOSMTest {
 
 
         //With envelope
-        assertTrue fromArea(datasource: ds, filterArea: env, distance: dist)
+        r = OSMTools.Loader.fromArea(ds, env, dist)
 
-        r = fromArea.results
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
@@ -267,10 +276,9 @@ class LoaderTest extends AbstractOSMTest {
      * Test the OSMTools.Loader.fromPlace() process.
      */
     @Test
-    void fromPlaceNoDistTest(){
+    void fromPlaceNoDistTest() {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
-        def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def formattedPlaceName = "The_place_Name_toFind_"
         def overpassQuery = "[Bbox:48.82,-3.016,48.821,-3.015];\n" +
@@ -281,8 +289,7 @@ class LoaderTest extends AbstractOSMTest {
                 ");\n" +
                 "out;"
 
-        assertTrue fromPlace(datasource: ds, placeName: placeName)
-        def r = fromPlace.results
+        Map r = OSMTools.Loader.fromPlace(ds, placeName)
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zone as String).matches()
@@ -314,22 +321,13 @@ class LoaderTest extends AbstractOSMTest {
      * Test the OSMTools.Loader.fromPlace() process.
      */
     @Test
-    void fromPlaceWithDistTest(){
+    void fromPlaceWithDistTest() {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
-        def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def dist = 5
         def formattedPlaceName = "The_place_Name_toFind_"
-        def overpassQuery = "[bbox:48.819955084235794,-3.01606821815555,48.821044915764205,-3.0149317818444503];\n" +
-                "(\n" +
-                "\tnode(poly:\"48.819955084235794 -3.01606821815555 48.821044915764205 -3.01606821815555 48.821044915764205 -3.0149317818444503 48.819955084235794 -3.0149317818444503\");\n" +
-                "\tway(poly:\"48.819955084235794 -3.01606821815555 48.821044915764205 -3.01606821815555 48.821044915764205 -3.0149317818444503 48.819955084235794 -3.0149317818444503\");\n" +
-                "\trelation(poly:\"48.819955084235794 -3.01606821815555 48.821044915764205 -3.01606821815555 48.821044915764205 -3.0149317818444503 48.819955084235794 -3.0149317818444503\");\n" +
-                ");\n" +
-                "out;"
-        assertTrue fromPlace(datasource: ds, placeName: placeName, distance: dist)
-        def r = fromPlace.results
+        Map r = OSMTools.Loader.fromPlace(ds, placeName, dist)
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zone as String).matches()
@@ -361,37 +359,28 @@ class LoaderTest extends AbstractOSMTest {
      * Test the OSMTools.Loader.fromPlace() process with bad data.
      */
     @Test
-    void badFromPlaceTest(){
+    void badFromPlaceTest() {
         sampleGetNominatimData()
         sampleOverpassQueryOverride()
-        def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def dist = -5
 
-        assertFalse fromPlace(datasource: ds, placeName: placeName, distance: dist)
-        assertTrue fromPlace.results.isEmpty()
-        assertFalse fromPlace(datasource: ds, placeName: placeName, distance: null)
-        assertTrue fromPlace.results.isEmpty()
-
-        assertFalse fromPlace(datasource: ds, placeName: null)
-        assertTrue fromPlace.results.isEmpty()
-
-        assertFalse fromPlace(datasource: null, placeName: placeName)
-        assertTrue fromPlace.results.isEmpty()
+        assertNull OSMTools.Loader.fromPlace(ds, placeName, dist)
+        assertNull OSMTools.Loader.fromPlace(ds, placeName, -1)
+        assertNull OSMTools.Loader.fromPlace(ds, null)
+        assertNull OSMTools.Loader.fromPlace(null, placeName)
     }
 
     /**
      * Test the OSMTools.Loader.extract() process.
      */
     @Test
-    void extractTest(){
+    void extractTest() {
         sampleOverpassQueryOverride()
-        def extract = OSMTools.Loader.extract()
         def query = "Overpass test query"
-        assertTrue extract([overpassQuery : query])
-        assertNotNull extract.results
-        assertTrue extract.results.containsKey("outputFilePath")
-        def file = new File(extract.results.outputFilePath.toString())
+        def extract = OSMTools.Loader.extract(query)
+        assertNotNull extract
+        def file = new File(extract)
         assertTrue file.exists()
     }
 
@@ -399,25 +388,18 @@ class LoaderTest extends AbstractOSMTest {
      * Test the OSMTools.Loader.extract() process with bad data
      */
     @Test
-    void badExtractTest(){
-        def extract = OSMTools.Loader.extract()
-
+    void badExtractTest() {
         sampleOverpassQueryOverride()
-        assertFalse extract([overpassQuery : null])
-        assertTrue extract.results.isEmpty()
-
+        assertNull OSMTools.Loader.extract(null)
         badOverpassQueryOverride()
-        assertFalse extract([overpassQuery : "toto"])
-        assertTrue extract.results.isEmpty()
+        assertNull OSMTools.Loader.extract("toto")
     }
 
     /**
      * Test the OSMTools.Loader.load() process with bad data.
      */
     @Test
-    void badLoadTest(){
-        def load = OSMTools.Loader.load()
-        assertNotNull load
+    void badLoadTest() {
         def url = LoaderTest.getResource("sample.osm")
         assertNotNull url
         def osmFile = new File(url.toURI())
@@ -426,48 +408,36 @@ class LoaderTest extends AbstractOSMTest {
         def prefix = uuid().toUpperCase()
 
         //Null dataSource
-        assertFalse load([datasource: null, osmTablesPrefix: prefix, osmFilePath: osmFile.absolutePath])
-        assertNotNull load.results
-        assertTrue load.results.isEmpty()
+        assertFalse OSMTools.Loader.load(null, prefix, osmFile.absolutePath)
 
         //Null prefix
-        assertFalse load([datasource: ds, osmTablesPrefix: null, osmFilePath: osmFile.absolutePath])
-        assertNotNull load.results
-        assertTrue load.results.isEmpty()
+        assertFalse OSMTools.Loader.load(ds, null, osmFile.absolutePath)
         //Bad prefix
-        assertFalse load([datasource: ds, osmTablesPrefix: "(╯°□°）╯︵ ┻━┻", osmFilePath: osmFile.absolutePath])
-        assertNotNull load.results
-        assertTrue load.results.isEmpty()
+        assertFalse OSMTools.Loader.load(ds, "(╯°□°）╯︵ ┻━┻", osmFile.absolutePath)
 
         //Null path
-        assertFalse load([datasource: ds, osmTablesPrefix: prefix, osmFilePath: null])
-        assertNotNull load.results
-        assertTrue load.results.isEmpty()
+        assertFalse OSMTools.Loader.load(ds, prefix, null)
         //Unexisting path
-        assertFalse load([datasource: ds, osmTablesPrefix: prefix, osmFilePath: "ᕕ(ᐛ)ᕗ"])
-        assertNotNull load.results
-        assertTrue load.results.isEmpty()
+        assertFalse OSMTools.Loader.load(ds, prefix, "ᕕ(ᐛ)ᕗ")
     }
 
     /**
      * Test the OSMTools.Loader.load() process.
      */
     @Test
-    void loadTest(){
-        def load = OSMTools.Loader.load()
-        assertNotNull load
+    void loadTest() {
         def url = LoaderTest.getResource("sample.osm")
         assertNotNull url
         def osmFile = new File(url.toURI())
         assertTrue osmFile.exists()
         assertTrue osmFile.isFile()
-        def prefix = "OSM_"+uuid().toUpperCase()
+        def prefix = "OSM_" + uuid().toUpperCase()
 
-        assertTrue load([datasource: ds, osmTablesPrefix: prefix, osmFilePath: osmFile.absolutePath])
+        assertTrue OSMTools.Loader.load(ds, prefix, osmFile.absolutePath)
 
         //Test on DataSource
         def tableArray = ["${prefix}_NODE", "${prefix}_NODE_MEMBER", "${prefix}_NODE_TAG",
-                          "${prefix}_WAY", "${prefix}_WAY_MEMBER","${prefix}_WAY_TAG", "${prefix}_WAY_NODE",
+                          "${prefix}_WAY", "${prefix}_WAY_MEMBER", "${prefix}_WAY_TAG", "${prefix}_WAY_NODE",
                           "${prefix}_RELATION", "${prefix}_RELATION_MEMBER", "${prefix}_RELATION_TAG"] as String[]
         tableArray.each { name ->
             assertNotNull ds.getTable(name), "The table named $name is not in the datasource"
@@ -479,10 +449,10 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull nodeTable
         assertEquals 5, nodeTable.rowCount
         def arrayNode = ["ID_NODE", "THE_GEOM", "ELE", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
-                     "LAST_UPDATE", "NAME"] as String[]
+                         "LAST_UPDATE", "NAME"] as String[]
         assertArrayEquals(arrayNode, nodeTable.columns as String[])
         nodeTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "256001", row.ID_NODE.toString()
                     assertEquals "POINT (32.8545692 57.0465758)", row.THE_GEOM.toString()
@@ -560,7 +530,7 @@ class LoaderTest extends AbstractOSMTest {
         def arrayNodeMember = ["ID_RELATION", "ID_NODE", "ROLE", "NODE_ORDER"] as String[]
         assertArrayEquals(arrayNodeMember, nodeMemberTable.columns as String[])
         nodeMemberTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "259001", row.ID_RELATION.toString()
                     assertEquals "256004", row.ID_NODE.toString()
@@ -585,7 +555,7 @@ class LoaderTest extends AbstractOSMTest {
         def arrayNodeTag = ["ID_NODE", "TAG_KEY", "TAG_VALUE"] as String[]
         assertArrayEquals(arrayNodeTag, nodeTagTable.columns as String[])
         nodeTagTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "256004", row.ID_NODE.toString()
                     assertEquals "building", row.TAG_KEY.toString()
@@ -607,10 +577,10 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull wayTable
         assertEquals 1, wayTable.rowCount
         def arrayWay = ["ID_WAY", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
-                         "LAST_UPDATE", "NAME"] as String[]
+                        "LAST_UPDATE", "NAME"] as String[]
         assertArrayEquals(arrayWay, wayTable.columns as String[])
         wayTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "258001", row.ID_WAY.toString()
                     assertEquals "UserTest", row.USER_NAME.toString()
@@ -633,7 +603,7 @@ class LoaderTest extends AbstractOSMTest {
         def arrayWayMember = ["ID_RELATION", "ID_WAY", "ROLE", "WAY_ORDER"] as String[]
         assertArrayEquals(arrayWayMember, wayMemberTable.columns as String[])
         wayMemberTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "259001", row.ID_RELATION.toString()
                     assertEquals "258001", row.ID_WAY.toString()
@@ -652,7 +622,7 @@ class LoaderTest extends AbstractOSMTest {
         def arrayWayTag = ["ID_WAY", "TAG_KEY", "TAG_VALUE"] as String[]
         assertArrayEquals(arrayWayTag, wayTagTable.columns as String[])
         wayTagTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "258001", row.ID_WAY.toString()
                     assertEquals "highway", row.TAG_KEY.toString()
@@ -670,7 +640,7 @@ class LoaderTest extends AbstractOSMTest {
         def arrayWayNode = ["ID_WAY", "ID_NODE", "NODE_ORDER"] as String[]
         assertArrayEquals(arrayWayNode, wayNodeTable.columns as String[])
         wayNodeTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "258001", row.ID_WAY.toString()
                     assertEquals "256001", row.ID_NODE.toString()
@@ -697,10 +667,10 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull relationTable
         assertEquals 1, relationTable.rowCount
         def arrayRelation = ["ID_RELATION", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
-                        "LAST_UPDATE"] as String[]
+                             "LAST_UPDATE"] as String[]
         assertArrayEquals(arrayRelation, relationTable.columns as String[])
         relationTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "259001", row.ID_RELATION.toString()
                     assertEquals "UserTest", row.USER_NAME.toString()
@@ -729,7 +699,7 @@ class LoaderTest extends AbstractOSMTest {
         def arrayRelationTag = ["ID_RELATION", "TAG_KEY", "TAG_VALUE"] as String[]
         assertArrayEquals(arrayRelationTag, relationTagTable.columns as String[])
         relationTagTable.eachRow { row ->
-            switch(row.row){
+            switch (row.row) {
                 case 1:
                     assertEquals "259001", row.ID_RELATION.toString()
                     assertEquals "ref", row.TAG_KEY.toString()

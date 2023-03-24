@@ -1,8 +1,0 @@
-"ID_TYPE","TERM","DEFINITION","SOURCE"
-"1","highspeed","Railway track for highspeed rail","https://wiki.openstreetmap.org/wiki/Key:highspeed"
-"2","rail","Railway track for full sized passenger or freight trains in the standard gauge for the country or state","https://wiki.openstreetmap.org/wiki/Tag:railway=rail"
-"3","service_track","Railway track mainly used for sorting or temporary parking of freight trains","http://professionnels.ign.fr/doc/DC_BDTOPO_3-0Beta.pdf"
-"4","disused","A section of railway which is no longer used but where the track and infrastructure remain in place","https://wiki.openstreetmap.org/wiki/Tag:railway=disused"
-"5","funicular","Cable railway in which a cable attached to a pair of tram-like vehicles on rails moves them up and down a steep slope, the ascending and descending vehicles counterbalancing each other","https://wiki.openstreetmap.org/wiki/Tag:railway=funicular"
-"6","subway","Rails used for city public transport that are always completely separated from other traffic, often underground","https://wiki.openstreetmap.org/wiki/Tag:railway=subway"
-"7","tram","Railway track which is mainly or exclusively used for trams, or where tram tracks are laid within a normal road open to all traffic, often called street running","https://wiki.openstreetmap.org/wiki/Tag:railway=tram"

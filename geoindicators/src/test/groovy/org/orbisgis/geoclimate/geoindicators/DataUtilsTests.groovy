@@ -1,3 +1,22 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
@@ -15,8 +34,8 @@ class DataUtilsTests {
     private static def h2GIS
 
     @BeforeAll
-    static void beforeAll(){
-        h2GIS = open(folder.getAbsolutePath()+File.separator+"dataUtilsTests;AUTO_SERVER=TRUE")
+    static void beforeAll() {
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "dataUtilsTests;AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
@@ -36,13 +55,12 @@ class DataUtilsTests {
 
     @Test
     void joinTest() {
-        def p = Geoindicators.DataUtils.joinTables()
-        assert p([
-                inputTableNamesWithId   : [tablea:"ida", tableb:"idb", tablec:"idc"],
-                outputTableName         : "test",
-                datasource              : h2GIS])
+        def p = Geoindicators.DataUtils.joinTables(h2GIS,
+                [tablea: "ida", tableb: "idb", tablec: "idc"],
+                "test")
+        assert p
 
-        def table = h2GIS."${p.results.outputTableName}"
+        def table = h2GIS."${p}"
         assert "IDA,NAME,LAB,LOCATION" == table.columns.join(",")
         assert 1 == table.rowCount
 
@@ -51,14 +69,11 @@ class DataUtilsTests {
 
     @Test
     void joinTest2() {
-        def p = Geoindicators.DataUtils.joinTables()
-        assert p([
-                inputTableNamesWithId   : [tablea:"ida", tableb:"idb", tablec:"idc"],
-                outputTableName         : "test",
-                datasource              : h2GIS,
-                prefixWithTabName       : true])
-
-        def table = h2GIS."${p.results.outputTableName}"
+        def p = Geoindicators.DataUtils.joinTables(h2GIS,
+                [tablea: "ida", tableb: "idb", tablec: "idc"],
+                "test", true)
+        assert p
+        def table = h2GIS."${p}"
         assert "TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION" == table.columns.join(",")
         assert 1 == table.rowCount
 
@@ -68,14 +83,12 @@ class DataUtilsTests {
     @Test
     void saveTablesAsFiles() {
         def directory = "./target/savedFiles"
-        def p = Geoindicators.DataUtils.saveTablesAsFiles()
-        assert p([
-                inputTableNames : ["tablea","tablegeom"],
-                directory       : directory,
-                delete       : true,
-                datasource      : h2GIS])
+        def p = Geoindicators.DataUtils.saveTablesAsFiles(h2GIS,
+                ["tablea", "tablegeom"], true,
+                directory)
+        assert p
 
-        assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablegeom.geojson", true)).rowCount
-        assert 1 == h2GIS.table(h2GIS.load(directory+File.separator+"tablea.csv", true)).rowCount
+        assert 1 == h2GIS.table(h2GIS.load(directory + File.separator + "tablegeom.geojson", true)).rowCount
+        assert 1 == h2GIS.table(h2GIS.load(directory + File.separator + "tablea.csv", true)).rowCount
     }
 }

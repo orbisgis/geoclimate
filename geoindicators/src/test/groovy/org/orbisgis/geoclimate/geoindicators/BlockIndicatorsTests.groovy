@@ -1,3 +1,22 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
@@ -17,12 +36,12 @@ class BlockIndicatorsTests {
     private static def h2GIS
 
     @BeforeAll
-    static void beforeAll(){
-        h2GIS = open(folder.getAbsolutePath()+File.separator+"blockIndicatorsTests;AUTO_SERVER=TRUE")
+    static void beforeAll() {
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "blockIndicatorsTests;AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
-    void beforeEach(){
+    void beforeEach() {
         h2GIS.executeScript(getClass().getResourceAsStream("data_for_tests.sql"))
     }
 
@@ -34,15 +53,11 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_block AS SELECT * FROM block_test WHERE id_block = 6
         """
 
-        def p = Geoindicators.BlockIndicators.holeAreaDensity()
-        assert p([
-                blockTable : "tempo_block",
-                prefixName : "test",
-                datasource : h2GIS])
+        def p = Geoindicators.BlockIndicators.holeAreaDensity(h2GIS, "tempo_block", "test")
 
         def sum = 0
-        h2GIS.eachRow("SELECT * FROM test_block_hole_area_density"){sum += it.hole_area_density}
-        assertEquals 3.0/47, sum, 0.00001
+        h2GIS.eachRow("SELECT * FROM test_block_hole_area_density") { sum += it.hole_area_density }
+        assertEquals 3.0 / 47, sum, 0.00001
     }
 
     @Test
@@ -53,12 +68,9 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_build < 8
         """
 
-        def p = Geoindicators.BuildingIndicators.sizeProperties()
-        assert p([
-                inputBuildingTableName  : "tempo_build",
-                operations              : ["volume"],
-                prefixName              : "test",
-                datasource              : h2GIS])
+        def p = Geoindicators.BuildingIndicators.sizeProperties(h2GIS,
+                "tempo_build", ["volume"], "test")
+        assert p
 
         // The indicators are gathered in a same table
         h2GIS """
@@ -70,15 +82,9 @@ class BlockIndicatorsTests {
                     ON a.id_build = b.id_build
         """
 
-        p = Geoindicators.BlockIndicators.netCompactness()
-        assert p([
-                buildTable              : "tempo_build2",
-                buildingVolumeField     : "volume",
-                buildingContiguityField : "contiguity",
-                prefixName              : "test",
-                datasource              : h2GIS])
+        Geoindicators.BlockIndicators.netCompactness(h2GIS, "tempo_build2", "volume", "contiguity", "test")
         def sum = 0
-        h2GIS.eachRow("SELECT * FROM test_block_net_compactness WHERE id_block = 4") {sum += it.net_compactness}
+        h2GIS.eachRow("SELECT * FROM test_block_net_compactness WHERE id_block = 4") { sum += it.net_compactness }
         assertEquals 0.51195, sum, 0.00001
     }
 
@@ -91,14 +97,9 @@ class BlockIndicatorsTests {
                 CREATE TABLE tempo_build AS SELECT * FROM building_test WHERE id_block = 8
         """
 
-        def p = Geoindicators.BlockIndicators.closingness()
-        p([
-                correlationTableName    : "tempo_build",
-                blockTable              : "tempo_block",
-                prefixName              : "test",
-                datasource              : h2GIS])
+        Geoindicators.BlockIndicators.closingness(h2GIS, "tempo_build", "tempo_block", "test")
         def sum = 0
-        h2GIS.eachRow("SELECT * FROM test_block_closingness") {sum += it.closingness}
+        h2GIS.eachRow("SELECT * FROM test_block_closingness") { sum += it.closingness }
         assert 450 == sum
     }
 }

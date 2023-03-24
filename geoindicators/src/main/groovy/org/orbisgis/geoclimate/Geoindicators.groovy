@@ -1,28 +1,35 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.LoggerContext
-import org.orbisgis.geoclimate.geoindicators.BlockIndicators
-import org.orbisgis.geoclimate.geoindicators.BuildingIndicators
-import org.orbisgis.geoclimate.geoindicators.DataUtils
-import org.orbisgis.geoclimate.geoindicators.GenericIndicators
-import org.orbisgis.geoclimate.geoindicators.GridIndicators
-import org.orbisgis.geoclimate.geoindicators.NoiseIndicators
-import org.orbisgis.geoclimate.geoindicators.PopulationIndicators
-import org.orbisgis.geoclimate.geoindicators.RoadIndicators
-import org.orbisgis.geoclimate.geoindicators.RsuIndicators
-import org.orbisgis.geoclimate.geoindicators.SpatialUnits
-import org.orbisgis.geoclimate.geoindicators.TypologyClassification
-import org.orbisgis.geoclimate.geoindicators.WorkflowGeoIndicators
-import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
-import org.orbisgis.process.GroovyProcessFactory
+import org.orbisgis.geoclimate.geoindicators.*
+import org.orbisgis.geoclimate.utils.AbstractScript
 import org.slf4j.LoggerFactory
 
-abstract class Geoindicators  extends GroovyProcessFactory  {
+abstract class Geoindicators extends AbstractScript {
     public static def logger
 
-    Geoindicators(){
-        logger = LoggerFactory.getLogger(Geoindicators.class)
+    Geoindicators() {
+        super(LoggerFactory.getLogger(Geoindicators.class))
         var context = (LoggerContext) LoggerFactory.getILoggerFactory()
         context.getLogger(Geoindicators.class).setLevel(Level.INFO)
     }
@@ -36,70 +43,70 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
     public static DataUtils = new DataUtils()
     public static TypologyClassification = new TypologyClassification()
     public static RoadIndicators = new RoadIndicators()
-    public static PopulationIndicators= new PopulationIndicators()
-    public static GridIndicators= new GridIndicators()
-    public static NoiseIndicators= new NoiseIndicators()
+    public static PopulationIndicators = new PopulationIndicators()
+    public static GridIndicators = new GridIndicators()
+    public static NoiseIndicators = new NoiseIndicators()
 
-    public static WorkflowUtilities= new WorkflowUtilities()
+    public static WorkflowUtilities = new WorkflowUtilities()
 
     //Cache the XStream models
-    public static Map cacheModels =[:]
+    public static Map cacheModels = [:]
 
     //The whole chain to run the geoindicators
     public static WorkflowGeoIndicators = new WorkflowGeoIndicators()
     static Properties GEOCLIMATE_PROPERTIES
 
     //Utility methods
-    static def getUuid(){
-        UUID.randomUUID().toString().replaceAll("-", "_") }
+    static def getUuid() {
+        UUID.randomUUID().toString().replaceAll("-", "_")
+    }
 
-    static def getOutputTableName(prefixName, baseName){
-        if (!prefixName){
+    static def getOutputTableName(prefixName, baseName) {
+        if (!prefixName) {
             return baseName
-        }
-        else{
+        } else {
             return prefixName + "_" + baseName
         }
     }
 
-    static def uuid = {getUuid()}
+    static def uuid = { getUuid() }
 
     static def info = { obj -> logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }
-    static def debug= { obj -> logger.debug(obj.toString()) }
+    static def debug = { obj -> logger.debug(obj.toString()) }
 
 
     /**
      * Return a list of cached table names
      * @return
      */
-    static def isTableCacheEnable(){
-        return Boolean.parseBoolean(System.getProperty("GEOCLIMATE_CACHE"))?true:false
+    static def isTableCacheEnable() {
+        return Boolean.parseBoolean(System.getProperty("GEOCLIMATE_CACHE")) ? true : false
     }
 
     /**
      * Return a list of cached table names
      * @return
      */
-    static def enableTableCache(){
-        return System.setProperty("GEOCLIMATE_CACHE","true")
+    static def enableTableCache() {
+        return System.setProperty("GEOCLIMATE_CACHE", "true")
     }
 
     /**
      * Return a list of cached table names
      * @return
      */
-    static def getCachedTableNames(){
-        return System.properties.findAll{it.key.startsWith("GEOCLIMATE_TABLE")}.collect{key, value -> value}
+    static def getCachedTableNames() {
+        return System.properties.findAll { it.key.startsWith("GEOCLIMATE_TABLE") }.collect { key, value -> value }
     }
 
     /**
      * Remove from the list of table names the cached tables
      * @return
      */
-    static def removeAllCachedTableNames(def tableNames){
-        if(isTableCacheEnable()) {
+    static def removeAllCachedTableNames(def tableNames) {
+        if (isTableCacheEnable()) {
             tableNames.removeAll(getCachedTableNames())
         }
         return tableNames
@@ -110,7 +117,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      *
      * @return
      */
-    static def getCachedTableName(tableIdentifier){
+    static def getCachedTableName(tableIdentifier) {
         return System.getProperty(tableIdentifier)
     }
 
@@ -120,8 +127,8 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      *
      * @return
      */
-    static void cacheTableName(baseTableName, outputTableName){
-        if(isTableCacheEnable()) {
+    static void cacheTableName(baseTableName, outputTableName) {
+        if (isTableCacheEnable()) {
             System.setProperty("GEOCLIMATE_TABLE_" + baseTableName, outputTableName)
         }
     }
@@ -130,8 +137,8 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      * Clean the System properties that stores intermediate table names
      * @return
      */
-    static  void clearTablesCache(){
-        System.properties.removeAll {it.key.startsWith("GEOCLIMATE")}
+    static void clearTablesCache() {
+        System.properties.removeAll { it.key.startsWith("GEOCLIMATE") }
     }
 
     /**
@@ -156,7 +163,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      * @return
      */
     static def geoclimate_property(String name) {
-        if(!GEOCLIMATE_PROPERTIES) {
+        if (!GEOCLIMATE_PROPERTIES) {
             GEOCLIMATE_PROPERTIES = new Properties()
             GEOCLIMATE_PROPERTIES.load(Geoindicators.getResourceAsStream("geoclimate.properties"))
         }
@@ -168,7 +175,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      * @param modelName
      * @return
      */
-    static def getModel(modelName){
+    static def getModel(modelName) {
         return cacheModels.get(modelName)
     }
 
@@ -178,7 +185,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      * @param xstream object
      * @return
      */
-    static void putModel(String modelName, Object xsStreamModel){
+    static void putModel(String modelName, Object xsStreamModel) {
         cacheModels.put(modelName, xsStreamModel)
     }
 
@@ -186,7 +193,7 @@ abstract class Geoindicators  extends GroovyProcessFactory  {
      * Clear the cache models
      * @return
      */
-    static clearCacheModels(){
+    static clearCacheModels() {
         cacheModels.clear()
     }
 }

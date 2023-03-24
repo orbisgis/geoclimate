@@ -1,17 +1,35 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.data.api.dataset.ISpatialTable
-import org.orbisgis.data.jdbc.*
-import org.orbisgis.process.api.IProcess
+import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.geoclimate.Geoindicators
 
 @BaseScript Geoindicators geoindicators
 
 /**
  * This process is used to compute basic statistical operations on a specific variable from a lower scale (for
  * example the sum of each building volume constituting a block to calculate the block volume). Note that for
- * surface fractions it is highly recommended to use the surfaceFractions IProcess (since it considers the potential
+ * surface fractions it is highly recommended to use the surfaceFractions method (since it considers the potential
  * layer superpositions (building, high vegetation, low vegetation, etc.).
  *
  * @param inputLowerScaleTableName the table name where are stored low scale objects (e.g. buildings)
@@ -35,80 +53,70 @@ import org.orbisgis.process.api.IProcess
  *
  * @author Jérémy Bernard
  */
-IProcess unweightedOperationFromLowerScale() {
-    return create {
-        title "Unweighted statistical operations from lower scale"
-        id "unweightedOperationFromLowerScale"
-        inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, inputIdUp: String,
-                inputIdLow: String, inputVarAndOperations: Map, prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputIdLow, inputVarAndOperations, prefixName,
-              datasource ->
+String unweightedOperationFromLowerScale(JdbcDataSource datasource, String inputLowerScaleTableName, String inputUpperScaleTableName, String inputIdUp,
+                                         String inputIdLow, Map inputVarAndOperations, String prefixName) {
+    def GEOMETRIC_FIELD_UP = "the_geom"
+    def BASE_NAME = "unweighted_operation_from_lower_scale"
+    def SUM = "SUM"
+    def AVG = "AVG"
+    def GEOM_AVG = "GEOM_AVG"
+    def DENS = "DENS"
+    def NB_DENS = "NB_DENS"
+    def STD = "STD"
+    def COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
+    def SPECIFIC_OPERATIONS = [NB_DENS]
 
-            def GEOMETRIC_FIELD_UP = "the_geom"
-            def BASE_NAME = "unweighted_operation_from_lower_scale"
-            def SUM = "SUM"
-            def AVG = "AVG"
-            def GEOM_AVG = "GEOM_AVG"
-            def DENS = "DENS"
-            def NB_DENS = "NB_DENS"
-            def STD = "STD"
-            def COLUMN_TYPE_TO_AVOID = ["GEOMETRY", "VARCHAR"]
-            def SPECIFIC_OPERATIONS = [NB_DENS]
+    debug "Executing Unweighted statistical operations from lower scale"
 
-            debug "Executing Unweighted statistical operations from lower scale"
+    // The name of the outputTableName is constructed
+    def outputTableName = prefix prefixName, BASE_NAME
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASE_NAME
+    datasource."$inputLowerScaleTableName"."$inputIdUp".createIndex()
+    datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
 
-            datasource."$inputLowerScaleTableName"."$inputIdUp".createIndex()
-            datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
+    def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
-            def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
-
-            def  columnNamesTypes = datasource."$inputLowerScaleTableName".getColumnsTypes()
-            def filteredColumns = columnNamesTypes.findAll {! COLUMN_TYPE_TO_AVOID.contains(it.value) }
-            inputVarAndOperations.each { var, operations ->
-                // Some operations may not need to use an existing variable thus not concerned by the column filtering
-                def filteredOperations = operations-SPECIFIC_OPERATIONS
-                if (filteredColumns.containsKey(var.toUpperCase()) | (filteredOperations.isEmpty())) {
-                    operations.each {
-                        def op = it.toUpperCase()
-                        switch (op) {
-                            case GEOM_AVG:
-                                query += "COALESCE(EXP(1.0/COUNT(a.*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
-                                break
-                            case DENS:
-                                query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_DENSITY"},"
-                                break
-                            case NB_DENS:
-                                query += "COALESCE(COUNT(a.$inputIdLow)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
-                                break
-                            case SUM:
-                                query += "COALESCE(SUM(a.$var::float),0) AS ${op + "_" + var},"
-                                break
-                            case AVG:
-                                query += "COALESCE($op(a.$var::float),0) AS ${op + "_" + var},"
-                                break
-                            case STD:
-                                query += "COALESCE(STDDEV_POP(a.$var::float),0) AS ${op + "_" + var},"
-                                break
-                            default:
-                                break
-                        }
-                    }
-                } else {
-                    warn """ The column $var doesn't exist or should be numeric"""
+    def columnNamesTypes = datasource."$inputLowerScaleTableName".getColumnsTypes()
+    def filteredColumns = columnNamesTypes.findAll { !COLUMN_TYPE_TO_AVOID.contains(it.value) }
+    inputVarAndOperations.each { var, operations ->
+        // Some operations may not need to use an existing variable thus not concerned by the column filtering
+        def filteredOperations = operations - SPECIFIC_OPERATIONS
+        if (filteredColumns.containsKey(var.toUpperCase()) | (filteredOperations.isEmpty())) {
+            operations.each {
+                def op = it.toUpperCase()
+                switch (op) {
+                    case GEOM_AVG:
+                        query += "COALESCE(EXP(1.0/COUNT(a.*)*SUM(LOG(a.$var))),0) AS ${op + "_" + var},"
+                        break
+                    case DENS:
+                        query += "COALESCE(SUM(a.$var::float)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_DENSITY"},"
+                        break
+                    case NB_DENS:
+                        query += "COALESCE(COUNT(a.$inputIdLow)/ST_AREA(b.$GEOMETRIC_FIELD_UP),0) AS ${var + "_NUMBER_DENSITY"},"
+                        break
+                    case SUM:
+                        query += "COALESCE(SUM(a.$var::float),0) AS ${op + "_" + var},"
+                        break
+                    case AVG:
+                        query += "COALESCE($op(a.$var::float),0) AS ${op + "_" + var},"
+                        break
+                    case STD:
+                        query += "COALESCE(STDDEV_POP(a.$var::float),0) AS ${op + "_" + var},"
+                        break
+                    default:
+                        break
                 }
             }
-            query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
-                    "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
-
-            datasource query.toString()
-
-            [outputTableName: outputTableName]
+        } else {
+            warn """ The column $var doesn't exist or should be numeric"""
         }
     }
+    query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
+            "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
+
+    datasource query.toString()
+
+    return outputTableName
 }
 
 /**
@@ -116,90 +124,83 @@ IProcess unweightedOperationFromLowerScale() {
  * example the mean building roof height within a reference spatial unit where the roof height values are weighted
  * by the values of building area)
  *
- *  @param inputLowerScaleTableName the table name where are stored low scale objects (e.g. buildings)
+ * @param inputLowerScaleTableName the table name where are stored low scale objects (e.g. buildings)
  *  and the id of the upper scale zone (e.g. RSU) they are belonging to
- *  @param inputUpperScaleTableName the table of the upper scale where the informations have to be aggregated to (e.g. RSU)
- *  @param inputIdUp the ID of the upper scale
- *  @param inputVarWeightsOperations a map containing as key the informations that has to be transformed from the lower to
+ * @param inputUpperScaleTableName the table of the upper scale where the informations have to be aggregated to (e.g. RSU)
+ * @param inputIdUp the ID of the upper scale
+ * @param inputVarWeightsOperations a map containing as key the informations that has to be transformed from the lower to
  *  the upper scale, and as value a map containing as key the variable that has to be used as weight and as values
  *  a LIST of operation to apply to this couple (information/weight). Note that the allowed operations should be in
  *  the following list:
  *           --> "STD": weighted standard deviation
  *           --> "AVG": weighted mean
- *  @param prefixName String use as prefix to name the output table
+ * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
  * @author Jérémy Bernard
+ * @author Erwan Bocher
  */
-IProcess weightedAggregatedStatistics() {
-    return create {
-        title "Weighted statistical operations from lower scale"
-        id "weightedAggregatedStatistics"
-        inputs inputLowerScaleTableName: String, inputUpperScaleTableName: String, inputIdUp: String,
-                inputVarWeightsOperations: Map, prefixName: String, datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputLowerScaleTableName, inputUpperScaleTableName, inputIdUp, inputVarWeightsOperations, prefixName,
-              datasource ->
+String weightedAggregatedStatistics(JdbcDataSource datasource, String inputLowerScaleTableName,
+                                    String inputUpperScaleTableName, String inputIdUp,
+                                    Map inputVarWeightsOperations, String prefixName) {
 
-            def AVG = "AVG"
-            def STD = "STD"
-            def BASE_NAME = "weighted_aggregated_statistics"
+    def AVG = "AVG"
+    def STD = "STD"
+    def BASE_NAME = "weighted_aggregated_statistics"
 
-            debug "Executing Weighted statistical operations from lower scale"
+    debug "Executing Weighted statistical operations from lower scale"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASE_NAME
+    // The name of the outputTableName is constructed
+    def outputTableName = prefix prefixName, BASE_NAME
 
-            // To avoid overwriting the output files of this step, a unique identifier is created
-            // Temporary table names
-            def weighted_mean = postfix "weighted_mean"
+    // To avoid overwriting the output files of this step, a unique identifier is created
+    // Temporary table names
+    def weighted_mean = postfix "weighted_mean"
 
-            datasource."$inputLowerScaleTableName"."$inputIdUp".createIndex()
-            datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
+    datasource."$inputLowerScaleTableName"."$inputIdUp".createIndex()
+    datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
 
-            // The weighted mean is calculated in all cases since it is useful for the STD calculation
-            def weightedMeanQuery = "DROP TABLE IF EXISTS $weighted_mean; " +
-                    "CREATE TABLE $weighted_mean($inputIdUp INTEGER,"
-            def nameAndType = ""
-            def weightedMean = ""
-            inputVarWeightsOperations.each { var, weights ->
-                weights.each { weight, operations ->
-                    nameAndType += "weighted_avg_${var}_$weight DOUBLE PRECISION DEFAULT 0,"
-                    weightedMean += "CASE WHEN SUM(a.$weight)=0  THEN 0 ELSE COALESCE(SUM(a.$var*a.$weight) / SUM(a.$weight),0) END AS weighted_avg_${var}_$weight,"
-                }
-            }
-            weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
-                    " FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
-                    "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp)"
-            datasource weightedMeanQuery.toString()
-
-            // The weighted std is calculated if needed and only the needed fields are returned
-            def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean ($inputIdUp); " +
-                    "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.$inputIdUp,"
-            inputVarWeightsOperations.each { var, weights ->
-                weights.each { weight, operations ->
-                    // The operation names are transformed into upper case
-                    operations.replaceAll { it.toUpperCase() }
-                    if (operations.contains(AVG)) {
-                        weightedStdQuery += "COALESCE(b.weighted_avg_${var}_$weight,0) AS avg_${var}_${weight}_weighted,"
-                    }
-                    if (operations.contains(STD)) {
-                        weightedStdQuery += "CASE WHEN SUM(a.$weight)=0 THEN 0 ELSE COALESCE(POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
-                                "SUM(a.$weight),0.5),0) END AS std_${var}_${weight}_weighted,"
-                    }
-                }
-            }
-            weightedStdQuery = weightedStdQuery[0..-2] + " FROM $inputLowerScaleTableName a RIGHT JOIN $weighted_mean b " +
-                    "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
-
-            datasource weightedStdQuery.toString()
-
-            // The temporary tables are deleted
-            datasource "DROP TABLE IF EXISTS $weighted_mean".toString()
-
-            [outputTableName: outputTableName]
+    // The weighted mean is calculated in all cases since it is useful for the STD calculation
+    def weightedMeanQuery = "DROP TABLE IF EXISTS $weighted_mean; " +
+            "CREATE TABLE $weighted_mean($inputIdUp INTEGER,"
+    def nameAndType = ""
+    def weightedMean = ""
+    inputVarWeightsOperations.each { var, weights ->
+        weights.each { weight, operations ->
+            nameAndType += "weighted_avg_${var}_$weight DOUBLE PRECISION DEFAULT 0,"
+            weightedMean += "CASE WHEN SUM(a.$weight)=0  THEN 0 ELSE COALESCE(SUM(a.$var*a.$weight) / SUM(a.$weight),0) END AS weighted_avg_${var}_$weight,"
         }
     }
+    weightedMeanQuery += nameAndType[0..-2] + ") AS (SELECT b.$inputIdUp, ${weightedMean[0..-2]}" +
+            " FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
+            "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp)"
+    datasource weightedMeanQuery.toString()
+
+    // The weighted std is calculated if needed and only the needed fields are returned
+    def weightedStdQuery = "CREATE INDEX IF NOT EXISTS id_lcorr ON $weighted_mean ($inputIdUp); " +
+            "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT b.$inputIdUp,"
+    inputVarWeightsOperations.each { var, weights ->
+        weights.each { weight, operations ->
+            // The operation names are transformed into upper case
+            operations.replaceAll { it.toUpperCase() }
+            if (operations.contains(AVG)) {
+                weightedStdQuery += "COALESCE(b.weighted_avg_${var}_$weight,0) AS avg_${var}_${weight}_weighted,"
+            }
+            if (operations.contains(STD)) {
+                weightedStdQuery += "CASE WHEN SUM(a.$weight)=0 THEN 0 ELSE COALESCE(POWER(SUM(a.$weight*POWER(a.$var-b.weighted_avg_${var}_$weight,2))/" +
+                        "SUM(a.$weight),0.5),0) END AS std_${var}_${weight}_weighted,"
+            }
+        }
+    }
+    weightedStdQuery = weightedStdQuery[0..-2] + " FROM $inputLowerScaleTableName a RIGHT JOIN $weighted_mean b " +
+            "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
+
+    datasource weightedStdQuery.toString()
+
+    // The temporary tables are deleted
+    datasource "DROP TABLE IF EXISTS $weighted_mean".toString()
+
+    return outputTableName
 }
 
 /**
@@ -217,41 +218,33 @@ IProcess weightedAggregatedStatistics() {
  * @return A database table name.
  * @author Erwan Bocher
  */
-IProcess geometryProperties() {
-    return create {
-        title "Geometry properties"
-        id "geometryProperties"
-        inputs inputTableName: String, inputFields: String[], operations: String[], prefixName: String,
-                datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputTableName, inputFields, operations, prefixName, datasource ->
+String geometryProperties(JdbcDataSource datasource, String inputTableName, List inputFields,
+                          List operations, String prefixName) {
 
-            def GEOMETRIC_FIELD = "the_geom"
-            def OPS = ["st_geomtype", "st_srid", "st_length", "st_perimeter", "st_area", "st_dimension",
-                       "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
-            def BASE_NAME = "geometry_properties"
+    def GEOMETRIC_FIELD = "the_geom"
+    def OPS = ["st_geomtype", "st_srid", "st_length", "st_perimeter", "st_area", "st_dimension",
+               "st_coorddim", "st_num_geoms", "st_num_pts", "st_issimple", "st_isvalid", "st_isempty"]
+    def BASE_NAME = "geometry_properties"
 
-            debug "Executing Geometry properties"
+    debug "Executing Geometry properties"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASE_NAME
+    // The name of the outputTableName is constructed
+    def outputTableName = prefix prefixName, BASE_NAME
 
-            def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
+    def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
-            // The operation names are transformed into lower case
-            operations.replaceAll { it.toLowerCase() }
-            operations.each {
-                if (OPS.contains(it)) {
-                    query += "$it($GEOMETRIC_FIELD) as ${it.substring(3)},"
-                }
-            }
-            query += "${inputFields.join(",")} from $inputTableName"
-
-            datasource query.toString()
-
-            [outputTableName: outputTableName]
+    // The operation names are transformed into lower case
+    operations.replaceAll { it.toLowerCase() }
+    operations.each {
+        if (OPS.contains(it)) {
+            query += "$it($GEOMETRIC_FIELD) as ${it.substring(3)},"
         }
     }
+    query += "${inputFields.join(",")} from $inputTableName"
+
+    datasource query.toString()
+
+    return outputTableName
 }
 
 /**
@@ -285,45 +278,40 @@ IProcess geometryProperties() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-IProcess buildingDirectionDistribution() {
-    return create {
-        title "Perkins skill score building direction"
-        id "buildingDirectionDistribution"
-        inputs buildingTableName: String, tableUp: String, inputIdUp: String, angleRangeSize: 15, prefixName: String,
-                datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"]
-        outputs outputTableName: String
-        run { buildingTableName, tableUp, inputIdUp, angleRangeSize, prefixName, datasource, distribIndicator ->
+String buildingDirectionDistribution(JdbcDataSource datasource, String buildingTableName,
+                                     String tableUp, String inputIdUp, float angleRangeSize = 15f
+                                     , List distribIndicator = ["equality", "uniqueness"], String prefixName) {
 
-            def GEOMETRIC_FIELD = "the_geom"
-            def ID_FIELD_BU = "id_build"
-            def INEQUALITY = "BUILDING_DIRECTION_EQUALITY"
-            def UNIQUENESS = "BUILDING_DIRECTION_UNIQUENESS"
-            def BASENAME = "MAIN_BUILDING_DIRECTION"
+    def GEOMETRIC_FIELD = "the_geom"
+    def ID_FIELD_BU = "id_build"
+    def INEQUALITY = "BUILDING_DIRECTION_EQUALITY"
+    def UNIQUENESS = "BUILDING_DIRECTION_UNIQUENESS"
+    def BASENAME = "MAIN_BUILDING_DIRECTION"
 
-            debug "Executing Perkins skill score building direction"
+    debug "Executing Perkins skill score building direction"
 
-            // The name of the outputTableName is constructed
-            def outputTableName = prefix prefixName, BASENAME
+    // The name of the outputTableName is constructed
+    def outputTableName = prefix prefixName, BASENAME
 
-            // Test whether the angleRangeSize is a divisor of 180°
-            if ((180 % angleRangeSize) == 0 && (180 / angleRangeSize) > 1) {
-                def med_angle = angleRangeSize / 2
-                // To avoid overwriting the output files of this step, a unique identifier is created
-                // Temporary table names
-                def build_min_rec = postfix "build_min_rec"
-                def build_dir360 = postfix "build_dir360"
-                def build_dir180 = postfix "build_dir180"
-                def build_dir_dist = postfix "build_dir_dist"
+    // Test whether the angleRangeSize is a divisor of 180°
+    if ((180 % angleRangeSize) == 0 && (180 / angleRangeSize) > 1) {
+        def med_angle = angleRangeSize / 2
+        // To avoid overwriting the output files of this step, a unique identifier is created
+        // Temporary table names
+        def build_min_rec = postfix "build_min_rec"
+        def build_dir360 = postfix "build_dir360"
+        def build_dir180 = postfix "build_dir180"
+        def build_dir_dist = postfix "build_dir_dist"
 
-                // The minimum diameter of the minimum rectangle is created for each building
-                datasource """DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS 
+        // The minimum diameter of the minimum rectangle is created for each building
+        datasource """DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS 
                         SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETRIC_FIELD)) 
                         AS the_geom FROM $buildingTableName;""".toString()
 
-                datasource."$buildingTableName".id_build.createIndex()
+        datasource."$buildingTableName".id_build.createIndex()
 
-                // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-                datasource """CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec ($ID_FIELD_BU);
+        // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
+        datasource """CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec ($ID_FIELD_BU);
                         DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS 
                         SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, 
                         ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, 
@@ -332,85 +320,76 @@ IProcess buildingDirectionDistribution() {
                         ST_ENDPOINT(ST_ROTATE(a.the_geom, pi()/2))))) AS ANG_H FROM $build_min_rec a  
                         LEFT JOIN $buildingTableName b ON a.$ID_FIELD_BU=b.$ID_FIELD_BU""".toString()
 
-                // The angles are transformed in the [0, 180]° interval
-                datasource """DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS 
+        // The angles are transformed in the [0, 180]° interval
+        datasource """DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS 
                         SELECT $inputIdUp, LEN_L, LEN_H, CASEWHEN(ANG_L>=180, ANG_L-180, ANG_L) AS ANG_L, 
                         CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360""".toString()
 
-                datasource "CREATE INDEX ON $build_dir180 ($inputIdUp)".toString()
+        datasource "CREATE INDEX ON $build_dir180 ($inputIdUp)".toString()
 
-                // The query aiming to create the building direction distribution is created
-                def sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
-                for (int i = angleRangeSize; i <= 180; i += angleRangeSize) {
-                    def nameAngle = (i - med_angle).toString().replace(".", "_")
-                    sqlQueryDist += "SUM(CASEWHEN(ANG_L>=${i - angleRangeSize} AND ANG_L<$i, LEN_L, " +
-                            "CASEWHEN(ANG_H>=${i - angleRangeSize} AND ANG_H<$i, LEN_H, 0))) AS ANG$nameAngle, "
-                }
-                sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
+        // The query aiming to create the building direction distribution is created
+        def sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
+        for (int i = angleRangeSize; i <= 180; i += angleRangeSize) {
+            def nameAngle = (i - med_angle).toString().replace(".", "_")
+            sqlQueryDist += "SUM(CASEWHEN(ANG_L>=${i - angleRangeSize} AND ANG_L<$i, LEN_L, " +
+                    "CASEWHEN(ANG_H>=${i - angleRangeSize} AND ANG_H<$i, LEN_H, 0))) AS ANG$nameAngle, "
+        }
+        sqlQueryDist += "$inputIdUp FROM $build_dir180 GROUP BY $inputIdUp;"
 
-                // The query is executed
-                datasource sqlQueryDist.toString()
+        // The query is executed
+        datasource sqlQueryDist.toString()
 
-                // The main building direction and indicators characterizing the distribution are calculated
-                def computeDistribChar = distributionCharacterization()
-                computeDistribChar([distribTableName: build_dir_dist,
-                                    initialTable    : tableUp,
-                                    inputId         : inputIdUp,
-                                    distribIndicator: distribIndicator,
-                                    extremum        : "GREATEST",
-                                    prefixName      : prefixName,
-                                    datasource      : datasource])
-                def resultsDistrib = computeDistribChar.results.outputTableName
+        // The main building direction and indicators characterizing the distribution are calculated
+        def resultsDistrib = distributionCharacterization(datasource, build_dir_dist,
+                tableUp, inputIdUp, distribIndicator, "GREATEST", prefixName)
 
-                // Rename the standard indicators into names consistent with the current IProcess (building direction...)
-                datasource """DROP TABLE IF EXISTS $outputTableName;
+        // Rename the standard indicators into names consistent with the current method (building direction...)
+        datasource """DROP TABLE IF EXISTS $outputTableName;
                                     ALTER TABLE $resultsDistrib RENAME TO $outputTableName;
                                     ALTER TABLE $outputTableName RENAME COLUMN EXTREMUM_COL TO $BASENAME;
                                     ALTER TABLE $outputTableName RENAME COLUMN UNIQUENESS_VALUE TO $UNIQUENESS;
                                     ALTER TABLE $outputTableName RENAME COLUMN EQUALITY_VALUE TO $INEQUALITY;""".toString()
 
-                /*
-            if (distribIndicator.contains("uniqueness")){
-                // Reorganise the distribution Table (having the same number of column than the number
-                // of direction of analysis) into a simple two column table (ID and SURF)
-                def sqlQueryUnique = "DROP TABLE IF EXISTS $build_dir_bdd; CREATE TABLE $build_dir_bdd AS SELECT "
-                def columnNames = datasource.getTable(build_dir_dist).columns
-                columnNames.remove(inputIdUp)
-                for (col in columnNames.take(columnNames.size() - 1)){
-                    sqlQueryUnique += "$inputIdUp, $col AS SURF FROM $build_dir_dist UNION ALL SELECT "
-                }
-                sqlQueryUnique += """$inputIdUp, ${columnNames[-1]} AS SURF FROM $build_dir_dist;
-                                    CREATE INDEX ON $build_dir_bdd USING BTREE($inputIdUp);
-                                    CREATE INDEX ON $build_dir_bdd USING BTREE(SURF);"""
-                datasource sqlQueryUnique
+        /*
+    if (distribIndicator.contains("uniqueness")){
+        // Reorganise the distribution Table (having the same number of column than the number
+        // of direction of analysis) into a simple two column table (ID and SURF)
+        def sqlQueryUnique = "DROP TABLE IF EXISTS $build_dir_bdd; CREATE TABLE $build_dir_bdd AS SELECT "
+        def columnNames = datasource.getTable(build_dir_dist).columns
+        columnNames.remove(inputIdUp)
+        for (col in columnNames.take(columnNames.size() - 1)){
+            sqlQueryUnique += "$inputIdUp, $col AS SURF FROM $build_dir_dist UNION ALL SELECT "
+        }
+        sqlQueryUnique += """$inputIdUp, ${columnNames[-1]} AS SURF FROM $build_dir_dist;
+                            CREATE INDEX ON $build_dir_bdd USING BTREE($inputIdUp);
+                            CREATE INDEX ON $build_dir_bdd USING BTREE(SURF);"""
+        datasource sqlQueryUnique
 
-                def sqlQueryLast = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
-                                    "SELECT b.$inputIdUp, a.main_building_direction,"
+        def sqlQueryLast = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS " +
+                            "SELECT b.$inputIdUp, a.main_building_direction,"
 
-                if (distribIndicator.contains("inequality")) {
-                    sqlQueryLast += " a.$INEQUALITY, "
-                }
-                sqlQueryLast += """a.max_surf/(MAX(b.SURF)+a.max_surf) AS $UNIQUENESS
-                                   FROM         $build_perk_fin a
-                                   RIGHT JOIN   $build_dir_bdd b
-                                   ON           a.$inputIdUp = b.$inputIdUp
-                                   WHERE        b.SURF < a.max_surf
-                                   GROUP BY     b.$inputIdUp;"""
+        if (distribIndicator.contains("inequality")) {
+            sqlQueryLast += " a.$INEQUALITY, "
+        }
+        sqlQueryLast += """a.max_surf/(MAX(b.SURF)+a.max_surf) AS $UNIQUENESS
+                           FROM         $build_perk_fin a
+                           RIGHT JOIN   $build_dir_bdd b
+                           ON           a.$inputIdUp = b.$inputIdUp
+                           WHERE        b.SURF < a.max_surf
+                           GROUP BY     b.$inputIdUp;"""
 
-                datasource "CREATE INDEX ON $build_perk_fin ($inputIdUp);"
-                datasource sqlQueryLast
-            }
-            else{
-                datasource "ALTER TABLE $build_perk_fin RENAME TO $outputTableName;"
-            }
-            */
-                // The temporary tables are deleted
-                datasource """DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, 
+        datasource "CREATE INDEX ON $build_perk_fin ($inputIdUp);"
+        datasource sqlQueryLast
+    }
+    else{
+        datasource "ALTER TABLE $build_perk_fin RENAME TO $outputTableName;"
+    }
+    */
+        // The temporary tables are deleted
+        datasource """DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, 
                         $build_dir_dist;""".toString()
 
-                [outputTableName: outputTableName]
-            }
-        }
+        return outputTableName
     }
 }
 
@@ -449,189 +428,183 @@ IProcess buildingDirectionDistribution() {
  * @return A database table name.
  * @author Jérémy Bernard
  */
-IProcess distributionCharacterization() {
-    return create {
-        title "Distribution characterization"
-        id "distributionCharacterization"
-        inputs distribTableName: String, initialTable: String, inputId: String, prefixName: String,
-                datasource: JdbcDataSource, distribIndicator: ["equality", "uniqueness"], extremum: "GREATEST",
-                keep2ndCol: false, keepColVal: false
-        outputs outputTableName: String
-        run { distribTableName, initialTable, inputId, prefixName, datasource, distribIndicator, extremum, keep2ndCol, keepColVal ->
+String distributionCharacterization(JdbcDataSource datasource, String distribTableName,
+                                    String initialTable, String inputId,
+                                    List distribIndicator = ["equality", "uniqueness"], String extremum = "GREATEST",
+                                    boolean keep2ndCol = false, boolean keepColVal = false, String prefixName) {
+    def EQUALITY = "EQUALITY_VALUE"
+    def UNIQUENESS = "UNIQUENESS_VALUE"
+    def EXTREMUM_COL = "EXTREMUM_COL"
+    def EXTREMUM_COL2 = "EXTREMUM_COL2"
+    def EXTREMUM_VAL = "EXTREMUM_VAL"
+    def BASENAME = "DISTRIBUTION_REPARTITION"
+    def GEOMETRY_FIELD = "THE_GEOM"
 
-            def EQUALITY = "EQUALITY_VALUE"
-            def UNIQUENESS = "UNIQUENESS_VALUE"
-            def EXTREMUM_COL = "EXTREMUM_COL"
-            def EXTREMUM_COL2 = "EXTREMUM_COL2"
-            def EXTREMUM_VAL = "EXTREMUM_VAL"
-            def BASENAME =  "DISTRIBUTION_REPARTITION"
-            def GEOMETRY_FIELD = "THE_GEOM"
+    debug "Executing equality and uniqueness indicators"
 
-            debug "Executing equality and uniqueness indicators"
+    if (extremum.toUpperCase() == "GREATEST" || extremum.toUpperCase() == "LEAST") {
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, BASENAME
 
-            if (extremum.toUpperCase() == "GREATEST" || extremum.toUpperCase() == "LEAST") {
-                // The name of the outputTableName is constructed
-                def outputTableName = prefix prefixName, BASENAME
+        // Get all columns from the distribution table and remove the geometry column if exists
+        def allColumns = datasource."$distribTableName".columns
+        if (allColumns.contains(GEOMETRY_FIELD)) {
+            allColumns -= GEOMETRY_FIELD
+        }
+        // Get the distribution columns and the number of columns
+        def distribColumns = allColumns.minus(inputId.toUpperCase())
+        def nbDistCol = distribColumns.size()
 
-                // Get all columns from the distribution table and remove the geometry column if exists
-                def allColumns = datasource."$distribTableName".columns
-                if(allColumns.contains(GEOMETRY_FIELD)){
-                    allColumns -= GEOMETRY_FIELD
-                }
-                // Get the distribution columns and the number of columns
-                def distribColumns = allColumns.minus(inputId.toUpperCase())
-                def nbDistCol = distribColumns.size()
+        def idxExtrem = nbDistCol - 1
+        def idxExtrem_1 = nbDistCol - 2
+        if (extremum.toUpperCase() == "LEAST") {
+            idxExtrem = 0
+            idxExtrem_1 = 1
+        }
 
-                def idxExtrem = nbDistCol - 1
-                def idxExtrem_1 = nbDistCol - 2
-                if (extremum.toUpperCase() == "LEAST") {
-                    idxExtrem = 0
-                    idxExtrem_1 = 1
-                }
+        def queryCoalesce = ""
 
-                def queryCoalesce = ""
+        // Create temporary tables
+        def outputTableMissingSomeObjects = postfix "output_table_missing_some_objects"
+        def distribTableNameNoNull = postfix "distrib_table_name_no_null"
 
-                // Create temporary tables
-                def outputTableMissingSomeObjects = postfix "output_table_missing_some_objects"
-                def distribTableNameNoNull = postfix "distrib_table_name_no_null"
-
-                // Delete rows having null values (and remove the geometry field if exists)
-                datasource """  DROP TABLE IF EXISTS $distribTableNameNoNull;
+        // Delete rows having null values (and remove the geometry field if exists)
+        datasource """  DROP TABLE IF EXISTS $distribTableNameNoNull;
                                 CREATE TABLE $distribTableNameNoNull 
                                     AS SELECT ${allColumns.join(",")} 
                                     FROM $distribTableName 
                                     WHERE ${distribColumns.join(" IS NOT NULL AND ")} IS NOT NULL""".toString()
 
-                if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
-                    def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
+        if (distribIndicator.contains("equality") && !distribIndicator.contains("uniqueness")) {
+            def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
                                                                     $EQUALITY DOUBLE PRECISION,
                                                                     $EXTREMUM_COL VARCHAR)"""
-                    // If the second extremum col should be conserved
-                    if(keep2ndCol){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
-                    }
-                    // If the value of the extremum column should be conserved
-                    if(keepColVal){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
-                    }
-                    datasource queryCreateTable.toString()
-                    // Will insert values by batch of 100 in the table
-                    datasource.withBatch(100) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
-                            def rowMap = row.toRowResult()
-                            def id_rsu = rowMap."$inputId"
-                            rowMap.remove(inputId.toUpperCase())
-                            def sortedMap = rowMap.sort { it.value }
-                            // We want to get rid of some of the values identified as -9999.99
-                            while (sortedMap.values().remove(-9999.99 as double));
-                            def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
+            // If the second extremum col should be conserved
+            if (keep2ndCol) {
+                queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
+            }
+            // If the value of the extremum column should be conserved
+            if (keepColVal) {
+                queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
+            }
+            datasource queryCreateTable.toString()
+            // Will insert values by batch of 100 in the table
+            datasource.withBatch(100) { stmt ->
+                datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
+                    def rowMap = row.toRowResult()
+                    def id_rsu = rowMap."$inputId"
+                    rowMap.remove(inputId.toUpperCase())
+                    def sortedMap = rowMap.sort { it.value }
+                    // We want to get rid of some of the values identified as -9999.99
+                    while (sortedMap.values().remove(-9999.99 as double));
+                    def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
-                            // If the second extremum col should be conserved
-                            if(keep2ndCol){
-                                queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
-                            }
-                            // If the value of the extremum column should be conserved
-                            if(keepColVal){
-                                queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
-                            }
-                            stmt.addBatch queryInsert.toString()
-                        }
-                    }
-                    queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
-                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
-
-                } else if (!distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
-                    def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
-                                                                    $UNIQUENESS DOUBLE PRECISION,
-                                                                    $EXTREMUM_COL VARCHAR)"""
                     // If the second extremum col should be conserved
-                    if(keep2ndCol){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
+                    if (keep2ndCol) {
+                        queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
                     }
                     // If the value of the extremum column should be conserved
-                    if(keepColVal){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
+                    if (keepColVal) {
+                        queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
                     }
+                    stmt.addBatch queryInsert.toString()
+                }
+            }
+            queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
+                                            COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
 
-                    datasource queryCreateTable.toString()
-                    // Will insert values by batch of 100 in the table
-                    datasource.withBatch(100) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
-                            def rowMap = row.toRowResult()
-                            def id_rsu = rowMap."$inputId"
-                            rowMap.remove(inputId.toUpperCase())
-                            def sortedMap = rowMap.sort { it.value }
-                            // We want to get rid of some of the values identified as -9999.99
-                            while (sortedMap.values().remove(-9999.99 as double));
-                            def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
+        } else if (!distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
+            def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
+                                                                    $UNIQUENESS DOUBLE PRECISION,
+                                                                    $EXTREMUM_COL VARCHAR)"""
+            // If the second extremum col should be conserved
+            if (keep2ndCol) {
+                queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
+            }
+            // If the value of the extremum column should be conserved
+            if (keepColVal) {
+                queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
+            }
+
+            datasource queryCreateTable.toString()
+            // Will insert values by batch of 100 in the table
+            datasource.withBatch(100) { stmt ->
+                datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
+                    def rowMap = row.toRowResult()
+                    def id_rsu = rowMap."$inputId"
+                    rowMap.remove(inputId.toUpperCase())
+                    def sortedMap = rowMap.sort { it.value }
+                    // We want to get rid of some of the values identified as -9999.99
+                    while (sortedMap.values().remove(-9999.99 as double));
+                    def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
-                            // If the second extremum col should be conserved
-                            if(keep2ndCol){
-                                queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
-                            }
-                            // If the value of the extremum column should be conserved
-                            if(keepColVal){
-                                queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
-                            }
-                            stmt.addBatch queryInsert.toString()
-                        }
+                    // If the second extremum col should be conserved
+                    if (keep2ndCol) {
+                        queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
                     }
-                    queryCoalesce += """    COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
+                    // If the value of the extremum column should be conserved
+                    if (keepColVal) {
+                        queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
+                    }
+                    stmt.addBatch queryInsert.toString()
+                }
+            }
+            queryCoalesce += """    COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
                                             COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
-                } else if (distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
-                    def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
+        } else if (distribIndicator.contains("equality") && distribIndicator.contains("uniqueness")) {
+            def queryCreateTable = """CREATE TABLE $outputTableMissingSomeObjects($inputId integer, 
                                                                     $EQUALITY DOUBLE PRECISION,
                                                                     $UNIQUENESS DOUBLE PRECISION,
                                                                     $EXTREMUM_COL VARCHAR)"""
-                    // If the second extremum col should be conserved
-                    if(keep2ndCol){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
-                    }
-                    // If the value of the extremum column should be conserved
-                    if(keepColVal){
-                        queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
-                    }
+            // If the second extremum col should be conserved
+            if (keep2ndCol) {
+                queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_COL2 VARCHAR)"
+            }
+            // If the value of the extremum column should be conserved
+            if (keepColVal) {
+                queryCreateTable = "${queryCreateTable[0..-2]}, $EXTREMUM_VAL DOUBLE PRECISION)"
+            }
 
-                    datasource queryCreateTable.toString()
+            datasource queryCreateTable.toString()
 
-                    // Will insert values by batch of 100 in the table
-                    datasource.withBatch(100) { stmt ->
-                        datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
-                            def rowMap = row.toRowResult()
-                            def id_rsu = rowMap."$inputId"
-                            def sortedMap =  rowMap.findAll {it.key.toLowerCase()!=inputId && (it.value!=-9999.99)}.sort{it.value}
-                            def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
+            // Will insert values by batch of 100 in the table
+            datasource.withBatch(100) { stmt ->
+                datasource.eachRow("SELECT * FROM $distribTableNameNoNull".toString()) { row ->
+                    def rowMap = row.toRowResult()
+                    def id_rsu = rowMap."$inputId"
+                    def sortedMap = rowMap.findAll { it.key.toLowerCase() != inputId && (it.value != -9999.99) }.sort { it.value }
+                    def queryInsert = """INSERT INTO $outputTableMissingSomeObjects 
                                                 VALUES ($id_rsu, ${getEquality(sortedMap, nbDistCol)},
                                                         ${getUniqueness(sortedMap, idxExtrem, idxExtrem_1)},
                                                         '${sortedMap.keySet()[idxExtrem]}')"""
-                            // If the second extremum col should be conserved
-                            if(keep2ndCol){
-                                queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
-                            }
-                            // If the value of the extremum column should be conserved
-                            if(keepColVal){
-                                queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
-                            }
-                            stmt.addBatch queryInsert.toString()
-                        }
+                    // If the second extremum col should be conserved
+                    if (keep2ndCol) {
+                        queryInsert = "${queryInsert[0..-2]}, '${sortedMap.keySet()[idxExtrem_1]}')"
                     }
-                    queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
+                    // If the value of the extremum column should be conserved
+                    if (keepColVal) {
+                        queryInsert = "${queryInsert[0..-2]}, ${sortedMap.values()[idxExtrem]})"
+                    }
+                    stmt.addBatch queryInsert.toString()
+                }
+            }
+            queryCoalesce += """    COALESCE(a.$EQUALITY, -1) AS $EQUALITY,
                                             COALESCE(a.$UNIQUENESS, -1) AS $UNIQUENESS,
                                                                             COALESCE(a.$EXTREMUM_COL, 'unknown') AS $EXTREMUM_COL,"""
-                }
-                // If the second extremum col should be conserved
-                if(keep2ndCol){
-                    queryCoalesce += "COALESCE(a.$EXTREMUM_COL2, 'unknown') AS $EXTREMUM_COL2,  "
-                }
-                if(keepColVal){
-                    queryCoalesce += "COALESCE(a.$EXTREMUM_VAL, -1) AS $EXTREMUM_VAL,  "
-                }
-                // Set to default value (for example if we characterize the building direction in a RSU having no building...)
-                datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
-                datasource."$initialTable"."$inputId".createIndex()
-                datasource """DROP TABLE IF EXISTS $outputTableName;
+        }
+        // If the second extremum col should be conserved
+        if (keep2ndCol) {
+            queryCoalesce += "COALESCE(a.$EXTREMUM_COL2, 'unknown') AS $EXTREMUM_COL2,  "
+        }
+        if (keepColVal) {
+            queryCoalesce += "COALESCE(a.$EXTREMUM_VAL, -1) AS $EXTREMUM_VAL,  "
+        }
+        // Set to default value (for example if we characterize the building direction in a RSU having no building...)
+        datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
+        datasource."$initialTable"."$inputId".createIndex()
+        datasource """DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName 
                                     AS SELECT       $queryCoalesce
                                                     b.$inputId 
@@ -639,13 +612,11 @@ IProcess distributionCharacterization() {
                                         ON a.$inputId = b.$inputId;
                                         """.toString()
 
-                datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects, $distribTableNameNoNull""".toString()
+        datasource.execute """DROP TABLE IF EXISTS $outputTableMissingSomeObjects, $distribTableNameNoNull""".toString()
 
-                [outputTableName: outputTableName]
-            } else {
-                error """The 'extremum' input parameter should be equal to "GREATEST" or "LEAST"""
-            }
-        }
+        return outputTableName
+    } else {
+        error """The 'extremum' input parameter should be equal to "GREATEST" or "LEAST"""
     }
 }
 
@@ -659,7 +630,7 @@ IProcess distributionCharacterization() {
 static Double getUniqueness(def myMap, def idxExtrem, def idxExtrem_1) {
     def extrem = myMap.values()[idxExtrem]
     def extrem_1 = myMap.values()[idxExtrem_1]
-    return extrem+extrem_1 > 0 ? Math.abs(extrem-extrem_1)/(extrem+extrem_1) : null
+    return extrem + extrem_1 > 0 ? Math.abs(extrem - extrem_1) / (extrem + extrem_1) : null
 }
 
 /**
@@ -671,17 +642,17 @@ static Double getUniqueness(def myMap, def idxExtrem, def idxExtrem_1) {
 static Double getEquality(def myMap, def nbDistCol) {
     def sum = myMap.values().sum()
     def equality = 0
-    myMap.values().each{it ->
-        equality += Math.min(it, sum/nbDistCol)
+    myMap.values().each { it ->
+        equality += Math.min(it, sum / nbDistCol)
     }
 
-    return sum == 0 ? null : equality/sum
+    return sum == 0 ? null : equality / sum
 }
 
 /**
  * This process is used to compute the area proportion of a certain type within a given object (e.g. a proportion
  * of industrial buildings within all buildings of a RSU). Note that for surface fractions within a given surface
- * you should use the surfaceFractions IProcess.
+ * you should use the surfaceFractions method.
  *
  * @param inputTableName the table name where are stored the objects having different types to characterize
  * @param idField ID of the scale used for the 'GROUP BY'
@@ -698,79 +669,70 @@ static Double getEquality(def myMap, def nbDistCol) {
  *
  * @author Jérémy Bernard
  */
-IProcess typeProportion() {
-    return create {
-        title "Proportion of a certain type within a given object"
-        id "typeProportion"
-        inputs inputTableName: String, idField: String          , inputUpperTableName: String,
-                floorAreaTypeAndComposition: [:],
-                typeFieldName: String, areaTypeAndComposition: [:], prefixName: String,
-                datasource: JdbcDataSource
-        outputs outputTableName: String
-        run { inputTableName, idField, inputUpperTableName, floorAreaTypeAndComposition, typeFieldName, areaTypeAndComposition,
-              prefixName, datasource ->
+String typeProportion(JdbcDataSource datasource, String inputTableName, String idField, String typeFieldName,
+                      String inputUpperTableName, Map areaTypeAndComposition, Map floorAreaTypeAndComposition,
+                      String prefixName) {
+    def GEOMETRIC_FIELD_LOW = "the_geom"
+    def BASE_NAME = "type_proportion"
+    def NB_LEV = "nb_lev"
 
-            def GEOMETRIC_FIELD_LOW = "the_geom"
-            def BASE_NAME = "type_proportion"
-            def NB_LEV = "nb_lev"
+    debug "Executing typeProportion"
 
-            debug "Executing typeProportion"
+    if (areaTypeAndComposition || floorAreaTypeAndComposition) {
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, BASE_NAME
 
-            if(areaTypeAndComposition || floorAreaTypeAndComposition) {
-                // The name of the outputTableName is constructed
-                def outputTableName = prefix prefixName, BASE_NAME
+        // To avoid overwriting the output files of this step, a unique identifier is created
+        // Temporary table names
+        def caseWhenTab = postfix "case_when_tab"
+        def outputTableWithNull = postfix "output_table_with_null"
 
-                // To avoid overwriting the output files of this step, a unique identifier is created
-                // Temporary table names
-                def caseWhenTab = postfix "case_when_tab"
-                def outputTableWithNull = postfix "output_table_with_null"
+        // Define the pieces of query according to each type of the input table
+        def queryCalc = ""
+        def queryCaseWh = ""
+        // For the area fractions
+        if (areaTypeAndComposition) {
+            queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, "
+            areaTypeAndComposition.forEach { type, compo ->
+                queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type},"
+                queryCalc += "CASE WHEN SUM(AREA)=0 THEN 0 ELSE SUM(AREA_${type})/SUM(AREA) END AS AREA_FRACTION_${type}, "
+            }
+        }
 
-                // Define the pieces of query according to each type of the input table
-                def queryCalc = ""
-                def queryCaseWh = ""
-                // For the area fractions
-                if(areaTypeAndComposition){
-                    queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, "
-                    areaTypeAndComposition.forEach { type, compo ->
-                        queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type},"
-                        queryCalc += "CASE WHEN SUM(AREA)=0 THEN 0 ELSE SUM(AREA_${type})/SUM(AREA) END AS AREA_FRACTION_${type}, "
-                    }
-                }
+        // For the floor area fractions in case the objects are buildings
+        if (floorAreaTypeAndComposition) {
+            queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA, "
+            floorAreaTypeAndComposition.forEach { type, compo ->
+                queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type},"
+                queryCalc += "CASE WHEN SUM(FLOOR_AREA) =0 THEN 0 ELSE SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) END AS FLOOR_AREA_FRACTION_${type}, "
+            }
+        }
 
-                // For the floor area fractions in case the objects are buildings
-                if(floorAreaTypeAndComposition) {
-                    queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA, "
-                    floorAreaTypeAndComposition.forEach { type, compo ->
-                        queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type},"
-                        queryCalc += "CASE WHEN SUM(FLOOR_AREA) =0 THEN 0 ELSE SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) END AS FLOOR_AREA_FRACTION_${type}, "
-                    }
-                }
-
-                // Calculates the surface of each object depending on its type
-                datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
+        // Calculates the surface of each object depending on its type
+        datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
                                     CREATE TABLE $caseWhenTab 
                                             AS SELECT $idField,
                                                         ${queryCaseWh[0..-2]} 
                                             FROM $inputTableName""".toString()
 
-                datasource."$caseWhenTab"."$idField".createIndex()
+        datasource."$caseWhenTab"."$idField".createIndex()
 
-                // Calculate the proportion of each type
-                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull;
+        // Calculate the proportion of each type
+        datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull;
                                     CREATE TABLE $outputTableWithNull 
                                             AS SELECT $idField, ${queryCalc[0..-2]}
                                             FROM $caseWhenTab GROUP BY $idField""".toString()
 
-                // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
-                def allFinalCol = datasource."$outputTableWithNull".getColumns()
-                allFinalCol = allFinalCol.minus([idField.toUpperCase()])
-                datasource."$inputUpperTableName"."$idField".createIndex()
-                datasource."$outputTableWithNull"."$idField".createIndex()
-                def pieceOfQuery = ""
-                allFinalCol.each{col ->
-                    pieceOfQuery += "COALESCE(a.$col, 0) AS $col, "
-                }
-                datasource """DROP TABLE IF EXISTS $outputTableName;
+        // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
+        def allFinalCol = datasource."$outputTableWithNull".getColumns()
+        allFinalCol = allFinalCol.minus([idField.toUpperCase()])
+        datasource."$inputUpperTableName"."$idField".createIndex()
+        datasource."$outputTableWithNull"."$idField".createIndex()
+        def pieceOfQuery = ""
+        allFinalCol.each { col ->
+            pieceOfQuery += "COALESCE(a.$col, 0) AS $col, "
+        }
+        datasource """DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName 
                                     AS SELECT       ${pieceOfQuery[0..-2]}
                                                     b.$idField 
@@ -778,15 +740,12 @@ IProcess typeProportion() {
                                         ON a.$idField = b.$idField;
                                         """.toString()
 
-                datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull, $caseWhenTab""".toString()
+        datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull, $caseWhenTab""".toString()
 
-                [outputTableName: outputTableName]
-            }
-            else{
-                error "'floorAreaTypeAndComposition' or 'areaTypeAndComposition' arguments should be a Map " +
-                        "with at least one combination key-value"
-            }
-        }
+        return outputTableName
+    } else {
+        error "'floorAreaTypeAndComposition' or 'areaTypeAndComposition' arguments should be a Map " +
+                "with at least one combination key-value"
     }
 }
 
@@ -799,7 +758,7 @@ IProcess typeProportion() {
  * @param blockTable the block table name (default "")
  * @param rsuTable the rsu table name
  * @param targetedScale The scale of the resulting table (either "RSU" or "BUILDING", default "RSU")
- * @param operationsToApply Operations (using 'unweightedOperationFromLowerScale' IProcess) to apply
+ * @param operationsToApply Operations (using 'unweightedOperationFromLowerScale' method) to apply
  * to building and block in case 'targetedScale'="RSU" (default ["AVG", "STD"])
  * @param areaTypeAndComposition Types that should be calculated and objects included in this type
  * (e.g. for building table could be: ["residential": ["residential", "detached"]])
@@ -812,172 +771,154 @@ IProcess typeProportion() {
  *
  * @author Jérémy Bernard
  */
-IProcess gatherScales() {
-    return create {
-        title "Proportion of a certain type within a given object"
-        id "typeProportion"
-        inputs buildingTable: String, blockTable: "", rsuTable: String,
-                targetedScale: "RSU", operationsToApply: ["AVG", "STD"], prefixName: String,
-                datasource: JdbcDataSource, removeNull: true
-        outputs outputTableName: String
-        run { buildingTable, blockTable, rsuTable, targetedScale, operationsToApply,
-              prefixName, datasource, removeNull ->
+String gatherScales(JdbcDataSource datasource, String buildingTable, String blockTable, String rsuTable,
+                    String targetedScale = "RSU", List operationsToApply = ["AVG", "STD"],
+                    boolean removeNull = true, String prefixName) {
+    // List of columns to remove from the analysis in building and block tables
+    def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
+    def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE", "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ROOF_SHAPE", "ID_SOURCE"]
+    def BASE_NAME = "all_scales_table"
 
-            // List of columns to remove from the analysis in building and block tables
-            def BLOCK_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BLOCK", "MAIN_BUILDING_DIRECTION"]
-            def BUILD_COL_TO_REMOVE = ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "ID_ZONE" , "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ROOF_SHAPE", "ID_SOURCE"]
-            def BASE_NAME = "all_scales_table"
+    debug """ Executing the gathering of scales (to building or to RSU scale)"""
 
-            debug """ Executing the gathering of scales (to building or to RSU scale)"""
+    if ((targetedScale.toUpperCase() == "RSU") || (targetedScale.toUpperCase() == "BUILDING")) {
+        // Temporary tables that will be deleted at the end of the process
+        def finalScaleTableName = postfix "final_before_join"
+        def scale1ScaleFin = postfix "scale1_scale_fin"
 
-            if ((targetedScale.toUpperCase() == "RSU") || (targetedScale.toUpperCase() == "BUILDING")) {
-                // Temporary tables that will be deleted at the end of the process
-                def finalScaleTableName = postfix "final_before_join"
-                def scale1ScaleFin = postfix "scale1_scale_fin"
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, BASE_NAME
 
-                // The name of the outputTableName is constructed
-                def outputTableName = prefix prefixName, BASE_NAME
+        // Some tables will be needed to call only some specific columns
+        def listblockFinalRename = []
 
-                // Some tables will be needed to call only some specific columns
-                def listblockFinalRename = []
+        def blockIndicFinalScale = blockTable
+        def idbuildForMerge
+        def idBlockForMerge
 
-                def blockIndicFinalScale = blockTable
-                def idbuildForMerge
-                def idBlockForMerge
+        // Add operations to compute at RSU scale to each indicator of the building scale
+        def inputVarAndOperationsBuild = [:]
+        def buildIndicatorsColumns = datasource.getTable(buildingTable).getColumns()
+        for (col in buildIndicatorsColumns) {
+            if (!BUILD_COL_TO_REMOVE.contains(col)) {
+                inputVarAndOperationsBuild[col] = operationsToApply
+            }
+        }
+        // Calculate building indicators averaged at RSU scale
+        def buildIndicRsuScale = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource, buildingTable,
+                rsuTable, "id_rsu", "id_build", inputVarAndOperationsBuild,
+                "bu")
 
-                // Add operations to compute at RSU scale to each indicator of the building scale
-                def inputVarAndOperationsBuild = [:]
-                def buildIndicatorsColumns = datasource.getTable(buildingTable).getColumns()
-                for (col in buildIndicatorsColumns) {
-                    if (!BUILD_COL_TO_REMOVE.contains(col)) {
-                        inputVarAndOperationsBuild[col] = operationsToApply
-                    }
+        // To avoid crashes of the join due to column duplicate, need to prefix some names
+        def buildRsuCol2Rename = datasource.getTable(buildIndicRsuScale).getColumns()
+        def listBuildRsuRename = []
+        for (col in buildRsuCol2Rename) {
+            if (col != "ID_BUILD" && col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
+                listBuildRsuRename.add("a.$col AS build_$col")
+            }
+        }
+
+        // Special processes if the scale of analysis is RSU
+        if (targetedScale.toUpperCase() == "RSU") {
+            // Calculate building average and variance at RSU scale from each indicator of the block scale
+            def inputVarAndOperationsBlock = [:]
+            def blockIndicators = datasource.getTable(blockTable).getColumns()
+            for (col in blockIndicators) {
+                if (!BLOCK_COL_TO_REMOVE.contains(col)) {
+                    inputVarAndOperationsBlock[col] = operationsToApply
                 }
-                // Calculate building indicators averaged at RSU scale
-                def calcBuildStat = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-                calcBuildStat.execute([inputLowerScaleTableName: buildingTable,
-                                       inputUpperScaleTableName: rsuTable,
-                                       inputIdUp               : "id_rsu", inputIdLow: "id_build",
-                                       inputVarAndOperations   : inputVarAndOperationsBuild,
-                                       prefixName              : "bu", datasource: datasource])
-                def buildIndicRsuScale = calcBuildStat.results.outputTableName
+            }
+            // Calculate block indicators averaged at RSU scale
+            blockIndicFinalScale = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,
+                    blockTable, rsuTable, "id_rsu", "id_block",
+                    inputVarAndOperationsBlock, "bl")
 
-                // To avoid crashes of the join due to column duplicate, need to prefix some names
-                def buildRsuCol2Rename = datasource.getTable(buildIndicRsuScale).getColumns()
-                def listBuildRsuRename = []
-                for (col in buildRsuCol2Rename) {
-                    if (col != "ID_BUILD" && col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
-                        listBuildRsuRename.add("a.$col AS build_$col")
-                    }
+            // To avoid crashes of the join due to column duplicate, need to prefix some names
+            def blockRsuCol2Rename = datasource.getTable(blockIndicFinalScale).getColumns()
+            for (col in blockRsuCol2Rename) {
+                if (col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
+                    listblockFinalRename.add("b.$col AS block_$col")
                 }
+            }
 
-                // Special processes if the scale of analysis is RSU
-                if (targetedScale.toUpperCase() == "RSU") {
-                    // Calculate building average and variance at RSU scale from each indicator of the block scale
-                    def inputVarAndOperationsBlock = [:]
-                    def blockIndicators = datasource.getTable(blockTable).getColumns()
-                    for (col in blockIndicators) {
-                        if (!BLOCK_COL_TO_REMOVE.contains(col)) {
-                            inputVarAndOperationsBlock[col] = operationsToApply
-                        }
-                    }
-                    // Calculate block indicators averaged at RSU scale
-                    def calcBlockStat = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale()
-                    calcBlockStat.execute([inputLowerScaleTableName: blockTable,
-                                           inputUpperScaleTableName: rsuTable,
-                                           inputIdUp               : "id_rsu", inputIdLow: "id_block",
-                                           inputVarAndOperations   : inputVarAndOperationsBlock,
-                                           prefixName              : "bl", datasource: datasource])
-                    blockIndicFinalScale = calcBlockStat.results.outputTableName
+            // Define generic name whatever be the 'targetedScale'
+            finalScaleTableName = rsuTable
+            // Useful for merge between buildings and rsu tables
+            idbuildForMerge = "id_rsu"
+            idBlockForMerge = "id_rsu"
+            // Useful if the classif is a regression
+            idName = "id_rsu"
+        }
 
-                    // To avoid crashes of the join due to column duplicate, need to prefix some names
-                    def blockRsuCol2Rename = datasource.getTable(blockIndicFinalScale).getColumns()
-                    for (col in blockRsuCol2Rename) {
-                        if (col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
-                            listblockFinalRename.add("b.$col AS block_$col")
-                        }
-                    }
-
-                    // Define generic name whatever be the 'targetedScale'
-                    finalScaleTableName = rsuTable
-                    // Useful for merge between buildings and rsu tables
-                    idbuildForMerge = "id_rsu"
-                    idBlockForMerge = "id_rsu"
-                    // Useful if the classif is a regression
-                    idName = "id_rsu"
+        // Special processes if the scale of analysis is building
+        else if (targetedScale.toUpperCase() == "BUILDING") {
+            // Need to join RSU and building tables
+            def listRsuCol = datasource.getTable(rsuTable).getColumns()
+            def listRsuRename = []
+            for (col in listRsuCol) {
+                if (col != "ID_RSU" && col != "THE_GEOM") {
+                    listRsuRename.add("a.$col AS rsu_$col")
                 }
+            }
+            //def listBuildCol = datasource.getTable(buildingTable).getColumns()
+            def listBuildRename = []
+            for (col in buildIndicatorsColumns) {
+                if (col != "ID_RSU" && col != "ID_BLOCK" && col != "ID_BUILD" && col != "THE_GEOM") {
+                    listBuildRename.add("b.$col AS build_$col")
+                } else {
+                    listBuildRename.add("b.$col")
+                }
+            }
 
-                // Special processes if the scale of analysis is building
-                else if (targetedScale.toUpperCase() == "BUILDING") {
-                    // Need to join RSU and building tables
-                    def listRsuCol = datasource.getTable(rsuTable).getColumns()
-                    def listRsuRename = []
-                    for (col in listRsuCol) {
-                        if (col != "ID_RSU" && col != "THE_GEOM") {
-                            listRsuRename.add("a.$col AS rsu_$col")
-                        }
-                    }
-                    //def listBuildCol = datasource.getTable(buildingTable).getColumns()
-                    def listBuildRename = []
-                    for (col in buildIndicatorsColumns) {
-                        if (col != "ID_RSU" && col != "ID_BLOCK" && col != "ID_BUILD" && col != "THE_GEOM") {
-                            listBuildRename.add("b.$col AS build_$col")
-                        } else {
-                            listBuildRename.add("b.$col")
-                        }
-                    }
-
-                    // Merge scales (building and Rsu indicators)
-                    datasource.getTable(rsuTable).id_rsu.createIndex()
-                    datasource.getTable(buildingTable).id_rsu.createIndex()
-                    datasource.execute """ DROP TABLE IF EXISTS $finalScaleTableName;
+            // Merge scales (building and Rsu indicators)
+            datasource.getTable(rsuTable).id_rsu.createIndex()
+            datasource.getTable(buildingTable).id_rsu.createIndex()
+            datasource.execute """ DROP TABLE IF EXISTS $finalScaleTableName;
                                 CREATE TABLE $finalScaleTableName 
                                     AS SELECT ${listRsuRename.join(', ')}, ${listBuildRename.join(', ')} 
                                     FROM $rsuTable a LEFT JOIN $buildingTable b
                                     ON a.id_rsu = b.id_rsu;""".toString()
 
-                    // To avoid crashes of the join due to column duplicate, need to prefix some names
-                    def blockCol2Rename = datasource.getTable(blockTable).getColumns()
-                    for (col in blockCol2Rename) {
-                        if (col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
-                            listblockFinalRename.add("b.$col AS block_$col")
-                        }
-                    }
-                    // Useful for merge between gathered building and rsu indicators and building indicators averaged at RSU scale
-                    idbuildForMerge = "id_rsu"
-                    idBlockForMerge = "id_block"
-                    // Useful if the classif is a regression
-                    idName = "id_build"
+            // To avoid crashes of the join due to column duplicate, need to prefix some names
+            def blockCol2Rename = datasource.getTable(blockTable).getColumns()
+            for (col in blockCol2Rename) {
+                if (col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
+                    listblockFinalRename.add("b.$col AS block_$col")
                 }
+            }
+            // Useful for merge between gathered building and rsu indicators and building indicators averaged at RSU scale
+            idbuildForMerge = "id_rsu"
+            idBlockForMerge = "id_block"
+            // Useful if the classif is a regression
+            idName = "id_build"
+        }
 
-                // Gather all indicators (coming from three different scales) in a single table (the 'targetTableScale' scale)
-                // Note that in order to avoid crashes of the join due to column duplicate, indicators have been prefixed
-                datasource.getTable(buildIndicRsuScale).id_rsu.createIndex()
-                datasource.getTable(finalScaleTableName).id_rsu.createIndex()
-                def queryRemoveNull = ""
-                if(removeNull){
-                    queryRemoveNull += " WHERE b.$idbuildForMerge IS NOT NULL"
-                }
-                datasource.execute """ DROP TABLE IF EXISTS $scale1ScaleFin;
+        // Gather all indicators (coming from three different scales) in a single table (the 'targetTableScale' scale)
+        // Note that in order to avoid crashes of the join due to column duplicate, indicators have been prefixed
+        datasource.getTable(buildIndicRsuScale).id_rsu.createIndex()
+        datasource.getTable(finalScaleTableName).id_rsu.createIndex()
+        def queryRemoveNull = ""
+        if (removeNull) {
+            queryRemoveNull += " WHERE b.$idbuildForMerge IS NOT NULL"
+        }
+        datasource.execute """ DROP TABLE IF EXISTS $scale1ScaleFin;
                             CREATE TABLE $scale1ScaleFin 
                                 AS SELECT ${listBuildRsuRename.join(', ')}, b.*
                                 FROM $buildIndicRsuScale a RIGHT JOIN $finalScaleTableName b
                                 ON a.$idbuildForMerge = b.$idbuildForMerge 
                                 $queryRemoveNull;""".toString()
 
-                datasource.getTable(blockIndicFinalScale)."$idBlockForMerge".createIndex()
-                datasource.getTable(scale1ScaleFin)."$idBlockForMerge".createIndex()
-                datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
+        datasource.getTable(blockIndicFinalScale)."$idBlockForMerge".createIndex()
+        datasource.getTable(scale1ScaleFin)."$idBlockForMerge".createIndex()
+        datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
                             CREATE TABLE $outputTableName 
                                 AS SELECT a.*, ${listblockFinalRename.join(', ')}
                                 FROM $scale1ScaleFin a LEFT JOIN $blockIndicFinalScale b
                                 ON a.$idBlockForMerge = b.$idBlockForMerge;""".toString()
 
-                [outputTableName: outputTableName]
-            } else {
-                error """ The 'targetedScale' parameter should either be 'RSU' or 'BUILDING' """
-            }
-        }
+        return outputTableName
+    } else {
+        error """ The 'targetedScale' parameter should either be 'RSU' or 'BUILDING' """
     }
 }
 
@@ -998,32 +939,27 @@ IProcess gatherScales() {
  * @author Emmanuel Renault, CNRS, 2020
  * @author Erwan Bocher, CNRS, 2020
  */
-IProcess upperScaleAreaStatistics() {
-    return create {
-        title "Statistics on gridded area for a given indicator"
-        id "upperScaleStatisticArea"
-        inputs upperTableName: String, upperColumnId: String, lowerTableName: String, lowerColumnName: String,
-                prefixName: String, datasource: JdbcDataSource, keepGeometry : true
-        outputs outputTableName: String
-        run { upperTableName, upperColumnId, lowerTableName, lowerColumnName, prefixName, datasource, keepGeometry ->
-            ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
-            def upperGeometryColumn = upperTable.getGeometricColumns().first()
-            if(!upperGeometryColumn) {
-                error "The upper scale table must contain a geometry column"
-                return
-            }
-            ISpatialTable lowerTable = datasource.getSpatialTable(lowerTableName)
-            def lowerGeometryColumn = lowerTable.getGeometricColumns().first()
-            if(!lowerGeometryColumn) {
-                error "The lower scale table must contain a geometry column"
-                return
-            }
-            upperTable."$upperGeometryColumn".createSpatialIndex()
-            upperTable."$upperColumnId".createIndex()
-            lowerTable."$lowerGeometryColumn".createSpatialIndex()
+String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName,
+                                String upperColumnId, String lowerTableName,
+                                String lowerColumnName, boolean keepGeometry = true, String prefixName) {
+    ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
+    def upperGeometryColumn = upperTable.getGeometricColumns().first()
+    if (!upperGeometryColumn) {
+        error "The upper scale table must contain a geometry column"
+        return
+    }
+    ISpatialTable lowerTable = datasource.getSpatialTable(lowerTableName)
+    def lowerGeometryColumn = lowerTable.getGeometricColumns().first()
+    if (!lowerGeometryColumn) {
+        error "The lower scale table must contain a geometry column"
+        return
+    }
+    upperTable."$upperGeometryColumn".createSpatialIndex()
+    upperTable."$upperColumnId".createIndex()
+    lowerTable."$lowerGeometryColumn".createSpatialIndex()
 
-            def spatialJoinTable = "upper_table_join"
-            def spatialJoin = """
+    def spatialJoinTable = "upper_table_join"
+    def spatialJoin = """
                               DROP TABLE IF EXISTS $spatialJoinTable;
                               CREATE TABLE $spatialJoinTable 
                               AS SELECT b.$upperColumnId, a.$lowerColumnName,
@@ -1033,97 +969,94 @@ IProcess upperScaleAreaStatistics() {
                               WHERE a.$lowerGeometryColumn && b.$upperGeometryColumn AND 
                               ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
                               """
-            datasource.execute(spatialJoin.toString())
-            datasource """CREATE INDEX ON $spatialJoinTable ($lowerColumnName);
+    datasource.execute(spatialJoin.toString())
+    datasource """CREATE INDEX ON $spatialJoinTable ($lowerColumnName);
             CREATE INDEX ON $spatialJoinTable ($upperColumnId)""".toString()
 
 
-            // Creation of a list which contains all indicators of distinct values
-            def qIndicator = """
+    // Creation of a list which contains all indicators of distinct values
+    def qIndicator = """
                              SELECT DISTINCT $lowerColumnName 
                              AS val FROM $spatialJoinTable
                              """
-            def listValues = datasource.rows(qIndicator.toString())
+    def listValues = datasource.rows(qIndicator.toString())
 
-            def isString = datasource.getTable(spatialJoinTable).getColumnType(lowerColumnName)=="VARCHAR"
+    def isString = datasource.getTable(spatialJoinTable).getColumnType(lowerColumnName) == "VARCHAR"
 
-            // Creation of the pivot table which contains for each upper geometry
-            def pivotTable = "pivotAreaTable"
-            def query = """
+    // Creation of the pivot table which contains for each upper geometry
+    def pivotTable = "pivotAreaTable"
+    def query = """
                         DROP TABLE IF EXISTS $pivotTable;
                         CREATE TABLE $pivotTable
                         AS SELECT $upperColumnId
                         """
-            listValues.each {
-                def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
-                query += """
+    listValues.each {
+        def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.', '_')}"
+        query += """
                          , SUM($aliasColumn)
                          AS $aliasColumn
                          """
+    }
+    query += " FROM (SELECT $upperColumnId"
+    listValues.each {
+        def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.', '_')}"
+        if (it.val) {
+            if (isString) {
+                query += """
+                         , CASE WHEN $lowerColumnName='${it.val}'
+                         THEN SUM(area) ELSE 0 END
+                         AS $aliasColumn
+                         """
+            } else {
+                query += """
+                         , CASE WHEN $lowerColumnName='${it.val}'
+                         THEN SUM(area) ELSE 0 END
+                         AS $aliasColumn
+                         """
             }
-            query += " FROM (SELECT $upperColumnId"
-            listValues.each {
-                def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
-                if(it.val){
-                    if(isString){
-                        query += """
-                         , CASE WHEN $lowerColumnName='${it.val}'
-                         THEN SUM(area) ELSE 0 END
-                         AS $aliasColumn
-                         """
-                    }else{
-                        query += """
-                         , CASE WHEN $lowerColumnName='${it.val}'
-                         THEN SUM(area) ELSE 0 END
-                         AS $aliasColumn
-                         """
-                    }
-                }
-                else{
-                    query += """
+        } else {
+            query += """
                          , CASE WHEN $lowerColumnName is null
                          THEN SUM(area) ELSE 0 END
                          AS $aliasColumn
                          """
-                }
-            }
-            query += """
+        }
+    }
+    query += """
                      FROM $spatialJoinTable
                      GROUP BY $upperColumnId, $lowerColumnName)
                      GROUP BY $upperColumnId;
                      """
-            datasource.execute(query.toString())
-            //Build indexes
-            datasource "CREATE INDEX ON $pivotTable ($upperColumnId)".toString()
+    datasource.execute(query.toString())
+    //Build indexes
+    datasource "CREATE INDEX ON $pivotTable ($upperColumnId)".toString()
 
-            // Creation of a table which is built from
-            // the union of the upperTable and pivot tables based on the same cell 'id'
-            def outputTableName = prefix prefixName, "upper_scale_statistics_area"
-            def qjoin = """
+    // Creation of a table which is built from
+    // the union of the upperTable and pivot tables based on the same cell 'id'
+    def outputTableName = prefix prefixName, "upper_scale_statistics_area"
+    def qjoin = """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName
                         AS SELECT b.$upperColumnId
                         """
-            if(keepGeometry){
-                qjoin+=", b.$upperGeometryColumn"
-            }
-            listValues.each {
-                def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.','_')}"
-                qjoin += """
+    if (keepGeometry) {
+        qjoin += ", b.$upperGeometryColumn"
+    }
+    listValues.each {
+        def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.', '_')}"
+        qjoin += """
                          , CASE WHEN $aliasColumn IS NULL THEN NULL ELSE $aliasColumn / ST_AREA(b.$upperGeometryColumn) END
                          AS $aliasColumn
                          """
-            }
-            qjoin += """
+    }
+    qjoin += """
                      FROM $upperTableName b
                      LEFT JOIN $pivotTable a
                      ON (a.$upperColumnId = b.$upperColumnId);
                      """
-            datasource.execute(qjoin.toString())
-            // Drop intermediate tables created during process
-            datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;".toString())
-            debug "The zonal area table have been created"
-            [outputTableName: outputTableName]
-        }
-    }
+    datasource.execute(qjoin.toString())
+    // Drop intermediate tables created during process
+    datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;".toString())
+    debug "The zonal area table have been created"
+    return outputTableName
 }

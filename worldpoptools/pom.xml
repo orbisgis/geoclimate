@@ -32,16 +32,12 @@
             <artifactId>data-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.orbisgis</groupId>
-            <artifactId>process</artifactId>
+            <groupId>org.orbisgis.geoclimate</groupId>
+            <artifactId>common-utils</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
         </dependency>
 
         <!-- Test dependencies -->

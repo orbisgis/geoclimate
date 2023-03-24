@@ -1,16 +1,31 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.process.api.IProcess
 
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
@@ -23,7 +38,7 @@ class NoiseIndicatorsTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open(folder.absolutePath+File.separator+"NoiseIndicatorsTests;AUTO_SERVER=TRUE")
+        h2GIS = open(folder.absolutePath + File.separator + "NoiseIndicatorsTests;AUTO_SERVER=TRUE")
     }
 
     @Test
@@ -36,13 +51,10 @@ class NoiseIndicatorsTests {
 
         def env = h2GIS.getSpatialTable(zone).getExtent()
         if (env) {
-            def gridP = Geoindicators.SpatialUnits.createGrid()
-            assert gridP.execute([geometry: env, deltaX: 100, deltaY: 100, datasource: h2GIS])
-            def outputTable = gridP.results.outputTableName
-            IProcess process = Geoindicators.NoiseIndicators.groundAcousticAbsorption()
-            assertTrue process.execute(["zone"  : outputTable, "id_zone": "id_grid",
-                             building: "building_test", road: "road_test", vegetation: "veget_test", water: "hydro_test", datasource: h2GIS])
-            def ground_acoustic = process.results.ground_acoustic
+            def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS, env, 100, 100)
+            assertNotNull(gridP)
+            String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2GIS, gridP, "id_grid",
+                    "building_test", "road_test", "hydro_test", "veget_test", "")
             assertTrue(h2GIS.hasTable(ground_acoustic))
         }
     }

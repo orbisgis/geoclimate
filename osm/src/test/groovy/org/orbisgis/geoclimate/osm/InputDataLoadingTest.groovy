@@ -1,3 +1,22 @@
+/**
+ * GeoClimate is a geospatial processing toolbox for environmental and climate studies
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>.
+ *
+ * This code is part of the GeoClimate project. GeoClimate is free software;
+ * you can redistribute it and/or modify it under the terms of the GNU
+ * Lesser General Public License as published by the Free Software Foundation;
+ * version 3.0 of the License.
+ *
+ * GeoClimate is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+ * for more details <http://www.gnu.org/licenses/>.
+ *
+ *
+ * For more information, please consult:
+ * <a href="https://github.com/orbisgis/geoclimate">https://github.com/orbisgis/geoclimate</a>
+ *
+ */
 package org.orbisgis.geoclimate.osm
 
 import org.junit.jupiter.api.BeforeAll
@@ -5,9 +24,6 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
-import org.orbisgis.process.api.IProcess
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
@@ -16,22 +32,20 @@ class InputDataLoadingTest {
     @TempDir
     static File folder
 
-    static  H2GIS h2GIS
+    static H2GIS h2GIS
 
     @BeforeAll
-    static  void loadDb(){
+    static void loadDb() {
         h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "osm_inputDataLoadingTest;AUTO_SERVER=TRUE;")
     }
 
-    @Disabled //enable it to test data extraction from the overpass api
+    @Disabled
+    //enable it to test data extraction from the overpass api
     @Test
     void extractAndCreateGISLayers() {
-        IProcess process = OSM.InputDataLoading.extractAndCreateGISLayers()
-        process.execute([
-                datasource : h2GIS,
-                zoneToExtract: "Île de la Nouvelle-Amsterdam"])
-        process.getResults().each {it ->
-            if(it.value!=null){
+        Map extract = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, "Île de la Nouvelle-Amsterdam")
+        extract.each { it ->
+            if (it.value != null) {
                 h2GIS.getTable(it.value).save(new File(folder, "${it.value}.shp").absolutePath, true)
             }
         }
@@ -39,56 +53,30 @@ class InputDataLoadingTest {
 
     @Test
     void createGISLayersTest() {
-        IProcess process = OSM.InputDataLoading.createGISLayers()
         def osmfile = new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath()
-        process.execute([
-                datasource : h2GIS,
-                osmFilePath: osmfile,
-                epsg :2154])
-        //h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
-        assertEquals 1038, h2GIS.getTable(process.results.buildingTableName).rowCount
+        Map extract = OSM.InputDataLoading.createGISLayers(h2GIS, osmfile, 2154)
+        assertEquals 1038, h2GIS.getTable(extract.building).rowCount
 
-        //h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
-        assertEquals 135, h2GIS.getTable(process.results.vegetationTableName).rowCount
+        assertEquals 135, h2GIS.getTable(extract.vegetation).rowCount
+        assertEquals 211, h2GIS.getTable(extract.road).rowCount
 
-        //h2GIS.getTable(process.results.roadTableName).save("./target/osm_road.shp")
-        assertEquals 211, h2GIS.getTable(process.results.roadTableName).rowCount
+        assertEquals 44, h2GIS.getTable(extract.rail).rowCount
 
-        //h2GIS.getTable(process.results.railTableName).save("./target/osm_rails.shp")
-        assertEquals 44, h2GIS.getTable(process.results.railTableName).rowCount
+        assertEquals 10, h2GIS.getTable(extract.water).rowCount
 
-        //h2GIS.getTable(process.results.hydroTableName).save("./target/osm_hydro.shp")
-        assertEquals 10, h2GIS.getTable(process.results.hydroTableName).rowCount
+        assertEquals 47, h2GIS.getTable(extract.impervious).rowCount
 
-        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
-        assertEquals 47, h2GIS.getTable(process.results.imperviousTableName).rowCount
-
-        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
-        assertEquals 6, h2GIS.getTable(process.results.urbanAreasTableName).rowCount
+        assertEquals 6, h2GIS.getTable(extract.urban_areas).rowCount
     }
 
     //This test is used for debug purpose
     @Test
     @Disabled
     void createGISLayersFromFileTestIntegration() {
-        IProcess process = OSM.InputDataLoading.createGISLayers()
-        def osmfile = "/tmp/map.osm"
-        process.execute([
-                datasource : h2GIS,
-                osmFilePath: osmfile,
-                epsg :2154])
-        //h2GIS.getTable(process.results.buildingTableName).save("./target/osm_building.shp")
+        Map extract = OSM.InputDataLoading.createGISLayers(h2GIS, "/tmp/map.osm", 2154)
 
-        //h2GIS.getTable(process.results.vegetationTableName).save("./target/osm_vegetation.shp")
+        //h2GIS.getTable(extract.vegetation).save("./target/osm_vegetation.shp")
 
-        h2GIS.getTable(process.results.roadTableName).save("/tmp/osm_road.shp")
-
-        //h2GIS.getTable(process.results.railTableName).save("./target/osm_rails.shp")
-
-        //h2GIS.getTable(process.results.hydroTableName).save("./target/osm_hydro.shp")
-
-        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
-
-        //h2GIS.getTable(process.results.imperviousTableName).save("./target/osm_hydro.shp")
+        h2GIS.getTable(extract.road).save("/tmp/osm_road.shp")
     }
 }

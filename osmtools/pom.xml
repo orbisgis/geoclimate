@@ -10,7 +10,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>osmtools</artifactId>
-    <groupId>org.orbisgis.geoclimate</groupId>
     <version>0.0.2-SNAPSHOT</version>
 
     <properties>
@@ -29,14 +28,6 @@
         </dependency>
         <dependency>
             <groupId>org.orbisgis</groupId>
-            <artifactId>process</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis.data</groupId>
-            <artifactId>dataframe</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.orbisgis</groupId>
             <artifactId>h2gis-network</artifactId>
         </dependency>
         <dependency>
@@ -48,6 +39,10 @@
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-sql</artifactId>
             <version>${groovy-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.orbisgis.geoclimate</groupId>
+            <artifactId>common-utils</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -106,46 +106,42 @@
     "unpaved": "NL08",
     "compacted": "NL08",
     "gravel": "NL08",
-    "fine_gravel":"NL08",
-    "paved" : "NL10",
-    "paving_stones" : "NL10",
-    "cobblestone" : "NL10"
+    "fine_gravel": "NL08",
+    "paved": "NL10",
+    "paving_stones": "NL10",
+    "cobblestone": "NL10"
   },
   "road_types": {
     "Motorway": [
-        "motorway",
-        "motorway_link" ]
-    ,
+      "motorway",
+      "motorway_link"
+    ],
     "Trunk roads": [
-        "trunk",
-        "trunk_link"
-      ]
-    ,
+      "trunk",
+      "trunk_link"
+    ],
     "Main roads": [
-        "primary",
-        "primary_link"
-      ]
-    ,
-    "Small main roads":[
-        "secondary",
-        "secondary_link",
-        "highway",
-        "highway_link"
-      ]
-    ,
+      "primary",
+      "primary_link"
+    ],
+    "Small main roads": [
+      "secondary",
+      "secondary_link",
+      "highway",
+      "highway_link"
+    ],
     "Collecting roads": [
-        "tertiary",
-        "tertiary_link"
-      ],
+      "tertiary",
+      "tertiary_link"
+    ],
     "Service roads": [
-        "residential",
-        "roundabout",
-        "unclassified"
-      ]
-    ,
-    "Dead-end roads":  [
-        "service",
-        "living_street"
-      ]
+      "residential",
+      "roundabout",
+      "unclassified"
+    ],
+    "Dead-end roads": [
+      "service",
+      "living_street"
+    ]
   }
 }

@@ -1,633 +1,662 @@
 {
-    "tags" : {
-        "building":[],
-        "railway":["station", "train_station"]
+  "tags": {
+    "building": [],
+    "railway": [
+      "station",
+      "train_station"
+    ]
+  },
+  "columns": [
+    "height",
+    "roof:height",
+    "building:levels",
+    "roof:levels",
+    "building",
+    "amenity",
+    "layer",
+    "aeroway",
+    "historic",
+    "leisure",
+    "monument",
+    "place_of_worship",
+    "military",
+    "railway",
+    "public_transport",
+    "barrier",
+    "government",
+    "historic:building",
+    "grandstand",
+    "house",
+    "shop",
+    "industrial",
+    "man_made",
+    "residential",
+    "apartments",
+    "ruins",
+    "agricultural",
+    "barn",
+    "healthcare",
+    "education",
+    "restaurant",
+    "sustenance",
+    "office",
+    "tourism",
+    "roof:shape"
+  ],
+  "level": {
+    "building": 1,
+    "house": 1,
+    "detached": 1,
+    "residential": 1,
+    "apartments": 1,
+    "bungalow": 0,
+    "historic": 0,
+    "monument": 0,
+    "ruins": 0,
+    "castle": 0,
+    "agricultural": 0,
+    "farm": 0,
+    "farm_auxiliary": 0,
+    "barn": 0,
+    "greenhouse": 0,
+    "silo": 0,
+    "commercial": 2,
+    "industrial": 0,
+    "sport": 0,
+    "sports_centre": 0,
+    "grandstand": 0,
+    "transportation": 0,
+    "train_station": 0,
+    "toll_booth": 0,
+    "toll": 0,
+    "terminal": 0,
+    "healthcare": 1,
+    "education": 1,
+    "entertainment_arts_culture": 0,
+    "sustenance": 1,
+    "military": 0,
+    "religious": 0,
+    "chapel": 0,
+    "church": 0,
+    "government": 1,
+    "townhall": 1,
+    "office": 1,
+    "heavy_industry": 0,
+    "light_industry": 0,
+    "emergency": 0,
+    "hotel": 2,
+    "hospital": 2,
+    "parking": 1
+  },
+  "type": {
+    "terminal:transportation": {
+      "aeroway": [
+        "terminal",
+        "airport_terminal"
+      ],
+      "amenity": [
+        "terminal",
+        "airport_terminal"
+      ],
+      "building": [
+        "terminal",
+        "airport_terminal"
+      ]
     },
-    "columns":[
-    "height", "roof:height",
-    "building:levels", "roof:levels", "building",
-    "amenity", "layer", "aeroway", "historic", "leisure", "monument",
-    "place_of_worship", "military", "railway", "public_transport",
-    "barrier", "government", "historic:building", "grandstand",
-    "house", "shop", "industrial", "man_made", "residential",
-    "apartments", "ruins", "agricultural", "barn", "healthcare",
-    "education", "restaurant", "sustenance", "office", "tourism", "roof:shape"]
-    ,
-    "level" : {
-        "building": 1,
-        "house": 1,
-        "detached": 1,
-        "residential": 1,
-        "apartments": 1,
-        "bungalow": 0,
-        "historic": 0,
-        "monument": 0,
-        "ruins": 0,
-        "castle": 0,
-        "agricultural": 0,
-        "farm": 0,
-        "farm_auxiliary": 0,
-        "barn": 0,
-        "greenhouse": 0,
-        "silo": 0,
-        "commercial": 2,
-        "industrial": 0,
-        "sport": 0,
-        "sports_centre": 0,
-        "grandstand": 0,
-        "transportation": 0,
-        "train_station": 0,
-        "toll_booth": 0,
-        "toll": 0,
-        "terminal": 0,
-        "healthcare": 1,
-        "education": 1,
-        "entertainment_arts_culture": 0,
-        "sustenance": 1,
-        "military": 0,
-        "religious": 0,
-        "chapel": 0,
-        "church": 0,
-        "government": 1,
-        "townhall": 1,
-        "office": 1,
-        "heavy_industry": 0,
-        "light_industry": 0,
-        "emergency": 0,
-        "hotel": 2,
-        "hospital": 2,
-        "parking": 1
+    "parking:transportation": {
+      "building": [
+        "parking"
+      ]
     },
-    "type" : {
-        "terminal:transportation": {
-            "aeroway": [
-                "terminal",
-                "airport_terminal"
-            ],
-            "amenity": [
-                "terminal",
-                "airport_terminal"
-            ],
-            "building": [
-                "terminal",
-                "airport_terminal"
-            ]
-        },
-        "parking:transportation": {
-            "building": [
-                "parking"
-            ]
-        },
-        "monument": {
-            "building": [
-                "monument"
-            ],
-            "historic": [
-                "monument"
-            ],
-            "leisure": [
-                "monument"
-            ],
-            "monument": [
-                "yes"
-            ]
-        },
-        "chapel:religious": {
-            "building": [
-                "chapel"
-            ],
-            "amenity": [
-                "chapel"
-            ],
-            "place_of_worship": [
-                "chapel"
-            ]
-        },
-        "church:religious": {
-            "building": [
-                "church"
-            ],
-            "amenity": [
-                "church"
-            ],
-            "place_of_worship": [
-                "church"
-            ]
-        },
-        "castle:heritage": {
-            "building": [
-                "castle",
-                "fortress"
-            ]
-        },
-        "religious": {
-            "building": [
-                "religious",
-                "abbey",
-                "cathedral",
-                "mosque",
-                "musalla",
-                "temple",
-                "synagogue",
-                "shrine",
-                "place_of_worship",
-                "wayside_shrine"
-            ],
-            "amenity": [
-                "religious",
-                "abbey",
-                "cathedral",
-                "chapel",
-                "church",
-                "mosque",
-                "musalla",
-                "temple",
-                "synagogue",
-                "shrine",
-                "place_of_worship",
-                "wayside_shrine"
-            ],
-            "place_of_worship": [
-                "! no",
-                "! chapel",
-                "! church"
-            ]
-        },
-        "sport:entertainment_arts_culture": {
-            "building": [
-                "swimming_pool",
-                "fitness_centre",
-                "horse_riding",
-                "ice_rink",
-                "pitch",
-                "stadium",
-                "track"
-            ],
-            "leisure": [
-                "swimming_pool",
-                "fitness_centre",
-                "horse_riding",
-                "ice_rink",
-                "pitch",
-                "stadium",
-                "track"
-            ],
-            "amenity": [
-                "swimming_pool",
-                "fitness_centre",
-                "horse_riding",
-                "ice_rink",
-                "pitch",
-                "stadium",
-                "track"
-            ]
-        },
-        "sports_centre:entertainment_arts_culture": {
-            "building": [
-                "sports_centre",
-                "sports_hall"
-            ],
-            "leisure": [
-                "sports_centre",
-                "sports_hall"
-            ],
-            "amenity": [
-                "sports_centre",
-                "sports_hall"
-            ]
-        },
-        "military": {
-            "military": [
-                "ammunition",
-                "bunker",
-                "barracks",
-                "casemate",
-                "office",
-                "shelter"
-            ],
-            "building": [
-                "ammunition",
-                "bunker",
-                "barracks",
-                "casemate",
-                "military",
-                "shelter"
-            ],
-            "office": [
-                "military"
-            ]
-        },
-        "train_station:transportation": {
-            "building": [
-                "train_station"
-            ],
-            "railway": [
-                "station",
-                "train_station"
-            ],
-            "public_transport": [
-                "train_station"
-            ],
-            "amenity": [
-                "train_station"
-            ]
-        },
-        "townhall:government": {
-            "amenity": [
-                "townhall"
-            ],
-            "building": [
-                "townhall"
-            ]
-        },
-        "toll:transportation": {
-            "barrier": [
-                "toll_booth"
-            ],
-            "building": [
-                "toll_booth"
-            ]
-        },
-        "government": {
-            "building": [
-                "government",
-                "government_office"
-            ],
-            "government": [
-                "! no"
-            ],
-            "office": [
-                "government"
-            ]
-        },
-        "historic": {
-            "building": [
-                "historic"
-            ],
-            "historic": [
-
-            ],
-            "historic_building": [
-                "! no"
-            ]
-        },
-        "grandstand:entertainment_arts_culture": {
-            "building": [
-                "grandstand"
-            ],
-            "leisure": [
-                "grandstand"
-            ],
-            "amenity": [
-                "grandstand"
-            ],
-            "grandstand": [
-                "yes"
-            ]
-        },
-        "detached:residential": {
-            "building": [
-                "detached"
-            ],
-            "house": [
-                "detached"
-            ]
-        },
-        "farm_auxiliary:agricultural": {
-            "building": [
-                "farm_auxiliary",
-                "barn",
-                "stable",
-                "sty",
-                "cowshed",
-                "digester",
-                "greenhouse"
-            ]
-        },
-        "commercial": {
-            "building": [
-                "bank",
-                "bureau_de_change",
-                "boat_rental",
-                "car_rental",
-                "commercial",
-                "internet_cafe",
-                "kiosk",
-                "money_transfer",
-                "market",
-                "market_place",
-                "pharmacy",
-                "post_office",
-                "retail",
-                "shop",
-                "store",
-                "supermarket",
-                "warehouse"
-            ],
-            "amenity": [
-                "bank",
-                "bureau_de_change",
-                "boat_rental",
-                "car_rental",
-                "commercial",
-                "internet_cafe",
-                "kiosk",
-                "money_transfer",
-                "market",
-                "market_place",
-                "pharmacy",
-                "post_office",
-                "retail",
-                "shop",
-                "store",
-                "supermarket",
-                "warehouse"
-            ],
-            "shop": [
-                "!= no"
-            ]
-        },
-        "light_industry:industrial": {
-            "building": [
-                "industrial",
-                "factory",
-                "warehouse"
-            ],
-            "industrial": [
-                "factory"
-            ],
-            "amenity": [
-                "factory"
-            ]
-        },
-        "heavy_industry:industrial": {
-            "building": [
-                "digester"
-            ],
-            "industrial": [
-                "gas",
-                "heating_station",
-                "oil_mill",
-                "oil",
-                "wellsite",
-                "well_cluster"
-            ]
-        },
-        "greenhouse:agricultural": {
-            "building": [
-                "greenhouse"
-            ],
-            "amenity": [
-                "greenhouse"
-            ],
-            "industrial": [
-                "greenhouse"
-            ]
-        },
-        "silo:agricultural": {
-            "building": [
-                "silo",
-                "grain_silo"
-            ],
-            "man_made": [
-                "silo",
-                "grain_silo"
-            ]
-        },
-        "house:residential": {
-            "building": [
-                "house"
-            ],
-            "house": [
-                "! no",
-                "! detached",
-                "! residential",
-                "! villa",
-                "residential"
-            ],
-            "amenity": [
-                "house"
-            ]
-        },
-        "apartments:residential": {
-            "building": [
-                "apartments"
-            ],
-            "residential": [
-                "apartments"
-            ],
-            "amenity": [
-                "apartments"
-            ],
-            "apartments": [
-                "yes"
-            ]
-        },
-        "bungalow:residential": {
-            "building": [
-                "bungalow"
-            ],
-            "house": [
-                "bungalow"
-            ],
-            "amenity": [
-                "bungalow"
-            ]
-        },
-        "residential": {
-            "building": [
-                "residential",
-                "villa",
-                "dormitory",
-                "condominium",
-                "sheltered_housing",
-                "workers_dormitory",
-                "terrace"
-            ],
-            "residential": [
-                "university",
-                "detached",
-                "dormitory",
-                "condominium",
-                "sheltered_housing",
-                "workers_dormitory",
-                "building"
-            ],
-            "house": [
-                "residential"
-            ],
-            "amenity": [
-                "residential"
-            ]
-        },
-        "ruins:heritage": {
-            "building": [
-                "ruins"
-            ],
-            "ruins": [
-                "ruins"
-            ]
-        },
-        "agricultural": {
-            "building": [
-                "agricultural"
-            ],
-            "agricultural": [
-                "building"
-            ]
-        },
-        "farm:agricultural": {
-            "building": [
-                "farm",
-                "farmhouse"
-            ]
-        },
-        "barn:agricultural": {
-            "building": [
-                "barn"
-            ],
-            "barn": [
-                "! no"
-            ]
-        },
-        "transportation": {
-            "building": [
-                "train_station",
-                "transportation",
-                "station"
-            ],
-            "aeroway": [
-                "hangar",
-                "tower",
-                "bunker",
-                "control_tower",
-                "building"
-            ],
-            "railway": [
-                "station",
-                "train_station",
-                "building"
-            ],
-            "public_transport": [
-                "train_station",
-                "station"
-            ],
-            "amenity": [
-                "train_station",
-                "terminal"
-            ]
-        },
-        "healthcare": {
-            "amenity": [
-                "healthcare",
-                "social_facility"
-            ],
-            "building": [
-                "healthcare",
-                "hospital"
-            ],
-            "healthcare": [
-                "! no"
-            ]
-        },
-        "education": {
-            "amenity": [
-                "education",
-                "college",
-                "kindergarten",
-                "school",
-                "university",
-                "research_institute"
-            ],
-            "building": [
-                "education",
-                "college",
-                "kindergarten",
-                "school",
-                "university"
-            ],
-            "education": [
-                "college",
-                "kindergarten",
-                "school",
-                "university"
-            ]
-        },
-        "entertainment_arts_culture": {
-            "leisure": [
-                "! no"
-            ]
-        },
-        "sustenance:commercial": {
-            "amenity": [
-                "restaurant",
-                "bar",
-                "cafe",
-                "fast_food",
-                "ice_cream",
-                "pub"
-            ],
-            "building": [
-                "restaurant",
-                "bar",
-                "cafe",
-                "fast_food",
-                "ice_cream",
-                "pub"
-            ],
-            "restaurant": [
-                "! no"
-            ],
-            "shop": [
-                "restaurant",
-                "bar",
-                "cafe",
-                "fast_food",
-                "ice_cream",
-                "pub"
-            ],
-            "sustenance": [
-                "! no"
-            ]
-        },
-        "office": {
-            "building": [
-                "office"
-            ],
-            "amenity": [
-                "office"
-            ],
-            "office": [
-                "! no"
-            ]
-        },
-        "building:public": {
-            "building": [
-                "public"
-            ]
-        },
-        "emergency": {
-            "building": [
-                "fire_station"
-            ]
-        },
-        "hotel:tourism": {
-            "building": [
-                "hotel"
-            ],
-            "tourism": [
-                "hotel"
-            ]
-        },
-        "attraction:tourism": {
-            "tourism": [
-                "attraction"
-            ]
-        },
-        "building": {
-            "building": [
-                "yes"
-            ]
-        }
+    "monument": {
+      "building": [
+        "monument"
+      ],
+      "historic": [
+        "monument"
+      ],
+      "leisure": [
+        "monument"
+      ],
+      "monument": [
+        "yes"
+      ]
+    },
+    "chapel:religious": {
+      "building": [
+        "chapel"
+      ],
+      "amenity": [
+        "chapel"
+      ],
+      "place_of_worship": [
+        "chapel"
+      ]
+    },
+    "church:religious": {
+      "building": [
+        "church"
+      ],
+      "amenity": [
+        "church"
+      ],
+      "place_of_worship": [
+        "church"
+      ]
+    },
+    "castle:heritage": {
+      "building": [
+        "castle",
+        "fortress"
+      ]
+    },
+    "religious": {
+      "building": [
+        "religious",
+        "abbey",
+        "cathedral",
+        "mosque",
+        "musalla",
+        "temple",
+        "synagogue",
+        "shrine",
+        "place_of_worship",
+        "wayside_shrine"
+      ],
+      "amenity": [
+        "religious",
+        "abbey",
+        "cathedral",
+        "chapel",
+        "church",
+        "mosque",
+        "musalla",
+        "temple",
+        "synagogue",
+        "shrine",
+        "place_of_worship",
+        "wayside_shrine"
+      ],
+      "place_of_worship": [
+        "! no",
+        "! chapel",
+        "! church"
+      ]
+    },
+    "sport:entertainment_arts_culture": {
+      "building": [
+        "swimming_pool",
+        "fitness_centre",
+        "horse_riding",
+        "ice_rink",
+        "pitch",
+        "stadium",
+        "track"
+      ],
+      "leisure": [
+        "swimming_pool",
+        "fitness_centre",
+        "horse_riding",
+        "ice_rink",
+        "pitch",
+        "stadium",
+        "track"
+      ],
+      "amenity": [
+        "swimming_pool",
+        "fitness_centre",
+        "horse_riding",
+        "ice_rink",
+        "pitch",
+        "stadium",
+        "track"
+      ]
+    },
+    "sports_centre:entertainment_arts_culture": {
+      "building": [
+        "sports_centre",
+        "sports_hall"
+      ],
+      "leisure": [
+        "sports_centre",
+        "sports_hall"
+      ],
+      "amenity": [
+        "sports_centre",
+        "sports_hall"
+      ]
+    },
+    "military": {
+      "military": [
+        "ammunition",
+        "bunker",
+        "barracks",
+        "casemate",
+        "office",
+        "shelter"
+      ],
+      "building": [
+        "ammunition",
+        "bunker",
+        "barracks",
+        "casemate",
+        "military",
+        "shelter"
+      ],
+      "office": [
+        "military"
+      ]
+    },
+    "train_station:transportation": {
+      "building": [
+        "train_station"
+      ],
+      "railway": [
+        "station",
+        "train_station"
+      ],
+      "public_transport": [
+        "train_station"
+      ],
+      "amenity": [
+        "train_station"
+      ]
+    },
+    "townhall:government": {
+      "amenity": [
+        "townhall"
+      ],
+      "building": [
+        "townhall"
+      ]
+    },
+    "toll:transportation": {
+      "barrier": [
+        "toll_booth"
+      ],
+      "building": [
+        "toll_booth"
+      ]
+    },
+    "government": {
+      "building": [
+        "government",
+        "government_office"
+      ],
+      "government": [
+        "! no"
+      ],
+      "office": [
+        "government"
+      ]
+    },
+    "historic": {
+      "building": [
+        "historic"
+      ],
+      "historic": [
+      ],
+      "historic_building": [
+        "! no"
+      ]
+    },
+    "grandstand:entertainment_arts_culture": {
+      "building": [
+        "grandstand"
+      ],
+      "leisure": [
+        "grandstand"
+      ],
+      "amenity": [
+        "grandstand"
+      ],
+      "grandstand": [
+        "yes"
+      ]
+    },
+    "detached:residential": {
+      "building": [
+        "detached"
+      ],
+      "house": [
+        "detached"
+      ]
+    },
+    "farm_auxiliary:agricultural": {
+      "building": [
+        "farm_auxiliary",
+        "barn",
+        "stable",
+        "sty",
+        "cowshed",
+        "digester",
+        "greenhouse"
+      ]
+    },
+    "commercial": {
+      "building": [
+        "bank",
+        "bureau_de_change",
+        "boat_rental",
+        "car_rental",
+        "commercial",
+        "internet_cafe",
+        "kiosk",
+        "money_transfer",
+        "market",
+        "market_place",
+        "pharmacy",
+        "post_office",
+        "retail",
+        "shop",
+        "store",
+        "supermarket",
+        "warehouse"
+      ],
+      "amenity": [
+        "bank",
+        "bureau_de_change",
+        "boat_rental",
+        "car_rental",
+        "commercial",
+        "internet_cafe",
+        "kiosk",
+        "money_transfer",
+        "market",
+        "market_place",
+        "pharmacy",
+        "post_office",
+        "retail",
+        "shop",
+        "store",
+        "supermarket",
+        "warehouse"
+      ],
+      "shop": [
+        "!= no"
+      ]
+    },
+    "light_industry:industrial": {
+      "building": [
+        "industrial",
+        "factory",
+        "warehouse"
+      ],
+      "industrial": [
+        "factory"
+      ],
+      "amenity": [
+        "factory"
+      ]
+    },
+    "heavy_industry:industrial": {
+      "building": [
+        "digester"
+      ],
+      "industrial": [
+        "gas",
+        "heating_station",
+        "oil_mill",
+        "oil",
+        "wellsite",
+        "well_cluster"
+      ]
+    },
+    "greenhouse:agricultural": {
+      "building": [
+        "greenhouse"
+      ],
+      "amenity": [
+        "greenhouse"
+      ],
+      "industrial": [
+        "greenhouse"
+      ]
+    },
+    "silo:agricultural": {
+      "building": [
+        "silo",
+        "grain_silo"
+      ],
+      "man_made": [
+        "silo",
+        "grain_silo"
+      ]
+    },
+    "house:residential": {
+      "building": [
+        "house"
+      ],
+      "house": [
+        "! no",
+        "! detached",
+        "! residential",
+        "! villa",
+        "residential"
+      ],
+      "amenity": [
+        "house"
+      ]
+    },
+    "apartments:residential": {
+      "building": [
+        "apartments"
+      ],
+      "residential": [
+        "apartments"
+      ],
+      "amenity": [
+        "apartments"
+      ],
+      "apartments": [
+        "yes"
+      ]
+    },
+    "bungalow:residential": {
+      "building": [
+        "bungalow"
+      ],
+      "house": [
+        "bungalow"
+      ],
+      "amenity": [
+        "bungalow"
+      ]
+    },
+    "residential": {
+      "building": [
+        "residential",
+        "villa",
+        "dormitory",
+        "condominium",
+        "sheltered_housing",
+        "workers_dormitory",
+        "terrace"
+      ],
+      "residential": [
+        "university",
+        "detached",
+        "dormitory",
+        "condominium",
+        "sheltered_housing",
+        "workers_dormitory",
+        "building"
+      ],
+      "house": [
+        "residential"
+      ],
+      "amenity": [
+        "residential"
+      ]
+    },
+    "ruins:heritage": {
+      "building": [
+        "ruins"
+      ],
+      "ruins": [
+        "ruins"
+      ]
+    },
+    "agricultural": {
+      "building": [
+        "agricultural"
+      ],
+      "agricultural": [
+        "building"
+      ]
+    },
+    "farm:agricultural": {
+      "building": [
+        "farm",
+        "farmhouse"
+      ]
+    },
+    "barn:agricultural": {
+      "building": [
+        "barn"
+      ],
+      "barn": [
+        "! no"
+      ]
+    },
+    "transportation": {
+      "building": [
+        "train_station",
+        "transportation",
+        "station"
+      ],
+      "aeroway": [
+        "hangar",
+        "tower",
+        "bunker",
+        "control_tower",
+        "building"
+      ],
+      "railway": [
+        "station",
+        "train_station",
+        "building"
+      ],
+      "public_transport": [
+        "train_station",
+        "station"
+      ],
+      "amenity": [
+        "train_station",
+        "terminal"
+      ]
+    },
+    "healthcare": {
+      "amenity": [
+        "healthcare",
+        "social_facility"
+      ],
+      "building": [
+        "healthcare",
+        "hospital"
+      ],
+      "healthcare": [
+        "! no"
+      ]
+    },
+    "education": {
+      "amenity": [
+        "education",
+        "college",
+        "kindergarten",
+        "school",
+        "university",
+        "research_institute"
+      ],
+      "building": [
+        "education",
+        "college",
+        "kindergarten",
+        "school",
+        "university"
+      ],
+      "education": [
+        "college",
+        "kindergarten",
+        "school",
+        "university"
+      ]
+    },
+    "entertainment_arts_culture": {
+      "leisure": [
+        "! no"
+      ]
+    },
+    "sustenance:commercial": {
+      "amenity": [
+        "restaurant",
+        "bar",
+        "cafe",
+        "fast_food",
+        "ice_cream",
+        "pub"
+      ],
+      "building": [
+        "restaurant",
+        "bar",
+        "cafe",
+        "fast_food",
+        "ice_cream",
+        "pub"
+      ],
+      "restaurant": [
+        "! no"
+      ],
+      "shop": [
+        "restaurant",
+        "bar",
+        "cafe",
+        "fast_food",
+        "ice_cream",
+        "pub"
+      ],
+      "sustenance": [
+        "! no"
+      ]
+    },
+    "office": {
+      "building": [
+        "office"
+      ],
+      "amenity": [
+        "office"
+      ],
+      "office": [
+        "! no"
+      ]
+    },
+    "building:public": {
+      "building": [
+        "public"
+      ]
+    },
+    "emergency": {
+      "building": [
+        "fire_station"
+      ]
+    },
+    "hotel:tourism": {
+      "building": [
+        "hotel"
+      ],
+      "tourism": [
+        "hotel"
+      ]
+    },
+    "attraction:tourism": {
+      "tourism": [
+        "attraction"
+      ]
+    },
+    "building": {
+      "building": [
+        "yes"
+      ]
     }
+  }
 }
