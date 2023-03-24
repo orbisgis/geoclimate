@@ -33,6 +33,7 @@ import org.orbisgis.geoclimate.Geoindicators
 import smile.classification.DataFrameClassifier
 import smile.validation.Accuracy
 import smile.validation.Validation
+
 import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.*

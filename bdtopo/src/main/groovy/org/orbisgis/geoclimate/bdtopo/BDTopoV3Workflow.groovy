@@ -409,12 +409,12 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
             importPreprocess.impervious)
 
     //Format building
-    def finalBuildings  = BDTopo.InputDataFormatting.formatBuildingLayer(datasource,
+    def finalBuildings = BDTopo.InputDataFormatting.formatBuildingLayer(datasource,
             importPreprocess.building, zoneTable,
             urbanAreas, hLevMin)
 
     //Format roads
-    def finalRoads =  BDTopo.InputDataFormatting.formatRoadLayer(datasource,
+    def finalRoads = BDTopo.InputDataFormatting.formatRoadLayer(datasource,
             importPreprocess.road,
             zoneTable)
 
@@ -430,7 +430,7 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
             zoneTable)
 
     //Format water
-    def finalHydro =  BDTopo.InputDataFormatting.formatHydroLayer(datasource,
+    def finalHydro = BDTopo.InputDataFormatting.formatHydroLayer(datasource,
             importPreprocess.water,
             zoneTable)
 

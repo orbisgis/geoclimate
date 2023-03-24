@@ -38,7 +38,7 @@ import org.orbisgis.data.jdbc.JdbcDataSource
  * @return The name of the final buildings table
  */
 String formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
-                        String urban_areas = "", float h_lev_min = 3) {
+                           String urban_areas = "", float h_lev_min = 3) {
     if (!h_lev_min) {
         h_lev_min = 3
     }
@@ -228,7 +228,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
         }
     }
     debug 'Buildings transformation finishes'
-    return  outputTableName
+    return outputTableName
 }
 
 /**
@@ -265,7 +265,7 @@ static String[] getTypeAndUse(def main_type, def main_use, def types_and_uses) {
  * of the geoClimate Input Model
  * @param datasource A connexion to a DB containing the raw roads table
  * @param road The name of the raw roads table in the DB
- * @return  The name of the final roads table
+ * @return The name of the final roads table
  */
 String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") {
     debug('Formating road layer')
@@ -535,7 +535,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
         }
     }
     debug('Rails transformation finishes')
-    return  outputTableName
+    return outputTableName
 }
 
 

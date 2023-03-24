@@ -332,7 +332,7 @@ class GenericIndicatorsTests {
 
         // Test 2
         def p2 = Geoindicators.GenericIndicators.typeProportion(h2GIS,
-                "tempo_build", "id_rsu", "type", "rsu_test",null,
+                "tempo_build", "id_rsu", "type", "rsu_test", null,
                 ["industrial": ["industrial"], "residential": ["residential", "detached"]],
                 "")
 

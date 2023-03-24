@@ -360,7 +360,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                      heightColumnName              : "height_roof",
                                      inputFields                   : ["id_build", "the_geom"],
                                      levelForRoads                 : [0],
-                                     angleRangeSizeBuDirection: 30,
+                                     angleRangeSizeBuDirection     : 30,
                                      svfSimplified                 : true,
                                      indicatorUse                  : ["LCZ", "UTRF", "TEB"],
                                      surfSuperpositions            : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
@@ -942,7 +942,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                 // Characterize the distribution to identify the 2 most frequent type within a RSU
                 def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(
                         datasource, "TEMPO_DISTRIB",
-                        "TEMPO_DISTRIB",COLUMN_ID_RSU,  ["uniqueness"],
+                        "TEMPO_DISTRIB", COLUMN_ID_RSU, ["uniqueness"],
                         "GREATEST", true, false, "${prefixName}$ind")
 
                 // Join main typo table with distribution table and replace typo by null when it has been set
@@ -1090,8 +1090,8 @@ Map getParameters() {
                                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                                "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
             "utrfModelName"                 : "",
-            "buildingHeightModelName": "",
-            "nbEstimatedBuildHeight": 0,
+            "buildingHeightModelName"       : "",
+            "nbEstimatedBuildHeight"        : 0,
             "svfSimplified"                 : true,
             "facadeDensListLayersBottom"    : [0, 10, 20, 30, 40, 50],
             "facadeDensNumberOfDirection"   : 12,
@@ -1278,11 +1278,11 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         }
 
         //Compute Geoindicators (at all scales + typologies)
+        parameters.nbBuildingEstimated=nbBuildingEstimated
         Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
                 buildingForGeoCalc, blocksForGeoCalc,
                 rsuForGeoCalc, road, vegetation,
-                water, impervious,
-                indicatorUse, svfSimplified, mapOfWeights, utrfModelName, nbBuildingEstimated, prefixName)
+                water, impervious,inputParameters, prefixName)
         if (!geoIndicators) {
             error "Cannot build the geoindicators"
             return
@@ -1366,8 +1366,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     Map geoIndicatorsEstH = computeGeoclimateIndicators(datasource, zone,
             relationBuildings, relationBlocks, rsuTable, road,
             vegetation, water, impervious,
-            ["UTRF"], true,
-            "", prefixName)
+            getParameters([indicatorUse:  ["UTRF"]]), prefixName)
     if (!geoIndicatorsEstH) {
         error "Cannot build the geoindicators to estimate the building height"
         return
@@ -1413,20 +1412,16 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     } else {
         info "Start estimating the building height"
         //Apply RF model
-        def applyRF = Geoindicators.TypologyClassification.applyRandomForestModel()
-        if (!applyRF.execute([
-                explicativeVariablesTableName: gatheredScales,
-                pathAndFileName              : buildingHeightModelName,
-                idName                       : "id_build",
-                prefixName                   : prefixName,
-                datasource                   : datasource])) {
+        def buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
+                gatheredScales, buildingHeightModelName,
+                "id_build", prefixName)
+        if (!buildEstimatedHeight) {
             error "Cannot apply the building height model $buildingHeightModelName"
             return
         }
 
         //Update the abstract building table
         info "Replace the input building table by the estimated height"
-        def buildEstimatedHeight = applyRF.results.outputTableName
 
         nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
 
@@ -1593,9 +1588,9 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String b
  */
 String rasterizeIndicators(JdbcDataSource datasource,
                            String grid, List list_indicators = [],
-                           String building , String road , String vegetation ,
-                           String water,  String impervious, String rsu_lcz,
-                           String rsu_utrf_area , String rsu_utrf_floor_area , String sea_land_mask ,
+                           String building, String road, String vegetation,
+                           String water, String impervious, String rsu_lcz,
+                           String rsu_utrf_area, String rsu_utrf_floor_area, String sea_land_mask,
                            String prefixName = "") {
     if (!list_indicators) {
         info "The list of indicator names cannot be null or empty"
@@ -1624,8 +1619,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
             if (list_indicators*.toUpperCase().contains("LCZ_PRIMARY")) {
                 def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
-                        upperScaleAreaStatistics, grid_column_identifier,
-                        upperScaleAreaStatistics, ["equality", "uniqueness"],
+                        upperScaleAreaStatistics,  upperScaleAreaStatistics, grid_column_identifier,
+                        ["equality", "uniqueness"],
                         "GREATEST", true, true,
                         "lcz")
                 // Rename the standard indicators into names consistent with the current method (LCZ type...)
@@ -1734,8 +1729,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 vegetation, impervious, prefixName)
         if (superpositionsTableGrid) {
             surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions(
-                    datasource, grid,grid_column_identifier, superpositionsTableGrid,
-                     [:],  priorities_tmp, prefixName)
+                    datasource, grid, grid_column_identifier, superpositionsTableGrid,
+                    [:], priorities_tmp, prefixName)
             if (surfaceFractionsProcess) {
                 indicatorTablesToJoin.put(surfaceFractionsProcess, grid_column_identifier)
             }
@@ -1746,17 +1741,17 @@ String rasterizeIndicators(JdbcDataSource datasource,
     String createScalesRelationsGridBl
     if (unweightedBuildingIndicators) {
         // Create the relations between grid cells and buildings
-        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,building,grid,
-                                                                             grid_column_identifier,null,
-                                                                              prefixName)
+        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building, grid,
+                grid_column_identifier, null,
+                prefixName)
         if (!createScalesRelationsGridBl) {
             info "Cannot compute the scales relations between buildings and grid cells."
             return
         }
-        def computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,createScalesRelationsGridBl,
-                                                                                                       grid, grid_column_identifier,
-                                                                                                     grid_column_identifier, unweightedBuildingIndicators,
-                                                                                                      prefixName)
+        def computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource, createScalesRelationsGridBl,
+                grid, grid_column_identifier,
+                grid_column_identifier, unweightedBuildingIndicators,
+                prefixName)
         if (!computeBuildingStats()) {
             info "Cannot compute the building statistics on grid cells."
             return
@@ -1769,15 +1764,15 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
             createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
-                                                                                  grid, grid_column_identifier, null, prefixName)
+                    grid, grid_column_identifier, null, prefixName)
             if (!createScalesRelationsGridBl) {
                 info "Cannot compute the scales relations between buildings and grid cells."
                 return
             }
         }
         def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, createScalesRelationsGridBl,
-                                                                                                      grid, grid_column_identifier,
-                                                                                                       weightedBuildingIndicators, prefixName)
+                grid, grid_column_identifier,
+                weightedBuildingIndicators, prefixName)
         if (!computeWeightedAggregStat) {
             info "Cannot compute the weighted aggregated statistics on grid cells."
             return
@@ -1789,20 +1784,20 @@ String rasterizeIndicators(JdbcDataSource datasource,
     if (list_indicators*.toUpperCase().contains("BUILDING_TYPE") && building) {
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
-            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,building, grid,
-                                                                                 grid_column_identifier,null,
-                                                                                 prefixName)
+            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building, grid,
+                    grid_column_identifier, null,
+                    prefixName)
             if (!createScalesRelationsGridBl) {
                 info "Cannot compute the scales relations between buildings and grid cells."
                 return
             }
         }
         def indicatorName = "TYPE"
-        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics( datasource,  grid,
-                                                                                                 grid_column_identifier,
-                                                                                                  createScalesRelationsGridBl,
-                                                                                                   indicatorName, false,
-                                                                                                   "building_type_fraction")
+        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource, grid,
+                grid_column_identifier,
+                createScalesRelationsGridBl,
+                indicatorName, false,
+                "building_type_fraction")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
         } else {
@@ -1815,7 +1810,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
             createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,
-                     building, grid, grid_column_identifier,null,
+                    building, grid, grid_column_identifier, null,
                     prefixName)
             if (!createScalesRelationsGridBl) {
                 info "Cannot compute the scales relations between buildings and grid cells."
@@ -1849,8 +1844,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
             createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
-                                                                                  grid, grid_column_identifier,null,
-                                                                                 prefixName)
+                    grid, grid_column_identifier, null,
+                    prefixName)
             if (!createScalesRelationsGridBl) {
                 info "Cannot compute the scales relations between buildings and grid cells."
                 return
@@ -1870,9 +1865,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (!datasource.getTable(building).isEmpty()) {
             if (!createScalesRelationsGridBl) {
                 // Create the relations between grid cells and buildings
-                createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,building,
-                                                                                      grid, grid_column_identifier,null,
-                                                                                       prefixName)
+                createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
+                        grid, grid_column_identifier, null,
+                        prefixName)
                 if (!createScalesRelationsGridBl) {
                     info "Cannot compute the scales relations between buildings and grid cells."
                     return
@@ -1913,9 +1908,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
                                                             AND ST_AREA(the_geom)>0)')"""
 
             def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
-                     grid,grid_column_identifier,
-                      tesselatedSeaLandTab, seaLandTypeField,
-                      prefixName)
+                    grid, grid_column_identifier,
+                    tesselatedSeaLandTab, seaLandTypeField,
+                    prefixName)
             if (upperScaleAreaStatistics) {
                 // Modify columns name to postfix with "_FRACTION"
                 datasource """ 
@@ -1932,7 +1927,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     //Join all indicators at grid scale
-    def joinGrids = Geoindicators.DataUtils.joinTables(datasource,  indicatorTablesToJoin, grid_indicators_table)
+    def joinGrids = Geoindicators.DataUtils.joinTables(datasource, indicatorTablesToJoin, grid_indicators_table)
     if (!joinGrids) {
         info "Cannot merge all indicators in grid table $grid_indicators_table."
         return

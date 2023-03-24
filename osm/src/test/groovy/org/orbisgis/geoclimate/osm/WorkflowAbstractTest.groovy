@@ -73,8 +73,8 @@ class WorkflowAbstractTest {
 
         //Compute building indicators
         String buildingIndicators = Geoindicators.WorkflowGeoIndicators.computeBuildingsIndicators(datasource, relationBuildings,
-                                                                                                         roadTableName, indicatorUse,
-                                                                                                         prefixName)
+                roadTableName, indicatorUse,
+                prefixName)
         assert buildingIndicators
         assertTrue(datasource.getSpatialTable(buildingIndicators).srid > 0)
         if (saveResults) {
@@ -105,15 +105,15 @@ class WorkflowAbstractTest {
             assertTrue(datasource.getSpatialTable(blockIndicators).srid > 0)
         }
 
-        Map parameters = Geoindicators.WorkflowGeoIndicators.getParameters(["indicatorUse":indicatorUse, "svfSimplified":svfSimplified])
+        Map parameters = Geoindicators.WorkflowGeoIndicators.getParameters(["indicatorUse": indicatorUse, "svfSimplified": svfSimplified])
         //Compute RSU indicators
-        def rsuIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators( datasource, buildingIndicators,
-                                                                                             relationRSU,
-                                                                                              vegetationTableName,
-                                                                                              roadTableName,
-                                                                                             hydrographicTableName,null,
-                                                                                              parameters,
-                                                                                              prefixName)
+        def rsuIndicators = Geoindicators.WorkflowGeoIndicators.computeRSUIndicators(datasource, buildingIndicators,
+                relationRSU,
+                vegetationTableName,
+                roadTableName,
+                hydrographicTableName, null,
+                parameters,
+                prefixName)
         assert rsuIndicators
         if (saveResults) {
             logger.debug("Saving RSU indicators")

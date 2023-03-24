@@ -469,9 +469,9 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
  * @author Jérémy Bernard
  */
 def createRandomForestModel(JdbcDataSource datasource, String trainingTableName, String varToModel, List explicativeVariables,
-                               boolean save,
-                               String pathAndFileName, int ntrees, int mtry, String rule = "GINI", int maxDepth,
-                               int maxNodes, int nodeSize, double subsample, boolean classif = true) {
+                            boolean save,
+                            String pathAndFileName, int ntrees, int mtry, String rule = "GINI", int maxDepth,
+                            int maxNodes, int nodeSize, double subsample, boolean classif = true) {
     def splitRule
     if (rule) {
         switch (rule.toUpperCase()) {
