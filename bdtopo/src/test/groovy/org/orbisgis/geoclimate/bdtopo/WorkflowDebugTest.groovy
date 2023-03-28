@@ -167,7 +167,7 @@ class WorkflowDebugTest {
                          ]
                         ]
         ]
-        BDTopo.v2(bdTopoParameters)
+        //BDTopo.v2(bdTopoParameters)
 
         input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-0_TOUSTHEMES_SHP_LAMB93_D035_2022-09-15/BDTOPO/1_DONNEES_LIVRAISON_2022-09-00418/BDT_3-0_SHP_LAMB93_D035-ED2022-09-15"
 
@@ -191,7 +191,7 @@ class WorkflowDebugTest {
         bdTopoParameters.input.folder=input_data
         bdTopoParameters.output.folder.path=directory
 
-        BDTopo.v2(bdTopoParameters)
+        //BDTopo.v2(bdTopoParameters)
 
     }
 

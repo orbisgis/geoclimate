@@ -1752,7 +1752,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 grid, grid_column_identifier,
                 grid_column_identifier, unweightedBuildingIndicators,
                 prefixName)
-        if (!computeBuildingStats()) {
+        if (!computeBuildingStats) {
             info "Cannot compute the building statistics on grid cells."
             return
         }
