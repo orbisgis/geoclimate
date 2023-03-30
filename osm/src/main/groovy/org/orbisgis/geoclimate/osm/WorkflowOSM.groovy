@@ -831,7 +831,7 @@ def extractProcessingParameters(def processing_parameters) {
                     return
                 }
                 def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
+                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION","UTRF_FLOOR_AREA_FRACTION",  "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if (allowedOutputIndicators) {
@@ -839,7 +839,7 @@ def extractProcessingParameters(def processing_parameters) {
                     list_indicators.each { val ->
                         if (val.trim().toUpperCase() in ["LCZ_FRACTION", "LCZ_PRIMARY"]) {
                             rsu_indicators.indicatorUse << "LCZ"
-                        } else if (val.trim().toUpperCase() in ["UTRF_AREA_FRACTION"]) {
+                        } else if (val.trim().toUpperCase() in ["UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION"]) {
                             rsu_indicators.indicatorUse << "UTRF"
                         }
                     }
