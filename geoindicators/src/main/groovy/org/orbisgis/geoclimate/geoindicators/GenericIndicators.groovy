@@ -941,7 +941,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
  */
 String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName,
                                 String upperColumnId, String lowerTableName,
-                                String lowerColumnName, boolean keepGeometry = true, String prefixName) {
+                                String lowerColumnName, String lowerColumnAlias, boolean keepGeometry = true, String prefixName) {
     ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
     def upperGeometryColumn = upperTable.getGeometricColumns().first()
     if (!upperGeometryColumn) {
@@ -991,7 +991,7 @@ String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName
                         AS SELECT $upperColumnId
                         """
     listValues.each {
-        def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.', '_')}"
+        def aliasColumn = "${lowerColumnAlias}_${it.val.toString().replace('.', '_')}"
         query += """
                          , SUM($aliasColumn)
                          AS $aliasColumn
@@ -999,7 +999,7 @@ String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName
     }
     query += " FROM (SELECT $upperColumnId"
     listValues.each {
-        def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.', '_')}"
+        def aliasColumn = "${lowerColumnAlias}_${it.val.toString().replace('.', '_')}"
         if (it.val) {
             if (isString) {
                 query += """
@@ -1043,7 +1043,7 @@ String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName
         qjoin += ", b.$upperGeometryColumn"
     }
     listValues.each {
-        def aliasColumn = "${lowerColumnName}_${it.val.toString().replace('.', '_')}"
+        def aliasColumn = "${lowerColumnAlias}_${it.val.toString().replace('.', '_')}"
         qjoin += """
                          , CASE WHEN $aliasColumn IS NULL THEN NULL ELSE $aliasColumn / ST_AREA(b.$upperGeometryColumn) END
                          AS $aliasColumn

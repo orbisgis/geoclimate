@@ -948,7 +948,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                 // Join main typo table with distribution table and replace typo by null when it has been set
                 // while there is no building in the RSU
                 datasource."$resultsDistrib"."$COLUMN_ID_RSU".createIndex()
-                datasource.tempo_distrib."$COLUMN_ID_RSU".createIndex()
+                datasource."tempo_distrib"."$COLUMN_ID_RSU".createIndex()
                 datasource """  DROP TABLE IF EXISTS $baseNameUtrfRsu$ind;
                                     CREATE TABLE $baseNameUtrfRsu$ind
                                         AS SELECT   a.*, 
@@ -1192,10 +1192,6 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
     def snappingTolerance = inputParameters.snappingTolerance
     def buildingHeightModelName = inputParameters.buildingHeightModelName
     def indicatorUse = inputParameters.indicatorUse
-
-    def svfSimplified = inputParameters.svfSimplified
-    def mapOfWeights = inputParameters.mapOfWeights
-    def utrfModelName = inputParameters.utrfModelName
 
     //Estimate height
     if (inputParameters.buildingHeightModelName && datasource.getTable(building).getRowCount() > 0) {
@@ -1612,7 +1608,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def indicatorName = "LCZ_PRIMARY"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(
                 datasource, grid, grid_column_identifier,
-                rsu_lcz, indicatorName,
+                rsu_lcz, indicatorName,indicatorName,
                 false, "lcz")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
@@ -1666,10 +1662,10 @@ String rasterizeIndicators(JdbcDataSource datasource,
     * Make aggregation process with previous grid and current rsu urban typo area
     */
     if (list_indicators*.toUpperCase().contains("UTRF_AREA_FRACTION") && rsu_utrf_area) {
-        def indicatorName = "TYPO_MAJ"
+        String indicatorName = "TYPO_MAJ"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
                 grid, grid_column_identifier, rsu_utrf_area,
-                indicatorName, false, "utrf_area")
+                indicatorName,"AREA_TYPO_MAJ", false, "utrf_area")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
         } else {
@@ -1677,10 +1673,10 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
     }
 
-    if (list_indicators*.toUpperCase().contains("UTRF_AREA_FRACTION") && rsu_utrf_floor_area) {
+    if (list_indicators*.toUpperCase().contains("UTRF_FLOOR_AREA_FRACTION") && rsu_utrf_floor_area) {
         def indicatorName = "TYPO_MAJ"
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
-                grid, grid_column_identifier, rsu_utrf_floor_area, indicatorName, false,
+                grid, grid_column_identifier, rsu_utrf_floor_area, indicatorName, "FLOOR_AREA_TYPO_MAJ", false,
                 "utrf_floor_area")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
@@ -1752,7 +1748,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 grid, grid_column_identifier,
                 grid_column_identifier, unweightedBuildingIndicators,
                 prefixName)
-        if (!computeBuildingStats()) {
+        if (!computeBuildingStats) {
             info "Cannot compute the building statistics on grid cells."
             return
         }
@@ -1796,7 +1792,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource, grid,
                 grid_column_identifier,
                 createScalesRelationsGridBl,
-                indicatorName, false,
+                indicatorName, indicatorName,false,
                 "building_type_fraction")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
@@ -1852,7 +1848,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
             }
         }
         def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact(datasource,
-                createScalesRelationsGridBl, grid, grid_column_identifier,
+                 grid, createScalesRelationsGridBl,grid_column_identifier,
                 [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], prefixName)
         if (roofFractionDistributionExact) {
             indicatorTablesToJoin.put(roofFractionDistributionExact, grid_column_identifier)
@@ -1909,15 +1905,13 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
             def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
                     grid, grid_column_identifier,
-                    tesselatedSeaLandTab, seaLandTypeField,
+                    tesselatedSeaLandTab, seaLandTypeField,seaLandTypeField,
                     prefixName)
             if (upperScaleAreaStatistics) {
                 // Modify columns name to postfix with "_FRACTION"
                 datasource """ 
                             ALTER TABLE ${upperScaleAreaStatistics} RENAME COLUMN TYPE_LAND TO LAND_FRACTION;
-                            ALTER TABLE ${
-                    upperScaleAreaStatistics.results.outputTableName
-                } RENAME COLUMN TYPE_SEA TO SEA_FRACTION;
+                            ALTER TABLE ${upperScaleAreaStatistics} RENAME COLUMN TYPE_SEA TO SEA_FRACTION;
                             ALTER TABLE ${upperScaleAreaStatistics} DROP COLUMN THE_GEOM;"""
                 indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
             } else {

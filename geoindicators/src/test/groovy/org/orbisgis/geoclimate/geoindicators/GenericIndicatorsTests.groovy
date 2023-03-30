@@ -464,7 +464,7 @@ class GenericIndicatorsTests {
         assertEquals(4, h2GIS.getSpatialTable(gridProcess).getRowCount())
 
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(h2GIS,
-                gridProcess, "id_grid", indicatorTableName, indicatorName, "agg")
+                gridProcess, "id_grid", indicatorTableName,indicatorName, indicatorName, "agg")
 
         assertNotNull(upperScaleAreaStatistics)
 
