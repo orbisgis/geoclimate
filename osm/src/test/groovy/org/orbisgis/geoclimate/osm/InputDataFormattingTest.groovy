@@ -311,10 +311,15 @@ class InputDataFormattingTest {
         //aeroway Toulouse https://www.openstreetmap.org/way/739797641#map=14/43.6316/1.3590
         zoneToExtract = [43.610539, 1.334152, 43.648808, 1.392689]
 
+            zoneToExtract = "Clohars-Carnoët"
+
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
 
+        if(!formatedPlaceName){
+            formatedPlaceName=zoneToExtract
+        }
 
         if (extractData.zone != null) {
             //Zone

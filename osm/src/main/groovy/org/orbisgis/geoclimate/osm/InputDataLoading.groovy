@@ -105,18 +105,18 @@ Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, f
 
         def extract = OSMTools.Loader.extract(query)
         if (extract) {
-            Map results = createGISLayers(datasource: datasource, osmFilePath: extract, epsg: epsg)
+            Map results = createGISLayers(datasource, extract,epsg)
             if (results) {
-                return [building     : results.buildingTableName,
-                        road         : results.roadTableName,
-                        rail         : results.railTableName,
-                        vegetation   : results.vegetationTableName,
-                        water        : results.hydroTableName,
-                        impervious   : results.imperviousTableName,
-                        urban_areas  : results.urbanAreasTableName,
+                return [building     : results.building,
+                        road         : results.road,
+                        rail         : results.rail,
+                        vegetation   : results.vegetation,
+                        water        : results.water,
+                        impervious   : results.impervious,
+                        urban_areas  : results.urban_areas,
                         zone         : outputZoneTable,
                         zone_envelope: outputZoneEnvelopeTable,
-                        coastline    : results.coastlineTableName]
+                        coastline    : results.coastline]
             } else {
                 error "Cannot load the OSM file ${extract}"
             }
@@ -250,7 +250,8 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         paramsDefaultFile = this.class.getResourceAsStream("coastlineParams.json")
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
-        String coastlines = OSMTools.Transform.toLines(datasource, prefix, epsg, tags, [])
+        columnsToKeep = parametersMap.get("columns")
+        String coastlines = OSMTools.Transform.toLines(datasource, prefix, epsg, tags, columnsToKeep)
         if (coastlines) {
             outputCoastlineTableName = postfix("OSM_COASTLINE")
             datasource.execute("ALTER TABLE ${coastlines} RENAME TO $outputCoastlineTableName".toString())

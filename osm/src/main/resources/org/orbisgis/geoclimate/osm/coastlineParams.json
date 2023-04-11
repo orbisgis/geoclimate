@@ -2,6 +2,11 @@
   "tags": {
     "natural": [
       "coastline"
-    ]
-  }
+    ],
+    "place": ["islet"]
+  },
+  "columns": [
+    "natural",
+    "place"
+  ]
 }

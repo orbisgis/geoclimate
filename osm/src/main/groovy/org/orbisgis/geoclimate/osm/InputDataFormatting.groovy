@@ -1020,36 +1020,35 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
                         $sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered;
 
-                        CREATE TABLE $coastLinesIntersects AS SELECT a.the_geom
+                        CREATE TABLE $coastLinesIntersects AS SELECT a.*
                         from $coastline  AS  a,  $zone  AS b WHERE
                         a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom);     
                         """.toString()
 
                 if (water) {
                     datasource.getSpatialTable(water).the_geom.createSpatialIndex()
-                    def islands_mark_filtered = "islands_mark_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                    datasource.execute """ DROP TABLE IF EXISTS $islands_mark_filtered;
-                        CREATE TABLE $islands_mark_filtered (the_geom GEOMETRY, ID SERIAL) AS 
+                    datasource.execute """
+                        CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
                        SELECT the_geom, EXPLOD_ID  FROM st_explode('(  
-                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');
-                        CREATE SPATIAL INDEX ON $islands_mark_filtered(the_geom);
-                        CREATE TABLE  $islands_mark AS select * from $islands_mark_filtered where id not in( SELECT a.id from $islands_mark_filtered as a,  $water as b
-                        where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and b.type = 'water' and b.zindex=0)""".toString()
+                       SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
 
                     datasource.execute """  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
                         SELECT st_tomultiline(the_geom)
-                        from $zone ;
+                        from $zone 
+                        UNION ALL
+                        SELECT st_tomultiline(the_geom)
+                        from $water ;
 
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
                         st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');                
                         
-                          CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
+                        CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
 
-                        CREATE TABLE $sea_land_mask_in_zone as SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
-                        FROM $sea_land_mask as a, $zone  as b;                
+                        CREATE TABLE $outputTableName as select the_geom, id, type, ZINDEX from st_explode('(SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
+                        FROM $sea_land_mask as a, $zone  as b)') where ST_DIMENSION(the_geom) = 2 ;                
                        
                        
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
@@ -1058,42 +1057,17 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
     
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
 
-                        CREATE INDEX IF NOT EXISTS ${sea_land_mask_in_zone}_id_idx ON $sea_land_mask_in_zone (id);
+                        CREATE INDEX IF NOT EXISTS ${outputTableName}_id_idx ON $outputTableName (id);
 
                         CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
 
-                        UPDATE $sea_land_mask_in_zone SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
-                                FROM $sea_land_mask_in_zone a, $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
-                                st_contains(a.THE_GEOM, b.THE_GEOM));
-                        
-                        DROP TABLE IF EXISTS $water_to_be_filtered;
-                        CREATE TABLE $water_to_be_filtered AS
-                        SELECT st_polygonize(st_union(ST_ToMultiLine(a.the_geom), ST_ToMultiLine(st_accum(b.the_geom)))) AS the_geom, 
-                        a.id AS id_sea FROM  $sea_land_mask_in_zone AS a, 
-                        $water AS b
-                         WHERE a."TYPE" ='land'  and a.the_geom && b.the_geom and st_contains(a.the_geom, ST_PointOnSurface(b.the_geom)) GROUP BY a.id;
-
-                        DROP TABLE IF EXISTS $water_filtered_exploded;
-                        CREATE TABLE $water_filtered_exploded AS 
-
-                        SELECT st_buffer(the_geom, -0.0001) AS the_geom, 'land' AS type ,id_sea, EXPLOD_ID AS ID  
-                        FROM  st_explode('$water_to_be_filtered');
-
-                        CREATE spatial INDEX ON $water_filtered_exploded(the_geom);
-                        CREATE  INDEX ON $water_filtered_exploded(id);
-
-                        UPDATE $water_filtered_exploded SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
-                        FROM $water_filtered_exploded a, $water b WHERE a.THE_GEOM && b.THE_GEOM AND
-                        st_contains(b.THE_GEOM, a.the_geom) );    
-                               
-                        CREATE TABLE $outputTableName as select the_geom, ROWNUM() AS id, TYPE
-                        from (
-                        SELECT st_buffer(the_geom, -0.0001) AS the_geom, type FROM $sea_land_mask_in_zone  
-                        WHERE id NOT in(SELECT id_sea FROM $water_filtered_exploded)
-                        UNION 
-                        SELECT the_geom, 'land' AS TYPE FROM   $water_filtered_exploded WHERE ID NOT IN(SELECT DISTINCT(a.ID)
-                                FROM $water_filtered_exploded a, $water b WHERE a.THE_GEOM && b.THE_GEOM AND
-                                st_contains(b.THE_GEOM, a.the_geom) )) as foo; 
+                        UPDATE $outputTableName SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
+                                FROM $outputTableName a, $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
+                                st_contains(a.THE_GEOM, b.THE_GEOM));   
+                         
+                         UPDATE $outputTableName SET TYPE='water' WHERE ID IN(SELECT DISTINCT(a.ID)
+                                FROM $outputTableName a, $water b WHERE st_pointonsurface(a.THE_GEOM) && b.THE_GEOM AND
+                                st_intersects( st_pointonsurface(a.the_geom), b.THE_GEOM));   
                         
                          """.toString()
 
@@ -1116,7 +1090,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
 
                         CREATE TABLE $outputTableName as select the_geom, id, type, ZINDEX from st_explode('(SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
-                        FROM $sea_land_mask as a, $zone  as b)');                
+                        FROM $sea_land_mask as a, $zone  as b)') where ST_DIMENSION(the_geom) = 2;                
                        
                        
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 

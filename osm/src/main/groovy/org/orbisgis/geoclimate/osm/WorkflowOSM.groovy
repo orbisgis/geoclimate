@@ -263,7 +263,7 @@ Map workflow(def input) {
     def overpass_enpoint = inputParameters.get("endpoint")
 
     if (!overpass_enpoint) {
-        overpass_enpoint = "https://z.overpass-api.de/api"
+        overpass_enpoint = "https://overpass-api.de/api"
     }
     System.setProperty("OVERPASS_ENPOINT", overpass_enpoint)
 
@@ -482,7 +482,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                     //Sea/Land mask
                     String seaLandMaskTableName = OSM.InputDataFormatting.formatSeaLandMask(
-                            h2gis_datasource, gisLayersResults.coastline, zoneEnvelopeTableName)
+                            h2gis_datasource, gisLayersResults.coastline, zoneEnvelopeTableName, hydrographicTableName)
 
                     //Merge the Sea/Land mask with water table
                     hydrographicTableName = OSM.InputDataFormatting.mergeWaterAndSeaLandTables(
