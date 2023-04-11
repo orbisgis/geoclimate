@@ -212,14 +212,14 @@ class InputDataFormattingTest {
          create table $zoneEnvelopeTableName as select st_transform(st_geomfromtext('$geom', ${geom.getSRID()}), $epsg) as the_geom""".toString())
 
         //Test coastline
-        assertEquals(1, h2GIS.getTable(extractData.coastline).getRowCount())
+        assertEquals(3, h2GIS.getTable(extractData.coastline).getRowCount())
 
         //Sea/Land mask
         String inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline, zoneEnvelopeTableName)
-        assertEquals(2, h2GIS.getTable(inputSeaLandTableName).getRowCount())
-        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 1
+        assertEquals(4, h2GIS.getTable(inputSeaLandTableName).getRowCount())
+        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 3
+        h2GIS.getTable(inputSeaLandTableName).save(new File(folder, "osm_sea_land.geojson").getAbsolutePath(), true)
 
-        h2GIS.getTable(inputSeaLandTableName).save(new File(folder, "osm_sea_land.geojson").absolutePath, true)
 
     }
 
