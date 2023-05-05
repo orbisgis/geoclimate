@@ -76,7 +76,7 @@ class Geoclimate implements Callable<Integer> {
         }
         if (workflow.trim().equalsIgnoreCase("OSM")) {
             println("The OSM workflow has been started.\nPlease wait...")
-            def success = org.orbisgis.geoclimate.osm.OSM.WorkflowOSM.workflow().execute(input: configFile.trim())
+            def success = org.orbisgis.geoclimate.osm.OSM.WorkflowOSM.workflow(configFile.trim())
             if (success) {
                 println("The OSM workflow has been successfully executed")
                 return SUCCESS_CODE
