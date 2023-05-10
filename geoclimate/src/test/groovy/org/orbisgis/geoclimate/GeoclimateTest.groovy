@@ -66,7 +66,6 @@ class GeoclimateTest {
         assert Pattern.compile("^\\d{4}-\\d{2}-\\d{2}").matcher(Geoclimate.build).matches()
     }
 
-    @Disabled
     @Test
     void runCLIWorkflow() {
         def osmParameters = [
