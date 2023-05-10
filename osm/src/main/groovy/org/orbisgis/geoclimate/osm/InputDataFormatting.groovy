@@ -1043,9 +1043,10 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         from $water ;
 
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
-                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');                
-                        
-                        CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
+                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');   """.toString()
+
+                         datasource.execute """
+                    CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
 
                         CREATE TABLE $outputTableName as select the_geom, id, type, ZINDEX from st_explode('(SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
                         FROM $sea_land_mask as a, $zone  as b)') where ST_DIMENSION(the_geom) = 2 ;                
@@ -1059,13 +1060,14 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
 
                         CREATE INDEX IF NOT EXISTS ${outputTableName}_id_idx ON $outputTableName (id);
 
-                        CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
+                        CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);""".toString()
 
+                    datasource.execute """
                         UPDATE $outputTableName SET TYPE='sea' WHERE ID IN(SELECT DISTINCT(a.ID)
                                 FROM $outputTableName a, $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
                                 st_contains(a.THE_GEOM, b.THE_GEOM));   
                          
-                         UPDATE $outputTableName SET TYPE='water' WHERE ID IN(SELECT DISTINCT(a.ID)
+                        UPDATE $outputTableName SET TYPE='water' WHERE ID IN(SELECT DISTINCT(a.ID)
                                 FROM $outputTableName a, $water b WHERE st_pointonsurface(a.THE_GEOM) && b.THE_GEOM AND
                                 st_intersects( st_pointonsurface(a.the_geom), b.THE_GEOM));   
                         

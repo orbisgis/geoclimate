@@ -514,6 +514,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
+
         def osm_parmeters = [
                 "description" : "Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb": [
