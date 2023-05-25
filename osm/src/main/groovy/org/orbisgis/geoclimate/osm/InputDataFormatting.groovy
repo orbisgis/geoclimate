@@ -78,8 +78,8 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
-                datasource."$zone".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(building,"the_geom")
+                datasource.createSpatialIndex(zone,"the_geom")
                 queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a,  $zone as b WHERE a.the_geom && b.the_geom and st_intersects( " +
                         "a.the_geom, b.the_geom) and st_area(a.the_geom)>1 and st_isempty(a.the_geom)=false "
             } else {
@@ -141,10 +141,10 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             }
             //Improve building type using the urban areas table
             if (urban_areas) {
-                datasource."$outputTableName".the_geom.createSpatialIndex()
-                datasource."$outputTableName".id_build.createIndex()
-                datasource."$outputTableName".type.createIndex()
-                datasource."$urban_areas".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(outputTableName,"the_geom")
+                datasource.createIndex(outputTableName,"id_build")
+                datasource.createIndex(outputTableName,"type")
+                datasource.createSpatialIndex(urban_areas,"the_geom")
                 def buildinType = "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                 datasource.execute """create table $buildinType as SELECT max(b.type) as type, max(b.main_use) as main_use, a.id_build FROM $outputTableName a, $urban_areas b 
@@ -1004,7 +1004,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
             """.toString()
     if (coastline) {
         def inputSpatialTable = datasource."$coastline"
-        if (inputSpatialTable.rowCount > 0) {
+        if (datasource.hasTable(coastline) && datasource.getRowCount(coastline) > 0) {
             if (zone) {
                 inputSpatialTable.the_geom.createSpatialIndex()
                 def mergingDataTable = "coatline_merged${UUID.randomUUID().toString().replaceAll("-", "_")}"
@@ -1217,8 +1217,8 @@ String mergeWaterAndSeaLandTables(JdbcDataSource datasource, String sead_land, S
                 SELECT THE_GEOM,  '-1', 0 FROM $sead_land  WHERE
                 "TYPE" ='sea') AS foo;"""
             //Check indexes before executing the query
-            datasource.getSpatialTable(water).the_geom.createSpatialIndex()
-            datasource.getSpatialTable(sead_land).the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(water,"the_geom")
+            datasource.createSpatialIndex(sead_land,"the_geom")
             datasource.execute queryMergeWater.toString()
             datasource.execute("drop table if exists $tmp_water_not_in_sea;".toString())
         } else {

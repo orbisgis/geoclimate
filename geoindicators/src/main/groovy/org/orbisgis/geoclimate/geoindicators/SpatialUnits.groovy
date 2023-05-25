@@ -122,7 +122,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
     def bufferSnap = -0.0001
 
     if (inputzone) {
-        datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
+        datasource.createSpatialIndex(inputTableName,"the_geom")
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
@@ -357,8 +357,8 @@ String createBlocks(JdbcDataSource datasource, String inputTableName, double sna
     def outputTableName = prefix prefixName, BASE_NAME
     //Find all neighbors for each building
     debug "Building index to perform the process..."
-    datasource."$inputTableName".the_geom.createSpatialIndex()
-    datasource."$inputTableName".id_build.createIndex()
+    datasource.createSpatialIndex(inputTableName,"the_geom")
+    datasource.createIndex(inputTableName, "id_build")
 
     debug "Building spatial clusters..."
 
@@ -450,9 +450,8 @@ String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetT
     // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
     // in the inputLowerScaleTableName object
     def outputTableName = postfix "${sourceTable}_${targetTable}", "join"
-    ISpatialTable sourceSpatialTable = datasource.getSpatialTable(sourceTable)
-    datasource.getSpatialTable(sourceTable).the_geom.createSpatialIndex()
-    datasource."$targetTable".the_geom.createSpatialIndex()
+    datasource.createSpatialIndex(sourceTable, "the_geom")
+    datasource.createSpatialIndex(targetTable,"the_geom")
 
     if (pointOnSurface) {
         datasource """    DROP TABLE IF EXISTS $outputTableName;

@@ -1194,7 +1194,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
     def indicatorUse = inputParameters.indicatorUse
 
     //Estimate height
-    if (inputParameters.buildingHeightModelName && datasource.getTable(building).getRowCount() > 0) {
+    if (inputParameters.buildingHeightModelName && datasource.getRowCount(building) > 0) {
         def start = System.currentTimeMillis()
         enableTableCache()
         def buildingTableName

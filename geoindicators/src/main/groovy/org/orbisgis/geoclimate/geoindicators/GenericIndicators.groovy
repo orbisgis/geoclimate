@@ -942,21 +942,19 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
 String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName,
                                 String upperColumnId, String lowerTableName,
                                 String lowerColumnName, String lowerColumnAlias, boolean keepGeometry = true, String prefixName) {
-    ISpatialTable upperTable = datasource.getSpatialTable(upperTableName)
-    def upperGeometryColumn = upperTable.getGeometricColumns().first()
+    def upperGeometryColumn = datasource.getGeometryColumn(upperTableName)
     if (!upperGeometryColumn) {
         error "The upper scale table must contain a geometry column"
         return
     }
-    ISpatialTable lowerTable = datasource.getSpatialTable(lowerTableName)
-    def lowerGeometryColumn = lowerTable.getGeometricColumns().first()
+    def lowerGeometryColumn = datasource.getGeometryColumn(lowerTableName)
     if (!lowerGeometryColumn) {
         error "The lower scale table must contain a geometry column"
         return
     }
-    upperTable."$upperGeometryColumn".createSpatialIndex()
-    upperTable."$upperColumnId".createIndex()
-    lowerTable."$lowerGeometryColumn".createSpatialIndex()
+    datasource.createSpatialIndex(upperTableName,upperGeometryColumn )
+    datasource.createIndex(upperTableName, upperColumnId)
+    datasource.createSpatialIndex(lowerTableName, lowerGeometryColumn)
 
     def spatialJoinTable = "upper_table_join"
     def spatialJoin = """

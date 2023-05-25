@@ -136,8 +136,8 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, BASE_NAME
 
-    datasource."$building".the_geom.createSpatialIndex()
-    datasource."$building".id_build.createIndex()
+    datasource.createSpatialIndex(building,"the_geom")
+    datasource.createIndex(building,"id_build")
 
     def query = " CREATE TABLE $build_intersec AS SELECT "
 
@@ -293,8 +293,8 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-    datasource."$building".the_geom.createSpatialIndex()
-    datasource."$building".id_build.createIndex()
+    datasource.createSpatialIndex(building,"the_geom")
+    datasource.createIndex(building,"id_build")
 
     datasource """
                 DROP TABLE IF EXISTS $build_min_distance; 
@@ -480,8 +480,8 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
     def outputTableName = postfix BASE_NAME
 
     //Indexing table
-    datasource."$inputBuilding".the_geom.createSpatialIndex()
-    datasource."$inputPopulation".the_geom.createSpatialIndex()
+    datasource.createSpatialIndex(inputBuilding,"the_geom")
+    datasource.createSpatialIndex(inputPopulation,"the_geom")
     def popColumns = []
     def sum_popColumns = []
     if (inputPopulationColumns) {

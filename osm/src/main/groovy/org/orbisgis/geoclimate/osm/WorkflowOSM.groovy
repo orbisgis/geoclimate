@@ -416,7 +416,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
             id_zone = id_zone in Collection ? id_zone.join('_') : id_zone
             def zone = zones.zone
             def zoneEnvelopeTableName = zones.zone_envelope
-            if (h2gis_datasource.getTable(zone).getRowCount() == 0) {
+            if (h2gis_datasource.getRowCount(zone) == 0) {
                 error "Cannot find any geometry to define the zone to extract the OSM data"
                 return
             }
