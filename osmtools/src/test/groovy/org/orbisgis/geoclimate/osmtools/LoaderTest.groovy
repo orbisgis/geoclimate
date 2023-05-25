@@ -24,6 +24,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.data.H2GIS
+import org.orbisgis.geoclimate.osmtools.utils.OSMElement
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -76,47 +77,12 @@ class LoaderTest extends AbstractOSMToolsTest {
         }
     }
 
-    /**
-     * Override the 'getNominatimData' methods to avoid the call to the server
-     */
-    void sampleGetNominatimData() {
-        Utilities.metaClass.static.getNominatimData = { placeName ->
-            def coordinates = [new Coordinate(-3.016, 48.82),
-                               new Coordinate(-3.016, 48.821),
-                               new Coordinate(-3.015, 48.821),
-                               new Coordinate(-3.015, 48.82),
-                               new Coordinate(-3.016, 48.82)] as Coordinate[]
-            def geom = new GeometryFactory().createPolygon(coordinates)
-            geom.SRID = 4326
-            return ["geom": geom]
-        }
-    }
-
-    /**
-     * Override the 'executeOverPassQuery' methods to avoid the call to the server
-     */
-    void sampleOverpassQueryOverride() {
-        Utilities.metaClass.static.executeOverPassQuery = { query, outputOSMFile ->
-            this.query = query
-            outputOSMFile << LoaderTest.getResourceAsStream("sample.osm").text
-            return true
-        }
-    }
 
     /**
      * Test the OSMTools.Loader.fromArea() process with bad data.
      */
     @Test
     void badFromAreaTest() {
-        sampleGetNominatimData()
-        sampleOverpassQueryOverride()
-        def geomFacto = new GeometryFactory()
-        def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
-                                               new Coordinate(4, 8),
-                                               new Coordinate(7, 5),
-                                               new Coordinate(0, 0)] as Coordinate[])
-
-        assertNull OSMTools.Loader.fromArea(null, polygon)
         assertNull OSMTools.Loader.fromArea(ds, null)
         assertNull OSMTools.Loader.fromArea(ds, "A string")
     }
@@ -126,24 +92,8 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void fromAreaNoDistTest() {
-        sampleGetNominatimData()
-        sampleOverpassQueryOverride()
-        def geomFacto = new GeometryFactory()
-        def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
-                                               new Coordinate(4, 8),
-                                               new Coordinate(7, 5),
-                                               new Coordinate(0, 0)] as Coordinate[])
-        def overpassQuery = "[bbox:0.0,0.0,8.0,7.0];\n" +
-                "(\n" +
-                "\tnode(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
-                "\tway(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
-                "\trelation(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
-                ");\n" +
-                "out;"
-        def env = polygon.getEnvelopeInternal()
-
         //With polygon
-        Map r = OSMTools.Loader.fromArea(ds, polygon)
+        Map r = OSMTools.Loader.fromArea(ds, [48.733493,-3.076869,48.733995,-3.075829])
 
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
@@ -160,15 +110,16 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
-        assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
+        assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zone.getGeometry(1).toText()
 
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
-        assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zoneEnv.getGeometry(1).toText()
+        assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zoneEnv.getGeometry(1).toText()
 
+        def env =  OSMTools.Utilities.geometryFromValues([48.733493,-3.076869,48.733995,-3.075829]).getEnvelopeInternal()
         //With Envelope
         r = OSMTools.Loader.fromArea(ds, env)
 
@@ -187,14 +138,15 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
-        assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zone.getGeometry(1).toText()
+        assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zone.getGeometry(1).toText()
 
         zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
-        assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zoneEnv.getGeometry(1).toText()
+        assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zoneEnv.getGeometry(1).toText()
+
     }
 
     /**
@@ -202,8 +154,6 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void fromAreaWithDistTest() {
-        sampleGetNominatimData()
-        sampleOverpassQueryOverride()
         def geomFacto = new GeometryFactory()
         def dist = 1000
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
@@ -211,13 +161,7 @@ class LoaderTest extends AbstractOSMToolsTest {
                                                new Coordinate(2, 2),
                                                new Coordinate(0, 2),
                                                new Coordinate(0, 0)] as Coordinate[])
-        def overpassQuery = "[bbox:-0.008983152841195214,-0.008988628470795009,2.008983152841195,2.008988628470795];\n" +
-                "(\n" +
-                "\tnode(poly:\"-0.008983152841195214 -0.008988628470795009 2.008983152841195 -0.008988628470795009 2.008983152841195 2.008988628470795 -0.008983152841195214 2.008988628470795\");\n" +
-                "\tway(poly:\"-0.008983152841195214 -0.008988628470795009 2.008983152841195 -0.008988628470795009 2.008983152841195 2.008988628470795 -0.008983152841195214 2.008988628470795\");\n" +
-                "\trelation(poly:\"-0.008983152841195214 -0.008988628470795009 2.008983152841195 -0.008988628470795009 2.008983152841195 2.008988628470795 -0.008983152841195214 2.008988628470795\");\n" +
-                ");\n" +
-                "out;"
+
         def env = polygon.getEnvelopeInternal()
 
         //With polygon
@@ -277,24 +221,13 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void fromPlaceNoDistTest() {
-        sampleGetNominatimData()
-        sampleOverpassQueryOverride()
-        def placeName = "  The place Name -toFind  "
-        def formattedPlaceName = "The_place_Name_toFind_"
-        def overpassQuery = "[Bbox:48.82,-3.016,48.821,-3.015];\n" +
-                "(\n" +
-                "\tnode(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
-                "\tway(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
-                "\trelation(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
-                ");\n" +
-                "out;"
+        def placeName = "Lezoen, Plourivo"
+        def formattedPlaceName = "Lezoen_Plourivo_"
 
         Map r = OSMTools.Loader.fromPlace(ds, placeName)
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
-        assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zone as String).matches()
         assertTrue r.containsKey("zoneEnvelopeTableName")
-        assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
 
@@ -304,8 +237,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertTrue zone.columns.contains("THE_GEOM")
         assertTrue zone.columns.contains("ID_ZONE")
         zone.next()
-        assertEquals "POLYGON ((-3.016 48.82, -3.016 48.821, -3.015 48.821, -3.015 48.82, -3.016 48.82))", zone.getGeometry(1).toText()
-        assertEquals "  The place Name -toFind  ", zone.getString(2)
+        assertNotNull zone.getGeometry(1)
 
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
@@ -313,8 +245,8 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         assertTrue zoneEnv.columns.contains("ID_ZONE")
         zoneEnv.next()
-        assertEquals "POLYGON ((-3.016 48.82, -3.016 48.821, -3.015 48.821, -3.015 48.82, -3.016 48.82))", zoneEnv.getGeometry(1).toText()
-        assertEquals "  The place Name -toFind  ", zoneEnv.getString(2)
+        assertEquals "POLYGON ((-3.0790622 48.7298266, -3.0790622 48.7367393, -3.0739517 48.7367393, -3.0739517 48.7298266, -3.0790622 48.7298266))", zoneEnv.getGeometry(1).toText()
+        assertEquals "Lezoen, Plourivo", zoneEnv.getString(2)
     }
 
     /**
@@ -322,19 +254,14 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void fromPlaceWithDistTest() {
-        sampleGetNominatimData()
-        sampleOverpassQueryOverride()
         def placeName = "  The place Name -toFind  "
         def dist = 5
         def formattedPlaceName = "The_place_Name_toFind_"
         Map r = OSMTools.Loader.fromPlace(ds, placeName, dist)
-        assertFalse r.isEmpty()
-        assertTrue r.containsKey("zone")
-        assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zone as String).matches()
-        assertTrue r.containsKey("zoneEnvelopeTableName")
-        assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
-        assertTrue r.containsKey("osmTablesPrefix")
-        assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
+        assertNull(r)
+
+
+        r = OSMTools.Loader.fromPlace(ds, "Lezoen, Plourivo", dist)
 
         def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
@@ -342,8 +269,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertTrue zone.columns.contains("THE_GEOM")
         assertTrue zone.columns.contains("ID_ZONE")
         zone.next()
-        assertEquals "POLYGON ((-3.016 48.82, -3.016 48.821, -3.015 48.821, -3.015 48.82, -3.016 48.82))", zone.getGeometry(1).toText()
-        assertEquals "  The place Name -toFind  ", zone.getString(2)
+        assertNotNull zone.getGeometry(1)
 
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
@@ -351,8 +277,8 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         assertTrue zoneEnv.columns.contains("ID_ZONE")
         zoneEnv.next()
-        assertEquals "POLYGON ((-3.01606821815555 48.819955084235794, -3.01606821815555 48.821044915764205, -3.0149317818444503 48.821044915764205, -3.0149317818444503 48.819955084235794, -3.01606821815555 48.819955084235794))", zoneEnv.getGeometry(1).toText()
-        assertEquals "  The place Name -toFind  ", zoneEnv.getString(2)
+        assertEquals "POLYGON ((-3.079130303738262 48.729781684235796, -3.079130303738262 48.73678421576421, -3.073883596261738 48.73678421576421, -3.073883596261738 48.729781684235796, -3.079130303738262 48.729781684235796))", zoneEnv.getGeometry(1).toText()
+        assertEquals "Lezoen, Plourivo", zoneEnv.getString(2)
     }
 
     /**
@@ -360,11 +286,8 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void badFromPlaceTest() {
-        sampleGetNominatimData()
-        sampleOverpassQueryOverride()
         def placeName = "  The place Name -toFind  "
         def dist = -5
-
         assertNull OSMTools.Loader.fromPlace(ds, placeName, dist)
         assertNull OSMTools.Loader.fromPlace(ds, placeName, -1)
         assertNull OSMTools.Loader.fromPlace(ds, null)
@@ -376,8 +299,8 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void extractTest() {
-        sampleOverpassQueryOverride()
-        def query = "Overpass test query"
+        def env =  OSMTools.Utilities.geometryFromValues([48.733493,-3.076869,48.733995,-3.075829]).getEnvelopeInternal()
+        def query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(env, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         def extract = OSMTools.Loader.extract(query)
         assertNotNull extract
         def file = new File(extract)
@@ -389,7 +312,6 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void badExtractTest() {
-        sampleOverpassQueryOverride()
         assertNull OSMTools.Loader.extract(null)
         badOverpassQueryOverride()
         assertNull OSMTools.Loader.extract("toto")

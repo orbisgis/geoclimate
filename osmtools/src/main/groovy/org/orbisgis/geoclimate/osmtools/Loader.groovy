@@ -66,7 +66,11 @@ Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) {
         geom = new GeometryFactory().toGeometry(filterArea)
     } else if (filterArea instanceof Polygon) {
         geom = filterArea
-    } else {
+    }
+    else if (filterArea in Collection && filterArea.size()==4){
+        geom = Utilities.geometryFromValues(filterArea)
+    }
+    else {
         error "The filter area must be an Envelope or a Polygon"
         return
     }
@@ -134,7 +138,13 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) {
     def osmTablesPrefix = postfix "OSM_DATA_$formatedPlaceName"
     def epsg = DEFAULT_SRID
 
-    def geom = OSMTools.Utilities.getNominatimData(placeName)["geom"]
+    Map nominatimRes = OSMTools.Utilities.getNominatimData(placeName);
+
+    if(!nominatimRes){
+        error("Cannot find an area from the place name $placeName")
+        return
+    }
+    def geom = nominatimRes["geom"]
     if (!geom) {
         error("Cannot find an area from the place name $placeName")
         return
