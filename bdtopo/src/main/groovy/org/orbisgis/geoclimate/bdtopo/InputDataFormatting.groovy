@@ -318,7 +318,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  "service"     : 3]
 
         def queryMapper = "SELECT "
-        if (!datasource.hasTable(road)) {
+        if (datasource.hasTable(road)) {
             def columnNames = datasource.getColumnNames(road)
             columnNames.remove("THE_GEOM")
             queryMapper += columnNames.join(",")
