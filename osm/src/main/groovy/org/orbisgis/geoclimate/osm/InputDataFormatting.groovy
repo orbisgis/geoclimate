@@ -1127,7 +1127,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
 
                         CREATE TABLE $sea_land_mask_in_zone as select the_geom, id, type, ZINDEX from st_explode('(SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
-                        FROM $sea_land_mask as a, $zone  as b a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))') where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;                
+                        FROM $sea_land_mask as a, $zone  as b where a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))') where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;                
                        
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
