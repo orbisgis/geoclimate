@@ -113,7 +113,7 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
             }.join(",")
 
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(road,"the_geom")
                 queryMapper += "${flatListColumns}, CASE WHEN st_overlaps(st_force2D(a.the_geom), b.the_geom) " +
                         "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
                         "ELSE st_force2D(a.the_geom) " +

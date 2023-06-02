@@ -263,7 +263,7 @@ Map workflow(def input) {
     def overpass_enpoint = inputParameters.get("endpoint")
 
     if (!overpass_enpoint) {
-        overpass_enpoint = "https://z.overpass-api.de/api"
+        overpass_enpoint = "https://overpass-api.de/api"
     }
     System.setProperty("OVERPASS_ENPOINT", overpass_enpoint)
 
@@ -416,7 +416,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
             id_zone = id_zone in Collection ? id_zone.join('_') : id_zone
             def zone = zones.zone
             def zoneEnvelopeTableName = zones.zone_envelope
-            if (h2gis_datasource.getTable(zone).getRowCount() == 0) {
+            if (h2gis_datasource.getRowCount(zone) == 0) {
                 error "Cannot find any geometry to define the zone to extract the OSM data"
                 return
             }
@@ -482,16 +482,21 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                     //Sea/Land mask
                     String seaLandMaskTableName = OSM.InputDataFormatting.formatSeaLandMask(
-                            h2gis_datasource, gisLayersResults.coastline, zoneEnvelopeTableName)
+                            h2gis_datasource, gisLayersResults.coastline, zoneEnvelopeTableName, hydrographicTableName)
 
-                    //Merge the Sea/Land mask with water table
-                    hydrographicTableName = OSM.InputDataFormatting.mergeWaterAndSeaLandTables(
-                            h2gis_datasource, seaLandMaskTableName, hydrographicTableName)
+                    if(h2gis_datasource.getRowCount(seaLandMaskTableName)>0){
+                    //Select the water and sea features
+                    h2gis_datasource.execute """Drop table if exists $hydrographicTableName;
+                    CREATE TABLE $hydrographicTableName as select the_geom, id, cast(0 as integer) as zindex, type from $seaLandMaskTableName where type in ('water', 'sea') """.toString()
+                    }
 
                     //Format road
                     String roadTableName = OSM.InputDataFormatting.formatRoadLayer(
                             h2gis_datasource, gisLayersResults.road,
                             zoneEnvelopeTableName)
+
+                    //Drop the intermediate GIS layers
+                    h2gis_datasource.dropTable(gisLayersResults.values().toArray(new String[0]))
 
                     debug "OSM GIS layers formated"
                     //Add the GIS layers to the list of results

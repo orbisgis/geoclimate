@@ -1008,7 +1008,6 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
                           String rsu, double surface_vegetation,
                           double surface_hydro, double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
     info "Create the units of analysis..."
-
     def idRsu = "id_rsu"
     if (!rsu) {
         // Create the RSU
@@ -1180,7 +1179,7 @@ Map getParameters(Map parameters) {
  */
 Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String building, String road, String rail, String vegetation,
                             String water, String impervious, String buildingEstimateTableName,
-                            String seaLandMaskTableName, String rsuTable,
+                            String sea_land_mask, String rsuTable,
                             Map parameters = [:], String prefixName) {
     Map inputParameters = getParameters()
     if (parameters) {
@@ -1194,7 +1193,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
     def indicatorUse = inputParameters.indicatorUse
 
     //Estimate height
-    if (inputParameters.buildingHeightModelName && datasource.getTable(building).getRowCount() > 0) {
+    if (inputParameters.buildingHeightModelName && datasource.getRowCount(building) > 0) {
         def start = System.currentTimeMillis()
         enableTableCache()
         def buildingTableName
@@ -1209,7 +1208,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
                 road, rail, vegetation,
                 water, impervious,
                 buildingEstimateTableName,
-                seaLandMaskTableName,
+                sea_land_mask,rsuTable,
                 surface_vegetation, surface_hydro,
                 snappingTolerance,
                 buildingHeightModelName, prefixName)
@@ -1248,7 +1247,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
             Map spatialUnitsForCalc = createUnitsOfAnalysis(datasource, zone,
                     building, road, rail,
                     vegetation,
-                    water, seaLandMaskTableName, rsuTable,
+                    water, sea_land_mask, rsuTable,
                     surface_vegetation,
                     surface_hydro, snappingTolerance, indicatorUse,
                     prefixName)
@@ -1294,7 +1293,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
                 building, road,
                 rail, vegetation,
-                water, seaLandMaskTableName, "",
+                water, sea_land_mask, "",
                 surface_vegetation,
                 surface_hydro, snappingTolerance, indicatorUse,
                 prefixName)
@@ -1331,7 +1330,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String building,
                            String road, String rail, String vegetation,
                            String water, String impervious,
-                           String building_estimate, String sea_land_mask,
+                           String building_estimate, String sea_land_mask, String rsu,
                            double surface_vegetation, double surface_hydro,
                            double snappingTolerance, String buildingHeightModelName, String prefixName = "") {
     if (!building_estimate) {
@@ -1347,7 +1346,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     //Create spatial units and relations : building, block, rsu
     Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
             building, road, rail, vegetation,
-            water, sea_land_mask, "",
+            water, sea_land_mask,rsu,
             surface_vegetation, surface_hydro, snappingTolerance, ["UTRF"],
             prefixName)
     if (!spatialUnits) {
@@ -1374,9 +1373,9 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     def buildingIndicatorsForHeightEst = geoIndicatorsEstH.building_indicators
     def blockIndicatorsForHeightEst = geoIndicatorsEstH.block_indicators
     def rsuIndicatorsForHeightEst = geoIndicatorsEstH.rsu_indicators
-    datasource.getTable(building_estimate).id_build.createIndex()
-    datasource.getTable(buildingIndicatorsForHeightEst).id_build.createIndex()
-    datasource.getTable(buildingIndicatorsForHeightEst).id_rsu.createIndex()
+    datasource.createIndex(building_estimate, "id_build")
+    datasource.createIndex(buildingIndicatorsForHeightEst, "id_build")
+    datasource.createIndex(buildingIndicatorsForHeightEst, "id_rsu")
 
     def estimated_building_with_indicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 

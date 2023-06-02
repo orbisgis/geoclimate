@@ -138,9 +138,9 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
                     ON a.$idRsu = b.$idRsu""".toString()
 
     // 2. Keep only intersected facades within a given distance and calculate their area per RSU
-    datasource."$buildLine"."$GEOMETRIC_FIELD_BU".createSpatialIndex()
-    datasource."$buildLine"."$idRsu".createIndex()
-    datasource."$buildLine"."$ID_FIELD_BU".createIndex()
+    datasource.createSpatialIndex(buildLine,GEOMETRIC_FIELD_BU)
+    datasource.createIndex(buildLine,idRsu)
+    datasource.createIndex(buildLine,ID_FIELD_BU)
     datasource """
                 DROP TABLE IF EXISTS $sharedLineRsu;
                 CREATE TABLE $sharedLineRsu 
@@ -250,11 +250,11 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String correla
     def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
     // Create the needed index on input tables and the table that will contain the SVF calculation points
-    datasource."$rsu"."$GEOMETRIC_COLUMN_RSU".createSpatialIndex()
-    datasource."$rsu"."$ID_COLUMN_RSU".createIndex()
+    datasource.createSpatialIndex(rsu,GEOMETRIC_COLUMN_RSU)
+    datasource.createIndex(rsu,ID_COLUMN_RSU)
 
-    datasource."$correlationBuildingTable"."$GEOMETRIC_COLUMN_BU".createSpatialIndex()
-    datasource."$correlationBuildingTable"."$ID_COLUMN_RSU".createIndex()
+    datasource.createSpatialIndex(correlationBuildingTable,GEOMETRIC_COLUMN_BU)
+    datasource.createIndex(correlationBuildingTable,ID_COLUMN_RSU)
 
     def to_start = System.currentTimeMillis()
 
@@ -303,7 +303,7 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String correla
                                 SELECT $ID_COLUMN_RSU, THE_GEOM
                                 FROM $multiptsRSU""".toString()
 
-    datasource."$multiptsRSUtot".the_geom.createSpatialIndex()
+    datasource.createSpatialIndex(multiptsRSUtot,"the_geom")
     // The SVF calculation is performed at point scale
     datasource """
                 CREATE TABLE $svfPts 
@@ -407,10 +407,10 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-    datasource."$building".the_geom.createSpatialIndex()
-    datasource."$rsu".the_geom.createSpatialIndex()
-    datasource."$building".id_build.createIndex()
-    datasource."$rsu".id_rsu.createIndex()
+    datasource.createSpatialIndex(building,"the_geom")
+    datasource.createSpatialIndex(rsu,"the_geom")
+    datasource.createIndex(building,"id_build")
+    datasource.createIndex(rsu,"id_rsu")
 
     if (360 % numberOfDirection == 0 && numberOfDirection % 2 == 0) {
 
@@ -500,7 +500,7 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
         }.join(",")
         def onlyNames = names.join(",")
 
-        datasource."$buildingLayer".the_geom.createSpatialIndex()
+        datasource.createSpatialIndex(buildingLayer,"the_geom")
 
         // Intersections between free facades and rsu geometries are calculated
         datasource """ DROP TABLE IF EXISTS $buildingFreeExpl; 
@@ -622,8 +622,8 @@ String roofAreaDistribution(JdbcDataSource datasource, String rsu, String buildi
     def buildRoofSurfTot = postfix "build_roof_surf_tot"
     def optionalTempo = postfix "optionalTempo"
 
-    datasource."$rsu".the_geom.createSpatialIndex()
-    datasource."$rsu".id_rsu.createIndex()
+    datasource.createSpatialIndex(rsu,"the_geom")
+    datasource.createIndex(rsu,"id_rsu")
 
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
@@ -921,10 +921,10 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
 
     debug "Executing Operations on the linear of road"
 
-    datasource."$rsuTable".the_geom.createSpatialIndex()
-    datasource."$rsuTable".id_rsu.createIndex()
-    datasource."$roadTable".the_geom.createSpatialIndex()
-    datasource."$roadTable".zindex.createIndex()
+    datasource.createSpatialIndex(rsuTable,"the_geom")
+    datasource.createIndex(rsuTable,"id_rsu")
+    datasource.createSpatialIndex(roadTable,"the_geom")
+    datasource.createIndex(roadTable,"zindex")
 
     // Test whether the angleRangeSize is a divisor of 180°
     if (180 % angleRangeSize == 0 && 180 / angleRangeSize > 1) {
@@ -1182,9 +1182,9 @@ String extendedFreeFacadeFraction(JdbcDataSource datasource, String building, St
                     $ID_FIELD_RSU FROM $rsu;""".toString()
 
     // The facade area of buildings being entirely included in the RSU buffer is calculated
-    datasource."$extRsuTable"."$GEOMETRIC_FIELD".createSpatialIndex()
-    datasource."$extRsuTable"."$ID_FIELD_RSU".createIndex()
-    datasource."$building"."$GEOMETRIC_FIELD".createSpatialIndex()
+    datasource.createSpatialIndex(extRsuTable,GEOMETRIC_FIELD)
+    datasource.createIndex(extRsuTable,ID_FIELD_RSU)
+    datasource.createSpatialIndex(building,GEOMETRIC_FIELD)
 
     datasource """DROP TABLE IF EXISTS $inclBu; CREATE TABLE $inclBu AS SELECT 
                     COALESCE(SUM((1-a.$buContiguityColumn)*a.$buTotalFacadeLengthColumn*a.$HEIGHT_WALL), 0) AS FAC_AREA,
@@ -1271,13 +1271,13 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
     def outputTableName = prefix prefixName, BASE_NAME
 
     if (zone && datasource.hasTable(zone)) {
-        datasource."$zone"."$id_zone".createIndex()
-        datasource."$zone".the_geom.createSpatialIndex()
+        datasource.createIndex(zone,id_zone)
+        datasource.createSpatialIndex(zone,"the_geom")
         def tablesToMerge = [:]
         tablesToMerge += ["$zone": "select ST_ExteriorRing(the_geom) as the_geom, ${id_zone} from $zone"]
         if (road && datasource.hasTable(road)) {
             debug "Preparing table : $road"
-            datasource."$road".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(road,"the_geom")
             //Separate road features according the zindex
             def roadTable_zindex0_buffer = postfix "road_zindex0_buffer"
             def road_tmp = postfix "road_zindex0"
@@ -1295,7 +1295,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
 
         if (vegetation && datasource.hasTable(vegetation)) {
             debug "Preparing table : $vegetation"
-            datasource."$vegetation".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(vegetation,"the_geom")
             def low_vegetation_rsu_tmp = postfix "low_vegetation_rsu_zindex0"
             def low_vegetation_tmp = postfix "low_vegetation_zindex0"
             def high_vegetation_tmp = postfix "high_vegetation_zindex0"
@@ -1313,7 +1313,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
 
         if (water && datasource.hasTable(water)) {
             debug "Preparing table : $water"
-            datasource."$water".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(water,"the_geom")
             def water_tmp = postfix "water_zindex0"
             datasource """DROP TABLE IF EXISTS $water_tmp;
                 CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
@@ -1324,7 +1324,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
 
         if (impervious && datasource.hasTable(impervious)) {
             debug "Preparing table : $impervious"
-            datasource."$impervious".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(impervious,"the_geom")
             def impervious_tmp = postfix "impervious_zindex0"
             datasource """DROP TABLE IF EXISTS $impervious_tmp;
                 CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
@@ -1335,7 +1335,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
 
         if (building && datasource.hasTable(building)) {
             debug "Preparing table : $building"
-            datasource."$building".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(building,"the_geom")
             def building_tmp = postfix "building_zindex0"
             datasource """DROP TABLE IF EXISTS $building_tmp;
                 CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
@@ -1367,8 +1367,8 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                 st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom, ${id_zone} from $tmp_tables as a group by ${id_zone})')""".toString()
 
         //Create indexes
-        datasource."$tmp_point_polygonize".the_geom.createSpatialIndex()
-        datasource."$tmp_point_polygonize"."${id_zone}".createIndex()
+        datasource.createSpatialIndex(tmp_point_polygonize,"the_geom")
+        datasource.createIndex(tmp_point_polygonize,id_zone)
 
         def final_polygonize = postfix "final_polygonize_zindex0"
         datasource """
@@ -1377,8 +1377,8 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             from $tmp_point_polygonize as a, $zone as b
             where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""".toString()
 
-        datasource."$final_polygonize".the_geom.createSpatialIndex()
-        datasource."$final_polygonize"."${id_zone}".createIndex()
+        datasource.createSpatialIndex(final_polygonize,"the_geom")
+        datasource.createIndex(final_polygonize,id_zone)
 
         def finalMerge = []
         def tmpTablesToDrop = []
@@ -1387,42 +1387,42 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             def tmptableName = "tmp_stats_$entry.key"
             tmpTablesToDrop << tmptableName
             if (entry.key.startsWith("high_vegetation")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
-                datasource."$entry.key"."${id_zone}".createIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
+                datasource.createIndex(entry.key,id_zone)
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 1 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("low_vegetation")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
-                datasource."$entry.key"."${id_zone}".createIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
+                datasource.createIndex(entry.key,id_zone)
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                  CREATE TABLE $tmptableName AS SELECT b.area,1 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom,b.the_geom) AND a.${id_zone} =b.${id_zone}""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("water")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
-                datasource."$entry.key"."${id_zone}".createIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
+                datasource.createIndex(entry.key,id_zone)
                 datasource """CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 0 as high_vegetation, 1 as water, 0 as impervious, 0 as road,  0 as building, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b  where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("road")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
-                datasource."$entry.key"."${id_zone}".createIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
+                datasource.createIndex(entry.key,id_zone)
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                     CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 1 as road, 0 as building, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("impervious")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
-                datasource."$entry.key"."${id_zone}".createIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
+                datasource.createIndex(entry.key,id_zone)
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 1 as impervious, 0 as road, 0 as building, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("building")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
-                datasource."$entry.key"."${id_zone}".createIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
+                datasource.createIndex(entry.key,id_zone)
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 1 as building, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key}  as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""".toString()
@@ -1845,9 +1845,9 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
                         ON a.$idRsu = b.$idRsu""".toString()
 
         // 2. Keep only intersected facades within a given distance and calculate their length, height and azimuth
-        datasource."$buildLine"."$GEOMETRIC_FIELD_BU".createSpatialIndex()
-        datasource."$buildLine"."$idRsu".createIndex()
-        datasource."$buildLine"."$ID_FIELD_BU".createIndex()
+        datasource.createSpatialIndex(buildLine,GEOMETRIC_FIELD_BU)
+        datasource.createIndex(buildLine,idRsu)
+        datasource.createIndex(buildLine,ID_FIELD_BU)
         datasource """
                     DROP TABLE IF EXISTS $allLinesRsu;
                     CREATE TABLE $allLinesRsu 
@@ -2020,8 +2020,8 @@ String rsuPopulation(JdbcDataSource datasource, String rsu, String population, L
     def outputTableName = postfix BASE_NAME
 
     //Indexing table
-    datasource."$rsu".the_geom.createSpatialIndex()
-    datasource."$population".the_geom.createSpatialIndex()
+    datasource.createSpatialIndex(rsu,"the_geom")
+    datasource.createSpatialIndex(population,"the_geom")
     def popColumns = []
     def sum_popColumns = []
     if (populationColumns) {
@@ -2123,13 +2123,13 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
     def outputTableName = postfix BASE_NAME
 
     if (zone && datasource.hasTable(zone)) {
-        datasource."$zone"."$id_zone".createIndex()
-        datasource."$zone".the_geom.createSpatialIndex()
+        datasource.createIndex(zone,id_zone)
+        datasource.createSpatialIndex(zone,"the_geom")
         def tablesToMerge = [:]
         tablesToMerge += ["$zone": "select ST_ExteriorRing(the_geom) as the_geom, ${id_zone} from $zone"]
         if (road && datasource.hasTable(road) && priorities.contains("road")) {
             debug "Preparing table : $road"
-            datasource."$road".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(road,"the_geom")
             //Separate road features according the zindex
             def roadTable_zindex0_buffer = postfix "road_zindex0_buffer"
             def road_tmp = postfix "road_zindex0"
@@ -2147,7 +2147,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
 
         if (vegetation && datasource.hasTable(vegetation)) {
             debug "Preparing table : $vegetation"
-            datasource."$vegetation".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(vegetation,"the_geom")
             def low_vegetation_tmp = postfix "low_vegetation_zindex0"
             def high_vegetation_tmp = postfix "high_vegetation_zindex0"
             if (priorities.contains("low_vegetation")) {
@@ -2170,7 +2170,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
 
         if (water && datasource.hasTable(water) && priorities.contains("water")) {
             debug "Preparing table : $water"
-            datasource."$water".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(water,"the_geom")
             def water_tmp = postfix "water_zindex0"
             datasource """DROP TABLE IF EXISTS $water_tmp;
                 CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone}, 'water' as type FROM 
@@ -2181,7 +2181,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
 
         if (impervious && datasource.hasTable(impervious) && priorities.contains("impervious")) {
             debug "Preparing table : $impervious"
-            datasource."$impervious".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(impervious,"the_geom")
             def impervious_tmp = postfix "impervious_zindex0"
             datasource """DROP TABLE IF EXISTS $impervious_tmp;
                 CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone},  'impervious' as type FROM 
@@ -2192,7 +2192,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
 
         if (building && datasource.hasTable(building) && priorities.contains("building")) {
             debug "Preparing table : $building"
-            datasource."$building".the_geom.createSpatialIndex()
+            datasource.createSpatialIndex(building,"the_geom")
             def building_tmp = postfix "building_zindex0"
             datasource """DROP TABLE IF EXISTS $building_tmp;
                 CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone}, a.type FROM 
@@ -2224,8 +2224,8 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
                 st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom from $tmp_tables as a group by ${id_zone})')""".toString()
 
         //Create indexes
-        datasource."$final_polygonize".the_geom.createSpatialIndex()
-        datasource."$final_polygonize"."${ID_COLUMN_NAME}".createIndex()
+        datasource.createSpatialIndex(final_polygonize,"the_geom")
+        datasource.createIndex(final_polygonize,ID_COLUMN_NAME)
 
         def finalMerge = []
         def tmpTablesToDrop = []
@@ -2234,36 +2234,36 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             def tmptableName = "tmp_stats_$entry.key"
             tmpTablesToDrop << tmptableName
             if (entry.key.startsWith("high_vegetation")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT st_area(a.the_geom) as area,'high_vegetation' as layer, a.type, ${priorities.findIndexOf { it == "high_vegetation" }} as priority, b.${ID_COLUMN_NAME} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("low_vegetation")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                  CREATE TABLE $tmptableName AS SELECT st_area(a.the_geom) as area,'low_vegetation' as layer, a.type, ${priorities.findIndexOf { it == "low_vegetation" }} as priority, b.${ID_COLUMN_NAME} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom,st_pointonsurface(b.the_geom))""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("water")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
                 datasource """CREATE TABLE $tmptableName AS SELECT st_area(a.the_geom) as area,'water' as layer, a.type,${priorities.findIndexOf { it == "water" }} as priority, b.${ID_COLUMN_NAME} from ${entry.key} as a,
                 $final_polygonize as b  where a.the_geom && b.the_geom and st_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("road")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                     CREATE TABLE $tmptableName AS SELECT st_area(a.the_geom) as area, 'road' as layer, a.type,${priorities.findIndexOf { it == "road" }} as priority, b.${ID_COLUMN_NAME} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("impervious")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT st_area(a.the_geom) as area, 'impervious' as layer, 'impervious' as type,${priorities.findIndexOf { it == "impervious" }} as priority, b.${ID_COLUMN_NAME} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()
                 finalMerge.add("SELECT * FROM $tmptableName")
             } else if (entry.key.startsWith("building")) {
-                datasource."$entry.key".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(entry.key,"the_geom")
                 datasource """DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT st_area(a.the_geom) as area, 'building' as layer, a.type, ${priorities.findIndexOf { it == "building" }} as priority, b.${ID_COLUMN_NAME} from ${entry.key}  as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, st_pointonsurface(b.the_geom))""".toString()

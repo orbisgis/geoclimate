@@ -43,6 +43,20 @@ import java.util.concurrent.Callable
 
 class Geoclimate implements Callable<Integer> {
 
+    /**
+     * Shortcut to run the OSM workflow
+     */
+    static class OSM {
+        def static workflow = org.orbisgis.geoclimate.osm.OSM
+    }
+
+    /**
+     * Shortcut to run the BDTopo workflow
+     */
+    static class BDTopo {
+        def static workflow = org.orbisgis.geoclimate.bdtopo.BDTopo
+    }
+
     public static final def SUCCESS_CODE = 0
     public static final def PROCESS_FAIL_CODE = 1
     public static final def PROCESS_INVALID_CODE = 2

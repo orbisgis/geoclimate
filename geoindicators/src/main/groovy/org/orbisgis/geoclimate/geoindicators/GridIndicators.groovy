@@ -47,8 +47,8 @@ String gridPopulation(JdbcDataSource datasource, String gridTable, String popula
     def outputTableName = postfix BASE_NAME
 
     //Indexing table
-    datasource."$gridTable".the_geom.createSpatialIndex()
-    datasource."$populationTable".the_geom.createSpatialIndex()
+    datasource.createSpatialIndex(gridTable,"the_geom")
+    datasource.createSpatialIndex(populationTable,"the_geom")
     def popColumns = []
     def sum_popColumns = []
     if (populationColumns) {

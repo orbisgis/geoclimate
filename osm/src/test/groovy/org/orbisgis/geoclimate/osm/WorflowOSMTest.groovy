@@ -514,6 +514,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
+
         def osm_parmeters = [
                 "description" : "Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb": [
@@ -554,18 +555,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
 
-
-       // def nominatim = OSMTools.Utilities.getNominatimData("Pont-de-Veyle")
+       def nominatim = OSMTools.Utilities.getNominatimData("Göteborgs Stad")
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
                         "folder": dirFile.absolutePath,
-                        "name"  : "geoclimate_test_integration_test;AUTO_SERVER=TRUE;",
+                        "name"  : "geoclimate_test_integration;AUTO_SERVER=TRUE;",
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": ["Bastia"],//[nominatim["bbox"]],
+                        "locations": ["Clohars-Carnoët"],//[nominatim["bbox"]],//["Lorient"],
 
                         /*"timeout":182,
                         "maxsize": 536870918,

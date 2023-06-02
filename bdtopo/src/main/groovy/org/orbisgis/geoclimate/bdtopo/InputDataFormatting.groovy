@@ -52,12 +52,11 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
             HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer, ROOF_SHAPE VARCHAR);""".toString())
 
     if (building) {
-        ISpatialTable inputSpatialTable = datasource."$building"
-        if (!inputSpatialTable.isEmpty()) {
+        if (datasource.hasTable(building)) {
             def queryMapper = "SELECT "
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
-                datasource."$zone".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(building, "the_geom")
+                datasource.createSpatialIndex(zone,"the_geom")
                 queryMapper += " a.*  FROM $building as a,  $zone as b WHERE a.the_geom && b.the_geom and st_intersects(a.the_geom " +
                         ",b.the_geom) and st_area(a.the_geom)>1 and st_isempty(a.the_geom)=false "
             } else {
@@ -197,10 +196,10 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
             }
             //Let's use the urban areas table to improve building qualification
             if (urban_areas) {
-                datasource."$outputTableName".the_geom.createSpatialIndex()
-                datasource."$outputTableName".id_build.createIndex()
-                datasource."$outputTableName".type.createIndex()
-                datasource."$urban_areas".the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(outputTableName,"the_geom")
+                datasource.createIndex(outputTableName,"id_build")
+                datasource.createIndex(outputTableName,"type")
+                datasource.createSpatialIndex(urban_areas,"the_geom")
                 def buildinType = postfix("BUILDING_TYPE")
 
                 datasource.execute """create table $buildinType as SELECT 
@@ -298,6 +297,20 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  'Pont'               : 'bridge', 'Tunnel': 'tunnel', 'NC': null
                 ]
 
+        def road_surfaces =
+                ["Autoroute"          : "asphalt",
+                 'Quasi-autoroute'    : 'asphalt',
+                 'Bretelle'           : 'asphalt',
+                 'Route à 2 chaussées': 'asphalt',
+                 'Route à 1 chaussée' : 'asphalt',
+                 'Route empierrée'    : 'paved',
+                 'Chemin'             : 'ground',
+                 'Sentier'            : 'ground',
+                 'Pont'               : 'asphalt',
+                 'Tunnel'             : 'asphalt',
+                 'NC': null
+                ]
+
         def road_types_width =
                 ["highway"     : 8,
                  "motorway"    : 24,
@@ -319,13 +332,12 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  "service"     : 3]
 
         def queryMapper = "SELECT "
-        def inputSpatialTable = datasource."$road"
-        if (!inputSpatialTable.isEmpty()) {
-            def columnNames = inputSpatialTable.columns
+        if (datasource.hasTable(road)) {
+            def columnNames = datasource.getColumnNames(road)
             columnNames.remove("THE_GEOM")
             queryMapper += columnNames.join(",")
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(road,"the_geom")
                 queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
                         "ELSE a.the_geom " +
@@ -341,8 +353,10 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
                     def road_type = row.TYPE
+                    def road_surface = row.SURFACE
                     if (road_type) {
                         road_type = road_types.get(road_type)
+                        road_surface=road_surfaces.get(road_surface)
                     } else {
                         road_type = "unclassified"
                     }
@@ -371,7 +385,6 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                         road_zindex = 0
                     }
                     def ID_SOURCE = row.ID_SOURCE
-                    def road_surface = row.SURFACE
                     def road_sidewalk = row.SIDEWALK
                     //Not yet managed
                     def road_maxspeed = null
@@ -418,11 +431,10 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
 
     if (water) {
-        ISpatialTable inputSpatialTable = datasource.getSpatialTable(water)
-        if (!inputSpatialTable.isEmpty()) {
+        if (datasource.hasTable(water)) {
             String query
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(water,"the_geom")
                 query = "select  CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
                         "ELSE a.the_geom " +
@@ -472,13 +484,12 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
 
     if (rail) {
         def queryMapper = "SELECT "
-        def inputSpatialTable = datasource."$rail"
-        if (!inputSpatialTable.isEmpty()) {
-            def columnNames = inputSpatialTable.columns
+        if (datasource.hasTable(rail)) {
+            def columnNames = datasource.getColumnNames(rail)
             columnNames.remove("THE_GEOM")
             queryMapper += columnNames.join(",")
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(rail,"the_geom")
                 queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
                         "ELSE a.the_geom " +
@@ -563,13 +574,12 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
     if (vegetation) {
         def queryMapper = "SELECT "
-        def inputSpatialTable = datasource."$vegetation"
-        if (!inputSpatialTable.isEmpty()) {
-            def columnNames = inputSpatialTable.columns
+        if (datasource.hasTable(vegetation)) {
+            def columnNames = datasource.getColumnNames(vegetation)
             columnNames.remove("THE_GEOM")
             queryMapper += columnNames.join(",")
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(vegetation,"the_geom")
                 queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
                         "ELSE a.the_geom " +
@@ -742,7 +752,7 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
             SELECT * from ST_EXPLODE('(select st_polygonize(st_union(st_accum(ST_ToMultiLine( the_geom)))) as the_geom from $impervious)')
             """.toString())
 
-    datasource."$impervious".the_geom.createSpatialIndex()
+    datasource.createSpatialIndex(impervious,"the_geom")
 
     datasource.execute(""" CREATE SPATIAL INDEX ON $polygonizedTable(THE_GEOM);
                         CREATE INDEX ON $polygonizedTable(EXPLOD_ID);""".toString())

@@ -46,11 +46,11 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * @param datasource A connection to a database
  *
  * @param area TSU less or equals than area are removed, default 1d
- * @param roadTable The road table to be processed
- * @param railTable The rail table to be processed
- * @param vegetationTable The vegetation table to be processed
- * @param hydrographicTable The hydrographic table to be processed
- * @param seaLandMaskTableName The table to distinguish sea from land
+ * @param road The road table to be processed
+ * @param rail The rail table to be processed
+ * @param vegetation The vegetation table to be processed
+ * @param water The water table to be processed
+ * @param sea_land_mask The table to distinguish sea from land
  * @param surface_vegetation A double value to select the vegetation geometry areas.
  * Expressed in geometry unit of the vegetationTable, default 10000
  * @param surface_hydro A double value to select the hydrographic geometry areas.
@@ -59,8 +59,8 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * @return A database table name and the name of the column ID
  */
 String createTSU(JdbcDataSource datasource, String zone,
-                 double area = 1f, String roadTable, String railTable, String vegetationTable,
-                 String hydrographicTable, String seaLandMaskTableName,
+                 double area = 1f, String road, String rail, String vegetation,
+                 String water, String sea_land_mask,
                  double surface_vegetation, double surface_hydro, String prefixName) {
     def BASE_NAME = "rsu"
 
@@ -70,8 +70,8 @@ String createTSU(JdbcDataSource datasource, String zone,
     datasource """DROP TABLE IF EXISTS $outputTableName;""".toString()
 
     def tsuDataPrepared = prepareTSUData(datasource,
-            zone, roadTable, railTable,
-            vegetationTable, hydrographicTable, seaLandMaskTableName, surface_vegetation, surface_hydro, prefixName)
+            zone, road, rail,
+            vegetation, water, sea_land_mask, surface_vegetation, surface_hydro, prefixName)
     if (!tsuDataPrepared) {
         info "Cannot prepare the data for RSU calculation."
         return
@@ -119,16 +119,14 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         error "The area value to filter the TSU must be greater to 0"
         return null
     }
-    def bufferSnap = -0.0001
-
     if (inputzone) {
-        datasource.getSpatialTable(inputTableName).the_geom.createSpatialIndex()
+        datasource.createSpatialIndex(inputTableName,"the_geom")
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(a.the_geom, $epsg) AS the_geom
                         FROM ST_EXPLODE('(
-                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))), $bufferSnap) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
                                 FROM $inputTableName)') AS a,
                             $inputzone AS b
                         WHERE a.the_geom && b.the_geom 
@@ -140,7 +138,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
                     CREATE TABLE $outputTableName AS 
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_FORCE2D(the_geom), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))), $bufferSnap) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
     }
 
@@ -171,7 +169,6 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
 String prepareTSUData(JdbcDataSource datasource, String zone, String road, String rail,
                       String vegetation, String water, String sea_land_mask,
                       double surface_vegetation, double surface_hydro, String prefixName = "unified_abstract_model") {
-
     if (surface_vegetation <= 100) {
         error("The surface of vegetation must be greater or equal than 100 m²")
         return
@@ -204,13 +201,10 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         def epsg = datasource."$zone".srid
         //Add the land mask
         if (sea_land_mask && datasource.hasTable(sea_land_mask)) {
-            if (datasource."$sea_land_mask") {
-                debug "Preparing land mask..."
-                queryCreateOutputTable += [land_mask_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $sea_land_mask where type ='land')"]
-            }
+            debug "Preparing land mask..."
+            queryCreateOutputTable += [land_mask_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $sea_land_mask where type ='land')"]
         }
         if (vegetation && datasource.hasTable(vegetation)) {
-            if (datasource."$vegetation") {
                 debug "Preparing vegetation..."
                 vegetation_indice = postfix vegetation
                 vegetation_unified = postfix "vegetation_unified"
@@ -246,7 +240,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 dropTableList.addAll([vegetation_indice,
                                       vegetation_unified,
                                       vegetation_tmp])
-            }
+
         }
 
         if (water && datasource.hasTable(water)) {
@@ -264,6 +258,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                                  WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)""").toString()
 
                 datasource """CREATE SPATIAL INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice (THE_GEOM);
+                          CREATE INDEX IF NOT EXISTS hydro_indice_id ON $hydrographic_indice (ID); 
                          UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)
                                  FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM
                                  AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID);
@@ -305,6 +300,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where zindex=0 or crossing = 'bridge')"]
             }
         }
+
         // The input table that contains the geometries to be transformed as TSU
         debug "Grouping all tables..."
         if (queryCreateOutputTable) {
@@ -357,8 +353,8 @@ String createBlocks(JdbcDataSource datasource, String inputTableName, double sna
     def outputTableName = prefix prefixName, BASE_NAME
     //Find all neighbors for each building
     debug "Building index to perform the process..."
-    datasource."$inputTableName".the_geom.createSpatialIndex()
-    datasource."$inputTableName".id_build.createIndex()
+    datasource.createSpatialIndex(inputTableName,"the_geom")
+    datasource.createIndex(inputTableName, "id_build")
 
     debug "Building spatial clusters..."
 
@@ -450,9 +446,8 @@ String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetT
     // The name of the outputTableName is constructed (the prefix name is not added since it is already contained
     // in the inputLowerScaleTableName object
     def outputTableName = postfix "${sourceTable}_${targetTable}", "join"
-    ISpatialTable sourceSpatialTable = datasource.getSpatialTable(sourceTable)
-    datasource.getSpatialTable(sourceTable).the_geom.createSpatialIndex()
-    datasource."$targetTable".the_geom.createSpatialIndex()
+    datasource.createSpatialIndex(sourceTable, "the_geom")
+    datasource.createSpatialIndex(targetTable,"the_geom")
 
     if (pointOnSurface) {
         datasource """    DROP TABLE IF EXISTS $outputTableName;

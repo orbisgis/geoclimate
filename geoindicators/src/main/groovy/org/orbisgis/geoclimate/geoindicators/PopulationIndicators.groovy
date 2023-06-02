@@ -116,8 +116,8 @@ Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List
                     }
                     //Here the population from the building to a grid
                     // Create the relations between grid cells and buildings
-                    datasource."$buildingTable".the_geom.createSpatialIndex()
-                    datasource."$gridTable".the_geom.createSpatialIndex()
+                    datasource.createSpatialIndex(buildingTable,"the_geom")
+                    datasource.createSpatialIndex(gridTable,"the_geom")
                     def buildingGrid_inter = postfix("building_grid_inter")
                     datasource.execute("""
                                 DROP TABLE IF EXISTS $buildingGrid_inter;
