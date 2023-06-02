@@ -102,7 +102,7 @@ class SpatialUnitsTests {
 
         def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_test",
                 'road_test', 'rail_test',
-                'veget_test', 'hydro_test',null,
+                'veget_test', 'hydro_test',
                 "", 10000, 2500, "block")
         assert createRSU
 
