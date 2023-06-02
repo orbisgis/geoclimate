@@ -484,14 +484,19 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     String seaLandMaskTableName = OSM.InputDataFormatting.formatSeaLandMask(
                             h2gis_datasource, gisLayersResults.coastline, zoneEnvelopeTableName, hydrographicTableName)
 
-                    //Merge the Sea/Land mask with water table
-                    hydrographicTableName = OSM.InputDataFormatting.mergeWaterAndSeaLandTables(
-                            h2gis_datasource, seaLandMaskTableName, hydrographicTableName)
+                    if(h2gis_datasource.getRowCount(seaLandMaskTableName)>0){
+                    //Select the water and sea features
+                    h2gis_datasource.execute """Drop table if exists $hydrographicTableName;
+                    CREATE TABLE $hydrographicTableName as select the_geom, id, cast(0 as integer) as zindex, type from $seaLandMaskTableName where type in ('water', 'sea') """.toString()
+                    }
 
                     //Format road
                     String roadTableName = OSM.InputDataFormatting.formatRoadLayer(
                             h2gis_datasource, gisLayersResults.road,
                             zoneEnvelopeTableName)
+
+                    //Drop the intermediate GIS layers
+                    h2gis_datasource.dropTable(gisLayersResults.values().toArray(new String[0]))
 
                     debug "OSM GIS layers formated"
                     //Add the GIS layers to the list of results

@@ -78,8 +78,8 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                datasource.createSpatialIndex(building,"the_geom")
-                datasource.createSpatialIndex(zone,"the_geom")
+                datasource.createSpatialIndex(building, "the_geom")
+                datasource.createSpatialIndex(zone, "the_geom")
                 queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a,  $zone as b WHERE a.the_geom && b.the_geom and st_intersects( " +
                         "a.the_geom, b.the_geom) and st_area(a.the_geom)>1 and st_isempty(a.the_geom)=false "
             } else {
@@ -141,10 +141,10 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             }
             //Improve building type using the urban areas table
             if (urban_areas) {
-                datasource.createSpatialIndex(outputTableName,"the_geom")
-                datasource.createIndex(outputTableName,"id_build")
-                datasource.createIndex(outputTableName,"type")
-                datasource.createSpatialIndex(urban_areas,"the_geom")
+                datasource.createSpatialIndex(outputTableName, "the_geom")
+                datasource.createIndex(outputTableName, "id_build")
+                datasource.createIndex(outputTableName, "type")
+                datasource.createSpatialIndex(urban_areas, "the_geom")
                 def buildinType = "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                 datasource.execute """create table $buildinType as SELECT max(b.type) as type, max(b.main_use) as main_use, a.id_build FROM $outputTableName a, $urban_areas b 
@@ -254,6 +254,30 @@ String formatRoadLayer(
                         }
 
                         String surface = getTypeValue(row, columnNames, mappingForSurface)
+
+                        if (!surface) {
+                            def tracktype = row.'tracktype'
+                            //tracktype is use to defined the surface of the track
+                            switch (tracktype) {
+                                case 'grade1':
+                                    surface = 'compacted'
+                                    break
+                                case 'grade2':
+                                    surface = 'gravel'
+                                    break
+                                case 'grade3':
+                                    surface = 'gravel'
+                                    break
+                                case 'grade4':
+                                    surface = 'ground'
+                                    break
+                                case 'grade5':
+                                    surface = 'ground'
+                                    break
+                                default:
+                                    break
+                            }
+                        }
                         String sidewalk = getSidewalk(row.'sidewalk')
                         def zIndex = getZIndex(row.'layer')
                         //maxspeed value
@@ -266,10 +290,17 @@ String formatRoadLayer(
                         }
 
                         if (zIndex >= 0 && type) {
-                            Geometry geom = row.the_geom
-                            int epsg = geom.getSRID()
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                stmt.addBatch """
+                            boolean addGeom = false
+                            if (type == 'track' && surface in ['unpaved', 'asphalt', 'paved', 'cobblestone', 'metal', 'concrete', 'compacted']) {
+                                addGeom = true
+                            } else if (type != "track") {
+                                addGeom = true
+                            }
+                            if (addGeom) {
+                                Geometry geom = row.the_geom
+                                int epsg = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    stmt.addBatch """
                                     INSERT INTO $outputTableName VALUES(ST_GEOMFROMTEXT(
                                         '${geom.getGeometryN(i)}',$epsg), 
                                         ${rowcount++}, 
@@ -283,7 +314,7 @@ String formatRoadLayer(
                                         ${direction},
                                         ${zIndex})
                                 """.toString()
-
+                                }
                             }
                         }
                     }
@@ -462,12 +493,11 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
     datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
 
-    if (water != null) {
-        ISpatialTable inputSpatialTable = datasource.getSpatialTable(water)
-        if (inputSpatialTable.rowCount > 0) {
-            inputSpatialTable.the_geom.createSpatialIndex()
+    if (water) {
+        if (datasource.getRowCount(water) > 0) {
             String query
             if (zone) {
+                datasource.createSpatialIndex(water, "the_geom")
                 query = "select id , CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
                         "ELSE a.the_geom " +
@@ -476,14 +506,20 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                         "$water AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) "
+                if(datasource.getColumnNames(water).contains("seamark:type")){
+                    query+=" and a.\"seamark:type\" is null"
+                }
+
             } else {
                 query = "select id,  st_force2D(the_geom) as the_geom, \"natural\", \"layer\" FROM $water "
-
+                if(datasource.getColumnNames(water).contains("seamark:type")){
+                    query+=" where \"seamark:type\" is null"
+                }
             }
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(query) { row ->
-                    def water_type = row.natural in ['bay', 'strait"'] ? 'sea' : 'water'
+                    def water_type = row.natural in ['bay', 'strait'] ? 'sea' : 'water'
                     def zIndex = getZIndex(row.'layer')
                     Geometry geom = row.the_geom
                     int epsg = geom.getSRID()
@@ -996,17 +1032,13 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
  * @return outputTableName The name of the final buildings table
  */
 String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zone = "", String water = "") {
-    def outputTableName = postfix "INPUT_SEA_LAND_MASK_"
-    debug 'Computing sea/land mask table'
-    datasource """ 
-                DROP TABLE if exists ${outputTableName};
-                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY, id serial, TYPE VARCHAR);
-            """.toString()
+    String outputTableName = postfix "INPUT_SEA_LAND_MASK_"
     if (coastline) {
-        def inputSpatialTable = datasource."$coastline"
         if (datasource.hasTable(coastline) && datasource.getRowCount(coastline) > 0) {
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                debug 'Computing sea/land mask table'
+                datasource """ DROP TABLE if exists ${outputTableName};""".toString()
+                datasource.createSpatialIndex(coastline, "the_geom")
                 def mergingDataTable = "coatline_merged${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def coastLinesIntersects = "coatline_intersect_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def islands_mark = "islands_mark_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
@@ -1017,15 +1049,14 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                 def water_to_be_filtered = "water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def water_filtered_exploded = "water_filtered_exploded${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def sea_land_triangles = "sea_land_triangles${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                def grid = "grid${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def sea_id_triangles = "sea_id_triangles${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def water_id_triangles = "water_id_triangles${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
                 datasource.createSpatialIndex(coastline, "the_geom")
-                datasource.execute """DROP TABLE IF EXISTS $outputTableName, $coastLinesIntersects, 
+                datasource.execute """DROP TABLE IF EXISTS $coastLinesIntersects, 
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
-                        $sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $grid, $sea_id_triangles, $water_id_triangles;
-                        CREATE TABLE $coastLinesIntersects AS SELECT a.*
+                        $sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles;
+                        CREATE TABLE $coastLinesIntersects AS SELECT ST_intersection(a.the_geom, b.the_geom) as the_geom
                         from $coastline  AS  a,  $zone  AS b WHERE
                         a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom);     
                         """.toString()
@@ -1041,7 +1072,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
-                        SELECT st_tomultiline(the_geom)
+                        SELECT st_tomultiline(st_buffer(the_geom, -0.01))
                         from $zone 
                         UNION ALL
                         SELECT st_tomultiline(the_geom)
@@ -1050,7 +1081,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
                         st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');   """.toString()
 
-                         datasource.execute """
+                    datasource.execute """
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
 
                         CREATE TABLE $sea_land_mask_in_zone as select the_geom, id, type, ZINDEX 
@@ -1090,7 +1121,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                     DROP TABLE IF EXISTS $water_id_triangles;
                     CREATE TABLE $water_id_triangles AS SELECT a.ID
                                 FROM ${sea_land_triangles} a, $water b WHERE a.THE_GEOM && b.THE_GEOM AND
-                                st_intersects( a.THE_GEOM, st_pointonsurface(b.the_geom) ) ;
+                                st_intersects( a.THE_GEOM, st_pointonsurface(b.the_geom)) and b.type='water';
                                
                     CREATE INDEX ON  $water_id_triangles (id);
                          
@@ -1098,14 +1129,10 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                     UPDATE $sea_land_triangles SET TYPE='water' WHERE ID IN(SELECT ID FROM $water_id_triangles);                         
                          """.toString()
 
-                    //Let's tile the sea land mask table
+                    //Unioning all geometries
                     datasource.execute("""
-                    drop table if exists $grid;
-                    create table $grid as select * FROM st_makegrid((select ST_EXTENT(the_geom) from $sea_land_triangles), 2000, 2000);
-                    create spatial index ${grid}_spi on $grid(the_geom);
-                    create table $outputTableName as select CAST((row_number() over()) as Integer) as id, 
-                    st_union(st_intersection(a.the_geom, st_buffer(st_accum(l.the_geom), 0))) the_geom, type from $grid a, 
-                    $sea_land_triangles l where a.the_geom && l.the_geom and ST_INTERSECTS(a.the_geom, l.the_geom) group by a.the_geom, l.type;
+                    create table $outputTableName as select id, 
+                    st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
                     """.toString())
 
                 } else {
@@ -1118,7 +1145,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
-                        SELECT st_tomultiline(the_geom)
+                        SELECT st_tomultiline(st_buffer(the_geom, -0.01))
                         from $zone ;
 
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
@@ -1162,70 +1189,27 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                     UPDATE ${sea_land_triangles} SET TYPE='sea' WHERE ID IN(SELECT ID FROM $sea_id_triangles);   
                      """.toString()
 
-                    //Let's tile the sea land mask table
+                    //Unioning all geometries
                     datasource.execute("""
-                    drop table if exists $grid;
-                    create table $grid as select * FROM st_makegrid((select ST_EXTENT(the_geom) from $sea_land_triangles), 2000, 2000);
-                    create spatial index ${grid}_spi on $grid(the_geom);
-                    create table $outputTableName as select CAST((row_number() over()) as Integer) as id, st_union(st_intersection(a.the_geom, st_buffer(st_accum(l.the_geom), 0))) the_geom, type from $grid a, 
-                    $sea_land_triangles l where a.the_geom && l.the_geom and ST_INTERSECTS(a.the_geom, l.the_geom) group by a.the_geom, l.type;
+                    create table $outputTableName as select id, 
+                    st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
                     """.toString())
                 }
 
-                datasource.execute("""DROP TABLE IF EXISTS $coastLinesIntersects, 
+                datasource.execute("""DROP TABLE IF EXISTS $coastLinesIntersects,
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
-                        $sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $grid, $sea_id_triangles, $water_id_triangles
+                        $sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles
                         """.toString())
-
+                debug 'The sea/land mask has been computed'
+                return outputTableName
             } else {
                 debug "A zone table must be provided to compute the sea/land mask"
             }
-        } else {
-            debug "The sea/land mask table is empty"
         }
     }
-    debug 'The sea/land mask has been computed'
-    return outputTableName
-}
+    datasource.execute """Drop table if exists $outputTableName;
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, type varchar);""".toString()
 
-
-/**
- * This process is used to merge the water and the sea-land mask layers
- *
- * @param datasource A connexion to a DB  that contains the tables
- * @param sead_land The name of the sea/land table
- * @param water The name of the water table
- * @return outputTableName The name of the final water table
- */
-String mergeWaterAndSeaLandTables(JdbcDataSource datasource, String sead_land, String water) {
-    def outputTableName = postfix "INPUT_WATER_SEA_"
-    debug 'Merging sea/land mask and water table'
-    datasource """ 
-                DROP TABLE if exists ${outputTableName};
-                CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY, id_hydro serial, id_source VARCHAR, ZINDEX INTEGER);
-            """.toString()
-    if (sead_land && water) {
-        if (datasource.firstRow("select count(*) as count from $sead_land where TYPE ='sea'".toString()).count > 0) {
-            def tmp_water_not_in_sea = "WATER_NOT_IN_SEA${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            //This method is used to merge the SEA mask with the water table
-            def queryMergeWater = """DROP  TABLE IF EXISTS $outputTableName, $tmp_water_not_in_sea;
-                CREATE TABLE $tmp_water_not_in_sea AS SELECT a.the_geom, a.ID_SOURCE, a.zindex FROM $water AS a, $sead_land  AS b
-                WHERE b."TYPE"= 'land' AND a.the_geom && b.the_geom AND st_contains(b.THE_GEOM, st_pointonsurface(a.THE_GEOM)) and a.type='water';
-                CREATE TABLE $outputTableName(the_geom GEOMETRY, ID_HYDRO SERIAL, ID_SOURCE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, ROWNUM() , 
-                id_source, zindex 
-                FROM (SELECT the_geom,  id_source, zindex FROM $tmp_water_not_in_sea UNION ALL 
-                SELECT THE_GEOM,  '-1', 0 FROM $sead_land  WHERE
-                "TYPE" ='sea') AS foo;"""
-            //Check indexes before executing the query
-            datasource.createSpatialIndex(water,"the_geom")
-            datasource.createSpatialIndex(sead_land,"the_geom")
-            datasource.execute queryMergeWater.toString()
-            datasource.execute("drop table if exists $tmp_water_not_in_sea;".toString())
-        } else {
-            return water
-        }
-    }
-    debug 'The sea/land and water tables have been merged'
     return outputTableName
 }
 

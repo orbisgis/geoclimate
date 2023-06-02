@@ -131,7 +131,7 @@ class GeoclimateTest {
                         ]
                 ]
         ]
-        Geoclimate.OSM.workflow.execute(input: osmParameters)
+        Geoclimate.OSM.workflow(osmParameters)
     }
 
     @Disabled
@@ -145,7 +145,7 @@ class GeoclimateTest {
                         "delete": true
                 ],
                 "input"       : [
-                        "folder": ["path"     : "../geoclimate/bdtopo_v2/src/test/resources/org/orbisgis/geoclimate/bdtopo_v2/sample_12174",
+                        "folder": ["path"     : "../geoclimate/bdtopo/src/test/resources/org/orbisgis/geoclimate/bdtopo/v2.sample_12174",
                                    "locations": ["12174"]]],
                 "output"      : [
                         "folder": folder.absolutePath],
@@ -161,6 +161,6 @@ class GeoclimateTest {
                         ]
                 ]
         ]
-        Geoclimate.BDTopo_V2.workflow.execute(input: wParameters)
+        Geoclimate.BDTopo.workflow.v2(wParameters)
     }
 }

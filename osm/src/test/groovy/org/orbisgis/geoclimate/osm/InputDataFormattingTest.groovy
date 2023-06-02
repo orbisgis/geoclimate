@@ -102,7 +102,7 @@ class InputDataFormattingTest {
         //Roads
         String road = OSM.InputDataFormatting.formatRoadLayer(h2GIS, extractData.road)
         assertNotNull h2GIS.getTable(road).save(new File(folder, "osm_road_formated.shp").absolutePath, true)
-        assertEquals 146, h2GIS.getTable(road).rowCount
+        assertEquals 145, h2GIS.getTable(road).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where WIDTH is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where WIDTH<=0".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where CROSSING IS NOT NULL".toString()).count == 7
@@ -216,11 +216,9 @@ class InputDataFormattingTest {
 
         //Sea/Land mask
         String inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline, zoneEnvelopeTableName)
-        assertEquals(17, h2GIS.getTable(inputSeaLandTableName).getRowCount())
-        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 2
+        assertEquals(4, h2GIS.getTable(inputSeaLandTableName).getRowCount())
+        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 3
         h2GIS.getTable(inputSeaLandTableName).save(new File(folder, "osm_sea_land.geojson").getAbsolutePath(), true)
-
-
     }
 
     @Test
@@ -313,6 +311,8 @@ class InputDataFormattingTest {
 
             zoneToExtract = "Göteborgs Stad"
 
+        zoneToExtract = "Lorient"
+
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
@@ -357,17 +357,13 @@ class InputDataFormattingTest {
 
 
             //Roads
-            format = OSM.InputDataFormatting.formatRoadLayer()
-            format.execute([
-                    datasource                : h2GIS,
-                    inputTableName            : extractData.results.roadTableName,
-                    inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
-                    epsg                      : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_road_${formatedPlaceName}.geojson", true)
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where width is null or width <= 0").count == 0
+
+             */
+            def inputRoadTableName = OSM.InputDataFormatting.formatRoadLayer( h2GIS,extractData.road, extractData.zone_envelope)
+            h2GIS.getTable(inputRoadTableName).save("${file.absolutePath + File.separator}osm_road_${formatedPlaceName}.geojson", true)
 
             //Rails
-            format = OSM.InputDataFormatting.formatRailsLayer()
+            /*format = OSM.InputDataFormatting.formatRailsLayer()
             format.execute([
                     datasource                : h2GIS,
                     inputTableName            : extractData.results.railTableName,
@@ -388,22 +384,17 @@ class InputDataFormattingTest {
 
             //Hydrography
             def inputWaterTableName = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
-            h2GIS.getTable(inputWaterTableName).save("${file.absolutePath + File.separator}osm_hydro_${formatedPlaceName}.geojson", true)
+            h2GIS.getTable(inputWaterTableName).save("${file.absolutePath + File.separator}osm_water_${formatedPlaceName}.geojson", true)
 
             //Impervious
             String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
                     extractData.zone_envelope)
             h2GIS.getTable(imperviousTable).save("${file.absolutePath + File.separator}osm_impervious_${formatedPlaceName}.geojson", true)
 
-
             //Sea/Land mask
             def inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
                     extractData.zone_envelope, inputWaterTableName)
             h2GIS.getTable(inputSeaLandTableName).save("${file.absolutePath + File.separator}osm_sea_land_${formatedPlaceName}.geojson", true)
-
-            //Merge Sea/Land mask and Water layers
-            String sea_land_mask = OSM.InputDataFormatting.mergeWaterAndSeaLandTables(h2GIS, inputSeaLandTableName, inputWaterTableName)
-            h2GIS.getTable(sea_land_mask).save("${file.absolutePath + File.separator}osm_water_sea_${formatedPlaceName}.geojson", true)
 
         } else {
             assertTrue(false)

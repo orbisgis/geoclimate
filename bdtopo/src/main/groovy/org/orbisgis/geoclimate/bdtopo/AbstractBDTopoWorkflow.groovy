@@ -896,14 +896,14 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         Map layers = getInputTables().collectEntries() { [it, it == "commune" ? subCommuneTableName : it] }
         Map dataFormated = formatLayers(h2gis_datasource, layers, processing_parameters.distance, processing_parameters.hLevMin)
         if (dataFormated) {
-            def buildingTableName = dataFormated.building
-            def roadTableName = dataFormated.road
-            def railTableName = dataFormated.rail
-            def hydrographicTableName = dataFormated.water
-            def vegetationTableName = dataFormated.vegetation
+            def building = dataFormated.building
+            def road = dataFormated.road
+            def rail = dataFormated.rail
+            def water = dataFormated.water
+            def vegetation = dataFormated.vegetation
             def zone = dataFormated.zone
-            def imperviousTableName = dataFormated.impervious
-            def urbanAreasTableName = dataFormated.urban_areas
+            def impervious = dataFormated.impervious
+            def urban_areas = dataFormated.urban_areas
 
 
             info "BDTOPO V2 GIS layers formated"
@@ -913,22 +913,22 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
 
             results.put("zone", zone)
-            results.put("road", roadTableName)
-            results.put("rail", railTableName)
-            results.put("water", hydrographicTableName)
-            results.put("vegetation", vegetationTableName)
-            results.put("impervious", imperviousTableName)
-            results.put("urban_areas", urbanAreasTableName)
-            results.put("building", buildingTableName)
+            results.put("road", road)
+            results.put("rail", rail)
+            results.put("water", water)
+            results.put("vegetation", vegetation)
+            results.put("impervious", impervious)
+            results.put("urban_areas", urban_areas)
+            results.put("building", building)
 
             //Compute the RSU indicators
             if (rsu_indicators_params.indicatorUse) {
                 //Build the indicators
                 rsu_indicators_params.put("utrfModelName", "UTRF_BDTOPO_V2_RF_2_2.model")
                 Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(h2gis_datasource, zone,
-                        buildingTableName, roadTableName,
-                        railTableName, vegetationTableName,
-                        hydrographicTableName, imperviousTableName, "", "", "",
+                        building, road,
+                        rail, vegetation,
+                        water, impervious, "", "", "","",
                         rsu_indicators_params, processing_parameters.prefixName)
                 if (!geoIndicators) {
                     error "Cannot build the geoindicators for the zone $id_zone"
@@ -949,13 +949,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     if (worldPopTableName) {
                         results.put("population", worldPopTableName)
 
-                        buildingTableName = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building,
+                        building = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building,
                                 worldPopTableName, ["pop"])
-                        if (!buildingTableName) {
+                        if (!building) {
                             info "Cannot compute any population data at building level"
                         }
                         //Update the building table with the population data
-                        results.put("building", buildingTableName)
+                        results.put("building", building)
 
                     } else {
                         info "Cannot import the worldpop asc file $worldPopFile"
@@ -977,7 +977,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
             //Compute traffic flow
             if (processing_parameters.road_traffic) {
-                String road_traffic = Geoindicators.RoadIndicators.build_road_traffic(h2gis_datasource, roadTableName)
+                String road_traffic = Geoindicators.RoadIndicators.build_road_traffic(h2gis_datasource, road)
                 results.put("road_traffic", road_traffic)
             }
 
@@ -990,8 +990,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     def gridP = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, geomEnv, 200, 200)
                     if (gridP) {
                         String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, gridP, "id_grid",
-                                buildingTableName, roadTableName, hydrographicTableName, vegetationTableName,
-                                imperviousTableName)
+                                building, road, water, vegetation,
+                                impervious)
                         if (ground_acoustic) {
 
                             results.put("ground_acoustic", ground_acoustic)

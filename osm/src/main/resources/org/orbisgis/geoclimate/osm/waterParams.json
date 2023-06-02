@@ -13,6 +13,7 @@
   },
   "columns": [
     "natural",
-    "layer"
+    "layer",
+    "seamark:type"
   ]
 }

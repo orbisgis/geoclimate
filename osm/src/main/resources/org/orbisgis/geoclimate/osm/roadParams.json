@@ -47,7 +47,8 @@
     "service",
     "access",
     "area",
-    "aeroway"
+    "aeroway",
+    "tracktype"
   ],
   "surface": {
     "unpaved": {

@@ -297,6 +297,20 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  'Pont'               : 'bridge', 'Tunnel': 'tunnel', 'NC': null
                 ]
 
+        def road_surfaces =
+                ["Autoroute"          : "asphalt",
+                 'Quasi-autoroute'    : 'asphalt',
+                 'Bretelle'           : 'asphalt',
+                 'Route à 2 chaussées': 'asphalt',
+                 'Route à 1 chaussée' : 'asphalt',
+                 'Route empierrée'    : 'paved',
+                 'Chemin'             : 'ground',
+                 'Sentier'            : 'ground',
+                 'Pont'               : 'asphalt',
+                 'Tunnel'             : 'asphalt',
+                 'NC': null
+                ]
+
         def road_types_width =
                 ["highway"     : 8,
                  "motorway"    : 24,
@@ -339,8 +353,10 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
                     def road_type = row.TYPE
+                    def road_surface = row.SURFACE
                     if (road_type) {
                         road_type = road_types.get(road_type)
+                        road_surface=road_surfaces.get(road_surface)
                     } else {
                         road_type = "unclassified"
                     }
@@ -369,7 +385,6 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                         road_zindex = 0
                     }
                     def ID_SOURCE = row.ID_SOURCE
-                    def road_surface = row.SURFACE
                     def road_sidewalk = row.SIDEWALK
                     //Not yet managed
                     def road_maxspeed = null

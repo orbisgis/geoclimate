@@ -555,7 +555,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
 
-       // def nominatim = OSMTools.Utilities.getNominatimData("Pont-de-Veyle")
+       def nominatim = OSMTools.Utilities.getNominatimData("Göteborgs Stad")
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -565,7 +565,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": ["Clohars-Carnoët"],//[nominatim["bbox"]],
+                        "locations": ["Clohars-Carnoët"],//[nominatim["bbox"]],//["Lorient"],
 
                         /*"timeout":182,
                         "maxsize": 536870918,
