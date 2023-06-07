@@ -491,7 +491,7 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
     debug('Hydro transformation starts')
     def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_hydro serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_water serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
 
     if (water) {
         if (datasource.getRowCount(water) > 0) {
@@ -1131,7 +1131,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
 
                     //Unioning all geometries
                     datasource.execute("""
-                    create table $outputTableName as select id, 
+                    create table $outputTableName as select id as id_water, 
                     st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
                     """.toString())
 
@@ -1191,7 +1191,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
 
                     //Unioning all geometries
                     datasource.execute("""
-                    create table $outputTableName as select id, 
+                    create table $outputTableName as select id as id_water, 
                     st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
                     """.toString())
                 }

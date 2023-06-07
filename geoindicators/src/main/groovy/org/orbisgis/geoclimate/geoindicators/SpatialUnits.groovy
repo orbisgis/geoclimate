@@ -203,18 +203,18 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         }
         if (vegetation && datasource.hasTable(vegetation)) {
             debug "Preparing vegetation..."
-            vegetation_tmp = postfix "vegetation_tmp"
+            if(datasource.getColumnNames(vegetation)) {
+                vegetation_tmp = postfix "vegetation_tmp"
+                def vegetation_graph = postfix "vegetation_graph"
+                def subGraphTableNodes = postfix vegetation_graph, "NODE_CC"
+                def subGraphTableEdges = postfix vegetation_graph, "EDGE_CC"
+                def subGraphBlocks = postfix "subgraphblocks"
 
-            def vegetation_graph = postfix "vegetation_graph"
-            def subGraphTableNodes = postfix vegetation_graph, "NODE_CC"
-            def subGraphTableEdges = postfix vegetation_graph, "EDGE_CC"
-            def subGraphBlocks = postfix "subgraphblocks"
+                datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
 
-            datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
-
-            datasource.createIndex(vegetation, "ID_VEGET")
-            datasource.createSpatialIndex(vegetation, "THE_GEOM")
-            datasource.execute """          
+                datasource.createIndex(vegetation, "ID_VEGET")
+                datasource.createSpatialIndex(vegetation, "THE_GEOM")
+                datasource.execute """          
                    CREATE TABLE $vegetation_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
                    SELECT CAST((row_number() over()) as Integer), a.ID_VEGET as START_NODE, b.ID_VEGET AS END_NODE 
                    FROM $vegetation  AS a, $vegetation AS b 
@@ -222,19 +222,19 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                    AND ST_INTERSECTS(b.the_geom,a.the_geom);
                    """.toString()
 
-            //Recherche des clusters
-            getConnectedComponents(datasource.getConnection(), vegetation_graph, "undirected")
+                //Recherche des clusters
+                getConnectedComponents(datasource.getConnection(), vegetation_graph, "undirected")
 
-            //Unify water geometries that share a boundary
-            debug "Merging spatial clusters..."
-            datasource """
+                //Unify water geometries that share a boundary
+                debug "Merging spatial clusters..."
+                datasource """
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                 CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $vegetation A, $subGraphTableNodes B
                 WHERE a.id_VEGET=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
-            debug "Creating the water block table..."
-            datasource """DROP TABLE IF EXISTS $vegetation_tmp; 
+                debug "Creating the water block table..."
+                datasource """DROP TABLE IF EXISTS $vegetation_tmp; 
                 CREATE TABLE $vegetation_tmp (THE_GEOM GEOMETRY) 
                 AS SELECT the_geom FROM $subGraphBlocks
                 UNION ALL SELECT  ST_ToMultiLine(a.the_geom) as the_geom FROM $vegetation a 
@@ -242,11 +242,13 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 st_area(a.the_geom)>=$surface_vegetation;
                 DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocks ;""".toString()
 
-            queryCreateOutputTable += [vegetation_tmp: "(SELECT THE_GEOM FROM $vegetation_tmp)"]
-            dropTableList.addAll([vegetation_tmp])
+                queryCreateOutputTable += [vegetation_tmp: "(SELECT the_geom FROM $vegetation_tmp)"]
+                dropTableList.addAll([vegetation_tmp])
+            }
         }
 
         if (water && datasource.hasTable(water)) {
+            if(datasource.getColumnNames(water).size()>0) {
                 //Extract water
                 debug "Preparing hydrographic..."
                 hydrographic_tmp = postfix "hydrographic_tmp"
@@ -257,13 +259,13 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                 datasource "DROP TABLE IF EXISTS  $hydrographic_tmp, $water_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
 
-                datasource.createIndex(water, "ID")
+                datasource.createIndex(water, "ID_WATER")
                 datasource.createSpatialIndex(water, "THE_GEOM")
                 datasource.execute """          
                    CREATE TABLE $water_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                   SELECT CAST((row_number() over()) as Integer), a.ID as START_NODE, b.ID AS END_NODE 
+                   SELECT CAST((row_number() over()) as Integer), a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
                    FROM $water  AS a, $water AS b 
-                   WHERE a.ID <>b.ID AND a.the_geom && b.the_geom 
+                   WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
                    AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0;
                    """.toString()
 
@@ -275,32 +277,36 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                 datasource """
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
-                CREATE TABLE $subGraphBlocks AS SELECT ST_UNION(ST_ACCUM(A.THE_GEOM)) AS THE_GEOM
+                CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $water A, $subGraphTableNodes B
-                WHERE a.id=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
+                WHERE a.ID_WATER=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;""".toString()
                 debug "Creating the water block table..."
                 datasource """DROP TABLE IF EXISTS $hydrographic_tmp; 
                 CREATE TABLE $hydrographic_tmp (THE_GEOM GEOMETRY) 
-                AS SELECT ST_ToMultiLine(the_geom) as the_geom FROM $subGraphBlocks
-                UNION ALL SELECT  ST_ToMultiLine(a.the_geom) as the_geom FROM $water a 
-                LEFT JOIN $subGraphTableNodes b ON a.id = b.NODE_ID WHERE b.NODE_ID IS NULL and 
+                AS SELECT the_geom FROM $subGraphBlocks
+                UNION ALL SELECT ST_ToMultiLine(a.the_geom) as the_geom  FROM $water a 
+                LEFT JOIN $subGraphTableNodes b ON a.ID_WATER = b.NODE_ID WHERE b.NODE_ID IS NULL and 
                 st_area(a.the_geom)>=$surface_hydro;
                 DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph, $subGraphBlocks ;""".toString()
 
                 queryCreateOutputTable += [hydrographic_tmp: "(SELECT the_geom FROM $hydrographic_tmp)"]
                 dropTableList.addAll([hydrographic_tmp])
+            }
         }
 
         if (road && datasource.hasTable(road)) {
                 debug "Preparing road..."
+            if(datasource.getColumnNames(road).size()>0) {
                 queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing = 'bridge') and type!='service')"]
+            }
         }
 
         if (rail && datasource.hasTable(rail)) {
             debug "Preparing rail..."
+            if(datasource.getColumnNames(rail).size()>0){
             queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where zindex=0 or crossing = 'bridge')"]
-
+            }
         }
 
         // The input table that contains the geometries to be transformed as TSU
