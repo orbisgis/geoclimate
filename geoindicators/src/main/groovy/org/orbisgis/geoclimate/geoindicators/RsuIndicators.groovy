@@ -1992,8 +1992,8 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
         }
 
         // The temporary tables are deleted
-        //datasource """DROP TABLE IF EXISTS $buildLine, $allLinesRsu,
-        //                $bufferTable, ${tab_H.values().join(",")}""".toString()
+        datasource """DROP TABLE IF EXISTS $buildLine, $allLinesRsu,
+                       $bufferTable, ${tab_H.values().join(",")}""".toString()
     }
 
     return outputTableName

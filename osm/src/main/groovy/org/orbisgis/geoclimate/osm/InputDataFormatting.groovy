@@ -507,7 +507,7 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                         "WHERE " +
                         "a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) "
                 if(datasource.getColumnNames(water).contains("seamark:type")){
-                    query+=" and a.\"seamark:type\" is null"
+                    query+=" and (a.\"seamark:type\" is null or a.\"seamark:type\" in ('harbour_basin', 'harbour'))"
                 }
 
             } else {
