@@ -1000,7 +1000,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
             }
             //Clean the database
-            h2gis_datasource.execute("DROP TABLE IF EXISTS ${tablesToDrop.join(",")}".toString())
+            if(tablesToDrop) {
+                h2gis_datasource.execute("DROP TABLE IF EXISTS ${tablesToDrop.join(",")}".toString())
+            }
             info "${id_zone} has been processed"
 
             return results
