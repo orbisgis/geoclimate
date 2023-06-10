@@ -133,8 +133,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.hydrographicTable, "", "", "", "",
                 ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
-
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
         assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
         assertEquals(listUrbTyp.Bl.sort(), datasource.getTable(geoIndicatorsCompute_i.block_indicators).columns.sort())
 
@@ -178,7 +177,7 @@ class WorkflowGeoIndicatorsTest {
                 ["indicatorUse": indicatorUse, svfSimplified: false, "utrfModelName": "UTRF_BDTOPO_V2_RF_2_2.model"], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
@@ -250,7 +249,7 @@ class WorkflowGeoIndicatorsTest {
                 "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
@@ -291,7 +290,7 @@ class WorkflowGeoIndicatorsTest {
                 "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
@@ -331,7 +330,7 @@ class WorkflowGeoIndicatorsTest {
                 "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
@@ -374,7 +373,7 @@ class WorkflowGeoIndicatorsTest {
                         prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, false)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
@@ -433,7 +432,7 @@ class WorkflowGeoIndicatorsTest {
      * Method to check the result for the RSU indicators table
      * Please add new checks here
      */
-    def checkRSUIndicators(def datasource, def rsuIndicatorsTableName, def save) {
+    def checkRSUIndicators(def datasource, def rsuIndicatorsTableName) {
         //Check road_fraction > 0
         def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
         assertEquals(209, countResult.count)
@@ -444,7 +443,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_fraction>0".toString())
-        assertEquals(25, countResult.count)
+        assertEquals(8, countResult.count)
 
         //Check high_vegetation_water_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
@@ -460,7 +459,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_road_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_road_fraction>0".toString())
-        assertEquals(29, countResult.count)
+        assertEquals(10, countResult.count)
 
         //Check high_vegetation_impervious_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_impervious_fraction>0".toString())
@@ -472,15 +471,11 @@ class WorkflowGeoIndicatorsTest {
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0".toString())
-        assertEquals(55, countResult.count)
+        assertEquals(44, countResult.count)
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())
         assertEquals(0, countResult.count)
-
-        if (save) {
-            datasource.getTable(tableName).save(new File(folder, "${rsuIndicatorsTableName}.geojson".toString()))
-        }
     }
 
     @Test

@@ -25,7 +25,6 @@ import org.h2gis.functions.spatial.create.ST_MakeGrid
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
-import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
@@ -120,7 +119,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         return null
     }
     if (inputzone) {
-        datasource.createSpatialIndex(inputTableName,"the_geom")
+        datasource.createSpatialIndex(inputTableName, "the_geom")
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
@@ -188,8 +187,6 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
     def vegetation_indice
     def vegetation_unified
     def vegetation_tmp
-    def hydrographic_indice
-    def hydrographic_unified
     def hydrographic_tmp
 
     def queryCreateOutputTable = [:]
@@ -205,99 +202,110 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
             queryCreateOutputTable += [land_mask_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $sea_land_mask where type ='land')"]
         }
         if (vegetation && datasource.hasTable(vegetation)) {
-                debug "Preparing vegetation..."
-                vegetation_indice = postfix vegetation
-                vegetation_unified = postfix "vegetation_unified"
+            debug "Preparing vegetation..."
+            if(datasource.getColumnNames(vegetation)) {
                 vegetation_tmp = postfix "vegetation_tmp"
+                def vegetation_graph = postfix "vegetation_graph"
+                def subGraphTableNodes = postfix vegetation_graph, "NODE_CC"
+                def subGraphTableEdges = postfix vegetation_graph, "EDGE_CC"
+                def subGraphBlocks = postfix "subgraphblocks"
 
-                datasource "DROP TABLE IF EXISTS " + vegetation_indice
-                datasource "CREATE TABLE " + vegetation_indice + "(THE_GEOM geometry, ID serial," +
-                        " CONTACT integer) AS (SELECT the_geom, EXPLOD_ID, 0 FROM ST_EXPLODE('" +
-                        "(SELECT * FROM " + vegetation + " WHERE ZINDEX=0)') " +
-                        " WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE)"
-                datasource """CREATE SPATIAL INDEX IF NOT EXISTS veg_indice_idx ON $vegetation_indice (THE_GEOM);
-                        UPDATE $vegetation_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)
-                                 FROM $vegetation_indice a, $vegetation_indice b WHERE a.THE_GEOM && b.THE_GEOM AND 
-                                ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID)""".toString()
+                datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
 
-                datasource "DROP TABLE IF EXISTS " + vegetation_unified
-                datasource "CREATE TABLE " + vegetation_unified + " AS " +
-                        "(SELECT ST_SETSRID(the_geom," + epsg + ") AS the_geom FROM ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM))" +
-                        " AS THE_GEOM FROM " + vegetation_indice + " WHERE CONTACT=1)') " +
-                        "WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=FALSE AND " +
-                        "ST_AREA(the_geom)> " + surface_vegetation + ") " +
-                        "UNION ALL (SELECT THE_GEOM FROM " + vegetation_indice + " WHERE contact=0 AND " +
-                        "ST_AREA(the_geom)> " + surface_vegetation + ")"
+                datasource.createIndex(vegetation, "ID_VEGET")
+                datasource.createSpatialIndex(vegetation, "THE_GEOM")
+                datasource.execute """          
+                   CREATE TABLE $vegetation_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
+                   SELECT CAST((row_number() over()) as Integer), a.ID_VEGET as START_NODE, b.ID_VEGET AS END_NODE 
+                   FROM $vegetation  AS a, $vegetation AS b 
+                   WHERE a.ID_VEGET <>b.ID_VEGET AND a.the_geom && b.the_geom 
+                   AND ST_INTERSECTS(b.the_geom,a.the_geom);
+                   """.toString()
 
-                datasource "CREATE SPATIAL INDEX IF NOT EXISTS veg_unified_idx ON $vegetation_unified (THE_GEOM)"
+                //Recherche des clusters
+                getConnectedComponents(datasource.getConnection(), vegetation_graph, "undirected")
 
-                datasource """DROP TABLE IF EXISTS $vegetation_tmp;
-                        CREATE TABLE $vegetation_tmp AS SELECT a.the_geom AS THE_GEOM FROM 
-                                $vegetation_unified AS a, $zone AS b WHERE a.the_geom && b.the_geom 
-                                AND ST_INTERSECTS(a.the_geom, b.the_geom)""".toString()
+                //Unify water geometries that share a boundary
+                debug "Merging spatial clusters..."
+                datasource """
+                CREATE INDEX ON $subGraphTableNodes (NODE_ID);
+                CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
+                FROM $vegetation A, $subGraphTableNodes B
+                WHERE a.id_VEGET=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
+                HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
+                debug "Creating the water block table..."
+                datasource """DROP TABLE IF EXISTS $vegetation_tmp; 
+                CREATE TABLE $vegetation_tmp (THE_GEOM GEOMETRY) 
+                AS SELECT the_geom FROM $subGraphBlocks
+                UNION ALL SELECT  ST_ToMultiLine(a.the_geom) as the_geom FROM $vegetation a 
+                LEFT JOIN $subGraphTableNodes b ON a.id_veget = b.NODE_ID WHERE b.NODE_ID IS NULL and 
+                st_area(a.the_geom)>=$surface_vegetation;
+                DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocks ;""".toString()
 
-                queryCreateOutputTable += [vegetation_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) AS THE_GEOM FROM $vegetation_tmp)"]
-                dropTableList.addAll([vegetation_indice,
-                                      vegetation_unified,
-                                      vegetation_tmp])
-
+                queryCreateOutputTable += [vegetation_tmp: "(SELECT the_geom FROM $vegetation_tmp)"]
+                dropTableList.addAll([vegetation_tmp])
+            }
         }
 
         if (water && datasource.hasTable(water)) {
-            if (datasource."$water") {
+            if(datasource.getColumnNames(water).size()>0) {
                 //Extract water
                 debug "Preparing hydrographic..."
-                hydrographic_indice = postfix water
-                hydrographic_unified = postfix "hydrographic_unified"
                 hydrographic_tmp = postfix "hydrographic_tmp"
+                def water_graph = postfix "water_graphes"
+                def subGraphTableNodes = postfix water_graph, "NODE_CC"
+                def subGraphTableEdges = postfix water_graph, "EDGE_CC"
+                def subGraphBlocks = postfix "subgraphblocks"
 
-                datasource "DROP TABLE IF EXISTS $hydrographic_indice".toString()
-                datasource("""CREATE TABLE  $hydrographic_indice (THE_GEOM geometry, ID serial,
-                                 CONTACT integer) AS (SELECT st_makevalid(THE_GEOM) AS the_geom, EXPLOD_ID , 0 FROM 
-                                ST_EXPLODE('(SELECT * FROM $water WHERE ZINDEX=0)') 
-                                 WHERE ST_DIMENSION(the_geom)>0 AND ST_ISEMPTY(the_geom)=false)""").toString()
+                datasource "DROP TABLE IF EXISTS  $hydrographic_tmp, $water_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
 
-                datasource """CREATE SPATIAL INDEX IF NOT EXISTS hydro_indice_idx ON $hydrographic_indice (THE_GEOM);
-                          CREATE INDEX IF NOT EXISTS hydro_indice_id ON $hydrographic_indice (ID); 
-                         UPDATE $hydrographic_indice SET CONTACT=1 WHERE ID IN(SELECT DISTINCT(a.ID)
-                                 FROM $hydrographic_indice a, $hydrographic_indice b WHERE a.THE_GEOM && b.THE_GEOM
-                                 AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM) AND a.ID<>b.ID);
-                        CREATE INDEX ON $hydrographic_indice (contact)""".toString()
+                datasource.createIndex(water, "ID_WATER")
+                datasource.createSpatialIndex(water, "THE_GEOM")
+                datasource.execute """          
+                   CREATE TABLE $water_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
+                   SELECT CAST((row_number() over()) as Integer), a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
+                   FROM $water  AS a, $water AS b 
+                   WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
+                   AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0;
+                   """.toString()
 
+                //Recherche des clusters
+                getConnectedComponents(datasource.getConnection(), water_graph, "undirected")
 
-                datasource """DROP TABLE IF EXISTS $hydrographic_unified;
-                        CREATE TABLE $hydrographic_unified AS (SELECT ST_SETSRID(the_geom, $epsg) as the_geom FROM 
-                                ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM FROM
-                                 $hydrographic_indice  WHERE CONTACT=1)') where st_dimension(the_geom)>0
-                                 AND st_isempty(the_geom)=false AND st_area(the_geom)> $surface_hydro) 
-                                 UNION ALL (SELECT  the_geom FROM $hydrographic_indice WHERE contact=0 AND 
-                                 st_area(the_geom)> $surface_hydro)""".toString()
+                //Unify water geometries that share a boundary
+                debug "Merging spatial clusters..."
 
+                datasource """
+                CREATE INDEX ON $subGraphTableNodes (NODE_ID);
+                CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
+                FROM $water A, $subGraphTableNodes B
+                WHERE a.ID_WATER=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
+                HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;""".toString()
+                debug "Creating the water block table..."
+                datasource """DROP TABLE IF EXISTS $hydrographic_tmp; 
+                CREATE TABLE $hydrographic_tmp (THE_GEOM GEOMETRY) 
+                AS SELECT the_geom FROM $subGraphBlocks
+                UNION ALL SELECT ST_ToMultiLine(a.the_geom) as the_geom  FROM $water a 
+                LEFT JOIN $subGraphTableNodes b ON a.ID_WATER = b.NODE_ID WHERE b.NODE_ID IS NULL and 
+                st_area(a.the_geom)>=$surface_hydro;
+                DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph, $subGraphBlocks ;""".toString()
 
-                datasource """CREATE SPATIAL INDEX IF NOT EXISTS hydro_unified_idx ON $hydrographic_unified (THE_GEOM);
-                        DROP TABLE IF EXISTS $hydrographic_tmp;
-                        CREATE TABLE $hydrographic_tmp AS SELECT a.the_geom 
-                                 AS THE_GEOM FROM $hydrographic_unified AS a, $zone AS b 
-                                WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)""".toString()
-
-                queryCreateOutputTable += [hydrographic_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) as the_geom FROM $hydrographic_tmp)"]
-                dropTableList.addAll([hydrographic_indice,
-                                      hydrographic_unified,
-                                      hydrographic_tmp])
+                queryCreateOutputTable += [hydrographic_tmp: "(SELECT the_geom FROM $hydrographic_tmp)"]
+                dropTableList.addAll([hydrographic_tmp])
             }
         }
 
         if (road && datasource.hasTable(road)) {
-            if (datasource."$road") {
                 debug "Preparing road..."
+            if(datasource.getColumnNames(road).size()>0) {
                 queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing = 'bridge') and type!='service')"]
             }
         }
 
-        if (rail && datasource.hasTable(rail) && !datasource."$rail".isEmpty()) {
-            if (datasource."$rail") {
-                debug "Preparing rail..."
-                queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where zindex=0 or crossing = 'bridge')"]
+        if (rail && datasource.hasTable(rail)) {
+            debug "Preparing rail..."
+            if(datasource.getColumnNames(rail).size()>0){
+            queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where zindex=0 or crossing = 'bridge')"]
             }
         }
 
@@ -353,7 +361,7 @@ String createBlocks(JdbcDataSource datasource, String inputTableName, double sna
     def outputTableName = prefix prefixName, BASE_NAME
     //Find all neighbors for each building
     debug "Building index to perform the process..."
-    datasource.createSpatialIndex(inputTableName,"the_geom")
+    datasource.createSpatialIndex(inputTableName, "the_geom")
     datasource.createIndex(inputTableName, "id_build")
 
     debug "Building spatial clusters..."
@@ -409,8 +417,8 @@ String createBlocks(JdbcDataSource datasource, String inputTableName, double sna
         LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL));""".toString()
 
     // Temporary tables are deleted
-    datasource """DROP TABLE IF EXISTS  $graphTable, ${graphTable + "_EDGE_CC"}, 
-                    $subGraphBlocks, ${subGraphBlocks + "_NODE_CC"}, $subGraphTableNodes;""".toString()
+    datasource """DROP TABLE IF EXISTS  $graphTable, 
+                    $subGraphBlocks, $subGraphTableNodes, $subGraphTableEdges;""".toString()
 
     debug "The blocks have been created"
     return outputTableName
@@ -447,7 +455,7 @@ String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetT
     // in the inputLowerScaleTableName object
     def outputTableName = postfix "${sourceTable}_${targetTable}", "join"
     datasource.createSpatialIndex(sourceTable, "the_geom")
-    datasource.createSpatialIndex(targetTable,"the_geom")
+    datasource.createSpatialIndex(targetTable, "the_geom")
 
     if (pointOnSurface) {
         datasource """    DROP TABLE IF EXISTS $outputTableName;

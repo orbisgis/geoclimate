@@ -24,7 +24,7 @@ CREATE TABLE rsu_test (id_rsu int, the_geom geometry, rsu_area float, rsu_buildi
 CREATE TABLE rsu_build_corr (id_rsu int, id_build int, rsu_mean_building_height float);
 CREATE TABLE road_test (id_road int, the_geom geometry, width float, zindex int, crossing varchar(30), type varchar(30) );
 CREATE TABLE veget_test (id_veget int, the_geom geometry, height_class varchar, zindex int);
-CREATE TABLE hydro_test (id_hydro int, the_geom geometry,zindex int);
+CREATE TABLE hydro_test (id_water int, the_geom geometry,zindex int);
 CREATE TABLE rsu_test_all_indics_for_lcz(id_rsu int, sky_view_factor float, aspect_ratio float, BUILDING_FRACTION_LCZ float,
                                         IMPERVIOUS_FRACTION_LCZ float, PERVIOUS_FRACTION_LCZ float, GEOM_AVG_HEIGHT_ROOF float,
                                         EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH float, HIGH_VEGETATION_FRACTION_LCZ float,

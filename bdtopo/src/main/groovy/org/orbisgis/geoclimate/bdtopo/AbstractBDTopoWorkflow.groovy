@@ -896,6 +896,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         Map layers = getInputTables().collectEntries() { [it, it == "commune" ? subCommuneTableName : it] }
         Map dataFormated = formatLayers(h2gis_datasource, layers, processing_parameters.distance, processing_parameters.hLevMin)
         if (dataFormated) {
+            def tablesToDrop = []
             def building = dataFormated.building
             def road = dataFormated.road
             def rail = dataFormated.rail
@@ -910,7 +911,6 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
             def rsu_indicators_params = processing_parameters.rsu_indicators
             def worldpop_indicators = processing_parameters.worldpop_indicators
-
 
             results.put("zone", zone)
             results.put("road", road)
@@ -948,12 +948,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     String worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource, worldPopFile, srid, coverageId.replaceAll(":", "_"))
                     if (worldPopTableName) {
                         results.put("population", worldPopTableName)
-
                         building = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building,
                                 worldPopTableName, ["pop"])
                         if (!building) {
                             info "Cannot compute any population data at building level"
                         }
+                        tablesToDrop<<results.building
                         //Update the building table with the population data
                         results.put("building", building)
 
@@ -993,14 +993,16 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                 building, road, water, vegetation,
                                 impervious)
                         if (ground_acoustic) {
-
                             results.put("ground_acoustic", ground_acoustic)
                         }
-                        h2gis_datasource.execute("DROP TABLE IF EXISTS $gridP".toString())
+                        tablesToDrop<<gridP
                     }
                 }
             }
-
+            //Clean the database
+            if(tablesToDrop) {
+                h2gis_datasource.execute("DROP TABLE IF EXISTS ${tablesToDrop.join(",")}".toString())
+            }
             info "${id_zone} has been processed"
 
             return results
