@@ -386,14 +386,6 @@ class GenericIndicatorsTests {
                         AS SELECT   id_rsu, the_geom, rsu_area, rsu_building_density, rsu_free_external_facade_density
                         FROM rsu_test;"""
 
-        def colBuild = ["build_height_wall", "build_height_roof", "build_area", "build_perimeter", "build_nb_lev",
-                        "build_total_facade_length", "build_number_building_neighbor", "build_contiguity", "build_type",
-                        "build_zindex", "id_block", "id_build", "id_rsu", "the_geom",
-                        "build_std_height_wall", "build_std_height_roof", "build_std_area", "build_std_perimeter",
-                        "build_std_total_facade_length", "build_std_number_building_neighbor", "build_std_contiguity",
-                        "build_avg_height_wall", "build_avg_height_roof", "build_avg_area", "build_avg_perimeter",
-                        "build_avg_total_facade_length", "build_avg_number_building_neighbor", "build_avg_contiguity",
-                        "rsu_rsu_area", "rsu_rsu_building_density", "rsu_rsu_free_external_facade_density"]
         def colRsu = ["id_rsu", "the_geom", "build_std_height_wall", "build_std_height_roof", "build_std_area", "build_std_perimeter",
                       "build_std_total_facade_length", "build_std_number_building_neighbor", "build_std_contiguity",
                       "build_avg_height_wall", "build_avg_height_roof", "build_avg_area", "build_avg_perimeter",
@@ -408,6 +400,31 @@ class GenericIndicatorsTests {
         assert gatheredScales1
         def finalColRsu = h2GIS."$gatheredScales1".columns.collect { it.toLowerCase() }
         assertEquals colRsu.sort(), finalColRsu.sort()
+    }
+
+    @Test
+    void gatherScalesTest2() {
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_block, tempo_build, tempo_rsu; 
+                CREATE TABLE tempo_block AS SELECT a.*, b.id_rsu
+                        FROM block_test a, rsu_test b
+                        WHERE a.the_geom && b.the_geom AND ST_COVERS(b.the_geom, a.the_geom);
+                CREATE TABLE tempo_build 
+                        AS SELECT   id_build, id_block, id_rsu, zindex, the_geom, height_wall, height_roof, area, 
+                                    perimeter, nb_lev, total_facade_length, number_building_neighbor, contiguity, type
+                        FROM building_test;
+                CREATE TABLE tempo_rsu 
+                        AS SELECT   id_rsu, the_geom, rsu_area, rsu_building_density, rsu_free_external_facade_density
+                        FROM rsu_test;"""
+
+        def colBuild = ["build_height_wall", "build_height_roof", "build_area", "build_perimeter", "build_nb_lev",
+                        "build_total_facade_length", "build_number_building_neighbor", "build_contiguity", "build_type",
+                        "build_zindex", "id_block", "id_build", "id_rsu", "the_geom",
+                        "build_std_height_wall", "build_std_height_roof", "build_std_area", "build_std_perimeter",
+                        "build_std_total_facade_length", "build_std_number_building_neighbor", "build_std_contiguity",
+                        "build_avg_height_wall", "build_avg_height_roof", "build_avg_area", "build_avg_perimeter",
+                        "build_avg_total_facade_length", "build_avg_number_building_neighbor", "build_avg_contiguity",
+                        "rsu_rsu_area", "rsu_rsu_building_density", "rsu_rsu_free_external_facade_density"]
 
         // Test 2
         def gatheredScales2 = Geoindicators.GenericIndicators.gatherScales(h2GIS,
@@ -417,10 +434,11 @@ class GenericIndicatorsTests {
         assert gatheredScales2
         def finalColBuild = h2GIS."$gatheredScales2".columns.collect { it.toLowerCase() }
         assertEquals colBuild.sort(), finalColBuild.sort()
+
     }
 
-    @Test
-    void gatherScalesTest2() {
+        @Test
+    void gatherScalesTest3() {
         h2GIS """
                 DROP TABLE IF EXISTS tempo_block, tempo_build, tempo_rsu; 
                 CREATE TABLE tempo_build (id_build int, id_block int, id_rsu int, the_geom geometry, height_roof float);

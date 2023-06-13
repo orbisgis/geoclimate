@@ -1020,6 +1020,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
                           double surface_hydro, double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
     info "Create the units of analysis..."
     def idRsu = "id_rsu"
+    def tablesToDrop=[]
     if (!rsu) {
         // Create the RSU
         rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone, road, rail,
@@ -1064,6 +1065,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
         }
         datasource.dropTable(createBlocks)
         inputLowerScaleBuRsu = createScalesRelationsBlBu
+        tablesToDrop<<inputLowerScaleBuRsu
     }
 
 
@@ -1078,12 +1080,12 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
         info "Cannot compute the scales relations between buildings and RSU."
         return
     }
-    def relationsBuildings = createScalesRelationsRsuBlBu
 
     //Replace the building table with a new one that contains the relations between block and RSU
     datasource.execute("""DROP TABLE IF EXISTS $building;
-            ALTER TABLE $relationsBuildings RENAME TO $building;
-        drop table if exists $inputLowerScaleBuRsu; """.toString())
+            ALTER TABLE $createScalesRelationsRsuBlBu RENAME TO $building; """.toString())
+    tablesToDrop<<createScalesRelationsRsuBlBu
+    datasource.dropTable(tablesToDrop)
 
     return ["building": building,
             "block"   : tableRsuBlocks,

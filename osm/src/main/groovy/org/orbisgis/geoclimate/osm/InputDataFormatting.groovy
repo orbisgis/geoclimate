@@ -419,7 +419,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
     def outputTableName = postfix "INPUT_VEGET"
     datasource """ 
                 DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
     if (vegetation) {
         def paramsDefaultFile = this.class.getResourceAsStream("vegetParams.json")
         def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)

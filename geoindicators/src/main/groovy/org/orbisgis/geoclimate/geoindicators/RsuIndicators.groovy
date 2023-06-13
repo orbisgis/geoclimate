@@ -2275,7 +2275,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             tablesToMerge.remove("$zone")
             def allInfoTableName = postfix "allInfoTableName"
             def groupedLandTypes = postfix("grouped_land_type")
-            datasource """DROP TABLE IF EXISTS $allInfoTableName,$groupedLandTypes , $tmp_tables, $outputTableName;
+            datasource """DROP TABLE IF EXISTS  $allInfoTableName,$groupedLandTypes , $tmp_tables, $outputTableName;
                                       CREATE TABLE $allInfoTableName as ${finalMerge.join(' union all ')};""".toString()
             datasource """
                                       CREATE INDEX ON $allInfoTableName (${ID_COLUMN_NAME});
@@ -2285,7 +2285,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             datasource """CREATE INDEX ON $groupedLandTypes ($ID_COLUMN_NAME);
                     CREATE TABLE $outputTableName as SELECT a.$ID_COLUMN_NAME, a.the_geom,  b.* EXCEPT($ID_COLUMN_NAME) FROM $final_polygonize as a left join $groupedLandTypes as b 
                 on a.$ID_COLUMN_NAME= b.$ID_COLUMN_NAME;""".toString()
-            datasource """DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}, ${groupedLandTypes}, ${tmpTablesToDrop.join(",")}""".toString()
+            datasource """DROP TABLE IF EXISTS $final_polygonize, ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}, ${groupedLandTypes}, ${tmpTablesToDrop.join(",")}""".toString()
 
         }
 
