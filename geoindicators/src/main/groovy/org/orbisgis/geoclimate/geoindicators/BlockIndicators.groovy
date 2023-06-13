@@ -88,7 +88,7 @@ String netCompactness(JdbcDataSource datasource, String building, String buildin
     // The name of the outputTableName is constructed
     def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-    datasource."$building".id_block.createIndex()
+    datasource.createIndex(building,"id_block")
 
     def query = """
             DROP TABLE IF EXISTS $outputTableName; 
@@ -148,8 +148,8 @@ String closingness(JdbcDataSource datasource, String correlationTableName, Strin
     // The name of the outputTableName is constructed
     def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-    datasource."$blockTable".id_block.createIndex()
-    datasource."$correlationTableName".id_block.createIndex()
+    datasource.createIndex(blockTable,"id_block")
+    datasource.createIndex(correlationTableName,"id_block")
 
     def query = """
             DROP TABLE IF EXISTS $outputTableName; 

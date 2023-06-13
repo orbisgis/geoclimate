@@ -202,13 +202,12 @@ String formatRoadLayer(
         def crossingValues = parametersMap.crossing
         def queryMapper = "SELECT "
         def columnToMap = parametersMap.columns
-        def inputSpatialTable = datasource."$road"
-        if (inputSpatialTable.rowCount > 0) {
-            def columnNames = inputSpatialTable.columns
+        if (datasource.getRowCount(road) > 0) {
+            def columnNames = datasource.getColumnNames(road)
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(road)
                 queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
                         "ELSE st_force2D(a.the_geom) " +
@@ -349,13 +348,12 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
         def queryMapper = "SELECT "
         def columnToMap = parametersMap.get("columns")
 
-        def inputSpatialTable = datasource."$rail"
-        if (inputSpatialTable.rowCount > 0) {
-            def columnNames = inputSpatialTable.columns
+        if (datasource.getRowCount(rail) > 0) {
+            def columnNames = datasource.getColumnNames(rail)
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(rail)
                 queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
                         "ELSE st_force2D(a.the_geom) " +
@@ -429,13 +427,12 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
         def typeAndVegClass = parametersMap.get("class")
         def queryMapper = "SELECT "
         def columnToMap = parametersMap.get("columns")
-        def inputSpatialTable = datasource."$vegetation"
-        if (inputSpatialTable.rowCount > 0) {
-            def columnNames = inputSpatialTable.columns
+        if (datasource.getRowCount(vegetation) > 0) {
+            def columnNames = datasource.getColumnNames(vegetation)
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(vegetation)
                 queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
                         "ELSE a.the_geom " +
@@ -491,7 +488,7 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
     debug('Hydro transformation starts')
     def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_water serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
 
     if (water) {
         if (datasource.getRowCount(water) > 0) {
@@ -555,10 +552,9 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
         def mappingTypeAndUse = parametersMap.type
         def queryMapper = "SELECT "
         def columnToMap = parametersMap.get("columns")
-        ISpatialTable inputSpatialTable = datasource.getSpatialTable(impervious)
-        if (inputSpatialTable.rowCount > 0) {
-            inputSpatialTable.the_geom.createSpatialIndex()
-            def columnNames = inputSpatialTable.columns
+        if (datasource.getRowCount(impervious)> 0) {
+            datasource.createSpatialIndex(impervious)
+            def columnNames = datasource.getColumnNames(impervious)
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
@@ -981,13 +977,12 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
         def mappingType = parametersMap.type
         def queryMapper = "SELECT "
         def columnToMap = parametersMap.columns
-        ISpatialTable inputSpatialTable = datasource.getSpatialTable(urban_areas)
-        if (inputSpatialTable.rowCount > 0) {
-            def columnNames = inputSpatialTable.columns
+        if (datasource.getRowCount(urban_areas) > 0) {
+            def columnNames = datasource.getColumnNames(urban_areas)
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                inputSpatialTable.the_geom.createSpatialIndex()
+                datasource.createSpatialIndex(urban_areas)
                 queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
                         "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
                         "ELSE a.the_geom " +
@@ -1131,7 +1126,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
 
                     //Unioning all geometries
                     datasource.execute("""
-                    create table $outputTableName as select id as id_water, 
+                    create table $outputTableName as select id , 
                     st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
                     """.toString())
 
@@ -1191,7 +1186,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
 
                     //Unioning all geometries
                     datasource.execute("""
-                    create table $outputTableName as select id as id_water, 
+                    create table $outputTableName as select id, 
                     st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
                     """.toString())
                 }

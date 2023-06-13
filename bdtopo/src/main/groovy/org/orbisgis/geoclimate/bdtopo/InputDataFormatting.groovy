@@ -209,7 +209,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                         AND  a.TYPE ='building' AND b.TYPE != 'unknown'
                          group by a.id_build""".toString()
 
-                datasource.getTable(buildinType).id_build.createIndex()
+                datasource.createIndex(buildinType, "id_build")
 
                 def newBuildingWithType = postfix("NEW_BUILDING_TYPE")
 

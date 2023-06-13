@@ -100,6 +100,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
     // List of possible operations
 
     if (OPS.contains(normalisationType)) {
+        def tablesToDrop =[]
         def centerValue = [:]
         def variabilityValue = [:]
         def queryRangeNorm = ""
@@ -170,9 +171,9 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                  "LCZ9": 9]
 
         // I. Rural LCZ types are classified according to a "manual" decision tree
-        datasource."$rsuAllIndicators".BUILDING_FRACTION_LCZ.createIndex()
-        datasource."$rsuAllIndicators".ASPECT_RATIO.createIndex()
-        datasource."$rsuAllIndicators"."$ID_FIELD_RSU".createIndex()
+        datasource.createIndex(rsuAllIndicators,"BUILDING_FRACTION_LCZ")
+        datasource.createIndex(rsuAllIndicators,"ASPECT_RATIO")
+        datasource.createIndex(rsuAllIndicators,ID_FIELD_RSU)
 
         datasource """
                     DROP TABLE IF EXISTS $ruralLCZ; 
@@ -193,11 +194,11 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                         WHERE (BUILDING_FRACTION_LCZ < 0.1 OR BUILDING_FRACTION_LCZ IS NULL) 
                         AND ASPECT_RATIO < 0.1;""".toString()
 
-        datasource."$ruralLCZ"."$ID_FIELD_RSU".createIndex()
-        datasource."$ruralLCZ".IMPERVIOUS_FRACTION_LCZ.createIndex()
-        datasource."$ruralLCZ".PERVIOUS_FRACTION_LCZ.createIndex()
-        datasource."$ruralLCZ".HIGH_ALL_VEGETATION.createIndex()
-        datasource."$ruralLCZ".ALL_VEGETATION.createIndex()
+        datasource.createIndex(ruralLCZ,ID_FIELD_RSU)
+        datasource.createIndex(ruralLCZ,"IMPERVIOUS_FRACTION_LCZ")
+        datasource.createIndex(ruralLCZ,"PERVIOUS_FRACTION_LCZ")
+        datasource.createIndex(ruralLCZ, "HIGH_ALL_VEGETATION")
+        datasource.createIndex(ruralLCZ,"ALL_VEGETATION")
         datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
                                         AS SELECT   $ID_FIELD_RSU,
@@ -217,6 +218,8 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                                 null AS LCZ_UNIQUENESS_VALUE, 
                                                 null AS LCZ_EQUALITY_VALUE
                                         FROM $ruralLCZ""".toString()
+
+        tablesToDrop<<ruralLCZ
         // II. Urban LCZ types are classified
 
         // Keep only the RSU that have not been classified as rural
@@ -231,7 +234,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
 
         // 0. Set as industrial areas or large low-rise (commercial) having more of industrial or commercial than residential
         // and at least 1/3 of fraction
-        if (datasource."$urbanLCZ".hasColumn("AREA_FRACTION_HEAVY_INDUSTRY")) {
+        if (datasource.getColumnNames(urbanLCZ).contains("AREA_FRACTION_HEAVY_INDUSTRY")) {
             datasource """DROP TABLE IF EXISTS $classifiedIndustrialCommercialLcz;
                                 CREATE TABLE $classifiedIndustrialCommercialLcz
                                         AS SELECT   $ID_FIELD_RSU,
@@ -255,11 +258,13 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                         UNION ALL 
                                             SELECT *
                                             FROM $classifiedRuralLCZ""".toString()
+            tablesToDrop<<classifiedIndustrialCommercialLcz
         } else {
             datasource """ALTER TABLE $classifiedRuralLCZ RENAME TO $ruralAndIndustrialCommercialLCZ""".toString()
         }
-        datasource."$ruralAndIndustrialCommercialLCZ"."$ID_FIELD_RSU".createIndex()
-        datasource."$rsuLczIndicators"."$ID_FIELD_RSU".createIndex()
+        tablesToDrop<< classifiedRuralLCZ
+        datasource.createIndex(ruralAndIndustrialCommercialLCZ,ID_FIELD_RSU)
+        datasource.createIndex(rsuLczIndicators,ID_FIELD_RSU)
 
         datasource """DROP TABLE IF EXISTS $urbanLCZExceptIndus;
                                 CREATE TABLE $urbanLCZExceptIndus
@@ -273,7 +278,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         // (or median and median of the variability)
 
         // For each LCZ indicator...
-        def urbanLCZExceptIndusColumns = datasource."$urbanLCZExceptIndus".columns
+        def urbanLCZExceptIndusColumns = datasource.getColumnNames(urbanLCZExceptIndus)
         urbanLCZExceptIndusColumns.collect { indicCol ->
             if (!indicCol.equalsIgnoreCase(ID_FIELD_RSU) && !indicCol.equalsIgnoreCase(GEOMETRIC_FIELD)) {
                 // The values used for normalization ("mean" and "standard deviation") are calculated
@@ -308,11 +313,14 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         // The indicator interval of the LCZ types are normalized according to "center" and "variability" values
         datasource """DROP TABLE IF EXISTS $normalizedRange; CREATE TABLE $normalizedRange 
                         AS SELECT name, ${queryRangeNorm[0..-3]} FROM $LCZ_classes""".toString()
+        tablesToDrop<<normalizedRange
+        tablesToDrop<<LCZ_classes
 
         // The input indicator values are normalized according to "center" and "variability" values
         datasource """DROP TABLE IF EXISTS $normalizedValues; CREATE TABLE $normalizedValues 
                         AS SELECT $ID_FIELD_RSU, ${queryValuesNorm[0..-3]} FROM $urbanLCZExceptIndus""".toString()
 
+        tablesToDrop<<urbanLCZExceptIndus
 
         // 2. The distance of each RSU to each of the LCZ types is calculated in the normalized interval.
         // The two LCZ types being the closest to the RSU indicators are associated to this RSU. An indicator
@@ -350,13 +358,14 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                     AS SELECT   $ID_FIELD_RSU, ${queryLczDistance[0..-2]}
                                     FROM        $normalizedValues;""".toString()
 
+        tablesToDrop<<normalizedValues
+
         // Specific behavior for LCZ type 1 (compact high rise): we suppose it is impossible to have a LCZ1 if
         // the mean average nb of building level in the RSU <10 (we set LCZ1 value to -9999.99 in this case)
-        def colDistribTable = datasource.getTable(distribLczTable).getColumns()
+        def colDistribTable = datasource.getColumnNames(distribLczTable)
         colDistribTable = colDistribTable.minus(["LCZ1"])
-        datasource."$distribLczTable"."$ID_FIELD_RSU".createIndex()
-        datasource."$urbanLCZ"."$ID_FIELD_RSU".createIndex()
-        datasource."$urbanLCZ".AVG_NB_LEV_AREA_WEIGHTED.createIndex()
+        datasource.createIndex(distribLczTable,ID_FIELD_RSU)
+        datasource.createIndex(urbanLCZ, ID_FIELD_RSU)
         datasource """  DROP TABLE IF EXISTS $distribLczTableWithoutLcz1;
                                 CREATE TABLE $distribLczTableWithoutLcz1 
                                     AS SELECT   a.${colDistribTable.join(", a.")},
@@ -366,7 +375,8 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                     FROM        $distribLczTable a 
                                     LEFT JOIN   $urbanLCZ b
                                         ON a.$ID_FIELD_RSU=b.$ID_FIELD_RSU;""".toString()
-
+        tablesToDrop<<distribLczTable
+        tablesToDrop<<urbanLCZ
         // The distribution is characterized
         datasource """DROP TABLE IF EXISTS ${prefix prefixName, 'DISTRIBUTION_REPARTITION'}""".toString()
         def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
@@ -375,6 +385,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                 ["equality", "uniqueness"], "LEAST",
                 true, true, prefixName)
 
+        tablesToDrop<<distribLczTableWithoutLcz1
         // Rename the standard indicators into names consistent with the current method (LCZ type...)
         datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
@@ -383,8 +394,8 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;""".toString()
 
         // Need to replace the string LCZ values by an integer
-        datasource."$resultsDistrib".lcz_primary.createIndex()
-        datasource."$resultsDistrib".lcz_secondary.createIndex()
+        datasource.createIndex(resultsDistrib,"lcz_primary")
+        datasource.createIndex(resultsDistrib,"lcz_secondary")
         def casewhenQuery1 = ""
         def casewhenQuery2 = ""
         def parenthesis = ""
@@ -399,24 +410,26 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                                     $casewhenQuery2 null$parenthesis AS LCZ_SECONDARY, 
                                                     MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
                                         FROM $resultsDistrib""".toString()
-
+        tablesToDrop<<resultsDistrib
         // Then urban and rural LCZ types are merged into a single table
         datasource """DROP TABLE IF EXISTS $classifiedLcz;
                                 CREATE TABLE $classifiedLcz 
                                         AS SELECT   * 
                                         FROM        $distribLczTableInt
                                         UNION ALL   SELECT * FROM $ruralAndIndustrialCommercialLCZ b;""".toString()
-        datasource."$classifiedLcz"."$ID_FIELD_RSU".createIndex()
+        datasource.createIndex(classifiedLcz, ID_FIELD_RSU)
+
+        tablesToDrop<<ruralAndIndustrialCommercialLCZ
 
         // If the input tables contain a geometric field, we add it to the output table
-        if (datasource."$rsuAllIndicators".hasColumn(GEOMETRIC_FIELD)) {
+        if (datasource.hasGeometryColumn(rsuLczIndicators)) {
             datasource """DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName
                                             AS SELECT   a.*, b.$GEOMETRIC_FIELD
                                             FROM        $classifiedLcz a
                                             LEFT JOIN   $rsuAllIndicators b
                                             ON          a.$ID_FIELD_RSU=b.$ID_FIELD_RSU""".toString()
-        } else if (datasource."$rsuLczIndicators".hasColumn(GEOMETRIC_FIELD)) {
+        } else if (datasource.hasGeometryColumn(rsuLczIndicators)) {
             datasource """DROP TABLE IF EXISTS $outputTableName;
                                     CREATE TABLE $outputTableName
                                             AS SELECT   a.*, b.$GEOMETRIC_FIELD
@@ -426,7 +439,9 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         } else {
             datasource """DROP TABLE IF EXISTS $outputTableName; ALTER TABLE $classifiedLcz RENAME TO $outputTableName;""".toString()
         }
-
+        tablesToDrop<<distribLczTableInt
+        tablesToDrop<<classifiedLcz
+        datasource.dropTable(tablesToDrop)
         debug "The LCZ classification has been performed."
 
         return outputTableName

@@ -466,6 +466,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             zoneEnvelopeTableName, urbanAreasTable,
                             processing_parameters.hLevMin)
 
+
                     def buildingTableName = formatBuilding.building
                     def buildingEstimateTableName = formatBuilding.building_estimated
 
@@ -483,6 +484,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     //Sea/Land mask
                     String seaLandMaskTableName = OSM.InputDataFormatting.formatSeaLandMask(
                             h2gis_datasource, gisLayersResults.coastline, zoneEnvelopeTableName, hydrographicTableName)
+
 
                     if(h2gis_datasource.getRowCount(seaLandMaskTableName)>0){
                     //Select the water and sea features
@@ -555,11 +557,15 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             if (worldPopTableName) {
                                 results.put("population", worldPopTableName)
                                 String buildingWithPop = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building, worldPopTableName, ["pop"])
+                                h2gis_datasource.dropTable(worldPopTableName)
                                 if (!buildingWithPop) {
                                     info "Cannot compute any population data at building level"
                                 }
-                                //Update the building table with the population data
-                                results.put("building", buildingWithPop)
+                                else{
+                                    h2gis_datasource.dropTable(results.building)
+                                    //Update the building table with the population data
+                                    results.put("building", buildingWithPop)
+                                }
 
                             } else {
                                 info "Cannot import the worldpop asc file $worldPopFile"
@@ -618,12 +624,12 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                                     seaLandMaskTableName,
                                     processing_parameters.prefixName)
                             if (rasterizedIndicators) {
+                                h2gis_datasource.dropTable(grid)
                                 results.put("grid_indicators", rasterizedIndicators)
                             }
                         } else {
                             info "Cannot create a grid to aggregate the indicators"
                             h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
-
                         }
                     }
 
@@ -636,6 +642,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     }
 
                     outputTableNamesResult.put(id_zone in Collection ? id_zone.join("_") : id_zone, results.findAll { it.value != null })
+
+                    h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
 
                 } else {
                     h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()

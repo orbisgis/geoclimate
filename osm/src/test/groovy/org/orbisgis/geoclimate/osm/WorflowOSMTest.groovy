@@ -565,7 +565,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": ["Redon"],//[nominatim["bbox"]],//["Lorient"],
+                        "locations": ["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                         // "area": 2800,
                         /*"timeout":182,
                         "maxsize": 536870918,
@@ -576,7 +576,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
-                                 "indicatorUse": ["LCZ"]//, "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
                          ],"grid_indicators": [
                                 "x_size": 100,
                                 "y_size": 100,
