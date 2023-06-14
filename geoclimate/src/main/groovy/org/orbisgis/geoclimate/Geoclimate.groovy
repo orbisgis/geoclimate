@@ -100,7 +100,7 @@ class Geoclimate implements Callable<Integer> {
             }
         } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V2")) {
             println("The BDTOPO_V2 workflow has been started.\nPlease wait...")
-            def success = BDTopo.v2(configFile.trim())
+            def success = BDTopo.workflow.v2(configFile.trim())
             if (success) {
                 println("The BDTOPO_V2 workflow has been successfully executed")
                 return SUCCESS_CODE
@@ -110,7 +110,7 @@ class Geoclimate implements Callable<Integer> {
             }
         } else if (workflow.trim().equalsIgnoreCase("BDTOPO_V3")) {
             println("The BDTOPO_V3 workflow has been started.\nPlease wait...")
-            def success = BDTopo.v3(configFile.trim())
+            def success = BDTopo.workflow.v3(configFile.trim())
             if (success) {
                 println("The BDTOPO_V3 workflow has been successfully executed")
                 return SUCCESS_CODE

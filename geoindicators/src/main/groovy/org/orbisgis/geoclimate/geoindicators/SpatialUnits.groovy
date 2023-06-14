@@ -81,6 +81,7 @@ String createTSU(JdbcDataSource datasource, String zone,
         info "Cannot compute the RSU."
         return
     }
+    datasource.dropTable(tsuDataPrepared)
 
     datasource """ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;""".toString()
 
@@ -212,13 +213,13 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                 datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
 
-                datasource.createIndex(vegetation, "ID_VEGET")
+                datasource.createIndex(vegetation, "ID")
                 datasource.createSpatialIndex(vegetation, "THE_GEOM")
                 datasource.execute """          
                    CREATE TABLE $vegetation_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                   SELECT CAST((row_number() over()) as Integer), a.ID_VEGET as START_NODE, b.ID_VEGET AS END_NODE 
+                   SELECT CAST((row_number() over()) as Integer), a.ID as START_NODE, b.ID AS END_NODE 
                    FROM $vegetation  AS a, $vegetation AS b 
-                   WHERE a.ID_VEGET <>b.ID_VEGET AND a.the_geom && b.the_geom 
+                   WHERE a.ID <>b.ID AND a.the_geom && b.the_geom 
                    AND ST_INTERSECTS(b.the_geom,a.the_geom);
                    """.toString()
 
@@ -231,14 +232,14 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                 CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $vegetation A, $subGraphTableNodes B
-                WHERE a.id_VEGET=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
+                WHERE a.id=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
                 debug "Creating the water block table..."
                 datasource """DROP TABLE IF EXISTS $vegetation_tmp; 
                 CREATE TABLE $vegetation_tmp (THE_GEOM GEOMETRY) 
                 AS SELECT the_geom FROM $subGraphBlocks
                 UNION ALL SELECT  ST_ToMultiLine(a.the_geom) as the_geom FROM $vegetation a 
-                LEFT JOIN $subGraphTableNodes b ON a.id_veget = b.NODE_ID WHERE b.NODE_ID IS NULL and 
+                LEFT JOIN $subGraphTableNodes b ON a.id = b.NODE_ID WHERE b.NODE_ID IS NULL and 
                 st_area(a.the_geom)>=$surface_vegetation;
                 DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocks ;""".toString()
 
@@ -259,13 +260,13 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                 datasource "DROP TABLE IF EXISTS  $hydrographic_tmp, $water_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
 
-                datasource.createIndex(water, "ID_WATER")
+                datasource.createIndex(water, "id")
                 datasource.createSpatialIndex(water, "THE_GEOM")
                 datasource.execute """          
                    CREATE TABLE $water_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                   SELECT CAST((row_number() over()) as Integer), a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
+                   SELECT CAST((row_number() over()) as Integer), a.id as START_NODE, b.id AS END_NODE 
                    FROM $water  AS a, $water AS b 
-                   WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
+                   WHERE a.id <>b.id AND a.the_geom && b.the_geom 
                    AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0;
                    """.toString()
 
@@ -279,14 +280,14 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                 CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $water A, $subGraphTableNodes B
-                WHERE a.ID_WATER=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
+                WHERE a.id=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;""".toString()
                 debug "Creating the water block table..."
                 datasource """DROP TABLE IF EXISTS $hydrographic_tmp; 
                 CREATE TABLE $hydrographic_tmp (THE_GEOM GEOMETRY) 
                 AS SELECT the_geom FROM $subGraphBlocks
                 UNION ALL SELECT ST_ToMultiLine(a.the_geom) as the_geom  FROM $water a 
-                LEFT JOIN $subGraphTableNodes b ON a.ID_WATER = b.NODE_ID WHERE b.NODE_ID IS NULL and 
+                LEFT JOIN $subGraphTableNodes b ON a.id = b.NODE_ID WHERE b.NODE_ID IS NULL and 
                 st_area(a.the_geom)>=$surface_hydro;
                 DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph, $subGraphBlocks ;""".toString()
 

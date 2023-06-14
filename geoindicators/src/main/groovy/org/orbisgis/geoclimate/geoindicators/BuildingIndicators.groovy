@@ -356,7 +356,7 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-    datasource."$building".id_build.createIndex()
+    datasource.createIndex(building,"id_build")
 
     // The buffer is created
     datasource """DROP TABLE IF EXISTS $build_buffer;
@@ -441,7 +441,7 @@ String likelihoodLargeBuilding(JdbcDataSource datasource, String building, Strin
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-    datasource.getSpatialTable(building).id_build.createIndex()
+    datasource.createIndex(building,"id_build")
 
     // The calculation of the logistic function is performed only for buildings having no neighbors
     datasource """DROP TABLE IF EXISTS $outputTableName; 

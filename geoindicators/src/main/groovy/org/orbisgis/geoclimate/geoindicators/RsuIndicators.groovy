@@ -61,8 +61,8 @@ String freeExternalFacadeDensity(JdbcDataSource datasource, String building, Str
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
-    datasource."$building".id_rsu.createIndex()
-    datasource."$rsu".id_rsu.createIndex()
+    datasource.createIndex(building,"id_rsu")
+    datasource.createIndex(rsu,"id_rsu")
 
     def query = """
                 DROP TABLE IF EXISTS $outputTableName; 
@@ -126,8 +126,8 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
     def snap_tolerance = 0.01
 
     // 1. Convert the building polygons into lines and create the intersection with RSU polygons
-    datasource."$building"."$idRsu".createIndex()
-    datasource."$rsu"."$idRsu".createIndex()
+    datasource.createIndex(building,idRsu)
+    datasource.createIndex(rsu,idRsu)
     datasource """
                 DROP TABLE IF EXISTS $buildLine;
                 CREATE TABLE $buildLine
@@ -158,7 +158,7 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
                     GROUP BY a.$idRsu;""".toString()
 
     // 3. Calculates the building facade area within each RSU
-    datasource."$buildLine"."$idRsu".createIndex()
+    datasource.createIndex(buildLine,idRsu)
     datasource """
                 DROP TABLE IF EXISTS $buildLineRsu;
                 CREATE TABLE $buildLineRsu
@@ -168,8 +168,8 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
                     GROUP BY $idRsu;""".toString()
 
     // 4. Calculates the free facade density by RSU (subtract 3 and 2 and divide by RSU area)
-    datasource."$buildLineRsu"."$idRsu".createIndex()
-    datasource."$sharedLineRsu"."$idRsu".createIndex()
+    datasource.createIndex(buildLineRsu,idRsu)
+    datasource.createIndex(sharedLineRsu,idRsu)
     datasource """
                 DROP TABLE IF EXISTS $onlyBuildRsu;
                 CREATE TABLE $onlyBuildRsu
@@ -179,7 +179,7 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
                     ON a.$idRsu = b.$idRsu""".toString()
 
     // 5. Join RSU having no buildings and set their value to 0
-    datasource."$onlyBuildRsu"."$idRsu".createIndex()
+    datasource.createIndex(onlyBuildRsu,idRsu)
     datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName
@@ -314,7 +314,7 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String correla
                 WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
                             ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) 
                 GROUP BY    a.the_geom""".toString()
-    datasource."$svfPts"."$ID_COLUMN_RSU".createIndex()
+    datasource.createIndex(svfPts,ID_COLUMN_RSU)
 
     // The result of the SVF calculation is averaged at RSU scale
     datasource """
@@ -451,8 +451,8 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
                              AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU) AS t
             """.toString()
 
-        datasource."$buildingIntersection".id_build_a.createIndex()
-        datasource."$buildingIntersection".id_build_b.createIndex()
+        datasource.createIndex(buildingIntersection,"id_build_a")
+        datasource.createIndex(buildingIntersection,"id_build_b")
 
         // Each free facade is stored TWICE (an intersection could be seen from the point of view of two
         // buildings).
@@ -559,7 +559,7 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
         datasource query.toString()
 
 
-        datasource."$finalIndicator".id_rsu.createIndex()
+        datasource.createIndex(finalIndicator,"id_rsu")
         // Sum area at RSU scale and fill null values with 0
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
@@ -1192,8 +1192,8 @@ String extendedFreeFacadeFraction(JdbcDataSource datasource, String building, St
                     a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU;""".toString()
 
     // All RSU are feeded with default value
-    datasource."$inclBu"."$ID_FIELD_RSU".createIndex()
-    datasource."$rsu"."$ID_FIELD_RSU".createIndex()
+    datasource.createIndex(inclBu,ID_FIELD_RSU)
+    datasource.createIndex(rsu,ID_FIELD_RSU)
 
     datasource """DROP TABLE IF EXISTS $fullInclBu; CREATE TABLE $fullInclBu AS SELECT 
                     COALESCE(a.FAC_AREA, 0) AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD, st_area(b.$GEOMETRIC_FIELD) as rsu_buff_area 
@@ -1207,8 +1207,8 @@ String extendedFreeFacadeFraction(JdbcDataSource datasource, String building, St
                     WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD and ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;""".toString()
 
     // The facade fraction is calculated
-    datasource."$notIncBu"."$ID_FIELD_RSU".createIndex()
-    datasource."$fullInclBu"."$ID_FIELD_RSU".createIndex()
+    datasource.createIndex(notIncBu,ID_FIELD_RSU)
+    datasource.createIndex(fullInclBu,ID_FIELD_RSU)
 
     datasource """DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS 
                     SELECT COALESCE((a.FAC_AREA + b.FAC_AREA) /(a.FAC_AREA + b.FAC_AREA + a.rsu_buff_area),
@@ -1493,8 +1493,8 @@ String surfaceFractions(JdbcDataSource datasource,
     def withoutUndefined = postfix "without_undefined"
 
     // Create the indexes on each of the input tables
-    datasource."$rsu"."$id_rsu".createIndex()
-    datasource."$spatialRelationsTable"."$id_rsu".createIndex()
+    datasource.createIndex(rsu,id_rsu)
+    datasource.createIndex(spatialRelationsTable,id_rsu)
 
     // Need to set priority number for future sorting
     def prioritiesMap = [:]
@@ -2275,7 +2275,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             tablesToMerge.remove("$zone")
             def allInfoTableName = postfix "allInfoTableName"
             def groupedLandTypes = postfix("grouped_land_type")
-            datasource """DROP TABLE IF EXISTS $allInfoTableName,$groupedLandTypes , $tmp_tables, $outputTableName;
+            datasource """DROP TABLE IF EXISTS  $allInfoTableName,$groupedLandTypes , $tmp_tables, $outputTableName;
                                       CREATE TABLE $allInfoTableName as ${finalMerge.join(' union all ')};""".toString()
             datasource """
                                       CREATE INDEX ON $allInfoTableName (${ID_COLUMN_NAME});
@@ -2285,7 +2285,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             datasource """CREATE INDEX ON $groupedLandTypes ($ID_COLUMN_NAME);
                     CREATE TABLE $outputTableName as SELECT a.$ID_COLUMN_NAME, a.the_geom,  b.* EXCEPT($ID_COLUMN_NAME) FROM $final_polygonize as a left join $groupedLandTypes as b 
                 on a.$ID_COLUMN_NAME= b.$ID_COLUMN_NAME;""".toString()
-            datasource """DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}, ${groupedLandTypes}, ${tmpTablesToDrop.join(",")}""".toString()
+            datasource """DROP TABLE IF EXISTS $final_polygonize, ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}, ${groupedLandTypes}, ${tmpTablesToDrop.join(",")}""".toString()
 
         }
 

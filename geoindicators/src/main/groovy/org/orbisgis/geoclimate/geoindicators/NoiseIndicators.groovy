@@ -90,6 +90,7 @@ String groundAcousticAbsorption(JdbcDataSource datasource, String zone, String i
                 stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++},${g_coeff}, ${StringUtils.quoteStringSQL(type)}, ${StringUtils.quoteStringSQL(layer)})".toString()
             }
         }
+        datasource.dropTable(ground)
     }
     debug('Ground acoustic transformation finishes')
     return outputTableName

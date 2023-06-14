@@ -20,12 +20,41 @@
 package org.orbisgis.geoclimate.osmtools
 
 import groovy.transform.BaseScript
+import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.jdbc.JdbcDataSource
 
 import static org.orbisgis.geoclimate.osmtools.utils.GeometryTypes.LINES
 import static org.orbisgis.geoclimate.osmtools.utils.GeometryTypes.POLYGONS
 
 @BaseScript OSMTools pf
+
+/**
+ * This process is used to extract all the points from the OSM tables
+ *
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * @param geometry a geometry to reduce the area
+ * The name of a column corresponds to a key name
+ *
+ * @return outputTableName a name for the table that contains all points
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Lesaux (UBS LAB-STICC)
+ */
+String toPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
+    String outputTableName = postfix "OSM_POINTS"
+    def pointsNodes = OSMTools.TransformUtils.extractNodesAsPoints(datasource, osmTablesPrefix, epsgCode, outputTableName, tags, columnsToKeep, geometry)
+    if (pointsNodes) {
+        debug "The points have been built."
+    } else {
+        warn "Cannot extract any point."
+        return
+    }
+    return outputTableName
+}
 
 /**
  * This process is used to extract all the points from the OSM tables
@@ -44,7 +73,7 @@ import static org.orbisgis.geoclimate.osmtools.utils.GeometryTypes.POLYGONS
  */
 String toPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = []) {
     String outputTableName = postfix "OSM_POINTS"
-    def pointsNodes = OSMTools.TransformUtils.extractNodesAsPoints datasource, osmTablesPrefix, epsgCode, outputTableName, tags, columnsToKeep
+    def pointsNodes = OSMTools.TransformUtils.extractNodesAsPoints(datasource, osmTablesPrefix, epsgCode, outputTableName, tags, columnsToKeep, null)
     if (pointsNodes) {
         debug "The points have been built."
     } else {
@@ -70,7 +99,43 @@ String toPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode 
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
 String toLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = []) {
-    return OSMTools.TransformUtils.toPolygonOrLine(LINES, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
+    return OSMTools.TransformUtils.toPolygonOrLine(LINES, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null)
+}
+
+/**
+ * This process is used to extract all the lines from the OSM tables
+ *
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
+ * @param geometry a geometry to reduce the area
+ *
+ * @return outputTableName a name for the table that contains all lines
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ */
+String toLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
+    return OSMTools.TransformUtils.toPolygonOrLine(LINES, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry)
+}
+
+/**
+ * This process is used to extract all the polygons from the OSM tables
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
+ * @param geometry a geometry to reduce the area
+ *
+ * @return outputTableName a name for the table that contains all polygons
+ * @author Erwan Bocher CNRS LAB-STICC
+ * @author Elisabeth Le Saux UBS LAB-STICC
+ */
+String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
+    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry)
 }
 
 /**
@@ -86,9 +151,8 @@ String toLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode =
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
 String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = []) {
-    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
+    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null)
 }
-
 
 /**
  * This process is used to extract ways as polygons
@@ -105,7 +169,27 @@ String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCod
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = true) {
+String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [],  boolean valid_geom = true) {
+    return extractWaysAsPolygons( datasource,  osmTablesPrefix,  epsgCode ,  tags ,  columnsToKeep ,  null, valid_geom)
+}
+
+/**
+ * This process is used to extract ways as polygons
+ *
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * @param geometry a geometry to reduce the area
+ * The name of a column corresponds to a key name
+ *
+ * @return outputTableName a name for the table that contains all ways transformed as polygons
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ */
+String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry, boolean valid_geom = true) {
     if (!datasource) {
         error "Please set a valid database connection"
         return
@@ -203,27 +287,34 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
                 CREATE INDEX ON $waysPolygonTmp(id_way);
         """.toString()
 
+    String query = """ DROP TABLE IF EXISTS $outputTableName; 
+                CREATE TABLE $outputTableName AS 
+                    SELECT 'w'||a.id_way AS id,"""
     if (valid_geom) {
-        datasource """
-                DROP TABLE IF EXISTS $outputTableName; 
-                CREATE TABLE $outputTableName AS 
-                    SELECT 'w'||a.id_way AS id, CASE WHEN ST_ISVALID(a.THE_GEOM) THEN a.the_geom ELSE st_makevalid(a.the_geom) END as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)} 
-                    FROM $waysPolygonTmp AS a, $osmTableTag b
-                    WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false
-                    GROUP BY a.id_way;
-                """.toString()
+        query += """ CASE WHEN ST_ISVALID(a.THE_GEOM) THEN a.the_geom ELSE st_makevalid(a.the_geom) END as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)} 
+               """
     } else {
-        datasource """
-                DROP TABLE IF EXISTS $outputTableName; 
-                CREATE TABLE $outputTableName AS 
-                    SELECT 'w'||a.id_way AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)} 
-                    FROM $waysPolygonTmp AS a, $osmTableTag b
-                    WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false
-                    GROUP BY a.id_way;
-        """.toString()
+        query += """ a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)}  """
     }
 
+    query += " FROM $waysPolygonTmp AS a, $osmTableTag b WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false"
+
+    if (geometry) {
+        int geom_srid = geometry.getSRID()
+        if (geom_srid == -1) {
+            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
+        } else if (geom_srid == epsgCode) {
+            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
+        } else {
+            query += " and a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
+        }
+        datasource.createSpatialIndex(waysPolygonTmp, "the_geom")
+    }
+    query += " GROUP BY a.id_way;"
+
+
     datasource """
+                $query
                 DROP TABLE IF EXISTS $waysPolygonTmp;
                 DROP TABLE IF EXISTS $idWaysPolygons;
         """.toString()
@@ -247,6 +338,26 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
 def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = true) {
+    return extractRelationsAsPolygons(datasource, osmTablesPrefix, epsgCode, tags , columnsToKeep, null, valid_geom)
+}
+
+/**
+ * This process is used to extract relations as polygons
+ *
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * @param geometry a geometry to reduce the area
+ * The name of a column corresponds to a key name
+ *
+ * @return outputTableName a name for the table that contains all relations transformed as polygons
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ */
+def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], org.locationtech.jts.geom.Geometry geometry, boolean valid_geom = true) {
     if (!datasource) {
         error "Please set a valid database connection"
         return
@@ -417,27 +528,35 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                 CREATE INDEX ON $relationsMpHoles(id_relation);
         """.toString()
 
+    def query = """
+                DROP TABLE IF EXISTS $outputTableName;     
+                CREATE TABLE $outputTableName AS 
+                    SELECT 'r'||a.id_relation AS id,"""
     if (valid_geom) {
-        datasource """
-                DROP TABLE IF EXISTS $outputTableName;     
-                CREATE TABLE $outputTableName AS 
-                    SELECT 'r'||a.id_relation AS id, CASE WHEN ST_ISVALID(a.THE_GEOM) THEN a.the_geom ELSE st_makevalid(a.the_geom) END as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)}
-                    FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
-                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false
-                    GROUP BY a.the_geom, a.id_relation;
-                """.toString()
+        query += """ CASE WHEN ST_ISVALID(a.THE_GEOM) THEN a.the_geom ELSE st_makevalid(a.the_geom) END as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)}
+        FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
+                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false """
     } else {
-        datasource """
-                DROP TABLE IF EXISTS $outputTableName;     
-                CREATE TABLE $outputTableName AS 
-                    SELECT 'r'||a.id_relation AS id, st_normalize(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)}
-                    FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
-                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false
-                    GROUP BY a.the_geom, a.id_relation;
-            """.toString()
+        query += """ st_normalize(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)} 
+        FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
+                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false  """
     }
 
-    datasource """
+    if (geometry) {
+        int geom_srid = geometry.getSRID()
+        if (geom_srid == -1) {
+            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
+        } else if (geom_srid == epsgCode) {
+            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
+        } else {
+            query += " and a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
+        }
+        datasource.createSpatialIndex(relationsMpHoles, "the_geom")
+    }
+
+    query += " GROUP BY a.the_geom, a.id_relation;"
+
+    datasource """ $query
                 DROP TABLE IF EXISTS    $relationsPolygonsOuter, 
                                         $relationsPolygonsInner,
                                         $relationsPolygonsOuterExploded, 
@@ -447,6 +566,25 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
     return outputTableName
 }
 
+/**
+ * This process is used to extract ways as lines
+ *
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * @param geometry a geometry to reduce the area
+ * The name of a column corresponds to a key name
+ *
+ * @return outputTableName a name for the table that contains all ways transformed as lines
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Lesaux (UBS LAB-STICC)
+ */
+String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = []) {
+    return extractWaysAsLines(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null)
+}
 
 /**
  * This process is used to extract ways as lines
@@ -456,6 +594,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
  * @param columnsToKeep a list of columns to keep.
+ * @param geometry a geometry to reduce the area
  * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all ways transformed as lines
@@ -463,7 +602,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = []) {
+String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
     if (!datasource) {
         error "Please set a valid database connection"
         return
@@ -554,13 +693,29 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
                 CREATE INDEX ON $waysLinesTmp(ID_WAY);
         """.toString()
 
-    datasource """
+    def query = """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName AS 
                     SELECT 'w'||a.id_way AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)} 
                     FROM $waysLinesTmp AS a, ${osmTablesPrefix}_way_tag b 
-                    WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false
-                    GROUP BY a.id_way;
+                    WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false """
+
+    if (geometry) {
+        int geom_srid = geometry.getSRID()
+        if (geom_srid == -1) {
+            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
+        } else if (geom_srid == epsgCode) {
+            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
+        } else {
+            query += " and a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
+        }
+        datasource.createSpatialIndex(waysLinesTmp, "the_geom")
+    }
+
+    query += " GROUP BY a.id_way;;"
+
+    datasource """
+                $query
                 DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable;
         """.toString()
     return outputTableName
@@ -574,6 +729,7 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
  * @param columnsToKeep a list of columns to keep.
+
  * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all relations transformed as lines
@@ -582,6 +738,27 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
 String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = []) {
+    return extractRelationsAsLines(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null)
+}
+
+/**
+ * This process is used to extract relations as lines
+ *
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * @param geometry a geometry to reduce the area
+
+ * The name of a column corresponds to a key name
+ *
+ * @return outputTableName a name for the table that contains all relations transformed as lines
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Lesaux (UBS LAB-STICC)
+ */
+String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
     if (!datasource) {
         error "Please set a valid database connection"
         return
@@ -678,14 +855,28 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
         """.toString()
 
     def columnsSelector = OSMTools.TransformUtils.getColumnSelector(osmTableTag, tags, columnsToKeep)
-    datasource """
+
+    def query = """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName AS
                     SELECT 'r'||a.id_relation AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)}
                     FROM $relationsLinesTmp AS a, ${osmTablesPrefix}_relation_tag  b
-                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false
-                    GROUP BY a.id_relation;
+                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false """
+
+    if (geometry) {
+        int geom_srid = geometry.getSRID()
+        if (geom_srid == -1) {
+            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
+        } else if (geom_srid == epsgCode) {
+            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
+        } else {
+            query += " and a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
+        }
+        datasource.createSpatialIndex(relationsLinesTmp, "the_geom")
+    }
+    query += "        GROUP BY a.id_relation;"
+    datasource.execute(""" $query   
                 DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys;
-        """.toString()
+        """.toString())
     return outputTableName
 }

@@ -26,6 +26,7 @@ import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.PRJUtil
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
+import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 import org.slf4j.LoggerFactory
 
@@ -150,7 +151,7 @@ Map readJSON(def jsonFile) {
  * @param deleteOutputData
  * @return
  */
-def saveToAscGrid(def outputTable, def subFolder, def filePrefix, def h2gis_datasource, def outputSRID, def reproject, def deleteOutputData) {
+def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource h2gis_datasource, def outputSRID, def reproject, def deleteOutputData) {
     //Check if the table exists
     if (outputTable && h2gis_datasource.hasTable(outputTable)) {
         def env
@@ -180,8 +181,8 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, def h2gis_data
             columnNames.remove("ID_ROW")
 
             //Add indexes
-            h2gis_datasource.getTable(outputTable)."ID_COL".createIndex()
-            h2gis_datasource.getTable(outputTable)."ID_ROW".createIndex()
+            h2gis_datasource.createIndex(outputTable,"ID_COL")
+            h2gis_datasource.createIndex(outputTable,"ID_ROW")
 
             //Save each grid
             columnNames.each { it ->

@@ -209,7 +209,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                         AND  a.TYPE ='building' AND b.TYPE != 'unknown'
                          group by a.id_build""".toString()
 
-                datasource.getTable(buildinType).id_build.createIndex()
+                datasource.createIndex(buildinType, "id_build")
 
                 def newBuildingWithType = postfix("NEW_BUILDING_TYPE")
 
@@ -428,7 +428,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
     debug('Hydro transformation starts')
     def outputTableName = postfix("HYDRO")
     datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_water serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
 
     if (water) {
         if (datasource.hasTable(water)) {
@@ -571,7 +571,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
     def outputTableName = postfix "VEGET"
     datasource """ 
                 DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
     if (vegetation) {
         def queryMapper = "SELECT "
         if (datasource.hasTable(vegetation)) {

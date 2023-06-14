@@ -71,8 +71,8 @@ String unweightedOperationFromLowerScale(JdbcDataSource datasource, String input
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, BASE_NAME
 
-    datasource."$inputLowerScaleTableName"."$inputIdUp".createIndex()
-    datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
+    datasource.createIndex(inputLowerScaleTableName,inputIdUp)
+    datasource.createIndex(inputUpperScaleTableName,inputIdUp)
 
     def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
@@ -157,8 +157,8 @@ String weightedAggregatedStatistics(JdbcDataSource datasource, String inputLower
     // Temporary table names
     def weighted_mean = postfix "weighted_mean"
 
-    datasource."$inputLowerScaleTableName"."$inputIdUp".createIndex()
-    datasource."$inputUpperScaleTableName"."$inputIdUp".createIndex()
+    datasource.createIndex(inputLowerScaleTableName,inputIdUp)
+    datasource.createIndex(inputUpperScaleTableName,inputIdUp)
 
     // The weighted mean is calculated in all cases since it is useful for the STD calculation
     def weightedMeanQuery = "DROP TABLE IF EXISTS $weighted_mean; " +
@@ -308,7 +308,7 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
                         SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETRIC_FIELD)) 
                         AS the_geom FROM $buildingTableName;""".toString()
 
-        datasource."$buildingTableName".id_build.createIndex()
+        datasource.createIndex(buildingTableName,"id_build")
 
         // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
         datasource """CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec ($ID_FIELD_BU);
@@ -602,8 +602,8 @@ String distributionCharacterization(JdbcDataSource datasource, String distribTab
             queryCoalesce += "COALESCE(a.$EXTREMUM_VAL, -1) AS $EXTREMUM_VAL,  "
         }
         // Set to default value (for example if we characterize the building direction in a RSU having no building...)
-        datasource."$outputTableMissingSomeObjects"."$inputId".createIndex()
-        datasource."$initialTable"."$inputId".createIndex()
+        datasource.createIndex(outputTableMissingSomeObjects,inputId)
+        datasource.createIndex(initialTable,inputId)
         datasource """DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName 
                                     AS SELECT       $queryCoalesce
@@ -715,7 +715,7 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
                                                         ${queryCaseWh[0..-2]} 
                                             FROM $inputTableName""".toString()
 
-        datasource."$caseWhenTab"."$idField".createIndex()
+        datasource.createIndex(caseWhenTab,idField)
 
         // Calculate the proportion of each type
         datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull;
@@ -726,8 +726,8 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
         // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
         def allFinalCol = datasource."$outputTableWithNull".getColumns()
         allFinalCol = allFinalCol.minus([idField.toUpperCase()])
-        datasource."$inputUpperTableName"."$idField".createIndex()
-        datasource."$outputTableWithNull"."$idField".createIndex()
+        datasource.createIndex(inputUpperTableName,idField)
+        datasource.createIndex(outputTableWithNull,idField)
         def pieceOfQuery = ""
         allFinalCol.each { col ->
             pieceOfQuery += "COALESCE(a.$col, 0) AS $col, "
@@ -810,7 +810,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
                 "bu")
 
         // To avoid crashes of the join due to column duplicate, need to prefix some names
-        def buildRsuCol2Rename = datasource.getTable(buildIndicRsuScale).getColumns()
+        def buildRsuCol2Rename = datasource.getColumnNames(buildIndicRsuScale)
         def listBuildRsuRename = []
         for (col in buildRsuCol2Rename) {
             if (col != "ID_BUILD" && col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
@@ -834,7 +834,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
                     inputVarAndOperationsBlock, "bl")
 
             // To avoid crashes of the join due to column duplicate, need to prefix some names
-            def blockRsuCol2Rename = datasource.getTable(blockIndicFinalScale).getColumns()
+            def blockRsuCol2Rename = datasource.getColumnNames(blockIndicFinalScale)
             for (col in blockRsuCol2Rename) {
                 if (col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
                     listblockFinalRename.add("b.$col AS block_$col")
@@ -871,8 +871,8 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
             }
 
             // Merge scales (building and Rsu indicators)
-            datasource.getTable(rsuTable).id_rsu.createIndex()
-            datasource.getTable(buildingTable).id_rsu.createIndex()
+            datasource.createIndex(rsuTable,"id_rsu")
+            datasource.createIndex(buildingTable,"id_rsu")
             datasource.execute """ DROP TABLE IF EXISTS $finalScaleTableName;
                                 CREATE TABLE $finalScaleTableName 
                                     AS SELECT ${listRsuRename.join(', ')}, ${listBuildRename.join(', ')} 
@@ -895,8 +895,8 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
 
         // Gather all indicators (coming from three different scales) in a single table (the 'targetTableScale' scale)
         // Note that in order to avoid crashes of the join due to column duplicate, indicators have been prefixed
-        datasource.getTable(buildIndicRsuScale).id_rsu.createIndex()
-        datasource.getTable(finalScaleTableName).id_rsu.createIndex()
+        datasource.createIndex(buildIndicRsuScale, "id_rsu")
+        datasource.createIndex(finalScaleTableName,"id_rsu")
         def queryRemoveNull = ""
         if (removeNull) {
             queryRemoveNull += " WHERE b.$idbuildForMerge IS NOT NULL"
@@ -908,14 +908,15 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
                                 ON a.$idbuildForMerge = b.$idbuildForMerge 
                                 $queryRemoveNull;""".toString()
 
-        datasource.getTable(blockIndicFinalScale)."$idBlockForMerge".createIndex()
-        datasource.getTable(scale1ScaleFin)."$idBlockForMerge".createIndex()
+        datasource.createIndex(blockIndicFinalScale, idBlockForMerge)
+        datasource.createIndex(scale1ScaleFin,idBlockForMerge)
         datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
                             CREATE TABLE $outputTableName 
                                 AS SELECT a.*, ${listblockFinalRename.join(', ')}
                                 FROM $scale1ScaleFin a LEFT JOIN $blockIndicFinalScale b
                                 ON a.$idBlockForMerge = b.$idBlockForMerge;""".toString()
 
+        datasource.dropTable(finalScaleTableName, scale1ScaleFin, buildIndicRsuScale)
         return outputTableName
     } else {
         error """ The 'targetedScale' parameter should either be 'RSU' or 'BUILDING' """
