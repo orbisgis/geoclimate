@@ -20,6 +20,7 @@
 package org.orbisgis.geoclimate.osmtools.utils
 
 import groovy.transform.BaseScript
+import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.osmtools.OSMTools
 
@@ -65,6 +66,25 @@ def arrayUnion(boolean removeDuplicated, Collection... arrays) {
  * @return The name for the table that contains all polygons/lines
  */
 String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, def tags, def columnsToKeep, boolean valid_geom = true) {
+    return toPolygonOrLine(type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom)
+}
+
+
+/**
+ * Extract all the polygons/lines from the OSM tables
+ *
+ * @param type
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
+ * @param geometry a geometry to reduce the area
+ * @param valid_geom true to valid the geometries
+ *
+ * @return The name for the table that contains all polygons/lines
+ */
+String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, def tags, def columnsToKeep, org.locationtech.jts.geom.Geometry geometry, boolean valid_geom = true) {
     //Check if parameters a good
     if (!datasource) {
         error "Please set a valid database connection"
@@ -90,12 +110,12 @@ String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osm
     String outputRelation
     switch (type) {
         case GeometryTypes.POLYGONS:
-            outputWay = OSMTools.Transform.extractWaysAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, valid_geom)
-            outputRelation = OSMTools.Transform.extractRelationsAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, valid_geom)
+            outputWay = OSMTools.Transform.extractWaysAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry, valid_geom)
+            outputRelation = OSMTools.Transform.extractRelationsAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry, valid_geom)
             break
         case GeometryTypes.LINES:
-            outputWay = OSMTools.Transform.extractWaysAsLines(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
-            outputRelation = OSMTools.Transform.extractRelationsAsLines(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
+            outputWay = OSMTools.Transform.extractWaysAsLines(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry)
+            outputRelation = OSMTools.Transform.extractRelationsAsLines(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry)
             break
         default:
             error "Wrong type '${type}'."
@@ -206,6 +226,29 @@ def getCountTagsQuery(osmTableTag, tags) {
  */
 boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode,
                              String outputNodesPoints, def tags, def columnsToKeep) {
+    return extractNodesAsPoints(datasource, osmTablesPrefix, epsgCode,
+            outputNodesPoints, tags, columnsToKeep, null)
+}
+
+/**
+ * This function is used to extract nodes as points
+ *
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param outputNodesPoints the name of the nodes points table
+ * @param tagKeys list ok keys to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * @param geometry a geometry to reduce the area
+ * The name of a column corresponds to a key name
+ *
+ * @return true if some points have been built
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Lesaux (UBS LAB-STICC)
+ */
+boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode,
+                             String outputNodesPoints, def tags, def columnsToKeep, Geometry geometry) {
     if (!datasource) {
         error("The datasource should not be null")
         return false
@@ -228,7 +271,9 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
     }
     def tableNode = "${osmTablesPrefix}_node"
     def tableNodeTag = "${osmTablesPrefix}_node_tag"
+    def filterTableNode = postfix("${osmTablesPrefix}_node_filtered")
 
+    def tablesToDrop=[]
     if (!datasource.hasTable(tableNodeTag)) {
         debug "No tags table found to build the table. An empty table will be returned."
         datasource """ 
@@ -272,13 +317,33 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
                 return true
             }
         }
-        datasource.execute """
+
+        if (geometry) {
+            def query = """  DROP TABLE IF EXISTS $filterTableNode;
+                                  CREATE TABLE  $filterTableNode as select * from $tableNode   """
+            int geom_srid = geometry.getSRID()
+            int sridNode = datasource.getSrid(tableNode)
+            if (geom_srid == -1) {
+                query += " where the_geom && st_setsrid('$geometry'::geometry, $sridNode) and st_intersects(the_geom, st_setsrid('$geometry'::geometry, $sridNode)) "
+            } else if (geom_srid == sridNode) {
+                query += " where the_geom && st_setsrid('$geometry'::geometry, $sridNode) and st_intersects(the_geom,st_setsrid('$geometry'::geometry, $sridNode)) "
+            } else {
+                query += " where the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $sridNode) and st_intersects(the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid),$sridNode)) "
+            }
+            datasource.createSpatialIndex(tableNode, "the_geom")
+            datasource.execute(query.toString())
+            datasource.createIndex(filterTableNode, "id_node")
+            tablesToDrop<<filterTableNode
+        } else {
+            filterTableNode = tableNode
+        }
+
+        datasource.execute("""
                 DROP TABLE IF EXISTS $outputNodesPoints;
                 CREATE TABLE $outputNodesPoints AS
                     SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
-                    FROM $tableNode AS a, $tableNodeTag b
-                    WHERE a.id_node = b.id_node GROUP BY a.id_node;
-            """.toString()
+                    FROM $filterTableNode AS a, $tableNodeTag b
+                    WHERE a.id_node = b.id_node GROUP BY a.id_node""".toString())
 
     } else {
         if (columnsToKeep) {
@@ -290,20 +355,39 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
                 return true
             }
         }
+        if (geometry) {
+            int sridNode = datasource.getSrid(tableNode)
+            def query = """  DROP TABLE IF EXISTS $filterTableNode;
+                                  CREATE TABLE  $filterTableNode as select * from $tableNode   """
+            int geom_srid = geometry.getSRID()
+            if (geom_srid == -1) {
+                query += " where the_geom && st_setsrid('$geometry'::geometry, $sridNode) and st_intersects(the_geom, st_setsrid('$geometry'::geometry, $sridNode)) "
+            } else if (geom_srid == sridNode) {
+                query += " where the_geom && st_setsrid('$geometry'::geometry, $sridNode) and st_intersects(the_geom,st_setsrid('$geometry'::geometry, $sridNode)) "
+            } else {
+                query += " where the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $sridNode) and st_intersects(the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid),$sridNode)) "
+            }
+            datasource.createSpatialIndex(tableNode, "the_geom")
+            datasource.execute(query.toString())
+            datasource.createIndex(filterTableNode, "id_node")
+            tablesToDrop<<filterTableNode
+        } else {
+            filterTableNode = tableNode
+        }
+
         def filteredNodes = postfix("FILTERED_NODES_")
-        datasource.execute """
+        datasource.execute("""
                 CREATE TABLE $filteredNodes AS
                     SELECT DISTINCT id_node FROM ${osmTablesPrefix}_node_tag WHERE $tagsFilter;
                 CREATE INDEX ON $filteredNodes(id_node);
                 DROP TABLE IF EXISTS $outputNodesPoints;
                 CREATE TABLE $outputNodesPoints AS
                     SELECT a.id_node, ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
-                    FROM $tableNode AS a, $tableNodeTag  b, $filteredNodes c
+                    FROM $filterTableNode AS a, $tableNodeTag  b, $filteredNodes c
                     WHERE a.id_node=b.id_node
-                    AND a.id_node=c.id_node
-                    GROUP BY a.id_node;
-            """.toString()
+                    AND a.id_node=c.id_node GROUP BY a.id_node""".toString())
     }
+    datasource.dropTable(tablesToDrop)
     return true
 }
 

@@ -445,7 +445,9 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
             def extract = OSMTools.Loader.extract(query)
             if (extract) {
-                Map gisLayersResults = OSM.InputDataLoading.createGISLayers(h2gis_datasource, extract, srid)
+                Geometry geomArea = h2gis_datasource.firstRow("select st_extent(the_geom) as the_geom from ${zones.zone}").the_geom
+                geomArea.setSRID(srid)
+                Map gisLayersResults = OSM.InputDataLoading.createGISLayers(h2gis_datasource, extract, geomArea, srid)
                 if (gisLayersResults) {
                     if (deleteOSMFile) {
                         if (new File(extract).delete()) {

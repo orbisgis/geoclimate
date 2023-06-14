@@ -565,7 +565,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": ["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
+                        "locations": ["Redon"]//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                         // "area": 2800,
                         /*"timeout":182,
                         "maxsize": 536870918,

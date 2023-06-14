@@ -140,6 +140,19 @@ Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, f
  * railTableName, vegetationTableName, hydroTableName, imperviousTableName
  */
 Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1) {
+    return createGISLayers( datasource,  osmFilePath, null, epsg)
+}
+
+/**
+ * This process is used to create the GIS layers from an OSM xml file
+ * @param datasource A connexion to a DB to load the OSM file
+ * @param osmFilePath a path to the OSM xml file
+ * @param epsg code to reproject the GIS layers, default is -1
+ *
+ * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
+ * railTableName, vegetationTableName, hydroTableName, imperviousTableName
+ */
+Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationtech.jts.geom.Geometry geometry, int epsg = -1) {
     if (epsg <= -1) {
         error "Invalid epsg code $epsg"
         return null
@@ -161,7 +174,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         def parametersMap = readJSONParameters(paramsDefaultFile)
         def tags = parametersMap.get("tags")
         def columnsToKeep = parametersMap.get("columns")
-        def building = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep)
+        def building = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
         if (building) {
             outputBuildingTableName = postfix("OSM_BUILDING")
             datasource.execute("ALTER TABLE ${building} RENAME TO $outputBuildingTableName".toString())
@@ -174,7 +187,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String road = OSMTools.Transform.extractWaysAsLines(datasource, prefix, epsg, tags, columnsToKeep)
+        String road = OSMTools.Transform.extractWaysAsLines(datasource, prefix, epsg, tags, columnsToKeep, geometry)
         if (road) {
             outputRoadTableName = postfix("OSM_ROAD")
             datasource.execute("ALTER TABLE ${road} RENAME TO $outputRoadTableName".toString())
@@ -187,7 +200,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String rail = OSMTools.Transform.extractWaysAsLines(datasource, prefix, epsg, tags, columnsToKeep)
+        String rail = OSMTools.Transform.extractWaysAsLines(datasource, prefix, epsg, tags, columnsToKeep,geometry)
         if (rail) {
             outputRailTableName = postfix("OSM_RAIL")
             datasource.execute("ALTER TABLE ${rail} RENAME TO $outputRailTableName".toString())
@@ -198,7 +211,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String vegetation = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep)
+        String vegetation = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
         debug "Create the vegetation layer"
         if (vegetation) {
             outputVegetationTableName = postfix("OSM_VEGETATION")
@@ -211,7 +224,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String water = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep)
+        String water = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
         debug "Create the water layer"
         if (water) {
             outputHydroTableName = postfix("OSM_WATER")
@@ -224,7 +237,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String impervious = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep)
+        String impervious = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
         debug "Create the impervious layer"
         if (impervious) {
             outputImperviousTableName = postfix("OSM_IMPERVIOUS")
@@ -237,7 +250,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String urban_areas = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep)
+        String urban_areas = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
         debug "Create the urban areas layer"
         if (urban_areas) {
             outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")
@@ -251,7 +264,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String coastlines = OSMTools.Transform.toLines(datasource, prefix, epsg, tags, columnsToKeep)
+        String coastlines = OSMTools.Transform.toLines(datasource, prefix, epsg, tags, columnsToKeep,geometry)
         if (coastlines) {
             outputCoastlineTableName = postfix("OSM_COASTLINE")
             datasource.execute("ALTER TABLE ${coastlines} RENAME TO $outputCoastlineTableName".toString())

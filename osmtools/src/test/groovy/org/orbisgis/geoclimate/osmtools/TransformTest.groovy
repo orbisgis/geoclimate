@@ -615,6 +615,65 @@ class TransformTest extends AbstractOSMToolsTest {
 
     }
 
+    @Test
+    void buildGISPolygonsFilterGeometryTest() {
+        def prefix = "OSM_REDON"
+        assertTrue OSMTools.Loader.load(ds, prefix,
+                new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+        //Create building layer
+        def tags = ["building"]
+        String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 2154, tags)
+        assertEquals 6, ds.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  > 0").count as int
+
+        Geometry geom = ds.firstRow("select st_extent(st_transform(the_geom, 2154)) as the_geom from ${outputTableName} ").the_geom;
+        Geometry env =  geom.getCentroid().buffer(20).getEnvelope()
+        outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 2154, tags, env)
+        assertEquals(9, ds.getRowCount(outputTableName))
+    }
+
+    @Test
+    void buildGISLinesFilterGeometryTest() {
+        def prefix = "OSM_REDON"
+        assertTrue OSMTools.Loader.load(ds, prefix,
+                new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+        //Create building layer
+        def tags = ["highway"]
+        String outputTableName = OSMTools.Transform.toLines(ds, prefix, 2154, tags)
+        assertEquals 362, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
+
+        Geometry geom = ds.firstRow("select st_extent(st_transform(the_geom, 2154)) as the_geom from ${outputTableName} ").the_geom;
+        Geometry env =  geom.getCentroid().buffer(20).getEnvelope()
+        outputTableName = OSMTools.Transform.toLines(ds, prefix, 2154, tags, env)
+
+
+        ds.save("(SELECT ST_SETSRID('$env'::GEOMETRY, 2154) AS THE_GEOM)", "/tmp/zone.shp", true)
+        ds.save(outputTableName, "/tmp/test.shp", true)
+        assertEquals(1, ds.getRowCount(outputTableName))
+    }
+
+
+    @Test
+    void buildGISPointsFilterGeometryTest() {
+        def prefix = "OSM_REDON"
+        assertTrue OSMTools.Loader.load(ds, prefix,
+                new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+        //Create building layer
+        def tags = ["amenity"]
+        String outputTableName = OSMTools.Transform.toPoints(ds, prefix, 2154, tags)
+        ds.save(outputTableName, "/tmp/test_before.shp", true)
+
+        assertEquals 223, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
+        Geometry geom = ds.firstRow("select st_extent(st_transform(the_geom, 2154)) as the_geom from ${outputTableName} ").the_geom;
+        Geometry env =  geom.getCentroid().buffer(20).getEnvelope()
+        outputTableName = OSMTools.Transform.toPoints(ds, prefix, 2154, tags, env)
+
+        println(ds.firstRow("select count(*) as count from ${outputTableName}").count )
+
+        ds.save("(SELECT ST_SETSRID('$env'::GEOMETRY, 2154) AS THE_GEOM)", "/tmp/zone.shp", true)
+        ds.save(outputTableName, "/tmp/test.shp", true)
+        assertEquals(1, ds.getRowCount(outputTableName))
+    }
+
 
     /**
      * It uses for test purpose
