@@ -208,22 +208,20 @@ String formatRoadLayer(
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(road)
-                queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
-                        "ELSE st_force2D(a.the_geom) " +
-                        "END AS the_geom " +
+                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$road AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom"
             } else {
-                queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $road  as a"
+                queryMapper += ", a.the_geom as the_geom FROM $road  as a"
             }
             int rowcount = 1
             def speedPattern = Pattern.compile("([0-9]+)( ([a-zA-Z]+))?", Pattern.CASE_INSENSITIVE)
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
                     def processRow = true
+                    def zIndex = getZIndex(row.'layer')
                     def road_access = row.'access'
                     def road_area = row.'area'
                     if (road_area in ['yes']) {
@@ -250,6 +248,9 @@ String formatRoadLayer(
                         def crossing = row.'bridge'
                         if (crossing) {
                             crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
+                            if(!zIndex && crossing){
+                                zIndex=1
+                            }
                         }
 
                         String surface = getTypeValue(row, columnNames, mappingForSurface)
@@ -278,7 +279,7 @@ String formatRoadLayer(
                             }
                         }
                         String sidewalk = getSidewalk(row.'sidewalk')
-                        def zIndex = getZIndex(row.'layer')
+
                         //maxspeed value
                         int maxspeed_value = getSpeedInKmh(speedPattern, row."maxspeed")
 
@@ -354,16 +355,13 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(rail)
-                queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
-                        "ELSE st_force2D(a.the_geom) " +
-                        "END AS the_geom " +
+                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$rail AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom "
             } else {
-                queryMapper += ", st_force2D(st_makevalid(a.the_geom)) as the_geom FROM $rail  as a"
+                queryMapper += ", a.the_geom as the_geom FROM $rail  as a"
 
             }
             int rowcount = 1
@@ -381,6 +379,9 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     def crossing = row.'bridge'
                     if (crossing) {
                         crossing = crossingValues.bridge.contains(crossing) ? "bridge" : null
+                        if(!zIndex && crossing){
+                            zIndex=1
+                        }
                     }
                     if (zIndex >= 0 && type) {
                         Geometry geom = row.the_geom
@@ -433,16 +434,13 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(vegetation)
-                queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
-                        "ELSE a.the_geom " +
-                        "END AS the_geom " +
+                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$vegetation AS a, $zone AS b " +
                         "WHERE " +
-                        "a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) "
+                        "a.the_geom && b.the_geom  "
             } else {
-                queryMapper += ", st_force2D(a.the_geom) as the_geom FROM $vegetation  as a"
+                queryMapper += ", a.the_geom as the_geom FROM $vegetation  as a"
             }
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
@@ -495,20 +493,18 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
             String query
             if (zone) {
                 datasource.createSpatialIndex(water, "the_geom")
-                query = "select id , CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
-                        "ELSE a.the_geom " +
-                        "END AS the_geom , a.\"natural\", a.\"layer\"" +
+                query = "select id ,  st_intersection(a.the_geom, b.the_geom) as the_geom" +
+                        ", a.\"natural\", a.\"layer\"" +
                         " FROM " +
                         "$water AS a, $zone AS b " +
                         "WHERE " +
-                        "a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) "
+                        "a.the_geom && b.the_geom "
                 if(datasource.getColumnNames(water).contains("seamark:type")){
                     query+=" and (a.\"seamark:type\" is null or a.\"seamark:type\" in ('harbour_basin', 'harbour'))"
                 }
 
             } else {
-                query = "select id,  st_force2D(the_geom) as the_geom, \"natural\", \"layer\" FROM $water "
+                query = "select id,  the_geom, \"natural\", \"layer\" FROM $water "
                 if(datasource.getColumnNames(water).contains("seamark:type")){
                     query+=" where \"seamark:type\" is null"
                 }
@@ -558,16 +554,13 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                queryMapper += ", CASE WHEN st_overlaps (a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
-                        "ELSE a.the_geom " +
-                        "END AS the_geom " +
+                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$impervious AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom"
             } else {
-                queryMapper += ", st_force2D(a.the_geom) as the_geom FROM $impervious  as a"
+                queryMapper += ",  a.the_geom FROM $impervious  as a"
             }
 
             def polygonizedTable = postfix("polygonized")
@@ -983,16 +976,13 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(urban_areas)
-                queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
-                        "ELSE a.the_geom " +
-                        "END AS the_geom " +
+                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$urban_areas AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom "
             } else {
-                queryMapper += ",  st_force2D(a.the_geom) as the_geom FROM $urban_areas  as a"
+                queryMapper += ",  a.the_geom as the_geom FROM $urban_areas  as a"
 
             }
             int rowcount = 1

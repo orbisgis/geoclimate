@@ -313,6 +313,8 @@ class InputDataFormattingTest {
 
         zoneToExtract = "Lorient"
 
+        //zoneToExtract =  [69.24666, 28.3359, 69.32999, 28.41923]
+
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");

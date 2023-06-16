@@ -169,7 +169,7 @@ String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCod
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [],  boolean valid_geom = true) {
+String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [],  boolean valid_geom = false) {
     return extractWaysAsPolygons( datasource,  osmTablesPrefix,  epsgCode ,  tags ,  columnsToKeep ,  null, valid_geom)
 }
 
@@ -189,7 +189,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry, boolean valid_geom = true) {
+String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry, boolean valid_geom = false) {
     if (!datasource) {
         error "Please set a valid database connection"
         return
@@ -237,7 +237,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
                     DROP TABLE IF EXISTS $idWaysPolygons;
                     CREATE TABLE $idWaysPolygons AS
                         SELECT DISTINCT id_way
-                        FROM $osmTableTag
+                        FROM $osmTableTag as a
                         WHERE $tagsFilter;
                     CREATE INDEX ON $idWaysPolygons(id_way);
             """.toString()
@@ -291,10 +291,10 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
                 CREATE TABLE $outputTableName AS 
                     SELECT 'w'||a.id_way AS id,"""
     if (valid_geom) {
-        query += """ CASE WHEN ST_ISVALID(a.THE_GEOM) THEN a.the_geom ELSE st_makevalid(a.the_geom) END as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)} 
+        query += """ st_makevalid(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)} 
                """
     } else {
-        query += """ a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)}  """
+        query += """ a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}  """
     }
 
     query += " FROM $waysPolygonTmp AS a, $osmTableTag b WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false"
@@ -337,7 +337,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = true) {
+def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = false) {
     return extractRelationsAsPolygons(datasource, osmTablesPrefix, epsgCode, tags , columnsToKeep, null, valid_geom)
 }
 
@@ -357,7 +357,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], org.locationtech.jts.geom.Geometry geometry, boolean valid_geom = true) {
+def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], org.locationtech.jts.geom.Geometry geometry, boolean valid_geom = false) {
     if (!datasource) {
         error "Please set a valid database connection"
         return
@@ -408,17 +408,13 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                     DROP TABLE IF EXISTS $relationFilteredKeys;
                     CREATE TABLE $relationFilteredKeys AS 
                         SELECT DISTINCT id_relation
-                        FROM ${osmTablesPrefix}_relation_tag wt 
+                        FROM ${osmTablesPrefix}_relation_tag as a 
                         WHERE $tagsFilter;
                     CREATE INDEX ON $relationFilteredKeys(id_relation);
             """.toString()
 
         if (columnsToKeep) {
-            if (datasource.firstRow("""
-                        SELECT count(*) AS count 
-                        FROM $relationFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
-                        WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
-                """.toString())[0] < 1) {
+            if (datasource.getRowCount(relationFilteredKeys)< 1) {
                 debug "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
                 datasource """
                             DROP TABLE IF EXISTS $outputTableName;
@@ -533,11 +529,11 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                 CREATE TABLE $outputTableName AS 
                     SELECT 'r'||a.id_relation AS id,"""
     if (valid_geom) {
-        query += """ CASE WHEN ST_ISVALID(a.THE_GEOM) THEN a.the_geom ELSE st_makevalid(a.the_geom) END as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)}
+        query += """  st_makevalid(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}
         FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false """
     } else {
-        query += """ st_normalize(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)} 
+        query += """ st_normalize(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)} 
         FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false  """
     }
@@ -556,13 +552,9 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
 
     query += " GROUP BY a.the_geom, a.id_relation;"
 
-    datasource """ $query
-                DROP TABLE IF EXISTS    $relationsPolygonsOuter, 
-                                        $relationsPolygonsInner,
-                                        $relationsPolygonsOuterExploded, 
-                                        $relationsPolygonsInnerExploded, 
-                                        $relationsMpHoles, 
-                                        $relationFilteredKeys;""".toString()
+    datasource query.toString()
+    datasource.dropTable(relationsPolygonsOuter, relationsPolygonsInner, relationsPolygonsOuterExploded,
+    relationsPolygonsInnerExploded,relationsMpHoles,relationFilteredKeys)
     return outputTableName
 }
 
@@ -651,7 +643,7 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
                     DROP TABLE IF EXISTS $idWaysTable;
                     CREATE TABLE $idWaysTable AS
                         SELECT DISTINCT id_way
-                        FROM ${osmTablesPrefix}_way_tag
+                        FROM ${osmTablesPrefix}_way_tag as a
                         WHERE $tagsFilter;
                     CREATE INDEX ON $idWaysTable(id_way);
             """.toString()
@@ -696,7 +688,7 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
     def query = """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName AS 
-                    SELECT 'w'||a.id_way AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)} 
+                    SELECT 'w'||a.id_way AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector,columnsToKeep)} 
                     FROM $waysLinesTmp AS a, ${osmTablesPrefix}_way_tag b 
                     WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false """
 
@@ -806,7 +798,7 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
                     DROP TABLE IF EXISTS $relationsFilteredKeys;
                     CREATE TABLE $relationsFilteredKeys AS
                         SELECT DISTINCT id_relation
-                        FROM ${osmTablesPrefix}_relation_tag wt
+                        FROM ${osmTablesPrefix}_relation_tag as a
                         WHERE $tagsFilter;
                     CREATE INDEX ON $relationsFilteredKeys(id_relation);
             """.toString()
@@ -859,7 +851,7 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
     def query = """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName AS
-                    SELECT 'r'||a.id_relation AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector)}
+                    SELECT 'r'||a.id_relation AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}
                     FROM $relationsLinesTmp AS a, ${osmTablesPrefix}_relation_tag  b
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false """
 

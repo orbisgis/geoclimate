@@ -139,7 +139,7 @@ def loadV2(
     String troncon_voie_ferree = tablesExist.get("troncon_voie_ferree")
     if (!troncon_voie_ferree) {
         troncon_voie_ferree = "troncon_voie_ferree"
-        datasource.execute("DROP TABLE IF EXISTS $troncon_voie_ferree;  CREATE TABLE $troncon_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);".toString())
+        datasource.execute("DROP TABLE IF EXISTS $troncon_voie_ferree;  CREATE TABLE $troncon_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar,LARGEUR DOUBLE PRECISION);".toString())
     }
     String surface_eau = tablesExist.get("surface_eau")
     if (!surface_eau) {
@@ -243,8 +243,8 @@ def loadV2(
 
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
-            CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST FROM $troncon_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST, a.largeur FROM $troncon_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
 
@@ -560,14 +560,14 @@ Map loadV3(JdbcDataSource datasource,
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_ROAD;
             CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar, SENS varchar)
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, '', a.SENS FROM $troncon_de_route a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, CASE WHEN a.POS_SOL=1 THEN 'bridge' else '' end , a.SENS FROM $troncon_de_route a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
     //5. Prepare the Rail table (from the layer "troncon_de_voie_ferree") that are in the study area (ZONE)
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
-            CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, '' FROM $troncon_de_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, CASE WHEN a.POS_SOL=1 THEN 'bridge' else '' end, a.LARGEUR FROM $troncon_de_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
 
@@ -582,7 +582,6 @@ Map loadV3(JdbcDataSource datasource,
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
             and NATURE = 'Bassin de natation';
             """.toString())
-
 
     //7. Prepare the Vegetation table (from the layers "zone_de_vegetation", "piste_d_aerodrome", "terrain_de_sport") that are in the study area (ZONE_EXTENDED)
     datasource.execute("""

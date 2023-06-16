@@ -183,10 +183,26 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                             PERVIOUS_FRACTION_LCZ, 
                             WATER_FRACTION_LCZ, 
                             IMPERVIOUS_FRACTION,
-                            CASE 
+                            CASE
                                 WHEN IMPERVIOUS_FRACTION_LCZ+WATER_FRACTION_LCZ+BUILDING_FRACTION_LCZ=1
-                                    THEN null
-                                    ELSE HIGH_VEGETATION_FRACTION_LCZ/(1-IMPERVIOUS_FRACTION_LCZ-WATER_FRACTION_LCZ-BUILDING_FRACTION_LCZ)
+                                    THEN CASE
+
+                                            WHEN HIGH_VEGETATION_FRACTION_LCZ = 0
+
+                                                THEN 0
+
+                                                ELSE 1
+
+                                        END
+
+                                    ELSE
+                                            CASE
+                                                 WHEN IMPERVIOUS_FRACTION_LCZ+WATER_FRACTION_LCZ+BUILDING_FRACTION_LCZ <= HIGH_VEGETATION_FRACTION_LCZ
+                  THEN 1
+
+                                                ELSE HIGH_VEGETATION_FRACTION_LCZ/(1-IMPERVIOUS_FRACTION_LCZ-WATER_FRACTION_LCZ-BUILDING_FRACTION_LCZ)
+
+                                        END
                                     END
                                 AS HIGH_ALL_VEGETATION,
                             LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ AS ALL_VEGETATION
@@ -204,7 +220,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                         AS SELECT   $ID_FIELD_RSU,
                                                 CASE WHEN IMPERVIOUS_FRACTION_LCZ>ALL_VEGETATION AND IMPERVIOUS_FRACTION_LCZ>WATER_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.1
                                                         THEN 105
-                                                        ELSE CASE WHEN ALL_VEGETATION<WATER_FRACTION_LCZ AND WATER_FRACTION_LCZ> 0.31
+                                                        ELSE CASE WHEN ALL_VEGETATION<=WATER_FRACTION_LCZ AND WATER_FRACTION_LCZ> 0.31
                                                                 THEN 107
                                                                 ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR HIGH_ALL_VEGETATION<0.05
                                                                         THEN 104
