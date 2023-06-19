@@ -184,7 +184,7 @@ def getColumnSelector(osmTableTag, tags, columnsToKeep) {
     }
     tagKeys.removeAll([null])
 
-    def query = "SELECT distinct tag_key FROM $osmTableTag"
+    def query = "SELECT distinct tag_key FROM $osmTableTag as a "
     if (tagKeys) query += " WHERE tag_key IN ('${tagKeys.unique().join("','")}')"
     return query
 }

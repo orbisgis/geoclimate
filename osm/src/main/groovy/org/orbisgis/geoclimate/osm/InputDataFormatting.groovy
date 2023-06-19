@@ -339,7 +339,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
     debug('Rails transformation starts')
     def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """ drop table if exists $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);""".toString()
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH DOUBLE PRECISION);""".toString()
 
     if (rail != null) {
         def paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
@@ -383,6 +383,12 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                             zIndex=1
                         }
                     }
+                    def gauge = row.'gauge'
+                    def rail_width = 1.435
+                    if(gauge && gauge.isFloat()){
+                        rail_width = gauge.toFloat()/1000
+                    }
+
                     if (zIndex >= 0 && type) {
                         Geometry geom = row.the_geom
                         int epsg = geom.getSRID()
@@ -394,7 +400,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                                     '${row.id}',
                                     ${singleQuote(type)},
                                     ${singleQuote(crossing)},
-                                    ${zIndex})
+                                    ${zIndex}, $rail_width)
                                 """
                         }
                     }
