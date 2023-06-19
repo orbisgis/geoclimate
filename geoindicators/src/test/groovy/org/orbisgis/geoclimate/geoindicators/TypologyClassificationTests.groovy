@@ -57,10 +57,6 @@ class TypologyClassificationTests {
                 "rsu_test_lcz_indics", "rsu_test_all_indics_for_lcz",
                 "AVG", "test")
         assertNotNull(pavg)
-
-        h2GIS.save(pavg, "/tmp/lcz.json", true)
-
-        h2GIS.save("rsu_test_all_indics_for_lcz", "/tmp/lcz_indic.json", true)
         def results = [:]
         h2GIS."$pavg".eachRow { row ->
             def id = row.id_rsu
