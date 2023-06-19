@@ -741,7 +741,7 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
     def weight_values = [
             "government": 5, "entertainment_arts_culture": 10, "education": 10, "military": 20,
             "industrial": 20, "commercial": 20, "healthcare": 10, "transport": 15, "building": 10,
-            "sport"     : 10, "cemetery": 10]
+            "sport"     : 10, "cemetery": 10, "religious":10]
 
     //We must remove all overlapping geometries and then choose the attribute TYPE to set according some priorities
     def polygonizedTable = postfix("impervious_polygonized")

@@ -137,7 +137,7 @@ class WorkflowDebugTest {
     @Test
     void testIntegrationFolderInput() {
         def input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo2/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D035_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D035-ED182"
-        def locations = ["Dijon"]
+        def locations = ["44109"]
         String directory = "/tmp/bdtopo2"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -169,7 +169,7 @@ class WorkflowDebugTest {
         ]
         //BDTopo.v2(bdTopoParameters)
 
-        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D021_2023-03-15"
+        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D044_2023-03-15"
 
         directory = "/tmp/bdtopo3"
         dirFile = new File(directory)

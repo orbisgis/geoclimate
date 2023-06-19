@@ -244,7 +244,7 @@ def loadV2(
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
             CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST, a.largeur FROM $troncon_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST, CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
 
@@ -567,7 +567,8 @@ Map loadV3(JdbcDataSource datasource,
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
             CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, CASE WHEN a.POS_SOL=1 THEN 'bridge' else '' end, a.LARGEUR FROM $troncon_de_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, CASE WHEN a.POS_SOL=1 THEN 'bridge' else '' end, 
+        CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_de_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
 
