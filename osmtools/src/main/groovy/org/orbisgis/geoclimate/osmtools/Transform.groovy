@@ -297,7 +297,11 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
         query += """ a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}  """
     }
 
-    query += " FROM $waysPolygonTmp AS a, $osmTableTag b WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false"
+    query += " FROM $waysPolygonTmp AS a, $osmTableTag b WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false "
+
+    if(columnsToKeep) {
+        query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
+    }
 
     if (geometry) {
         int geom_srid = geometry.getSRID()
@@ -310,7 +314,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
         }
         datasource.createSpatialIndex(waysPolygonTmp, "the_geom")
     }
-    query += " GROUP BY a.id_way;"
+    query += " GROUP BY a.the_geom, a.id_way;"
 
 
     datasource """
@@ -538,6 +542,10 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false  """
     }
 
+    if(columnsToKeep) {
+        query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
+    }
+
     if (geometry) {
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
@@ -692,6 +700,10 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
                     FROM $waysLinesTmp AS a, ${osmTablesPrefix}_way_tag b 
                     WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false """
 
+    if(columnsToKeep) {
+        query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
+    }
+
     if (geometry) {
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
@@ -704,7 +716,7 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
         datasource.createSpatialIndex(waysLinesTmp, "the_geom")
     }
 
-    query += " GROUP BY a.id_way;;"
+    query += " GROUP BY a.id_way;"
 
     datasource """
                 $query
@@ -854,6 +866,9 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
                     SELECT 'r'||a.id_relation AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}
                     FROM $relationsLinesTmp AS a, ${osmTablesPrefix}_relation_tag  b
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false """
+    if(columnsToKeep) {
+        query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
+    }
 
     if (geometry) {
         int geom_srid = geometry.getSRID()
@@ -866,7 +881,7 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
         }
         datasource.createSpatialIndex(relationsLinesTmp, "the_geom")
     }
-    query += "        GROUP BY a.id_relation;"
+    query += " GROUP BY a.id_relation;"
     datasource.execute(""" $query   
                 DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys;
         """.toString())

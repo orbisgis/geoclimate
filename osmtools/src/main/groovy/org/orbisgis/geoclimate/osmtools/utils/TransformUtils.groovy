@@ -320,7 +320,7 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
 
         if (geometry) {
             def query = """  DROP TABLE IF EXISTS $filterTableNode;
-                                  CREATE TABLE  $filterTableNode as select * from $tableNode   """
+                                  CREATE TABLE  $filterTableNode as select * from $tableNode as a   """
             int geom_srid = geometry.getSRID()
             int sridNode = datasource.getSrid(tableNode)
             if (geom_srid == -1) {
@@ -330,20 +330,25 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
             } else {
                 query += " where the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $sridNode) and st_intersects(the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid),$sridNode)) "
             }
+
             datasource.createSpatialIndex(tableNode, "the_geom")
+
             datasource.execute(query.toString())
             datasource.createIndex(filterTableNode, "id_node")
             tablesToDrop << filterTableNode
         } else {
             filterTableNode = tableNode
         }
-
-        datasource.execute("""
-                DROP TABLE IF EXISTS $outputNodesPoints;
+        def lastQuery =  """DROP TABLE IF EXISTS $outputNodesPoints;
                 CREATE TABLE $outputNodesPoints AS
                     SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
                     FROM $filterTableNode AS a, $tableNodeTag b
-                    WHERE a.id_node = b.id_node GROUP BY a.id_node""".toString())
+                    WHERE a.id_node = b.id_node """
+        if(columnsToKeep) {
+            lastQuery += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
+        }
+        lastQuery+= " GROUP BY a.id_node"
+        datasource.execute(lastQuery.toString())
 
     } else {
         if (columnsToKeep) {
@@ -376,16 +381,21 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
         }
 
         def filteredNodes = postfix("FILTERED_NODES_")
-        datasource.execute("""
+        def lastQuery = """
                 CREATE TABLE $filteredNodes AS
-                    SELECT DISTINCT id_node FROM ${osmTablesPrefix}_node_tag WHERE $tagsFilter;
+                    SELECT DISTINCT id_node FROM ${osmTablesPrefix}_node_tag as a WHERE $tagsFilter;
                 CREATE INDEX ON $filteredNodes(id_node);
                 DROP TABLE IF EXISTS $outputNodesPoints;
                 CREATE TABLE $outputNodesPoints AS
                     SELECT a.id_node, ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
                     FROM $filterTableNode AS a, $tableNodeTag  b, $filteredNodes c
                     WHERE a.id_node=b.id_node
-                    AND a.id_node=c.id_node GROUP BY a.id_node""".toString())
+                    AND a.id_node=c.id_node  """
+        if(columnsToKeep){
+            lastQuery += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
+        }
+        lastQuery+=" GROUP BY a.id_node"
+        datasource.execute(lastQuery.toString())
     }
     datasource.dropTable(tablesToDrop)
     return true
@@ -469,23 +479,29 @@ def createTagList(JdbcDataSource datasource, def selectTableQuery, List columnsT
     }
     def rowskeys = datasource.rows(selectTableQuery.toString())
     def list = []
-    def nullColumns = columnsToKeep
-    rowskeys.tag_key.each { it ->
-        if (it != null) {
-            list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it}\""
-            nullColumns.remove(it)
+    if(!columnsToKeep){
+        rowskeys.tag_key.each { it ->
+            if (it != null ) {
+                list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it}\""
+            }
         }
-    }
-    nullColumns.each { it ->
-        list << "CAST(NULL AS VARCHAR) AS \"${it}\""
+    }else {
+        def nullColumns = columnsToKeep.collect()
+        rowskeys.tag_key.each { it ->
+            if (it != null && columnsToKeep.contains(it)) {
+                list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it}\""
+                nullColumns.remove(it)
+            }
+        }
+        nullColumns.each { it ->
+            list << "CAST(NULL AS VARCHAR) AS \"${it}\""
+        }
     }
 
     def tagList = ""
     if (!list.isEmpty()) {
         tagList = ", ${list.join(",")}"
     }
-
-
     return tagList
 }
 

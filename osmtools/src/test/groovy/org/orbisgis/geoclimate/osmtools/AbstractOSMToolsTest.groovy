@@ -96,7 +96,10 @@ abstract class AbstractOSMToolsTest {
      * @param prefix Prefix of the OSM tables.
      */
     protected void createData(def ds, def prefix) {
-        ds.execute """CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);
+        ds.execute """
+       DROP TABLE IF EXISTS   ${prefix}_node_tag, ${prefix}_way_tag , ${prefix}_relation_tag, ${prefix}_node,
+       ${prefix}_way_node, ${prefix}_way, ${prefix}_relation, ${prefix}_way_member;
+       CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);
        INSERT INTO ${prefix}_node_tag VALUES(1, 'building', 'house'),(1, 'material', 'concrete'),
        (2, 'material', 'concrete'),(3, 'water', 'lake'),(4, 'water', 'lake'),(4, 'building', 'house');
        CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);

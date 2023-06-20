@@ -260,7 +260,6 @@ class LoaderTest extends AbstractOSMToolsTest {
         Map r = OSMTools.Loader.fromPlace(ds, placeName, dist)
         assertNull(r)
 
-
         r = OSMTools.Loader.fromPlace(ds, "Lezoen, Plourivo", dist)
 
         def zone = ds.getSpatialTable(r.zone)

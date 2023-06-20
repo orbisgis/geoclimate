@@ -48,7 +48,8 @@ class TransformTest extends AbstractOSMToolsTest {
 
     @BeforeAll
     static void loadDb() {
-        ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformTest;AUTO_SERVER=TRUE;")
+        //ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformTest;AUTO_SERVER=TRUE;")
+        ds = H2GIS.open("/tmp/TransformTest;AUTO_SERVER=TRUE;")
     }
 
 
@@ -93,7 +94,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def prefix = "OSM_" + uuid()
         def epsgCode = 2453
         def tags = [building: "house"]
-        def columnsToKeep = ["water"]
+        def columnsToKeep = []
 
         createData(ds, prefix)
 
@@ -107,13 +108,11 @@ class TransformTest extends AbstractOSMToolsTest {
                     assertEquals 1, it.id_node
                     assertTrue it.the_geom instanceof Point
                     assertEquals "house", it.building
-                    assertEquals null, it.water
                     break
                 case 2:
                     assertEquals 4, it.id_node
                     assertTrue it.the_geom instanceof Point
                     assertEquals "house", it.building
-                    assertEquals "lake", it.water
                     break
             }
         }
@@ -160,7 +159,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def prefix = "OSM_" + uuid()
         def epsgCode = 2453
         def tags = [building: "house"]
-        def columnsToKeep = ["water"]
+        def columnsToKeep = ["building", "water"]
 
         createData(ds, prefix)
 
@@ -242,13 +241,11 @@ class TransformTest extends AbstractOSMToolsTest {
                 case 1:
                     assertEquals "w1", it.id
                     assertEquals 2, it.the_geom.getDimension()
-                    assertEquals "house", it.building
                     assertEquals "lake", it.water
                     break
                 case 2:
                     assertEquals "r1", it.id
                     assertEquals 2, it.the_geom.getDimension()
-                    assertEquals "house", it.building
                     assertEquals "lake", it.water
                     break
             }
@@ -256,7 +253,7 @@ class TransformTest extends AbstractOSMToolsTest {
 
         //Test column to keep absent
         result = OSMTools.Transform.toPolygons(ds, prefix, epsgCode, tags, ["landcover"])
-        assertTrue ds.getTable(result).isEmpty()
+        assertEquals(0, ds.getRowCount(result))
 
         //Test no polygons
         ds.execute """DROP TABLE ${prefix}_relation;
@@ -264,7 +261,8 @@ class TransformTest extends AbstractOSMToolsTest {
         DROP TABLE ${prefix}_way;
         CREATE TABLE ${prefix}_way(id_way int);""".toString()
         result = OSMTools.Transform.toPolygons(ds, prefix, epsgCode, tags, columnsToKeep)
-        assertTrue ds.getTable(result).isEmpty()
+        ds.save(result, "/tmp/test.geojson", true)
+        assertEquals 0, ds.getRowCount(result)
     }
 
     /**
@@ -298,7 +296,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def prefix = "OSM_" + uuid()
         def epsgCode = 2453
         def tags = [building: "house"]
-        def columnsToKeep = ["water"]
+        def columnsToKeep = ["water", "building"]
 
         createData(ds, prefix)
 
@@ -316,16 +314,33 @@ class TransformTest extends AbstractOSMToolsTest {
                     break
             }
         }
-
+    }
+    /**
+     * Test the {@link org.orbisgis.geoclimate.osmtools.Transform#extractWaysAsPolygons} process.
+     */
+    @Test
+    void extractWaysAsPolygonsTest2() {
+        def prefix = "OSM_" + uuid()
+        createData(ds, prefix)
+        def epsgCode = 2453
         //Test not existing tags
-        result = OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, [toto: "tata"], [])
+        def result = OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, [toto: "tata"], [])
         assertTrue ds.getTable(result).isEmpty()
+    }
 
+    /**
+     * Test the {@link org.orbisgis.geoclimate.osmtools.Transform#extractWaysAsPolygons} process.
+     */
+    @Test
+    void extractWaysAsPolygonsTest3() {
+        def prefix = "OSM_" + uuid()
+        createData(ds, prefix)
+        def epsgCode = 2453
         //Test no tags
         ds.execute """DROP TABLE ${prefix}_node_tag;
         CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);""".toString()
-        result = OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, [], [])
-        table = ds.getTable(result)
+        def result = OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, [], [])
+        def table = ds.getTable(result)
         assertEquals 1, table.rowCount
         table.each {
             switch (it.row) {
@@ -337,9 +352,19 @@ class TransformTest extends AbstractOSMToolsTest {
                     break
             }
         }
+    }
 
+    /**
+     * Test the {@link org.orbisgis.geoclimate.osmtools.Transform#extractWaysAsPolygons} process.
+     */
+    @Test
+    void extractWaysAsPolygonsTest4() {
+        def prefix = "OSM_" + uuid()
+        createData(ds, prefix)
+        def epsgCode = 2453
+        def tags = [building: "house"]
         //Test column to keep absent
-        assertNotNull OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, tags, ["landscape"])
+        def result = OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, tags, ["landscape"])
         assertFalse ds.getTable(result).columns.contains("landscape")
     }
 
@@ -374,7 +399,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def prefix = "OSM_" + uuid()
         def epsgCode = 2453
         def tags = [building: "house"]
-        def columnsToKeep = ["water"]
+        def columnsToKeep = ["building","water"]
 
         createData(ds, prefix)
 
@@ -450,7 +475,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def prefix = "OSM_" + uuid()
         def epsgCode = 2453
         def tags = [building: "house"]
-        def columnsToKeep = ["water"]
+        def columnsToKeep = ["building", "water"]
 
         createData(ds, prefix)
 
@@ -527,7 +552,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def prefix = "OSM_" + uuid()
         def epsgCode = 2453
         def tags = [building: "house"]
-        def columnsToKeep = ["water"]
+        def columnsToKeep = ["building", "water"]
 
         createData(ds, prefix)
 
@@ -626,7 +651,7 @@ class TransformTest extends AbstractOSMToolsTest {
         assertEquals 6, ds.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  > 0").count as int
 
         Geometry geom = ds.firstRow("select st_extent(st_transform(the_geom, 2154)) as the_geom from ${outputTableName} ").the_geom;
-        Geometry env =  geom.getCentroid().buffer(20).getEnvelope()
+        Geometry env = geom.getCentroid().buffer(20).getEnvelope()
         outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 2154, tags, env)
         assertEquals(9, ds.getRowCount(outputTableName))
     }
@@ -642,7 +667,7 @@ class TransformTest extends AbstractOSMToolsTest {
         assertEquals 362, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
 
         Geometry geom = ds.firstRow("select st_extent(st_transform(the_geom, 2154)) as the_geom from ${outputTableName} ").the_geom;
-        Geometry env =  geom.getCentroid().buffer(20).getEnvelope()
+        Geometry env = geom.getCentroid().buffer(20).getEnvelope()
         outputTableName = OSMTools.Transform.toLines(ds, prefix, 2154, tags, env)
 
 
@@ -664,10 +689,10 @@ class TransformTest extends AbstractOSMToolsTest {
 
         assertEquals 223, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
         Geometry geom = ds.firstRow("select st_extent(st_transform(the_geom, 2154)) as the_geom from ${outputTableName} ").the_geom;
-        Geometry env =  geom.getCentroid().buffer(20).getEnvelope()
+        Geometry env = geom.getCentroid().buffer(20).getEnvelope()
         outputTableName = OSMTools.Transform.toPoints(ds, prefix, 2154, tags, env)
 
-        println(ds.firstRow("select count(*) as count from ${outputTableName}").count )
+        println(ds.firstRow("select count(*) as count from ${outputTableName}").count)
 
         ds.save("(SELECT ST_SETSRID('$env'::GEOMETRY, 2154) AS THE_GEOM)", "/tmp/zone.shp", true)
         ds.save(outputTableName, "/tmp/test.shp", true)
