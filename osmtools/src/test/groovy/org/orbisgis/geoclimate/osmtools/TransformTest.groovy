@@ -48,8 +48,7 @@ class TransformTest extends AbstractOSMToolsTest {
 
     @BeforeAll
     static void loadDb() {
-        //ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformTest;AUTO_SERVER=TRUE;")
-        ds = H2GIS.open("/tmp/TransformTest;AUTO_SERVER=TRUE;")
+        ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformTest;AUTO_SERVER=TRUE;")
     }
 
 
@@ -261,7 +260,6 @@ class TransformTest extends AbstractOSMToolsTest {
         DROP TABLE ${prefix}_way;
         CREATE TABLE ${prefix}_way(id_way int);""".toString()
         result = OSMTools.Transform.toPolygons(ds, prefix, epsgCode, tags, columnsToKeep)
-        ds.save(result, "/tmp/test.geojson", true)
         assertEquals 0, ds.getRowCount(result)
     }
 
@@ -638,6 +636,18 @@ class TransformTest extends AbstractOSMToolsTest {
         assertEquals 131, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
         assertEquals 123, ds.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='grass'").count as int
 
+        //Create urban areas layer
+        tags = ["landuse": [
+                "commercial",
+                "residential",
+                "retail",
+                "industrial"
+        ]]
+         outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
+
+        assertEquals 6, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
+        assertEquals 4, ds.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='residential'").count as int
+
     }
 
     @Test
@@ -670,9 +680,6 @@ class TransformTest extends AbstractOSMToolsTest {
         Geometry env = geom.getCentroid().buffer(20).getEnvelope()
         outputTableName = OSMTools.Transform.toLines(ds, prefix, 2154, tags, env)
 
-
-        ds.save("(SELECT ST_SETSRID('$env'::GEOMETRY, 2154) AS THE_GEOM)", "/tmp/zone.shp", true)
-        ds.save(outputTableName, "/tmp/test.shp", true)
         assertEquals(1, ds.getRowCount(outputTableName))
     }
 
@@ -685,17 +692,11 @@ class TransformTest extends AbstractOSMToolsTest {
         //Create building layer
         def tags = ["amenity"]
         String outputTableName = OSMTools.Transform.toPoints(ds, prefix, 2154, tags)
-        ds.save(outputTableName, "/tmp/test_before.shp", true)
 
         assertEquals 223, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
         Geometry geom = ds.firstRow("select st_extent(st_transform(the_geom, 2154)) as the_geom from ${outputTableName} ").the_geom;
         Geometry env = geom.getCentroid().buffer(20).getEnvelope()
         outputTableName = OSMTools.Transform.toPoints(ds, prefix, 2154, tags, env)
-
-        println(ds.firstRow("select count(*) as count from ${outputTableName}").count)
-
-        ds.save("(SELECT ST_SETSRID('$env'::GEOMETRY, 2154) AS THE_GEOM)", "/tmp/zone.shp", true)
-        ds.save(outputTableName, "/tmp/test.shp", true)
         assertEquals(1, ds.getRowCount(outputTableName))
     }
 

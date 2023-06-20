@@ -49,9 +49,7 @@ class TransformUtilsTest extends AbstractOSMToolsTest {
 
     @BeforeAll
     static void beforeAll() {
-        //h2gis = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformUtilsTest;AUTO_SERVER=TRUE;")
-        h2gis = H2GIS.open("/tmp/TransformUtilsTest;AUTO_SERVER=TRUE;")
-
+        h2gis = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformUtilsTest;AUTO_SERVER=TRUE;")
     }
 
     @BeforeEach

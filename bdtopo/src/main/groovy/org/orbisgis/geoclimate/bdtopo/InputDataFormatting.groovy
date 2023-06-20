@@ -147,9 +147,6 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                 datasource.eachRow(queryMapper.toString()) { row ->
                     def values = row.toRowResult()
                     def id_source = values.ID_SOURCE
-                    if(id_source=="RESERVOI0000000046957308"){
-                        println(id_source)
-                    }
                     def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
                     def feature_type = type_use[0]
                     def feature_main_use = type_use[1]

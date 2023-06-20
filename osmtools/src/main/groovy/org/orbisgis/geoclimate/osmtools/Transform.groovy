@@ -314,7 +314,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
         }
         datasource.createSpatialIndex(waysPolygonTmp, "the_geom")
     }
-    query += " GROUP BY a.the_geom, a.id_way;"
+    query += " GROUP BY  a.id_way;"
 
 
     datasource """
@@ -558,7 +558,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
         datasource.createSpatialIndex(relationsMpHoles, "the_geom")
     }
 
-    query += " GROUP BY a.the_geom, a.id_relation;"
+    query += " GROUP BY  a.the_geom, a.id_relation;"
 
     datasource query.toString()
     datasource.dropTable(relationsPolygonsOuter, relationsPolygonsInner, relationsPolygonsOuterExploded,
