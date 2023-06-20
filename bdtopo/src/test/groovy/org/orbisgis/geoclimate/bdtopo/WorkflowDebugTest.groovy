@@ -137,7 +137,7 @@ class WorkflowDebugTest {
     @Test
     void testIntegrationFolderInput() {
         def input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo2/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D035_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D035-ED182"
-        def locations = ["Redon"]
+        def locations = ["44109"]
         String directory = "/tmp/bdtopo2"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -158,18 +158,18 @@ class WorkflowDebugTest {
                 "parameters"  :
                         ["distance"       : 0,
                          rsu_indicators   : [
-                                 "indicatorUse": ["LCZ", "UTRF"]
+                                 "indicatorUse": ["LCZ"]//, "UTRF"]
                          ],
-                         "grid_indicators": [
+                         /*"grid_indicators": [
                                  "x_size"    : 1000,
                                  "y_size"    : 1000,
                                  "indicators": ["LCZ_FRACTION"]
-                         ]
+                         ]*/
                         ]
         ]
         //BDTopo.v2(bdTopoParameters)
 
-        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-0_TOUSTHEMES_SHP_LAMB93_D035_2022-09-15/BDTOPO/1_DONNEES_LIVRAISON_2022-09-00418/BDT_3-0_SHP_LAMB93_D035-ED2022-09-15"
+        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D044_2023-03-15"
 
         directory = "/tmp/bdtopo3"
         dirFile = new File(directory)
@@ -180,18 +180,6 @@ class WorkflowDebugTest {
         bdTopoParameters.output.folder.path=directory
 
         BDTopo.v3(bdTopoParameters)
-
-        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo_2010/BDTOPO_2-0_TOUSTHEMES_SHP_LAMB93_D035_2010-04-14/BDTOPO/1_DONNEES_LIVRAISON_2021-10-00016/BDT_2-0_SHP_LAMB93_D035-ED101"
-
-        directory = "/tmp/bdtopo2010"
-        dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-
-        bdTopoParameters.input.folder=input_data
-        bdTopoParameters.output.folder.path=directory
-
-        //BDTopo.v2(bdTopoParameters)
 
     }
 

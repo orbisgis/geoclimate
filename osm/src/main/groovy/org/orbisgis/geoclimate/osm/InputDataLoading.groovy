@@ -250,7 +250,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationt
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String urban_areas = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
+        String urban_areas = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, [],geometry)
         debug "Create the urban areas layer"
         if (urban_areas) {
             outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")

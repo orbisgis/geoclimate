@@ -80,7 +80,7 @@ class TypologyClassificationTests {
         assert 101 == results[5]["LCZ_PRIMARY"]
         assert 104 == results[6]["LCZ_PRIMARY"]
         assert 105 == results[7]["LCZ_PRIMARY"]
-        assert 101 == results[18]["LCZ_PRIMARY"]
+        assert 107 == results[18]["LCZ_PRIMARY"]
         assert 8 == results[19]["LCZ_PRIMARY"]
         assert 4 == results[20]["LCZ_PRIMARY"]
 

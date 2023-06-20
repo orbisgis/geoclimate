@@ -14,6 +14,9 @@
   "columns": [
     "natural",
     "layer",
-    "seamark:type"
+    "seamark:type",
+    "water",
+    "waterway",
+    "landuse"
   ]
 }

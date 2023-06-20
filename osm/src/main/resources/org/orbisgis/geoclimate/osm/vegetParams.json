@@ -61,7 +61,8 @@
     "crop",
     "produce",
     "layer",
-    "surface"
+    "surface",
+    "leisure"
   ],
   "type": {
     "farmland": {

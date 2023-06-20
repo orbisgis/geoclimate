@@ -147,9 +147,6 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                 datasource.eachRow(queryMapper.toString()) { row ->
                     def values = row.toRowResult()
                     def id_source = values.ID_SOURCE
-                    if(id_source=="RESERVOI0000000046957308"){
-                        println(id_source)
-                    }
                     def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
                     def feature_type = type_use[0]
                     def feature_main_use = type_use[1]
@@ -294,7 +291,9 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  'Sentier'            : 'path',
                  'Escalier'           : 'steps',
                  'Gué ou radier'      : null,
-                 'Pont'               : 'bridge', 'Tunnel': 'tunnel', 'NC': null
+                 'Pont'               : 'bridge',
+                 'Tunnel'             : 'tunnel',
+                 'NC'                 : null
                 ]
 
         def road_surfaces =
@@ -338,10 +337,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
             queryMapper += columnNames.join(",")
             if (zone) {
                 datasource.createSpatialIndex(road,"the_geom")
-                queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
-                        "ELSE a.the_geom " +
-                        "END AS the_geom " +
+                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$road AS a, $zone AS b " +
                         "WHERE " +
@@ -364,9 +360,16 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                     if (width == null || width <= 0) {
                         width = road_types_width.get(road_type)
                     }
+                    def road_zindex = row.ZINDEX
+                    if (!road_zindex) {
+                        road_zindex = 0
+                    }
                     def road_crossing = row.CROSSING
                     if (road_crossing) {
                         road_crossing = road_types.get(road_crossing)
+                        if(!road_zindex && road_crossing){
+                            road_zindex=1
+                        }
                     }
                     def road_sens = row.SENS
                     if (road_sens) {
@@ -380,16 +383,13 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                             road_sens = -1
                         }
                     }
-                    def road_zindex = row.ZINDEX
-                    if (!road_zindex) {
-                        road_zindex = 0
-                    }
+
                     def ID_SOURCE = row.ID_SOURCE
                     def road_sidewalk = row.SIDEWALK
                     //Not yet managed
                     def road_maxspeed = null
 
-                    if (road_zindex >= 0 && road_type) {
+                    if (road_zindex >= 0 && road_type && road_type!= 'path') {
                         Geometry geom = row.the_geom
                         def epsg = geom.getSRID()
                         for (int i = 0; i < geom.getNumGeometries(); i++) {
@@ -435,10 +435,8 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
             String query
             if (zone) {
                 datasource.createSpatialIndex(water,"the_geom")
-                query = "select  CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
-                        "ELSE a.the_geom " +
-                        "END AS the_geom , a.ZINDEX, a.ID_SOURCE" +
+                query = "select st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                        ", a.ZINDEX, a.ID_SOURCE" +
                         " FROM " +
                         "$water AS a, $zone AS b " +
                         "WHERE " +
@@ -490,10 +488,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
             queryMapper += columnNames.join(",")
             if (zone) {
                 datasource.createSpatialIndex(rail,"the_geom")
-                queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_makevalid(st_intersection(a.the_geom, b.the_geom))) " +
-                        "ELSE a.the_geom " +
-                        "END AS the_geom " +
+                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$rail AS a, $zone AS b " +
                         "WHERE " +
@@ -534,6 +529,9 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     def rail_crossing = row.CROSSING
                     if (rail_crossing) {
                         rail_crossing = rail_types.get(rail_crossing)
+                        if(!rail_zindex && rail_crossing){
+                            rail_zindex=1
+                        }
                     }
                     if (rail_zindex >= 0 && rail_type) {
                         Geometry geom = row.the_geom
@@ -580,10 +578,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
             queryMapper += columnNames.join(",")
             if (zone) {
                 datasource.createSpatialIndex(vegetation,"the_geom")
-                queryMapper += ", CASE WHEN st_overlaps(a.the_geom, b.the_geom) " +
-                        "THEN st_force2D(st_intersection(a.the_geom, b.the_geom)) " +
-                        "ELSE a.the_geom " +
-                        "END AS the_geom " +
+                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$vegetation AS a, $zone AS b " +
                         "WHERE " +
@@ -743,7 +738,7 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
     def weight_values = [
             "government": 5, "entertainment_arts_culture": 10, "education": 10, "military": 20,
             "industrial": 20, "commercial": 20, "healthcare": 10, "transport": 15, "building": 10,
-            "sport"     : 10, "cemetery": 10]
+            "sport"     : 10, "cemetery": 10, "religious":10]
 
     //We must remove all overlapping geometries and then choose the attribute TYPE to set according some priorities
     def polygonizedTable = postfix("impervious_polygonized")

@@ -62,6 +62,10 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
             INSEE_COM AS CODE_INSEE FROM ${inputTables.commune} WHERE INSEE_COM='$location' or lower(nom)='${location.toLowerCase()}'""".toString())
 
     }
+    else {
+        debug "Invalid location"
+        return false
+    }
     def count = h2gis_datasource."$outputTableName".rowCount
     if (count > 0) {
         //Compute the envelope of the extracted area to extract the thematic tables
@@ -95,7 +99,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
             logger.debug "Loading in the H2GIS database $outputTableName"
             outputTableName = "troncon_de_voie_ferree"
             h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; 
-                CREATE TABLE $outputTableName as SELECT ID,$formatting_geom, NATURE, LARGEUR, POS_SOL FROM ${inputTables.troncon_de_voie_ferree}  
+                CREATE TABLE $outputTableName as SELECT ID,$formatting_geom, NATURE, LARGEUR, NB_VOIES, POS_SOL FROM ${inputTables.troncon_de_voie_ferree}  
                 WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY 
                 AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)""".toString())
         }
@@ -178,7 +182,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         if (inputTables.limite_terre_mer) {
             outputTableName = "limite_terre_mer"
             logger.debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom  FROM ${inputTables.limite_terre_mer}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
+            h2gis_datasource.execute("DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName AS SELECT ID, $formatting_geom, NIVEAU  FROM ${inputTables.limite_terre_mer}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)".toString())
         }
 
         return true
@@ -274,7 +278,7 @@ boolean loadDataFromPostGIS(Object input_database_properties, Object code, Objec
 
         if (inputTables.troncon_de_voie_ferree) {
             //Extract troncon_voie_ferree
-            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST FROM ${inputTables.troncon_de_voie_ferree}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, NB_VOIES, POS_SOL, FRANCHISST FROM ${inputTables.troncon_de_voie_ferree}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "troncon_de_voie_ferree"
             logger.debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)

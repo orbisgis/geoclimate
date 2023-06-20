@@ -65,7 +65,7 @@ def arrayUnion(boolean removeDuplicated, Collection... arrays) {
  *
  * @return The name for the table that contains all polygons/lines
  */
-String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, def tags, def columnsToKeep, boolean valid_geom = true) {
+String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, def tags, def columnsToKeep, boolean valid_geom = false) {
     return toPolygonOrLine(type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom)
 }
 
@@ -84,7 +84,7 @@ String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osm
  *
  * @return The name for the table that contains all polygons/lines
  */
-String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, def tags, def columnsToKeep, org.locationtech.jts.geom.Geometry geometry, boolean valid_geom = true) {
+String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, def tags, def columnsToKeep, org.locationtech.jts.geom.Geometry geometry, boolean valid_geom = false) {
     //Check if parameters a good
     if (!datasource) {
         error "Please set a valid database connection"
@@ -184,7 +184,7 @@ def getColumnSelector(osmTableTag, tags, columnsToKeep) {
     }
     tagKeys.removeAll([null])
 
-    def query = "SELECT distinct tag_key FROM $osmTableTag"
+    def query = "SELECT distinct tag_key FROM $osmTableTag as a "
     if (tagKeys) query += " WHERE tag_key IN ('${tagKeys.unique().join("','")}')"
     return query
 }
@@ -200,7 +200,7 @@ def getColumnSelector(osmTableTag, tags, columnsToKeep) {
  */
 def getCountTagsQuery(osmTableTag, tags) {
     if (!osmTableTag) return null
-    def countTagsQuery = "SELECT count(*) AS count FROM $osmTableTag"
+    def countTagsQuery = "SELECT count(*) AS count FROM $osmTableTag as a"
     def whereFilter = createWhereFilter(tags)
     if (whereFilter) {
         countTagsQuery += " WHERE $whereFilter"
@@ -273,7 +273,7 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
     def tableNodeTag = "${osmTablesPrefix}_node_tag"
     def filterTableNode = postfix("${osmTablesPrefix}_node_filtered")
 
-    def tablesToDrop=[]
+    def tablesToDrop = []
     if (!datasource.hasTable(tableNodeTag)) {
         debug "No tags table found to build the table. An empty table will be returned."
         datasource """ 
@@ -306,7 +306,7 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
         """.toString()
 
     debug "Build nodes as points"
-    def tagList = createTagList datasource, columnsSelector
+    def tagList = createTagList datasource, columnsSelector, columnsToKeep
     if (tagsFilter.isEmpty()) {
         if (columnsToKeep) {
             if (datasource.firstRow("select count(*) as count from $tableNodeTag where TAG_KEY in ('${columnsToKeep.join("','")}')")[0] < 1) {
@@ -320,7 +320,7 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
 
         if (geometry) {
             def query = """  DROP TABLE IF EXISTS $filterTableNode;
-                                  CREATE TABLE  $filterTableNode as select * from $tableNode   """
+                                  CREATE TABLE  $filterTableNode as select * from $tableNode as a   """
             int geom_srid = geometry.getSRID()
             int sridNode = datasource.getSrid(tableNode)
             if (geom_srid == -1) {
@@ -330,20 +330,25 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
             } else {
                 query += " where the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $sridNode) and st_intersects(the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid),$sridNode)) "
             }
+
             datasource.createSpatialIndex(tableNode, "the_geom")
+
             datasource.execute(query.toString())
             datasource.createIndex(filterTableNode, "id_node")
-            tablesToDrop<<filterTableNode
+            tablesToDrop << filterTableNode
         } else {
             filterTableNode = tableNode
         }
-
-        datasource.execute("""
-                DROP TABLE IF EXISTS $outputNodesPoints;
+        def lastQuery =  """DROP TABLE IF EXISTS $outputNodesPoints;
                 CREATE TABLE $outputNodesPoints AS
                     SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
                     FROM $filterTableNode AS a, $tableNodeTag b
-                    WHERE a.id_node = b.id_node GROUP BY a.id_node""".toString())
+                    WHERE a.id_node = b.id_node """
+        if(columnsToKeep) {
+            lastQuery += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
+        }
+        lastQuery+= " GROUP BY a.id_node"
+        datasource.execute(lastQuery.toString())
 
     } else {
         if (columnsToKeep) {
@@ -370,22 +375,27 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
             datasource.createSpatialIndex(tableNode, "the_geom")
             datasource.execute(query.toString())
             datasource.createIndex(filterTableNode, "id_node")
-            tablesToDrop<<filterTableNode
+            tablesToDrop << filterTableNode
         } else {
             filterTableNode = tableNode
         }
 
         def filteredNodes = postfix("FILTERED_NODES_")
-        datasource.execute("""
+        def lastQuery = """
                 CREATE TABLE $filteredNodes AS
-                    SELECT DISTINCT id_node FROM ${osmTablesPrefix}_node_tag WHERE $tagsFilter;
+                    SELECT DISTINCT id_node FROM ${osmTablesPrefix}_node_tag as a WHERE $tagsFilter;
                 CREATE INDEX ON $filteredNodes(id_node);
                 DROP TABLE IF EXISTS $outputNodesPoints;
                 CREATE TABLE $outputNodesPoints AS
                     SELECT a.id_node, ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
                     FROM $filterTableNode AS a, $tableNodeTag  b, $filteredNodes c
                     WHERE a.id_node=b.id_node
-                    AND a.id_node=c.id_node GROUP BY a.id_node""".toString())
+                    AND a.id_node=c.id_node  """
+        if(columnsToKeep){
+            lastQuery += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
+        }
+        lastQuery+=" GROUP BY a.id_node"
+        datasource.execute(lastQuery.toString())
     }
     datasource.dropTable(tablesToDrop)
     return true
@@ -414,14 +424,14 @@ def createWhereFilter(def tags) {
             def valueIn = ''
             if (tag.key) {
                 if (tag.key instanceof Collection) {
-                    keyIn += "tag_key IN ('${tag.key.join("','")}')"
+                    keyIn += "a.tag_key IN ('${tag.key.join("','")}')"
                 } else {
-                    keyIn += "tag_key = '${tag.key}'"
+                    keyIn += "a.tag_key = '${tag.key}'"
                 }
             }
             if (tag.value) {
                 def valueList = (tag.value instanceof Collection) ? tag.value.flatten().findResults { it } : [tag.value]
-                valueIn += "tag_value IN ('${valueList.join("','")}')"
+                valueIn += "a.tag_value IN ('${valueList.join("','")}')"
             }
 
             if (!keyIn.isEmpty() && !valueIn.isEmpty()) {
@@ -438,11 +448,12 @@ def createWhereFilter(def tags) {
         tagArray.addAll(tags)
         tagArray.removeAll([null])
         if (tagArray) {
-            whereKeysValuesFilter = "tag_key IN ('${tagArray.join("','")}')"
+            whereKeysValuesFilter = "a.tag_key IN ('${tagArray.join("','")}')"
         }
     }
     return whereKeysValuesFilter
 }
+
 
 /**
  * Build a case when expression to pivot keys
@@ -450,17 +461,43 @@ def createWhereFilter(def tags) {
  * @param selectTableQuery the table that contains the keys and values to pivot
  * @return the case when expression
  */
-def createTagList(datasource, selectTableQuery) {
+def createTagList(JdbcDataSource datasource, def selectTableQuery) {
+    return createTagList(datasource, selectTableQuery, [])
+}
+
+/**
+ * Build a case when expression to pivot keys
+ * @param datasource a connection to a database
+ * @param selectTableQuery the table that contains the keys and values to pivot
+ * @param columnsToKeep a list of columns (key value) to keep. If the key doesn't exist set the key to null.
+ * @return the case when expression
+ */
+def createTagList(JdbcDataSource datasource, def selectTableQuery, List columnsToKeep) {
     if (!datasource) {
         error "The datasource should not be null."
         return null
     }
     def rowskeys = datasource.rows(selectTableQuery.toString())
     def list = []
-    rowskeys.tag_key.each { it ->
-        if (it != null)
-            list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it}\""
+    if(!columnsToKeep){
+        rowskeys.tag_key.each { it ->
+            if (it != null ) {
+                list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it}\""
+            }
+        }
+    }else {
+        def nullColumns = columnsToKeep.collect()
+        rowskeys.tag_key.each { it ->
+            if (it != null && columnsToKeep.contains(it)) {
+                list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it}\""
+                nullColumns.remove(it)
+            }
+        }
+        nullColumns.each { it ->
+            list << "CAST(NULL AS VARCHAR) AS \"${it}\""
+        }
     }
+
     def tagList = ""
     if (!list.isEmpty()) {
         tagList = ", ${list.join(",")}"
