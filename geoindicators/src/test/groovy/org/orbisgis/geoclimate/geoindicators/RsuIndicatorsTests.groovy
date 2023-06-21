@@ -394,7 +394,7 @@ class RsuIndicatorsTests {
         def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "rsu")
 
         def outputTableStats = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                outputTable, "id_rsu", "building_test", "road_test", "hydro_test", "veget_test", "",
+                outputTable, "id_rsu", "building_test", "road_test", "hydro_test", "veget_test", "","",
                 "test")
         assertNotNull(outputTableStats)
 
@@ -470,7 +470,7 @@ class RsuIndicatorsTests {
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", "building_test", "", "hydro_test", "veget_test", "",
+                "rsu_tempo", "id_rsu", "building_test", "", "hydro_test", "veget_test", "","",
                 "test")
         assertNotNull(tempoTable)
 
@@ -540,7 +540,7 @@ class RsuIndicatorsTests {
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", null, "road_tempo", null, null, null,
+                "rsu_tempo", "id_rsu", null, "road_tempo", null, null, null,null,
                 "test")
         assertNotNull(tempoTable)
 
@@ -590,7 +590,7 @@ class RsuIndicatorsTests {
                 "FROM rsu_test WHERE id_rsu = 4"
         // Need to create the smallest geometries used as input of the surface fraction process
         String tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", "building_test", null, "hydro_test", "veget_test", null,
+                "rsu_tempo", "id_rsu", "building_test", null, "hydro_test", "veget_test", null,null,
                 "test")
         assertNotNull(tempoTable)
 

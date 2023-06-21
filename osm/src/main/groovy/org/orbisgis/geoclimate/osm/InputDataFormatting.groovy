@@ -339,7 +339,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
     debug('Rails transformation starts')
     def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """ drop table if exists $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH DOUBLE PRECISION);""".toString()
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH FLOAT, USAGE VARCHAR(30));""".toString()
 
     if (rail != null) {
         def paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
@@ -384,9 +384,11 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                         }
                     }
                     def gauge = row.'gauge'
-                    def rail_width = 1.435
+                    //1.435 default value for standard gauge
+                    //1 constant for balasting
+                    def rail_width = 1.435 + 1
                     if(gauge && gauge.isFloat()){
-                        rail_width = gauge.toFloat()/1000
+                        rail_width = (gauge.toFloat()/1000) + 1
                     }
 
                     if (zIndex >= 0 && type) {
@@ -400,7 +402,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                                     '${row.id}',
                                     ${singleQuote(type)},
                                     ${singleQuote(crossing)},
-                                    ${zIndex}, $rail_width)
+                                    ${zIndex}, $rail_width, '${row.'usage'}')
                                 """
                         }
                     }

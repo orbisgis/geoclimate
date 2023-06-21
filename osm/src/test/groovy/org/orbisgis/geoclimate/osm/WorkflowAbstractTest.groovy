@@ -111,7 +111,8 @@ class WorkflowAbstractTest {
                 relationRSU,
                 vegetationTableName,
                 roadTableName,
-                hydrographicTableName, null,
+                hydrographicTableName,
+                null, railTableName,
                 parameters,
                 prefixName)
         assert rsuIndicators

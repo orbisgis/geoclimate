@@ -307,7 +307,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         if (rail && datasource.hasTable(rail)) {
             debug "Preparing rail..."
             if(datasource.getColumnNames(rail).size()>0){
-            queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where zindex=0 or crossing = 'bridge')"]
+            queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
             }
         }
 

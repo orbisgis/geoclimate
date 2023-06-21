@@ -307,6 +307,7 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
  * @param vegetation The table where are stored informations concerning vegetation
  * @param water The table where are stored informations concerning water
  * @param impervious The table where are stored the impervious areas
+ * @param rail The table where are stored the rail ways
  * @param facadeDensListLayersBottom the list of height corresponding to the bottom of each vertical layers used for calculation
  * of the rsu_projected_facade_area_density which is then used to calculate the height of roughness (default [0, 10, 20, 30, 40, 50])
  * @param facadeDensNumberOfDirection The number of directions used for the calculation - according to the method used it should
@@ -352,7 +353,7 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
  * @return
  */
 String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
-                            String rsu, String vegetation, String road, String water, String impervious, Map parameters =
+                            String rsu, String vegetation, String road, String water, String impervious, String rail, Map parameters =
                                     [facadeDensListLayersBottom    : [0, 10, 20, 30, 40, 50],
                                      facadeDensNumberOfDirection   : 12,
                                      svfPointDensity               : 0.008,
@@ -363,8 +364,8 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                      angleRangeSizeBuDirection     : 30,
                                      svfSimplified                 : true,
                                      indicatorUse                  : ["LCZ", "UTRF", "TEB"],
-                                     surfSuperpositions            : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
-                                     surfPriorities                : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+                                     surfSuperpositions            : ["high_vegetation": ["water", "building", "low_vegetation", "rail","road", "impervious"]],
+                                     surfPriorities                : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
                                      buildingAreaTypeAndComposition: ["light_industry": ["light_industry"],
                                                                       "heavy_industry": ["heavy_industry"],
                                                                       "commercial"    : ["commercial"],
@@ -405,8 +406,10 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                                       "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
                                                                       "impervious_fraction_lcz"     : ["impervious_fraction",
                                                                                                        "road_fraction",
+                                                                                                       "rail_fraction",
                                                                                                        "high_vegetation_impervious_fraction",
-                                                                                                       "high_vegetation_road_fraction"],
+                                                                                                       "high_vegetation_road_fraction",
+                                                                                                       "high_vegetation_rail_fraction"],
                                                                       "water_fraction_lcz"          : ["water_fraction",
                                                                                                        "high_vegetation_water_fraction"]],
                                      buildingFractions             : ["high_vegetation_building_fraction", "building_fraction"]], String prefixName = "") {
@@ -444,9 +447,9 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     if (!surfaceFractions) {
         // Calculate all surface fractions indicators
         // Need to create the smallest geometries used as input of the surface fraction process
-        def superpositionsTable = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
+            def superpositionsTable = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
                 rsu, "id_rsu", buildingTable, road, water, vegetation,
-                impervious, temporaryPrefName)
+                impervious,rail, temporaryPrefName)
         if (!superpositionsTable) {
             info "Cannot compute the smallest commun geometries"
             return
@@ -1117,8 +1120,8 @@ Map getParameters() {
             "inputFields"                   : ["id_build", "the_geom"],
             "levelForRoads"                 : [0],
             "angleRangeSizeBuDirection"     : 30,
-            "surfSuperpositions"            : ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]],
-            "surfPriorities"                : ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+            "surfSuperpositions"            : ["high_vegetation": ["water", "building", "low_vegetation", "rail","road", "impervious"]],
+            "surfPriorities"                : ["water", "building", "high_vegetation", "low_vegetation","rail", "road", "impervious"],
             "buildingAreaTypeAndComposition": ["light_industry": ["light_industry"],
                                                "heavy_industry": ["heavy_industry"],
                                                "commercial"    : ["commercial"],
@@ -1158,9 +1161,11 @@ Map getParameters() {
                                                                                 "high_vegetation_building_fraction"],
                                                "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
                                                "impervious_fraction_lcz"     : ["impervious_fraction",
+                                                                                "rail_fraction",
                                                                                 "road_fraction",
                                                                                 "high_vegetation_impervious_fraction",
-                                                                                "high_vegetation_road_fraction"],
+                                                                                "high_vegetation_road_fraction",
+                                                                                "high_vegetation_rail_fraction"],
                                                "water_fraction_lcz"          : ["water_fraction",
                                                                                 "high_vegetation_water_fraction"]],
             "buildingFractions"             : ["high_vegetation_building_fraction", "building_fraction"]]
@@ -1294,7 +1299,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
                 buildingForGeoCalc, blocksForGeoCalc,
                 rsuForGeoCalc, road, vegetation,
-                water, impervious,inputParameters, prefixName)
+                water, impervious,rail, inputParameters, prefixName)
         if (!geoIndicators) {
             error "Cannot build the geoindicators"
             datasource.dropTable(blocksForGeoCalc, rsuForGeoCalc, buildingIndicatorsForHeightEst, rsuIndicatorsForHeightEst)
@@ -1328,7 +1333,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 
         Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
                 relationBuildings, relationBlocks,
-                rsuTable, road, vegetation, water, impervious, inputParameters, prefixName)
+                rsuTable, road, vegetation, water, impervious, rail,inputParameters, prefixName)
         if (!geoIndicators) {
             error "Cannot build the geoindicators"
             return
@@ -1381,7 +1386,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     // Calculates indicators needed for the building height estimation algorithm
     Map geoIndicatorsEstH = computeGeoclimateIndicators(datasource, zone,
             relationBuildings, relationBlocks, rsuTable, road,
-            vegetation, water, impervious,
+            vegetation, water, impervious,rail,
             getParameters([indicatorUse:  ["UTRF"]]), prefixName)
     if (!geoIndicatorsEstH) {
         error "Cannot build the geoindicators to estimate the building height"
@@ -1492,7 +1497,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
  */
 Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String buildingsWithRelations, String blocksWithRelations, String rsu,
                                 String road, String vegetation,
-                                String water, String impervious, Map parameters = [
+                                String water, String impervious, String rail, Map parameters = [
         "indicatorUse" : ["LCZ", "UTRF", "TEB"], "svfSimplified": false,
         "mapOfWeights" : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                           "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1524,7 +1529,7 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String b
     def rsuIndicators = computeRSUIndicators(datasource, buildingIndicators,
             rsu, vegetation,
             road, water,
-            impervious, parameters, prefixName)
+            impervious, rail,  parameters, prefixName)
     if (!rsuIndicators) {
         error "Cannot compute the RSU indicators"
         return null
@@ -1746,7 +1751,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         String superpositionsTableGrid = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
                 grid, grid_column_identifier,
                 building, road, water,
-                vegetation, impervious, prefixName)
+                vegetation, impervious, null, prefixName)
         if (superpositionsTableGrid) {
             surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions(
                     datasource, grid, grid_column_identifier, superpositionsTableGrid,
