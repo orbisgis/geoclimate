@@ -565,8 +565,8 @@ class RsuIndicatorsTests {
                             CREATE TABLE rsu_tempo(id_rsu int, the_geom geometry);
                             INSERT INTO rsu_tempo VALUES  (1, 'POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY);
                             CREATE TABLE smallest_geom(area double, low_vegetation integer, high_vegetation integer,
-                                water integer, impervious integer, road integer, building integer, id_rsu integer);
-                                INSERT INTO smallest_geom VALUES (923, 0, 1, 0, 0, 0, 0, 2)"""
+                                water integer, impervious integer, road integer, building integer, rail integer, id_rsu integer);
+                                INSERT INTO smallest_geom VALUES (923, 0, 1, 0, 0, 0, 0, 0, 2)"""
 
 
         // Apply the surface fractions for different combinations
