@@ -185,8 +185,6 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
     def outputTableName = prefix prefixName, BASE_NAME
 
     // Create temporary table names (for tables that will be removed at the end of the method)
-    def vegetation_indice
-    def vegetation_unified
     def vegetation_tmp
     def hydrographic_tmp
 
@@ -209,9 +207,10 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 def vegetation_graph = postfix "vegetation_graph"
                 def subGraphTableNodes = postfix vegetation_graph, "NODE_CC"
                 def subGraphTableEdges = postfix vegetation_graph, "EDGE_CC"
-                def subGraphBlocks = postfix "subgraphblocks"
+                def subGraphBlocksLow = postfix "subgraphblocks_low"
+                def subGraphBlocksHigh = postfix "subgraphblocks_high"
 
-                datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
+                datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocksLow, $subGraphBlocksHigh".toString()
 
                 datasource.createIndex(vegetation, "ID")
                 datasource.createSpatialIndex(vegetation, "THE_GEOM")
@@ -228,21 +227,31 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                 //Unify water geometries that share a boundary
                 debug "Merging spatial clusters..."
+                //Processing low vegetation
                 datasource """
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
-                CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
+                CREATE TABLE $subGraphBlocksLow AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $vegetation A, $subGraphTableNodes B
-                WHERE a.id=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
+                WHERE a.id=b.NODE_ID AND a.HEIGHT_CLASS= 'low' GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
-                debug "Creating the water block table..."
+
+                //Processing high vegetation
+                datasource """
+                CREATE TABLE $subGraphBlocksHigh AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
+                FROM $vegetation A, $subGraphTableNodes B
+                WHERE a.id=b.NODE_ID AND a.HEIGHT_CLASS= 'high' GROUP BY B.CONNECTED_COMPONENT 
+                HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
+
+                debug "Creating the vegetation block table..."
+
                 datasource """DROP TABLE IF EXISTS $vegetation_tmp; 
                 CREATE TABLE $vegetation_tmp (THE_GEOM GEOMETRY) 
-                AS SELECT the_geom FROM $subGraphBlocks
+                AS SELECT the_geom FROM $subGraphBlocksLow
+                UNION ALL SELECT the_geom FROM $subGraphBlocksHigh
                 UNION ALL SELECT  ST_ToMultiLine(a.the_geom) as the_geom FROM $vegetation a 
-                LEFT JOIN $subGraphTableNodes b ON a.id = b.NODE_ID WHERE b.NODE_ID IS NULL and 
-                st_area(a.the_geom)>=$surface_vegetation;
-                DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocks ;""".toString()
-
+                LEFT JOIN $subGraphTableNodes b ON a.id = b.NODE_ID WHERE b.NODE_ID IS NULL 
+                AND st_area(a.the_geom)>=$surface_vegetation;
+                DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocksLow, $subGraphBlocksHigh;""".toString()
                 queryCreateOutputTable += [vegetation_tmp: "(SELECT the_geom FROM $vegetation_tmp)"]
                 dropTableList.addAll([vegetation_tmp])
             }
@@ -307,7 +316,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         if (rail && datasource.hasTable(rail)) {
             debug "Preparing rail..."
             if(datasource.getColumnNames(rail).size()>0){
-            queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where zindex=0 or crossing = 'bridge')"]
+            queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
             }
         }
 

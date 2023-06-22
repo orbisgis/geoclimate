@@ -394,7 +394,7 @@ class RsuIndicatorsTests {
         def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "rsu")
 
         def outputTableStats = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                outputTable, "id_rsu", "building_test", "road_test", "hydro_test", "veget_test", "",
+                outputTable, "id_rsu", "building_test", "road_test", "hydro_test", "veget_test", "","",
                 "test")
         assertNotNull(outputTableStats)
 
@@ -470,7 +470,7 @@ class RsuIndicatorsTests {
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", "building_test", "", "hydro_test", "veget_test", "",
+                "rsu_tempo", "id_rsu", "building_test", "", "hydro_test", "veget_test", "","",
                 "test")
         assertNotNull(tempoTable)
 
@@ -540,7 +540,7 @@ class RsuIndicatorsTests {
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", null, "road_tempo", null, null, null,
+                "rsu_tempo", "id_rsu", null, "road_tempo", null, null, null,null,
                 "test")
         assertNotNull(tempoTable)
 
@@ -565,8 +565,8 @@ class RsuIndicatorsTests {
                             CREATE TABLE rsu_tempo(id_rsu int, the_geom geometry);
                             INSERT INTO rsu_tempo VALUES  (1, 'POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY);
                             CREATE TABLE smallest_geom(area double, low_vegetation integer, high_vegetation integer,
-                                water integer, impervious integer, road integer, building integer, id_rsu integer);
-                                INSERT INTO smallest_geom VALUES (923, 0, 1, 0, 0, 0, 0, 2)"""
+                                water integer, impervious integer, road integer, building integer, rail integer, id_rsu integer);
+                                INSERT INTO smallest_geom VALUES (923, 0, 1, 0, 0, 0, 0, 0, 2)"""
 
 
         // Apply the surface fractions for different combinations
@@ -590,7 +590,7 @@ class RsuIndicatorsTests {
                 "FROM rsu_test WHERE id_rsu = 4"
         // Need to create the smallest geometries used as input of the surface fraction process
         String tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", "building_test", null, "hydro_test", "veget_test", null,
+                "rsu_tempo", "id_rsu", "building_test", null, "hydro_test", "veget_test", null,null,
                 "test")
         assertNotNull(tempoTable)
 

@@ -428,14 +428,16 @@ Map loadV3(JdbcDataSource datasource,
     if (!troncon_de_route) {
         troncon_de_route = "troncon_de_route"
         datasource.execute("""DROP TABLE IF EXISTS $troncon_de_route;  
-                CREATE TABLE $troncon_de_route (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);""".toString())
+                CREATE TABLE $troncon_de_route (THE_GEOM geometry(linestring, $srid), ID varchar, 
+                LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);""".toString())
     }
 
     String troncon_de_voie_ferree = tablesExist.get("troncon_de_voie_ferree")
     if (!troncon_de_voie_ferree) {
         troncon_de_voie_ferree = "troncon_de_voie_ferree"
         datasource.execute("""DROP TABLE IF EXISTS $troncon_de_voie_ferree;  
-                CREATE TABLE $troncon_de_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar);""".toString())
+                CREATE TABLE $troncon_de_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar,
+                POS_SOL integer, FRANCHISST varchar, LARGEUR DOUBLE PRECISION);""".toString())
     }
 
     String surface_hydrographique = tablesExist.get("surface_hydrographique")

@@ -1,6 +1,7 @@
 {
   "tags": [
-    "railway"
+    "railway",
+    "usage"
   ],
   "columns": [
     "highspeed",
@@ -9,7 +10,8 @@
     "tunnel",
     "layer",
     "bridge",
-    "gauge"
+    "gauge",
+    "usage"
   ],
   "type": {
     "highspeed": {

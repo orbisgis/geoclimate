@@ -478,7 +478,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
     def outputTableName = postfix("RAILS")
     datasource.execute """ drop table if exists $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,
-                ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER);""".toString()
+                ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH FLOAT, USAGE VARCHAR(30));""".toString()
 
     if (rail) {
         def queryMapper = "SELECT "
@@ -506,10 +506,10 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                               'Transport urbain'          : 'tram',
                               'Funiculaire ou crémaillère': 'funicular',
                               'Metro'                     : 'subway',
-                               'Métro': 'subway',
+                              'Métro'                      : 'subway',
                               'Tramway'                   : 'tram',
                               'Pont'                      : 'bridge',
-                              'Tunnel': 'tunnel',
+                              'Tunnel'                    : 'tunnel',
                               'Sans objet' : null,
                               'NC': null]
             int rowcount = 1
@@ -521,10 +521,18 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     } else {
                         rail_type = "unclassified"
                     }
+                    def rail_usage=""
+                    if(rail_type in ["highspeed", "rail", "tram", "bridge"]){
+                        rail_usage="main"
+                    }
                     def rail_zindex = row.ZINDEX
                     if (!rail_zindex) {
                         rail_zindex = 0
                     }
+
+                    //1.435 default value for standard gauge
+                    //1 constant for balasting
+                    def rail_width = !row.WIDTH?1.435+1:row.WIDTH+1
 
                     def rail_crossing = row.CROSSING
                     if (rail_crossing) {
@@ -544,7 +552,9 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                                     '${row.ID_SOURCE}',
                                     '${rail_type}',
                                     '${rail_crossing}',
-                                    ${rail_zindex})
+                                    ${rail_zindex},
+                                    ${rail_width},
+                                    '${rail_usage}')
                                 """
                         }
                     }
