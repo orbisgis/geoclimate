@@ -555,7 +555,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
 
-       def nominatim = OSMTools.Utilities.getNominatimData("Lorient")
+       //def nominatim = OSMTools.Utilities.getNominatimData("Lorient")
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",

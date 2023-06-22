@@ -311,7 +311,7 @@ class InputDataFormattingTest {
 
             zoneToExtract = "Göteborgs Stad"
 
-        zoneToExtract = "Lorient"
+        zoneToExtract = "Dijon"
 
         //zoneToExtract =  [69.24666, 28.3359, 69.32999, 28.41923]
 
@@ -372,16 +372,12 @@ class InputDataFormattingTest {
                     inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
                     epsg                      : epsg])
             h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_${formatedPlaceName}.geojson", true)
-
+        */
 
             //Vegetation
-            format = OSM.InputDataFormatting.formatVegetationLayer()
-            format.execute([
-                    datasource                : h2GIS,
-                    inputTableName            : extractData.results.vegetationTableName,
-                    inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
-                    epsg                      : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_vegetation_${formatedPlaceName}.geojson", true)*/
+            def inputVegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(
+                    h2GIS,extractData.vegetation,extractData.zone_envelope)
+            h2GIS.getTable(inputVegetationTableName).save("${file.absolutePath + File.separator}osm_vegetation_${formatedPlaceName}.geojson", true)
 
 
             //Hydrography

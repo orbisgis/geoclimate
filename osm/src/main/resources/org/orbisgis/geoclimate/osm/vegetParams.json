@@ -25,7 +25,8 @@
     "landcover": [],
     "leisure": [
       "park",
-      "garden"
+      "garden",
+      "golf_course"
     ],
     "vegetation": [
       "grass"
@@ -110,6 +111,9 @@
     "grass": {
       "natural": [
         "grass"
+      ],
+      "leisure": [
+        "golf_course"
       ],
       "landuse": [
         "village_green",

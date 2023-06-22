@@ -1276,7 +1276,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
         datasource.createSpatialIndex(zone,"the_geom")
         def tablesToMerge = [:]
         tablesToMerge += ["$zone": "select ST_ExteriorRing(the_geom) as the_geom, ${id_zone} from $zone"]
-        if (road && datasource.hasTable(road)) {
+        if (road && datasource.hasTable(road)&& !datasource.isEmpty(road)) {
             debug "Preparing table : $road"
             datasource.createSpatialIndex(road,"the_geom")
             //Separate road features according the zindex
@@ -1294,7 +1294,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             tablesToMerge += ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
         }
 
-        if (rail && datasource.hasTable(rail)) {
+        if (rail && datasource.hasTable(rail) && !datasource.isEmpty(rail)) {
             debug "Preparing table : $rail"
             datasource.createSpatialIndex(rail,"the_geom")
             //Separate rail features according the zindex
@@ -1312,7 +1312,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             tablesToMerge += ["$rail_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $rail_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
         }
 
-        if (vegetation && datasource.hasTable(vegetation)) {
+        if (vegetation && datasource.hasTable(vegetation)&& !datasource.isEmpty(vegetation)) {
             debug "Preparing table : $vegetation"
             datasource.createSpatialIndex(vegetation,"the_geom")
             def low_vegetation_rsu_tmp = postfix "low_vegetation_rsu_zindex0"
@@ -1330,7 +1330,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             tablesToMerge += ["$high_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $high_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
         }
 
-        if (water && datasource.hasTable(water)) {
+        if (water && datasource.hasTable(water)&& !datasource.isEmpty(water)) {
             debug "Preparing table : $water"
             datasource.createSpatialIndex(water,"the_geom")
             def water_tmp = postfix "water_zindex0"
@@ -1341,7 +1341,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
         }
 
-        if (impervious && datasource.hasTable(impervious)) {
+        if (impervious && datasource.hasTable(impervious)&& !datasource.isEmpty(impervious)) {
             debug "Preparing table : $impervious"
             datasource.createSpatialIndex(impervious,"the_geom")
             def impervious_tmp = postfix "impervious_zindex0"
@@ -1352,7 +1352,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             tablesToMerge += ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
         }
 
-        if (building && datasource.hasTable(building)) {
+        if (building && datasource.hasTable(building)&& !datasource.isEmpty(building)) {
             debug "Preparing table : $building"
             datasource.createSpatialIndex(building,"the_geom")
             def building_tmp = postfix "building_zindex0"
