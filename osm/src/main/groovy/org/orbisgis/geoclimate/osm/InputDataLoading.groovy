@@ -211,7 +211,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationt
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String vegetation = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
+        String vegetation = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry, true)
         debug "Create the vegetation layer"
         if (vegetation) {
             outputVegetationTableName = postfix("OSM_VEGETATION")
@@ -224,7 +224,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationt
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String water = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
+        String water = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry, true)
         debug "Create the water layer"
         if (water) {
             outputHydroTableName = postfix("OSM_WATER")
@@ -237,7 +237,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationt
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String impervious = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
+        String impervious = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry, true)
         debug "Create the impervious layer"
         if (impervious) {
             outputImperviousTableName = postfix("OSM_IMPERVIOUS")
@@ -250,7 +250,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationt
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String urban_areas = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, [],geometry)
+        String urban_areas = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, [],geometry, true)
         debug "Create the urban areas layer"
         if (urban_areas) {
             outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")

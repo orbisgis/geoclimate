@@ -651,6 +651,24 @@ class TransformTest extends AbstractOSMToolsTest {
     }
 
     @Test
+    void buildPolygonWithComplexHoles() {
+        def prefix = "OSM_SAN_DIEGO"
+        assertTrue OSMTools.Loader.load(ds, prefix,
+                new File(this.class.getResource("san_diegeo_complex_polygon.osm").toURI()).getAbsolutePath())
+        String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, ["leisure"], ["leisure"], true)
+        assertEquals(0,ds.firstRow("SELECT COUNT(*) as count FROM $outputTableName where st_isvalid(the_geom)=false").count)
+    }
+
+    @Test
+    void buildPolygonWithInvalidGeometries() {
+        def prefix = "OSM_SAN_DIEGO"
+        assertTrue OSMTools.Loader.load(ds, prefix,
+                new File(this.class.getResource("san_diego_invalid_polygon.osm").toURI()).getAbsolutePath())
+        String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, ["leisure"], ["leisure"], true)
+        assertEquals(0,ds.firstRow("SELECT COUNT(*) as count FROM $outputTableName where st_isvalid(the_geom)=false").count)
+    }
+
+    @Test
     void buildGISPolygonsFilterGeometryTest() {
         def prefix = "OSM_REDON"
         assertTrue OSMTools.Loader.load(ds, prefix,
