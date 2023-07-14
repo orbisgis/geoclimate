@@ -120,6 +120,22 @@ String toLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode =
 String toLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
     return OSMTools.TransformUtils.toPolygonOrLine(LINES, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry)
 }
+/**
+ * This process is used to extract all the polygons from the OSM tables
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
+ * @param geometry a geometry to reduce the area
+ * @param valid_geom true to valid the geometries
+ *
+ * @return outputTableName a name for the table that contains all polygons
+ * @author Erwan Bocher CNRS LAB-STICC
+ */
+String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry, boolean valid_geom) {
+    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry, valid_geom)
+}
 
 /**
  * This process is used to extract all the polygons from the OSM tables
@@ -135,7 +151,7 @@ String toLines(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode =
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
 String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
-    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry)
+    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry, false)
 }
 
 /**
@@ -152,6 +168,22 @@ String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCod
  */
 String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = []) {
     return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null)
+}
+
+/**
+ * This process is used to extract all the polygons from the OSM tables
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
+ * @param valid_geom true to valid the geometries
+ *
+ * @return outputTableName a name for the table that contains all polygons
+ * @author Erwan Bocher CNRS LAB-STICC
+ */
+String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean  valid_geom) {
+    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom)
 }
 
 /**
@@ -291,7 +323,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
                 CREATE TABLE $outputTableName AS 
                     SELECT 'w'||a.id_way AS id,"""
     if (valid_geom) {
-        query += """ st_makevalid(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)} 
+        query += """ case when st_isvalid(a.the_geom) then a.the_geom else  st_makevalid(a.the_geom) end as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)} 
                """
     } else {
         query += """ a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}  """
@@ -533,7 +565,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                 CREATE TABLE $outputTableName AS 
                     SELECT 'r'||a.id_relation AS id,"""
     if (valid_geom) {
-        query += """  st_makevalid(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}
+        query += """ case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(a.the_geom) end as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}
         FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false """
     } else {
