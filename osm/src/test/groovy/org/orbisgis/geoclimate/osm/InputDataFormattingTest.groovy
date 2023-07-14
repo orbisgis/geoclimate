@@ -116,7 +116,7 @@ class InputDataFormattingTest {
         //Vegetation
         String vegetation = OSM.InputDataFormatting.formatVegetationLayer(h2GIS, extractData.vegetation)
         assertNotNull h2GIS.getTable(vegetation).save(new File(folder, "osm_vegetation_formated.shp").absolutePath, true)
-        assertEquals 135, h2GIS.getTable(vegetation).rowCount
+        assertEquals 140, h2GIS.getTable(vegetation).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${vegetation} where type is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${vegetation} where HEIGHT_CLASS is null".toString()).count == 0
 

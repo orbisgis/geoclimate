@@ -151,7 +151,7 @@ String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCod
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
 String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
-    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry)
+    return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, geometry, false)
 }
 
 /**
