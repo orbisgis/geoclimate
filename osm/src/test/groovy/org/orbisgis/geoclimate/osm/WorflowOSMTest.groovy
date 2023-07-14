@@ -565,8 +565,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": ["Dijon"]//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
-                        // "area": 2800,
+                        "locations": ["San-Diego"],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
+                         "area": 2800,
                         /*"timeout":182,
                         "maxsize": 536870918,
                         "endpoint":"https://lz4.overpass-api.de/api"*/],
