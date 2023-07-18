@@ -58,9 +58,9 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                 datasource.createSpatialIndex(building, "the_geom")
                 datasource.createSpatialIndex(zone,"the_geom")
                 queryMapper += " a.*  FROM $building as a,  $zone as b WHERE a.the_geom && b.the_geom and st_intersects(a.the_geom " +
-                        ",b.the_geom) and st_area(a.the_geom)>1 and st_isempty(a.the_geom)=false "
+                        ",b.the_geom) "
             } else {
-                queryMapper += "* FROM $building as a where st_area(a.the_geom)>1 "
+                queryMapper += "* FROM $building as a  "
             }
 
             def types_uses_dictionnary =
@@ -171,7 +171,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                         def srid = geom.getSRID()
                         for (int i = 0; i < geom.getNumGeometries(); i++) {
                             Geometry subGeom = geom.getGeometryN(i)
-                            if (subGeom instanceof Polygon) {
+                            if (subGeom instanceof Polygon && subGeom.getArea()>1) {
                                 stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
@@ -454,7 +454,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                     def epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
-                        if (subGeom instanceof Polygon) {
+                        if (subGeom instanceof Polygon && subGeom.getArea()>1) {
                             stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}', ${water_zindex})".toString()
                         }
                     }
@@ -651,10 +651,10 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                         vegetation_zindex = 0
                     }
                     Geometry geom = row.the_geom
+                    def epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
-                        def epsg = geom.getSRID()
-                        if (subGeom instanceof Polygon) {
+                        if (subGeom instanceof Polygon && subGeom.getArea()>1) {
                             stmt.addBatch """
                                             INSERT INTO $outputTableName VALUES(
                                                 ST_GEOMFROMTEXT('${subGeom}',$epsg), 
@@ -774,7 +774,12 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
             if (type) {
                 Geometry geom = row.the_geom
                 def epsg = geom.getSRID()
-                stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++}, '${type}')".toString()
+                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                    Geometry subGeom = geom.getGeometryN(i)
+                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
+                    }
+                }
             }
         }
     }
