@@ -81,9 +81,9 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.createSpatialIndex(building, "the_geom")
                 datasource.createSpatialIndex(zone, "the_geom")
                 queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a,  $zone as b WHERE a.the_geom && b.the_geom and st_intersects( " +
-                        "a.the_geom, b.the_geom) and st_area(a.the_geom)>1 and st_isempty(a.the_geom)=false "
+                        "a.the_geom, b.the_geom) "
             } else {
-                queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a where st_area(a.the_geom)>1 "
+                queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a "
             }
 
             def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
@@ -107,10 +107,10 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
 
                         if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
                             Geometry geom = row.the_geom
+                            def srid = geom.getSRID()
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
-                                def srid = geom.getSRID()
-                                if (subGeom instanceof Polygon) {
+                                if (subGeom instanceof Polygon && subGeom.getArea()>1) {
                                     stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
@@ -461,7 +461,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                         int epsg = geom.getSRID()
                         for (int i = 0; i < geom.getNumGeometries(); i++) {
                             Geometry subGeom = geom.getGeometryN(i)
-                            if (subGeom instanceof Polygon) {
+                            if (subGeom instanceof Polygon && subGeom.getArea()>1) {
                                 stmt.addBatch """
                                             INSERT INTO $outputTableName VALUES(
                                                 ST_GEOMFROMTEXT('${subGeom}',$epsg), 
@@ -526,7 +526,7 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                     int epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
-                        if (subGeom instanceof Polygon) {
+                        if (subGeom instanceof Polygon && subGeom.getArea()>1) {
                             stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})".toString()
                         }
                     }
@@ -613,7 +613,7 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (!subGeom.isEmpty()) {
-                                    if (subGeom instanceof Polygon) {
+                                    if (subGeom instanceof Polygon && subGeom.getArea()>1) {
                                         stmt.addBatch "insert into $impervious_prepared values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
                                     }
                                 }
@@ -1003,7 +1003,7 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
                     int epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
-                        if (subGeom instanceof Polygon) {
+                        if (subGeom instanceof Polygon && subGeom.getArea()>1) {
                             stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', ${singleQuote(type)},${singleQuote(use)})".toString()
                         }
                     }
