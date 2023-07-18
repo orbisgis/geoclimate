@@ -174,7 +174,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationt
         def parametersMap = readJSONParameters(paramsDefaultFile)
         def tags = parametersMap.get("tags")
         def columnsToKeep = parametersMap.get("columns")
-        def building = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry)
+        def building = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep,geometry, true)
         if (building) {
             outputBuildingTableName = postfix("OSM_BUILDING")
             datasource.execute("ALTER TABLE ${building} RENAME TO $outputBuildingTableName".toString())
