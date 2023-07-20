@@ -326,7 +326,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @param inputDatasource database where the tables are
      * @return true is succeed, false otherwise
      */
-    abstract boolean loadDataFromPostGIS(def input_database_properties, def code, def distance, def inputTables, def inputSRID, H2GIS h2gis_datasource);
+    abstract Integer loadDataFromPostGIS(def input_database_properties, def code, def distance, def inputTables, def inputSRID, H2GIS h2gis_datasource);
 
 
     /**

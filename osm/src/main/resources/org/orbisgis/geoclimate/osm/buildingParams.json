@@ -65,7 +65,7 @@
     "sport": 0,
     "sports_centre": 0,
     "grandstand": 0,
-    "transportation": 0,
+    "transport": 0,
     "train_station": 0,
     "toll_booth": 0,
     "toll": 0,
@@ -89,7 +89,7 @@
     "parking": 1
   },
   "type": {
-    "terminal:transportation": {
+    "terminal:transport": {
       "aeroway": [
         "terminal",
         "airport_terminal"
@@ -103,7 +103,7 @@
         "airport_terminal"
       ]
     },
-    "parking:transportation": {
+    "parking:transport": {
       "building": [
         "parking"
       ]
@@ -247,7 +247,7 @@
         "military"
       ]
     },
-    "train_station:transportation": {
+    "train_station:transport": {
       "building": [
         "train_station"
       ],
@@ -270,7 +270,7 @@
         "townhall"
       ]
     },
-    "toll:transportation": {
+    "toll:transport": {
       "barrier": [
         "toll_booth"
       ],
@@ -519,7 +519,7 @@
         "! no"
       ]
     },
-    "transportation": {
+    "transport": {
       "building": [
         "train_station",
         "transportation",
