@@ -276,7 +276,7 @@ def loadV2(
             WHEN a.CATEGORIE= 'Enseignement' THEN 'education'
             WHEN a.CATEGORIE='Santé' THEN 'healthcare' 
             WHEN a.CATEGORIE ='Culture et loisirs' THEN 'entertainment_arts_culture'
-            WHEN a.CATEGORIE ='Transport' THEN 'transportation'
+            WHEN a.CATEGORIE ='Transport' THEN 'transport'
             WHEN a.CATEGORIE ='Industriel ou commercial' THEN 'commercial'
             WHEN a.CATEGORIE ='Gestion des eaux' THEN 'industrial'
             WHEN a.CATEGORIE ='Sport' THEN 'sport'
@@ -619,7 +619,7 @@ Map loadV3(JdbcDataSource datasource,
             WHEN a.CATEGORIE= 'Science et enseignement' THEN 'education'
             WHEN a.CATEGORIE='Santé' THEN 'healthcare' 
             WHEN a.CATEGORIE ='Culture et loisirs' THEN 'entertainment_arts_culture'
-            WHEN a.CATEGORIE ='Transport' THEN 'transportation'
+            WHEN a.CATEGORIE ='Transport' THEN 'transport'
             WHEN a.CATEGORIE ='Industriel et commercial' and a.NATURE IN ( 'Divers commercial' , 'Marché') THEN 'commercial'
             WHEN a.CATEGORIE ='Industriel et commercial' 
             and a.NATURE IN ('Aquaculture', 'Carrière' ,'Centrale électrique' , 'Déchèterie' , 

@@ -194,7 +194,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
 }
 
 @Override
-boolean loadDataFromPostGIS(Object input_database_properties, Object code, Object distance, Object inputTables, Object inputSRID, H2GIS h2gis_datasource) {
+Integer loadDataFromPostGIS(Object input_database_properties, Object code, Object distance, Object inputTables, Object inputSRID, H2GIS h2gis_datasource) {
     def commune_location = inputTables.commune
     if (!commune_location) {
         logger.error "The commune table must be specified to run Geoclimate"

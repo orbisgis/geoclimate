@@ -49,7 +49,7 @@ INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(18, 'industrial', 'Building where
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(19, 'sport', 'Buildings, constructions, installations, organized areas and equipment for indoor and outdoor sport activities', 'https://wiki.openstreetmap.org/wiki/Tag:building=sport');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(20, 'sports_centre', 'Building that is designed for sports, e.g. for school sports, university or club sports', 'https://wiki.openstreetmap.org/wiki/Tag:building=sports_centre');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(21, 'grandstand', 'Building for the main stand, usually roofed, commanding the best view for spectators at racecourses or sports grounds', 'https://wiki.openstreetmap.org/wiki/Tag:building=grandstand');
-INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(22, 'transportation', 'Building, construction, installation, organized areas and equipment for transportation', 'https://wiki.openstreetmap.org/wiki/Tag:building=transportation');
+INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(22, 'transport', 'Building, construction, installation, organized areas and equipment for transportation', 'https://wiki.openstreetmap.org/wiki/Tag:building=transportation');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(23, 'train_station', 'Train station building', 'https://wiki.openstreetmap.org/wiki/Tag:building=train_station');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(24, 'toll_booth', 'Toll roads charge money for some or all traffic', 'https://wiki.openstreetmap.org/wiki/Tag:barrier=toll_booth');
 INSERT INTO $BUILDING_ABSTRACT_USE_TYPE VALUES(25, 'terminal', 'Airport passenger building', 'https://wiki.openstreetmap.org/wiki/Tag:aeroway=terminal');
@@ -103,7 +103,7 @@ INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(18, 'industrial', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(19, 'sport', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(20, 'sports_centre', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(21, 'grandstand', 0);
-INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(22, 'transportation', 0);
+INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(22, 'transport', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(23, 'train_station', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(24, 'toll_booth', 0);
 INSERT INTO $BUILDING_ABSTRACT_PARAMETERS VALUES(25, 'terminal', 0);
