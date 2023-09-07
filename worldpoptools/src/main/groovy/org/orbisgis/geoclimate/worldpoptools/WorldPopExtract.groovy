@@ -20,6 +20,8 @@
 package org.orbisgis.geoclimate.worldpoptools
 
 import groovy.transform.BaseScript
+import groovy.xml.XmlSlurper
+import groovy.xml.slurpersupport.GPathResult
 import org.cts.util.UTMUtils
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.asc.AscReaderDriver
@@ -63,10 +65,10 @@ String extractWorldPopLayer(String coverageId, List bbox) {
     } else {
         if (outputGridFile.createNewFile()) {
             if (grid(gridRequest, outputGridFile)) {
-                info "The OSM file has been downloaded at ${popGridFilePath}."
+                info "The WorldPop file has been downloaded at ${popGridFilePath}."
             } else {
                 outputGridFile.delete()
-                error "Cannot extract the OSM data for the query $gridRequest"
+                error "Cannot extract the WorldPop file for the query $gridRequest"
                 return
             }
         }
@@ -221,6 +223,46 @@ boolean grid(String wcsRequest, File outputGridFile) {
         return false
     } else {
         error "Cannot execute the WCS query.$queryUrl"
+        return false
+    }
+}
+
+/**
+ * A method to test if the coverageId is available
+ * @param coverageId
+ * @return
+ */
+boolean isCoverageAvailable(String coverageId){
+    String describeRequest = """https://ogc.worldpop.org/geoserver/ows?service=WCS&version=2.0.1&request=DescribeCoverage&coverageId=$coverageId""".toString()
+    def queryUrl = new URL(describeRequest)
+    final String proxyHost = System.getProperty("http.proxyHost");
+    final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+    def connection
+    if (proxyHost != null) {
+        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+        connection = queryUrl.openConnection(proxy) as HttpURLConnection
+    } else {
+        connection = queryUrl.openConnection() as HttpURLConnection
+    }
+    info queryUrl.toString()
+    connection.connect()
+
+    info "Executing query... $queryUrl"
+    //Save the result in a file
+    if (connection.responseCode == 200) {
+            XmlSlurper xmlParser = new XmlSlurper()
+        GPathResult nodes = xmlParser.parse(connection.inputStream)
+        if(nodes.Exception){
+            return true
+        }else {
+            error "The service is not available for the coverageId : $coverageId"
+            return false
+        }
+    } else if (connection.responseCode == 404) {
+        error "The service is not available for the coverageId : $coverageId"
+        return false
+    } else {
+        error "Cannot request the WorldPop service"
         return false
     }
 }
