@@ -78,9 +78,11 @@ class WorldPopExtractTest {
      */
     @Test
     void extractGridProcess() {
-        String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer("wpGlobal:ppp_2018", [47.63324, -2.78087, 47.65749, -2.75979])
-        assertNotNull(outputFilePath)
-        assertTrue new File(outputFilePath).exists()
+        if(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2018")) {
+            String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer("wpGlobal:ppp_2018", [47.63324, -2.78087, 47.65749, -2.75979])
+            assertNotNull(outputFilePath)
+            assertTrue new File(outputFilePath).exists()
+        }
     }
 
     /**
@@ -88,13 +90,24 @@ class WorldPopExtractTest {
      */
     @Test
     void extractLoadGridProcess() {
-        String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer("wpGlobal:ppp_2018", [47.63324, -2.78087, 47.65749, -2.75979])
-        if (outputFilePath) {
-            assertTrue new File(outputFilePath).exists()
-            String outputTableWorldPopName = WorldPopTools.Extract.importAscGrid(h2GIS, outputFilePath)
-            assertNotNull outputTableWorldPopName
-            assertEquals(720, h2GIS.getSpatialTable(outputTableWorldPopName).rowCount)
-            assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(outputTableWorldPopName).columns)
+        if(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2018")) {
+            String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer("wpGlobal:ppp_2018", [47.63324, -2.78087, 47.65749, -2.75979])
+            if (outputFilePath) {
+                assertTrue new File(outputFilePath).exists()
+                String outputTableWorldPopName = WorldPopTools.Extract.importAscGrid(h2GIS, outputFilePath)
+                assertNotNull outputTableWorldPopName
+                assertEquals(720, h2GIS.getSpatialTable(outputTableWorldPopName).rowCount)
+                assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(outputTableWorldPopName).columns)
+            }
         }
+    }
+
+    /**
+     * Test to extract a grid from process
+     */
+    @Test
+    void testCoverageAvailable() {
+        assertFalse(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2050"))
+        assertTrue(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2018"))
     }
 }

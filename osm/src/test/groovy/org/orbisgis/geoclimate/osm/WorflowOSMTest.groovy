@@ -303,6 +303,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "output"      : [
                         "folder": directory]
         ]
+        println(osm_parmeters)
         OSM.WorkflowOSM.workflow(osm_parmeters)
         def folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
         def resultFiles = []
