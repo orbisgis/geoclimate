@@ -21,10 +21,9 @@ package org.orbisgis.geoclimate.osm
 
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
-import org.orbisgis.geoclimate.geoindicators.WorkflowUtilities
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.slf4j.LoggerFactory
+import org.orbisgis.geoclimate.utils.LoggerUtils
 
 /**
  * Main class to access to the OSM processes
@@ -37,8 +36,7 @@ abstract class OSM extends AbstractScript {
     public static InputDataFormatting = new InputDataFormatting()
 
     OSM() {
-        super(LoggerFactory.getLogger(OSM.class))
-        WorkflowUtilities.setLoggerLevel("INFO")
+        super(OSM.class)
     }
 
 

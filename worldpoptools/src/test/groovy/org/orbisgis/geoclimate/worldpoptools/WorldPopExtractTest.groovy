@@ -19,13 +19,13 @@
  */
 package org.orbisgis.geoclimate.worldpoptools
 
+import ch.qos.logback.classic.Logger
 import org.h2gis.api.EmptyProgressVisitor
 import org.h2gis.functions.io.asc.AscReaderDriver
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.orbisgis.geoclimate.utils.LoggerUtils
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -34,7 +34,7 @@ class WorldPopExtractTest {
     @TempDir
     static File folder
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WorldPopExtractTest)
+    private static final Logger LOGGER = LoggerUtils.createLogger(WorldPopExtractTest)
     private static H2GIS h2GIS
 
     @BeforeAll

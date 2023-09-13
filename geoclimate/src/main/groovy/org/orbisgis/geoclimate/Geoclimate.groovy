@@ -20,6 +20,7 @@
 package org.orbisgis.geoclimate
 
 import org.orbisgis.geoclimate.bdtopo.BDTopo
+import org.orbisgis.geoclimate.utils.LoggerUtils
 import picocli.CommandLine
 
 import java.util.concurrent.Callable
@@ -84,9 +85,9 @@ class Geoclimate implements Callable<Integer> {
     @Override
     Integer call() {
         if (verbose) {
-            Geoindicators.WorkflowUtilities.setLoggerLevel(verbose.trim())
+            LoggerUtils.setLoggerLevel(verbose.trim())
         } else {
-            Geoindicators.WorkflowUtilities.setLoggerLevel("INFO")
+            LoggerUtils.setLoggerLevel("INFO")
         }
         if (workflow.trim().equalsIgnoreCase("OSM")) {
             println("The OSM workflow has been started.\nPlease wait...")

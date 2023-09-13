@@ -20,18 +20,14 @@
 package org.orbisgis.geoclimate
 
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.LoggerContext
 import org.orbisgis.geoclimate.geoindicators.*
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.slf4j.LoggerFactory
+import org.orbisgis.geoclimate.utils.LoggerUtils
 
 abstract class Geoindicators extends AbstractScript {
-    public static def logger
 
     Geoindicators() {
-        super(LoggerFactory.getLogger(Geoindicators.class))
-        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
-        context.getLogger(Geoindicators.class).setLevel(Level.INFO)
+        super(Geoindicators.class)
     }
 
     //Processes

@@ -25,7 +25,6 @@ import org.orbisgis.geoclimate.osmtools.utils.TransformUtils as TRANSFORM_UTILS
 import org.orbisgis.geoclimate.osmtools.utils.Utilities as UTILITIES
 import org.orbisgis.geoclimate.utils.AbstractScript
 import org.orbisgis.geoclimate.utils.LoggerUtils
-import org.slf4j.LoggerFactory
 
 /**
  * Main script to access to all processes used to extract, transform and save OSM data as GIS layers.
@@ -42,7 +41,6 @@ abstract class OSMTools extends AbstractScript {
     def static TransformUtils = new TRANSFORM_UTILS()
 
     OSMTools() {
-        super(LoggerFactory.getLogger(OSMTools.class))
-        LoggerUtils.setLoggerLevel("INFO")
+        super(OSMTools.class)
     }
 }
