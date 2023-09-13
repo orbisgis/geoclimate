@@ -32,7 +32,6 @@ package org.orbisgis.geoclimate.worldpoptools
 
 import org.orbisgis.geoclimate.utils.AbstractScript
 import org.orbisgis.geoclimate.utils.LoggerUtils
-import org.slf4j.LoggerFactory
 
 /**
  * Main script to access to all WorldPop utilities
@@ -48,7 +47,6 @@ abstract class WorldPopTools extends AbstractScript {
     def static Extract = new WorldPopExtract()
 
     WorldPopTools() {
-        super(LoggerFactory.getLogger(WorldPopTools.class))
-        LoggerUtils.setLoggerLevel("INFO")
+        super(WorldPopTools.class)
     }
 }

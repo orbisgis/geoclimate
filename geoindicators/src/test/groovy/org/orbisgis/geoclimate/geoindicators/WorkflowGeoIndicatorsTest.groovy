@@ -19,14 +19,14 @@
  */
 package org.orbisgis.geoclimate.geoindicators
 
+import ch.qos.logback.classic.Logger
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.dataframe.DataFrame
 import org.orbisgis.geoclimate.Geoindicators
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.orbisgis.geoclimate.utils.LoggerUtils
 
 import static org.junit.jupiter.api.Assertions.*
 import static org.orbisgis.data.H2GIS.open
@@ -36,7 +36,7 @@ class WorkflowGeoIndicatorsTest {
     @TempDir
     static File folder
 
-    public static Logger logger = LoggerFactory.getLogger(WorkflowGeoIndicatorsTest.class)
+    public static Logger logger = LoggerUtils.createLogger(WorkflowGeoIndicatorsTest.class)
 
     // Indicator list (at RSU scale) for each type of use
     public static listNames = [

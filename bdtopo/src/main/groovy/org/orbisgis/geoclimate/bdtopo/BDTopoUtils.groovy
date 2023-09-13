@@ -24,7 +24,6 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.utils.AbstractScript
 import org.orbisgis.geoclimate.utils.LoggerUtils
-import org.slf4j.LoggerFactory
 
 /**
  * BDTopo utils
@@ -32,8 +31,7 @@ import org.slf4j.LoggerFactory
 abstract class BDTopoUtils extends AbstractScript {
 
     BDTopoUtils() {
-        super(LoggerFactory.getLogger(BDTopoUtils.class))
-        LoggerUtils.setLoggerLevel("INFO")
+        super(BDTopoUtils.class)
     }
 
     /**

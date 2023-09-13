@@ -28,7 +28,6 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.slf4j.LoggerFactory
 
 @BaseScript Geoindicators geoindicators
 
@@ -248,28 +247,5 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
     if (outputTable && h2gis_datasource.hasTable(outputTable)) {
         h2gis_datasource.save("(SELECT ID_BUILD, ID_SOURCE FROM $outputTable WHERE estimated=true)", filePath, deleteOutputData)
         info "${outputTable} has been saved in ${filePath}."
-    }
-}
-
-/**
- * Utility class to change log level for all loggers
- *
- */
-static def setLoggerLevel(String loggerLevel) {
-    if (loggerLevel) {
-        Level level
-        if (loggerLevel.equalsIgnoreCase("INFO")) {
-            level = Level.INFO
-        } else if (loggerLevel.equalsIgnoreCase("DEBUG")) {
-            level = Level.DEBUG
-        } else if (loggerLevel.equalsIgnoreCase("TRACE")) {
-            level = Level.TRACE
-        } else if (loggerLevel.equalsIgnoreCase("OFF")) {
-            level = Level.OFF
-        } else {
-            throw new RuntimeException("Invalid log level. Allowed values are : INFO, DEBUG, TRACE, OFF")
-        }
-        var context = (LoggerContext) LoggerFactory.getILoggerFactory()
-        context.getLoggerList().each { it -> it.setLevel(level) }
     }
 }

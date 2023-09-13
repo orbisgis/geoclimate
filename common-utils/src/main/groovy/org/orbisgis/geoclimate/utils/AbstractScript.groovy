@@ -1,13 +1,16 @@
 package org.orbisgis.geoclimate.utils
 
 import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.LoggerContext
 
 abstract class AbstractScript extends Script {
 
     public Logger logger
 
-    AbstractScript(Logger logger) {
-        this.logger = logger
+    AbstractScript(Class aClass) {
+        LoggerContext context = new LoggerContext()
+        this.logger = context.getLogger(aClass)
+        LoggerUtils.setLoggerLevel("INFO")
     }
 
     static String uuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
