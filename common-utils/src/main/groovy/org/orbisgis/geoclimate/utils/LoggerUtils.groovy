@@ -27,8 +27,11 @@ class LoggerUtils {
             } else {
                 throw new RuntimeException("Invalid log level. Allowed values are : INFO, DEBUG, TRACE, OFF")
             }
-            var context = (LoggerContext) LoggerFactory.getILoggerFactory()
-            context.getLoggerList().each { it -> it.setLevel(level) }
+            var logFac =  LoggerFactory.getILoggerFactory()
+            if(logFac instanceof  LoggerContext){
+                var context = (LoggerContext) LoggerFactory.getILoggerFactory()
+                context.getLoggerList().each { it -> it.setLevel(level) }
+            }
         }
     }
 
