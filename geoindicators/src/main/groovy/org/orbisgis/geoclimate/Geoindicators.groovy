@@ -19,10 +19,8 @@
  */
 package org.orbisgis.geoclimate
 
-import ch.qos.logback.classic.Level
 import org.orbisgis.geoclimate.geoindicators.*
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.orbisgis.geoclimate.utils.LoggerUtils
 
 abstract class Geoindicators extends AbstractScript {
 
