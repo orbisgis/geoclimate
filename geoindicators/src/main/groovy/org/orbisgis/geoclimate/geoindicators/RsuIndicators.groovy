@@ -1469,6 +1469,18 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                                                         MAX(BUILDING) AS BUILDING, MAX(RAIL) AS RAIL, ${id_zone} FROM $allInfoTableName GROUP BY ${ID_COLUMN_NAME}, ${id_zone};
                                       DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}, ${tmpTablesToDrop.join(",")}""".toString()
         }
+        else{
+            datasource """DROP TABLE IF EXISTS $outputTableName;
+                CREATE TABLE $outputTableName(AREA DOUBLE PRECISION, 
+                                                LOW_VEGETATION INTEGER,
+                                                HIGH_VEGETATION INTEGER,
+                                                WATER INTEGER,
+                                                IMPERVIOUS INTEGER,
+                                                ROAD INTEGER,
+                                                BUILDING INTEGER,
+                                                RAIL INTEGER,
+                                                ${id_zone} INTEGER)"""
+        }
 
     } else {
         error """Cannot compute the smallest geometries"""

@@ -44,12 +44,13 @@ class WorkflowAbstractTest {
      */
     void geoIndicatorsCalc(String directory, def datasource, String zone, String buildingTableName,
                            String roadTableName, String railTableName, String vegetationTableName,
-                           String hydrographicTableName, boolean saveResults, boolean svfSimplified = false, def indicatorUse,
-                           String prefixName = "") {
+                           String hydrographicTableName, String imperviousTableName = null, String sealandmaskTableName = "",
+                           boolean saveResults, boolean svfSimplified = false, def indicatorUse,
+                           String prefixName = "", boolean onlySea = false) {
         //Create spatial units and relations : building, block, rsu
         Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis(datasource, zone, buildingTableName,
                 roadTableName, railTableName, vegetationTableName,
-                hydrographicTableName, "", "", 10000,
+                hydrographicTableName, sealandmaskTableName, "", 10000,
                 2500, 0.01, indicatorUse, prefixName)
 
         String relationBuildings = spatialUnits.building
@@ -58,13 +59,15 @@ class WorkflowAbstractTest {
 
         if (saveResults) {
             logger.debug("Saving spatial units")
-            Geoindicators.DataUtils.saveTablesAsFiles(datasource, spatialUnits.values(),
+            Geoindicators.DataUtils.saveTablesAsFiles(datasource, new ArrayList(spatialUnits.values()),
                     true, directory)
         }
 
         def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())
         def countBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
-        assertEquals(countBlocks.count, maxBlocks.max)
+        if (!onlySea){
+            assertEquals(countBlocks.count, maxBlocks.max)
+        }
 
 
         def maxRSUBlocks = datasource.firstRow("select count(distinct id_block) as max from ${relationBuildings} where id_rsu is not null".toString())
@@ -76,7 +79,9 @@ class WorkflowAbstractTest {
                 roadTableName, indicatorUse,
                 prefixName)
         assert buildingIndicators
-        assertTrue(datasource.getSpatialTable(buildingIndicators).srid > 0)
+        if (!onlySea){
+            assertTrue(datasource.getSpatialTable(buildingIndicators).srid > 0)
+        }
         if (saveResults) {
             logger.debug("Saving building indicators")
             datasource.getSpatialTable(buildingIndicators).save(directory + File.separator + "${buildingIndicators}.geojson", true)
@@ -102,7 +107,9 @@ class WorkflowAbstractTest {
             def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
             def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
             assertEquals(countRelationBlocks.count, countBlocksIndicators.count)
-            assertTrue(datasource.getSpatialTable(blockIndicators).srid > 0)
+            if (!onlySea){
+                assertTrue(datasource.getSpatialTable(blockIndicators).srid > 0)
+            }
         }
 
         Map parameters = Geoindicators.WorkflowGeoIndicators.getParameters(["indicatorUse": indicatorUse, "svfSimplified": svfSimplified])
@@ -112,7 +119,7 @@ class WorkflowAbstractTest {
                 vegetationTableName,
                 roadTableName,
                 hydrographicTableName,
-                null, railTableName,
+                imperviousTableName, railTableName,
                 parameters,
                 prefixName)
         assert rsuIndicators
