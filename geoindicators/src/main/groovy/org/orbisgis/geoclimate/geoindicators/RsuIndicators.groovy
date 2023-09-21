@@ -1471,7 +1471,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
         }
         else{
             datasource """DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName(AREA DOUBLE, 
+                CREATE TABLE $outputTableName(AREA DOUBLE PRECISION, 
                                                 LOW_VEGETATION INTEGER,
                                                 HIGH_VEGETATION INTEGER,
                                                 WATER INTEGER,
