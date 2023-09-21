@@ -102,7 +102,103 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         datasource.load(urlZone, zone, true)
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, datasource, zone, buildingTableName, roadTableName,
-                null, vegetationTableName, hydrographicTableName, saveResults, svfSimplified, indicatorUse, prefixName)
+                railTableName, vegetationTableName, hydrographicTableName, null, "",
+                saveResults, svfSimplified, indicatorUse, prefixName)
+    }
+
+    @Test
+    void osmGeoIndicatorsFromTestFilesWhenOnlySea() {
+
+        String urlZone = new File(getClass().getResource("ZONE_ONLY_SEA.geojson").toURI()).absolutePath
+
+        //TODO enable it for debug purpose
+        boolean saveResults = false
+        String directory = folder.absolutePath + File.separator + "osm_processchain_geoindicators_onlysea"
+        def prefixName = ""
+        def indicatorUse = ["UTRF", "LCZ", "TEB"]
+        def svfSimplified = true
+
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+
+        H2GIS datasource = H2GIS.open(dirFile.absolutePath + File.separator + "osm_chain_db;AUTO_SERVER=TRUE")
+
+        String zone = "zone"
+        String buildingTableName = "buildings"
+        String roadTableName = "road"
+        String railTableName = "rails"
+        String vegetationTableName = "veget"
+        String hydrographicTableName = "hydro"
+        String urbanTableName = "urban"
+        String sealandTableName = "sealand"
+        String imperviousTableName = "impervious"
+
+
+        datasource.load(urlZone, zone, true)
+        datasource """DROP TABLE IF EXISTS $buildingTableName;
+                    CREATE TABLE $buildingTableName(THE_GEOM GEOMETRY,
+                                                    ID_BUILD INTEGER,
+                                                    ID_SOURCE VARCHAR,
+                                                    HEIGHT_WALL DOUBLE,
+                                                    HEIGHT_ROOF DOUBLE,
+                                                    NB_LEV INTEGER,
+                                                    TYPE VARCHAR,
+                                                    MAIN_USE VARCHAR,
+                                                    ZINDEX INTEGER,
+                                                    ROOF_SHAPE VARCHAR)"""
+        datasource """DROP TABLE IF EXISTS $roadTableName;
+                    CREATE TABLE $roadTableName(THE_GEOM GEOMETRY,
+                                                ID_ROAD INTEGER,
+                                                ID_SOURCE VARCHAR,
+                                                WIDTH DOUBLE,
+                                                TYPE VARCHAR,
+                                                CROSSING VARCHAR,
+                                                SURFACE VARCHAR,
+                                                SIDE_WALK VARCHAR,
+                                                MAXSPEED INTEGER,
+                                                DIRECTION INTEGER,
+                                                ZINDEX INTEGER)"""
+        datasource """DROP TABLE IF EXISTS $railTableName;
+                    CREATE TABLE $railTableName(THE_GEOM GEOMETRY,
+                                                ID_RAIL INTEGER,
+                                                ID_SOURCE VARCHAR,
+                                                WIDTH DOUBLE,
+                                                TYPE VARCHAR,
+                                                CROSSING VARCHAR,
+                                                USAGE VARCHAR,
+                                                ZINDEX INTEGER)"""
+        datasource """DROP TABLE IF EXISTS $vegetationTableName;
+                    CREATE TABLE $vegetationTableName(THE_GEOM GEOMETRY,
+                                                    ID INTEGER,
+                                                    ID_SOURCE VARCHAR,
+                                                    HEIGHT_CLASS VARCHAR,
+                                                    ZINDEX INTEGER)"""
+        datasource """DROP TABLE IF EXISTS $hydrographicTableName;
+                    CREATE TABLE $hydrographicTableName(THE_GEOM GEOMETRY,
+                                                    ID INTEGER,
+                                                    ID_SOURCE VARCHAR,
+                                                    TYPE VARCHAR,
+                                                    ZINDEX INTEGER)"""
+        datasource """DROP TABLE IF EXISTS $urbanTableName;
+                    CREATE TABLE $urbanTableName(THE_GEOM GEOMETRY,
+                                                ID_URBAN INTEGER,
+                                                ID_SOURCE VARCHAR,
+                                                TYPE VARCHAR,
+                                                MAIN_USE VARCHAR)"""
+        datasource """DROP TABLE IF EXISTS $sealandTableName;
+                    CREATE TABLE $sealandTableName(THE_GEOM GEOMETRY,
+                                                ID INTEGER,
+                                                TYPE VARCHAR)"""
+        datasource """DROP TABLE IF EXISTS $imperviousTableName;
+                    CREATE TABLE $imperviousTableName(THE_GEOM GEOMETRY,
+                                                ID_IMPERVIOUS INTEGER,
+                                                TYPE VARCHAR)"""
+
+        //Run tests
+        geoIndicatorsCalc(dirFile.absolutePath, datasource, zone, buildingTableName, roadTableName,
+                railTableName, vegetationTableName, hydrographicTableName, imperviousTableName, sealandTableName,
+                saveResults, svfSimplified, indicatorUse, prefixName, true)
     }
 
     /**
