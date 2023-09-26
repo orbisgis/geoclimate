@@ -21,7 +21,8 @@
       "railway",
       "construction",
       "industrial",
-      "commercial"
+      "commercial",
+      "retail"
     ],
     "area:aeroway": [
       "runway"
