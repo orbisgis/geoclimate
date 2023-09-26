@@ -177,6 +177,7 @@ class SpatialUnitsTests {
         assert h2GIS.getTable(pPointOnSurface).getRowCount() == 2
     }
 
+
     @Test
     void prepareGeometriesForRSUWithFilterTest() {
         h2GIS.load(SpatialUnitsTests.class.class.getResource("road_test.geojson"), true)

@@ -838,7 +838,8 @@ String roofAreaDistribution(JdbcDataSource datasource, String rsu, String buildi
 String effectiveTerrainRoughnessLength(JdbcDataSource datasource, String rsuTable,
                                        String projectedFacadeAreaName,
                                        String geometricMeanBuildingHeightName,
-                                       List listLayersBottom = [0, 10, 20, 30, 40, 50], int numberOfDirection = 12, String prefixName) {
+                                       List listLayersBottom = [0, 10, 20, 30, 40, 50],
+                                       int numberOfDirection = 12, String prefixName) {
     def GEOMETRIC_COLUMN = "the_geom"
     def ID_COLUMN_RSU = "id_rsu"
     def BASE_NAME = "effective_terrain_roughness_length"

@@ -455,6 +455,11 @@ String distributionCharacterization(JdbcDataSource datasource, String distribTab
         def distribColumns = allColumns.minus(inputId.toUpperCase())
         def nbDistCol = distribColumns.size()
 
+        if(distribColumns.size==0){
+            error("Any columns to compute the distribution from the table $distribTableName".toString())
+            return
+        }
+
         def idxExtrem = nbDistCol - 1
         def idxExtrem_1 = nbDistCol - 2
         if (extremum.toUpperCase() == "LEAST") {

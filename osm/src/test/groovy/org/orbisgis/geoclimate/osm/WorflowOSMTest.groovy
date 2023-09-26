@@ -652,6 +652,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
 
+
        //def nominatim = OSMTools.Utilities.getNominatimData("Lorient")
 
         def osm_parmeters = [

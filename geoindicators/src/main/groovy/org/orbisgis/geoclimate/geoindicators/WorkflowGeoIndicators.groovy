@@ -357,7 +357,8 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                     [facadeDensListLayersBottom    : [0, 10, 20, 30, 40, 50],
                                      facadeDensNumberOfDirection   : 12,
                                      svfPointDensity               : 0.008,
-                                     svfRayLength                  : 100, svfNumberOfDirection: 60,
+                                     svfRayLength                  : 100,
+                                     svfNumberOfDirection          : 60,
                                      heightColumnName              : "height_roof",
                                      inputFields                   : ["id_build", "the_geom"],
                                      levelForRoads                 : [0],
@@ -1724,7 +1725,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
     def unweightedBuildingIndicators = [:]
     def weightedBuildingIndicators = [:]
     list_indicators.each {
-        if (it.equalsIgnoreCase("BUILDING_FRACTION") || it.equalsIgnoreCase("BUILDING_SURFACE_DENSITY")) {
+        if (it.equalsIgnoreCase("BUILDING_FRACTION")
+                || it.equalsIgnoreCase("BUILDING_SURFACE_DENSITY") ||
+                it.equalsIgnoreCase("ASPECT_RATIO")) {
             columnFractionsList.put(priorities.indexOf("building"), "building")
         } else if (it.equalsIgnoreCase("WATER_FRACTION")) {
             columnFractionsList.put(priorities.indexOf("water"), "water")
@@ -1831,7 +1834,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
     }
 
-    if ((list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY") && building) ||
+    def freeFacadeDensityExact
+
+    if ((list_indicators*.toUpperCase().containsAll(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO"]) && building) ||
             (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY") && building)) {
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
@@ -1843,7 +1848,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 return
             }
         }
-        def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(datasource, createScalesRelationsGridBl,
+        freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(datasource, createScalesRelationsGridBl,
                 grid, grid_column_identifier, prefixName)
         if (freeFacadeDensityExact) {
             if (list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")) {
@@ -1865,6 +1870,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
             info "Cannot calculate the exact free external facade density"
         }
     }
+
 
     if (list_indicators*.toUpperCase().contains("BUILDING_HEIGHT_DIST") && building) {
         if (!createScalesRelationsGridBl) {
@@ -1958,6 +1964,15 @@ String rasterizeIndicators(JdbcDataSource datasource,
         info "Cannot merge all indicators in grid table $grid_indicators_table."
         return
     }
+
+    //Compute the aspect_ratio
+    if (list_indicators*.toUpperCase().contains("ASPECT_RATIO") && building){
+        //Because all other indicators have been yet computed we just alter the table with the aspect_ratio column
+        datasource.execute("""
+        ALTER TABLE $grid_indicators_table ADD COLUMN ASPECT_RATIO DOUBLE PRECISION;
+        UPDATE $grid_indicators_table SET ASPECT_RATIO = free_external_facade_density / (1 - building_fraction)
+        """.toString())
+    }
     datasource.dropTable(indicatorTablesToJoin.keySet().toArray(new String[0]))
 
     // Remove temporary tables
@@ -1972,6 +1987,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
  * @param zoneEnvelopeTableName
  * @param x_size x size of the grid
  * @param y_size y size of the grid
+ * @param srid used to reproject the grid
  * @param outputTableName the name of grid  table
  * @return
  */
