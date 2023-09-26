@@ -692,7 +692,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                             AS SELECT 1-extended_free_facade_fraction AS GROUND_SKY_VIEW_FACTOR, $columnIdRsu 
                             FROM ${computeExtFF}; DROP TABLE ${computeExtFF}""".toString()
         } else {
-            def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource, intermediateJoinTable,
+            def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource, intermediateJoinTable,"id_rsu",
                     buildingTable, parameters.svfPointDensity,
                     parameters.svfRayLength, parameters.svfNumberOfDirection,
                     temporaryPrefName)
@@ -1915,7 +1915,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
             }
         }
     }
-    tablesToDrop<<createScalesRelationsGridBl
 
     if (list_indicators*.toUpperCase().contains("SEA_LAND_FRACTION") && sea_land_mask) {
         // If only one type of surface (land or sea) is in the zone, no need for computational fraction calculation
@@ -1957,6 +1956,31 @@ String rasterizeIndicators(JdbcDataSource datasource,
             }
         }
     }
+
+
+    if (list_indicators*.toUpperCase().contains("SVF_FRACTION") &&  building) {
+        if (!createScalesRelationsGridBl) {
+            // Create the relations between grid cells and buildings
+            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
+                    grid, grid_column_identifier, null,
+                    prefixName)
+            if (!createScalesRelationsGridBl) {
+                info "Cannot compute the scales relations between buildings and grid cells."
+                return
+            }
+        }
+        def svf_fraction = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource,grid, grid_column_identifier, createScalesRelationsGridBl,  0.008, 100, 60, "grid")
+
+        if (svf_fraction) {
+            datasource """  ALTER TABLE ${svf_fraction} RENAME COLUMN GROUND_SKY_VIEW_FACTOR TO SVF_FRACTION""".toString()
+            indicatorTablesToJoin.put(svf_fraction, grid_column_identifier)
+        } else {
+            info "Cannot compute the sky view factor."
+        }
+        tablesToDrop<<svf_fraction
+    }
+
+    tablesToDrop<<createScalesRelationsGridBl
 
     //Join all indicators at grid scale
     def joinGrids = Geoindicators.DataUtils.joinTables(datasource, indicatorTablesToJoin, grid_indicators_table)

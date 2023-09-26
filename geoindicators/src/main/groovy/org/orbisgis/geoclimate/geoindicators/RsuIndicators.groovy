@@ -225,11 +225,11 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
  * @author Jérémy Bernard
  * @author Erwan Bocher
  */
-String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String correlationBuildingTable, float pointDensity,
+String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String id_rsu, String correlationBuildingTable, float pointDensity,
                            float rayLength, int numberOfDirection, String prefixName) {
     def GEOMETRIC_COLUMN_RSU = "the_geom"
     def GEOMETRIC_COLUMN_BU = "the_geom"
-    def ID_COLUMN_RSU = "id_rsu"
+    def ID_COLUMN_RSU = id_rsu
     def HEIGHT_WALL = "height_wall"
     def BASE_NAME = "ground_sky_view_factor"
 
@@ -318,7 +318,7 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String correla
 
     // The result of the SVF calculation is averaged at RSU scale
     datasource """
-                CREATE TABLE $outputTableName(id_rsu integer, $BASE_NAME double) 
+                CREATE TABLE $outputTableName($ID_COLUMN_RSU integer, $BASE_NAME double) 
                 AS          (SELECT a.$ID_COLUMN_RSU, CASE WHEN AVG(b.SVF) is not null THEN AVG(b.SVF) ELSE 1 END
                 FROM        $rsu a 
                 LEFT JOIN   $svfPts b 

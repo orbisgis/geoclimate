@@ -114,7 +114,7 @@ class RsuIndicatorsTests {
         h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
                 "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build"
 
-        def p = Geoindicators.RsuIndicators.groundSkyViewFactor(h2GIS, "rsu_test", "corr_tempo",
+        def p = Geoindicators.RsuIndicators.groundSkyViewFactor(h2GIS, "rsu_test","id_rsu", "corr_tempo",
                 0.008, 100, 60, "test")
         assertNotNull(p)
         assertEquals 0.54, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor " +
