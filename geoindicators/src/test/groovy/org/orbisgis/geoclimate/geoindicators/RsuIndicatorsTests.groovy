@@ -155,7 +155,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def rangeDeg = 360 / numberOfDirection
-        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", listLayersBottom,
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test","id_rsu", listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(p)
         def concat = ""
@@ -189,7 +189,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def rangeDeg = 360 / numberOfDirection
-        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", listLayersBottom,
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", "id_rsu",listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(p)
         def concat = ""
@@ -275,7 +275,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def pFacadeDistrib = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build",
-                "rsu_test", listLayersBottom,
+                "rsu_test","id_rsu", listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(pFacadeDistrib)
         def pGeomAvg = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(h2GIS, "tempo_build",
@@ -292,7 +292,7 @@ class RsuIndicatorsTests {
         h2GIS "CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
                 "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu"
-        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(h2GIS, "rsu_table",
+        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(h2GIS, "rsu_table","id_rsu",
                 "projected_facade_area_distribution", "geom_avg_height_roof",
                 listLayersBottom, numberOfDirection, "test")
         assertNotNull(p)
@@ -699,7 +699,7 @@ class RsuIndicatorsTests {
                 "tempo_rsu",
                 "id_rsu",
                 [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                12,
+                12,true,
                 "test")
         assertNotNull(p)
         assertEquals 0.00566, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").FRONTAL_AREA_INDEX_H0_5_D30_60, 0.00001

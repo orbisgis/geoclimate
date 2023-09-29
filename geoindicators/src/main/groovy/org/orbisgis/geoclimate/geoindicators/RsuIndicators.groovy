@@ -207,6 +207,7 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param rsu The name of the input ITable where are stored the RSU
+ * @param id_rsu Unique identifier column name
  * @param correlationBuildingTable The name of the input ITable where are stored the buildings and the relationships
  * between buildings and RSU
  * @param pointDensity The density of points (nb / free m²) used to calculate the spatial average SVF. Use 0.008f
@@ -392,13 +393,13 @@ String aspectRatio(JdbcDataSource datasource, String rsuTable, String rsuFreeExt
  * @return A database table name.
  * @author Jérémy Bernard
  */
-String projectedFacadeAreaDistribution(JdbcDataSource datasource, String building, String rsu,
+String projectedFacadeAreaDistribution(JdbcDataSource datasource, String building, String rsu,String id_rsu,
                                        List listLayersBottom = [0, 10, 20, 30, 40, 50], int numberOfDirection = 12,
                                        String prefixName) {
     def BASE_NAME = "projected_facade_area_distribution"
     def GEOMETRIC_COLUMN_RSU = "the_geom"
     def GEOMETRIC_COLUMN_BU = "the_geom"
-    def ID_COLUMN_RSU = "id_rsu"
+    def ID_COLUMN_RSU = id_rsu
     def ID_COLUMN_BU = "id_build"
     def HEIGHT_WALL = "height_wall"
 
@@ -410,7 +411,7 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
     datasource.createSpatialIndex(building,"the_geom")
     datasource.createSpatialIndex(rsu,"the_geom")
     datasource.createIndex(building,"id_build")
-    datasource.createIndex(rsu,"id_rsu")
+    datasource.createIndex(rsu,ID_COLUMN_RSU)
 
     if (360 % numberOfDirection == 0 && numberOfDirection % 2 == 0) {
 
@@ -504,7 +505,7 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
 
         // Intersections between free facades and rsu geometries are calculated
         datasource """ DROP TABLE IF EXISTS $buildingFreeExpl; 
-                    CREATE TABLE $buildingFreeExpl(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) AS 
+                    CREATE TABLE $buildingFreeExpl($ID_COLUMN_RSU INTEGER, the_geom GEOMETRY, $namesAndType) AS 
                     (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, ST_TOMULTILINE(b.the_geom)), 
                     ${onlyNamesB} FROM $rsu a, $buildingLayer b 
                     WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom 
@@ -513,8 +514,8 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
 
         // Intersections  facades are exploded to multisegments
         datasource """DROP TABLE IF EXISTS $rsuInter; 
-                        CREATE TABLE $rsuInter(id_rsu INTEGER, the_geom GEOMETRY, $namesAndType) 
-                        AS (SELECT id_rsu, the_geom, ${onlyNames} FROM ST_EXPLODE('$buildingFreeExpl'))""".toString()
+                        CREATE TABLE $rsuInter($ID_COLUMN_RSU INTEGER, the_geom GEOMETRY, $namesAndType) 
+                        AS (SELECT $ID_COLUMN_RSU, the_geom, ${onlyNames} FROM ST_EXPLODE('$buildingFreeExpl'))""".toString()
 
 
         // The analysis is then performed for each direction ('numberOfDirection' / 2 because calculation
@@ -550,8 +551,8 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
         sumNamesDir = sumNamesDir.join(",")
 
         def query = "DROP TABLE IF EXISTS $finalIndicator; " +
-                "CREATE TABLE $finalIndicator AS SELECT a.id_rsu," + queryColumns +
-                " FROM (SELECT id_rsu, CASE WHEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) >= PI()" +
+                "CREATE TABLE $finalIndicator AS SELECT a.$ID_COLUMN_RSU," + queryColumns +
+                " FROM (SELECT $ID_COLUMN_RSU, CASE WHEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) >= PI()" +
                 "THEN ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) - PI() " +
                 "ELSE ST_AZIMUTH(ST_STARTPOINT(the_geom), ST_ENDPOINT(the_geom)) END AS azimuth," +
                 " ST_LENGTH(the_geom) AS length, ${onlyNames} FROM $rsuInter) a"
@@ -559,15 +560,15 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
         datasource query.toString()
 
 
-        datasource.createIndex(finalIndicator,"id_rsu")
+        datasource.createIndex(finalIndicator,ID_COLUMN_RSU)
         // Sum area at RSU scale and fill null values with 0
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE    ${outputTableName} 
-                    AS SELECT       a.id_rsu, ${sumNamesDir} 
+                    AS SELECT       a.$ID_COLUMN_RSU, ${sumNamesDir} 
                     FROM            $rsu a LEFT JOIN $finalIndicator b 
-                    ON              a.id_rsu = b.id_rsu 
-                    GROUP BY        a.id_rsu""".toString()
+                    ON              a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU 
+                    GROUP BY        a.$ID_COLUMN_RSU""".toString()
 
         // Remove all temporary tables created
         datasource """DROP TABLE IF EXISTS $buildingIntersection, $buildingIntersectionExpl, 
@@ -820,6 +821,7 @@ String roofAreaDistribution(JdbcDataSource datasource, String rsu, String buildi
  * the resulting database will be stored
  * @param rsuTable the name of the input ITable where are stored the RSU geometries, the rsu_geometric_mean_height and
  * the rsu_projected_facade_area_distribution fields
+ * @param id_rsu Unique identifier column name
  * @param projectedFacadeAreaName the name base used for naming the projected facade area field within the
  * inputA rsuTable (default rsu_projected_facade_area_distribution - note that the field is also constructed
  * with the direction and vertical height informations)
@@ -835,13 +837,13 @@ String roofAreaDistribution(JdbcDataSource datasource, String rsu, String buildi
  *
  * @author Jérémy Bernard
  */
-String effectiveTerrainRoughnessLength(JdbcDataSource datasource, String rsuTable,
+String effectiveTerrainRoughnessLength(JdbcDataSource datasource, String rsuTable, String id_rsu,
                                        String projectedFacadeAreaName,
                                        String geometricMeanBuildingHeightName,
                                        List listLayersBottom = [0, 10, 20, 30, 40, 50],
                                        int numberOfDirection = 12, String prefixName) {
     def GEOMETRIC_COLUMN = "the_geom"
-    def ID_COLUMN_RSU = "id_rsu"
+    def ID_COLUMN_RSU = id_rsu
     def BASE_NAME = "effective_terrain_roughness_length"
 
     debug "Executing RSU effective terrain roughness length"
@@ -1682,7 +1684,7 @@ String buildingSurfaceDensity(JdbcDataSource datasource, String facadeDensityTab
 }
 
 /**
- * Script to compute the distributio of (only) horizontal roof area fraction for each layer of the canopy. If the height
+ * Script to compute the distribution of (only) horizontal roof area fraction for each layer of the canopy. If the height
  * roof and height wall differ, take the average value at building height. Note that this process first cut the buildings
  * according to RSU in order to calculate the exact distribution.
  *
@@ -1695,6 +1697,7 @@ String buildingSurfaceDensity(JdbcDataSource datasource, String facadeDensityTab
  * @param prefixName String use as prefix to name the output table
  * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default
  * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ * @param cutBuilding set to true if the building layer must be cuted by the rsu layer
  *
  * @return Table name in which the rsu id and their corresponding indicator value are stored
  *
@@ -1702,7 +1705,7 @@ String buildingSurfaceDensity(JdbcDataSource datasource, String facadeDensityTab
  */
 String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, String building,
                                      String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                                     boolean density = true, String prefixName) {
+                                     boolean cutBuilding=true, String prefixName) {
     def GEOMETRIC_COLUMN_RSU = "the_geom"
     def GEOMETRIC_COLUMN_BU = "the_geom"
     def ID_COLUMN_BU = "id_build"
@@ -1719,15 +1722,17 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
 
     // To avoid overwriting the output files of this step, a unique identifier is created
     // Temporary table names
-    def buildInter = postfix "build_inter"
+    def buildInter =building
     def rsuBuildingArea = postfix "rsu_building_area"
     def buildFracH = postfix "roof_frac_H"
     def bufferTable = postfix "buffer_table"
 
-    // 1. Create the intersection between buildings and RSU polygons
-    datasource."$building"."$ID_COLUMN_BU".createIndex()
-    datasource."$rsu"."$idRsu".createIndex()
-    datasource """
+    if(cutBuilding) {
+        buildInter = postfix "build_inter"
+        // 1. Create the intersection between buildings and RSU polygons
+        datasource."$building"."$ID_COLUMN_BU".createIndex()
+        datasource."$rsu"."$idRsu".createIndex()
+        datasource """
                 DROP TABLE IF EXISTS $buildInter;
                 CREATE TABLE $buildInter
                     AS SELECT   a.$ID_COLUMN_BU, a.$idRsu,
@@ -1735,9 +1740,10 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
                                 (a.$HEIGHT_WALL + a.$HEIGHT_ROOF) / 2 AS $BUILD_HEIGHT
                     FROM $building AS a LEFT JOIN $rsu AS b
                     ON a.$idRsu = b.$idRsu""".toString()
+    }
 
     // 2. Calculate the total building roof area within each RSU
-    datasource."$buildInter"."$idRsu".createIndex()
+    datasource.createIndex(buildInter, idRsu)
     datasource """
                 DROP TABLE IF EXISTS $rsuBuildingArea;
                 CREATE TABLE $rsuBuildingArea
@@ -1746,9 +1752,8 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
                     GROUP BY $idRsu""".toString()
 
     // 3. Calculate the fraction of roof for each level of the canopy (defined by 'listLayersBottom') except the last
-    datasource."$buildInter"."$BUILD_HEIGHT".createIndex()
-    datasource."$buildInter"."$idRsu".createIndex()
-    datasource."$rsuBuildingArea"."$idRsu".createIndex()
+    datasource.createIndex(buildInter,BUILD_HEIGHT)
+    datasource.createIndex(rsuBuildingArea,idRsu)
     def tab_H = [:]
     def indicToJoin = [:]
     for (i in 1..(listLayersBottom.size() - 1)) {
@@ -1841,14 +1846,17 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
  * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
  * @param numberOfDirection the number of directions used for the calculation - according to the method used it should
  * be divisor of 360 AND a multiple of 2 (default 12)
+ * @param distributionAsIndex set the value to false to avoid normalizing the distribution by the area of the input rsu
+ * and the range of the bottom layers
  * @param prefixName String use as prefix to name the output table
  *
  * @return A database table name.
  * @author Jérémy Bernard
+ * TODO :  https://github.com/orbisgis/geoclimate/issues/848
  */
 String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, String rsu,
                                     String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                                    int numberOfDirection = 12, String prefixName) {
+                                    int numberOfDirection = 12,  boolean distributionAsIndex = true, String prefixName) {
     def GEOMETRIC_FIELD_RSU = "the_geom"
     def GEOMETRIC_FIELD_BU = "the_geom"
     def ID_FIELD_BU = "id_build"
@@ -1940,7 +1948,8 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
                 // Indicator name
                 def indicName = "FRONTAL_AREA_INDEX_H${layer_bottom}_${layer_top}_D${k * angleRangeDeg}_${(k + 1) * angleRangeDeg}"
                 // Define query to sum the projected facade for buildings and shared facades
-                dirQueryVertFrac[k] = """
+                if(distributionAsIndex) {
+                    dirQueryVertFrac[k] = """
                                                 CASE WHEN $v > AZIMUTH AND $v-AZIMUTH < PI()
                                                     THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
                                                                 THEN LENGTH*SIN($v-AZIMUTH)
@@ -1954,7 +1963,24 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
                                                             ELSE 0
                                                             END
                                                     END AS $indicName"""
-                dirQueryDiv[k] = """COALESCE(SUM(b.$indicName)/ST_AREA(a.$GEOMETRIC_FIELD_RSU), 0) AS $indicName"""
+                    dirQueryDiv[k] = """COALESCE(SUM(b.$indicName)/ST_AREA(a.$GEOMETRIC_FIELD_RSU), 0) AS $indicName"""
+                }else{
+                    dirQueryVertFrac[k] = """
+                                                CASE WHEN $v > AZIMUTH AND $v-AZIMUTH < PI()
+                                                    THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
+                                                                THEN LENGTH*SIN($v-AZIMUTH)
+                                                                ELSE LENGTH*SIN($v-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)
+                                                                END
+                                                    ELSE    CASE WHEN $v - AZIMUTH < -PI()
+                                                            THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
+                                                                    THEN LENGTH*SIN($v+2*PI()-AZIMUTH)
+                                                                    ELSE LENGTH*SIN($v+2*PI()-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)
+                                                                    END
+                                                            ELSE 0
+                                                            END
+                                                    END AS $indicName"""
+                    dirQueryDiv[k] = """COALESCE(SUM(b.$indicName), 0) AS $indicName"""
+                }
             }
             // Calculates projected surfaces for buildings and shared facades
             datasource """

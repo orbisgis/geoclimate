@@ -674,18 +674,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
-                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
                          ],"grid_indicators": [
                                 "x_size": 1000,
                                 "y_size": 1000,
                                 //"rowCol": true,
                                 "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
                                                 "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION",
-                                                "UTRF_FLOOR_AREA_FRACTION",
-                                                "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
+                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                                "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO","SVF_FRACTION"]
+                                                "BUILDING_HEIGHT_DIST",  "SEA_LAND_FRACTION",
+                                                "ASPECT_RATIO","SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS"]
                         ],    "worldpop_indicators": false,
                          "road_traffic"                                         : false,
                          "noise_indicators"                                     : [

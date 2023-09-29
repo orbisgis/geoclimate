@@ -26,6 +26,8 @@ import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
+import java.sql.SQLException
+
 @BaseScript Geoindicators geoindicators
 
 /**
@@ -638,7 +640,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
             facadeDensNumberOfDirection: 8
         }
         def projFacadeDist = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(datasource, buildingTable,
-                rsu, facadeDensListLayersBottom,
+                rsu, "id_rsu", facadeDensListLayersBottom,
                 facadeDensNumberOfDirection, temporaryPrefName)
         if (!projFacadeDist) {
             info "Cannot compute the projected facade distribution. "
@@ -708,7 +710,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // rsu_effective_terrain_roughness
     if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
         // Create the join tables to have all needed input fields for aspect ratio computation
-        def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, intermediateJoinTable,
+        def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, intermediateJoinTable,"id_rsu",
                 "projected_facade_area_distribution",
                 "geom_avg_$heightColumnName",
                 facadeDensListLayersBottom, facadeDensNumberOfDirection, temporaryPrefName)
@@ -722,7 +724,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         if (indicatorUse*.toUpperCase().contains("LCZ")) {
             def roughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(datasource, effRoughHeight, "effective_terrain_roughness_length", temporaryPrefName)
             if (!roughClass) {
-                info "Cannot compute the SVF calculation."
+                info "Cannot compute the roughness class."
                 return
             }
             finalTablesToJoin.put(roughClass, columnIdRsu)
@@ -1724,6 +1726,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     def unweightedBuildingIndicators = [:]
     def weightedBuildingIndicators = [:]
+    def height_roof_unweighted_list =[]
     list_indicators.each {
         if (it.equalsIgnoreCase("BUILDING_FRACTION")
                 || it.equalsIgnoreCase("BUILDING_SURFACE_DENSITY") ||
@@ -1739,12 +1742,18 @@ String rasterizeIndicators(JdbcDataSource datasource,
         } else if (it.equalsIgnoreCase("IMPERVIOUS_FRACTION")) {
             columnFractionsList.put(priorities.indexOf("impervious"), "impervious")
         } else if (it.equalsIgnoreCase("BUILDING_HEIGHT") && building) {
-            unweightedBuildingIndicators.put("height_roof", ["AVG", "STD"])
+            height_roof_unweighted_list.addAll( ["AVG", "STD"])
         } else if (it.equalsIgnoreCase("BUILDING_HEIGHT_WEIGHTED") && building) {
             weightedBuildingIndicators["height_roof"] = ["area": ["AVG", "STD"]]
         } else if (it.equalsIgnoreCase("BUILDING_POP") && building) {
             unweightedBuildingIndicators.put("pop", ["SUM"])
         }
+        else if (it.equalsIgnoreCase("HEIGHT_OF_ROUGHNESS_ELEMENTS") && building) {
+            height_roof_unweighted_list.add("GEOM_AVG")
+        }
+    }
+    if(height_roof_unweighted_list){
+        unweightedBuildingIndicators.put("height_roof",height_roof_unweighted_list)
     }
 
     // Calculate all surface fractions indicators on the GRID cell
@@ -1768,6 +1777,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
     }
     String createScalesRelationsGridBl
+    String computeBuildingStats
     if (unweightedBuildingIndicators) {
         // Create the relations between grid cells and buildings
         createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building, grid,
@@ -1777,7 +1787,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
             info "Cannot compute the scales relations between buildings and grid cells."
             return
         }
-        def computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource, createScalesRelationsGridBl,
+        computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource, createScalesRelationsGridBl,
                 grid, grid_column_identifier,
                 grid_column_identifier, unweightedBuildingIndicators,
                 prefixName)
@@ -1789,17 +1799,15 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     }
 
+    String buildingCutted
     if (weightedBuildingIndicators) {
-        if (!createScalesRelationsGridBl) {
-            // Create the relations between grid cells and buildings
-            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
-                    grid, grid_column_identifier, null, prefixName)
-            if (!createScalesRelationsGridBl) {
-                info "Cannot compute the scales relations between buildings and grid cells."
-                return
-            }
+        //Cut the building to compute exact fractions
+        buildingCutted = cutBuilding(datasource, grid, building)
+        if(!buildingCutted){
+            info "Cannot split the building with the grid to compute the weighted statistics"
+            return
         }
-        def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, createScalesRelationsGridBl,
+        def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, buildingCutted,
                 grid, grid_column_identifier,
                 weightedBuildingIndicators, prefixName)
         if (!computeWeightedAggregStat) {
@@ -1811,20 +1819,17 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     if (list_indicators*.toUpperCase().contains("BUILDING_TYPE") && building) {
-        if (!createScalesRelationsGridBl) {
-            // Create the relations between grid cells and buildings
-            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building, grid,
-                    grid_column_identifier, null,
-                    prefixName)
-            if (!createScalesRelationsGridBl) {
-                info "Cannot compute the scales relations between buildings and grid cells."
+        if (!buildingCutted) {
+            buildingCutted = cutBuilding(datasource, grid, building)
+            if(!buildingCutted){
+                info "Cannot split the building with the grid to compute the weighted statistics"
                 return
             }
         }
         def indicatorName = "TYPE"
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource, grid,
                 grid_column_identifier,
-                createScalesRelationsGridBl,
+                buildingCutted,
                 indicatorName, indicatorName,false,
                 "building_type_fraction")
         if (upperScaleAreaStatistics) {
@@ -1873,19 +1878,16 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
 
     if (list_indicators*.toUpperCase().contains("BUILDING_HEIGHT_DIST") && building) {
-        if (!createScalesRelationsGridBl) {
-            // Create the relations between grid cells and buildings
-            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
-                    grid, grid_column_identifier, null,
-                    prefixName)
-            if (!createScalesRelationsGridBl) {
-                info "Cannot compute the scales relations between buildings and grid cells."
+        if (!buildingCutted) {
+            buildingCutted = cutBuilding(datasource, grid, building)
+            if(!buildingCutted){
+                info "Cannot split the building with the grid to compute the building height distance"
                 return
             }
         }
         def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact(datasource,
-                 grid, createScalesRelationsGridBl,grid_column_identifier,
-                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], prefixName)
+                 grid, buildingCutted,grid_column_identifier,
+                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],  false, prefixName)
         if (roofFractionDistributionExact) {
             indicatorTablesToJoin.put(roofFractionDistributionExact, grid_column_identifier)
         } else {
@@ -1907,7 +1909,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
             }
             def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution(datasource,
                     createScalesRelationsGridBl, grid, grid_column_identifier,
-                    [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], 12, prefixName,)
+                    [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], 12, true, prefixName)
             if (frontalAreaIndexDistribution) {
                 indicatorTablesToJoin.put(frontalAreaIndexDistribution, grid_column_identifier)
             } else {
@@ -1958,7 +1960,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
 
-    if (list_indicators*.toUpperCase().contains("SVF_FRACTION") &&  building) {
+    if (list_indicators*.toUpperCase().contains("SVF") &&  building) {
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
             createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
@@ -1980,7 +1982,58 @@ String rasterizeIndicators(JdbcDataSource datasource,
         tablesToDrop<<svf_fraction
     }
 
-    tablesToDrop<<createScalesRelationsGridBl
+    if (list_indicators*.toUpperCase().contains("HEIGHT_OF_ROUGHNESS_ELEMENTS") &&  building) {
+        def heightColumnName = "height_roof"
+        def facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50]
+        def facadeDensNumberOfDirection = 12
+        if (!createScalesRelationsGridBl) {
+            // Create the relations between grid cells and buildings
+            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,
+                    building, grid, grid_column_identifier, null,
+                    prefixName)
+            if (!createScalesRelationsGridBl) {
+                info "Cannot compute the scales relations between buildings and grid cells."
+                return
+            }
+        }
+        def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution(datasource,
+                createScalesRelationsGridBl, grid, grid_column_identifier,
+                facadeDensListLayersBottom, facadeDensNumberOfDirection, false, prefixName,)
+        if (frontalAreaIndexDistribution) {
+            indicatorTablesToJoin.put(frontalAreaIndexDistribution, grid_column_identifier)
+        } else {
+            info "Cannot compute the frontal area index at grid scale."
+        }
+
+        def tablesToJoin =[:]
+        tablesToJoin.put(frontalAreaIndexDistribution, grid_column_identifier)
+        tablesToJoin.put(computeBuildingStats, grid_column_identifier)
+        tablesToJoin.put(grid, grid_column_identifier)
+
+        tablesToDrop<<frontalAreaIndexDistribution
+
+        def grid_for_roughness = Geoindicators.DataUtils.joinTables(datasource,tablesToJoin, "grid_for_roughness")
+        if (!grid_for_roughness) {
+            info "Cannot prepare the grid roughness indicators."
+            return
+        }
+
+        tablesToDrop<<grid_for_roughness
+
+        def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, grid_for_roughness,
+                grid_column_identifier,
+                "projected_facade_area_distribution",
+                "geom_avg_$heightColumnName",
+                facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
+        if (!effRoughHeight) {
+            info "Cannot compute the the effective terrain roughness length at grid scale."
+            return
+        }
+        indicatorTablesToJoin.put(effRoughHeight, grid_column_identifier)
+        tablesToDrop<<effRoughHeight
+    }
+
+
 
     //Join all indicators at grid scale
     def joinGrids = Geoindicators.DataUtils.joinTables(datasource, indicatorTablesToJoin, grid_indicators_table)
@@ -1997,6 +2050,10 @@ String rasterizeIndicators(JdbcDataSource datasource,
         UPDATE $grid_indicators_table SET ASPECT_RATIO = free_external_facade_density / (1 - building_fraction)
         """.toString())
     }
+
+    tablesToDrop<<createScalesRelationsGridBl
+    tablesToDrop<<buildingCutted
+
     datasource.dropTable(indicatorTablesToJoin.keySet().toArray(new String[0]))
 
     // Remove temporary tables
@@ -2004,6 +2061,33 @@ String rasterizeIndicators(JdbcDataSource datasource,
     return grid_indicators_table
 }
 
+/**
+ * Method to cut the building with a grid or any other table
+ * @param datasource
+ * @param grid
+ * @param building
+ * @return
+ */
+String cutBuilding(JdbcDataSource datasource, String grid, String building){
+    String buildingCutted = postfix("building_cutted")
+    datasource.createSpatialIndex(grid)
+    datasource.createSpatialIndex(building)
+    try {
+        datasource.execute("""
+        DROP TABLE IF EXISTS $buildingCutted;
+        CREATE TABLE $buildingCutted as 
+        SELECT *, ST_AREA(THE_GEOM) AS area from 
+        (SELECT a.* EXCEPT(the_geom), st_intersection(a.the_geom, b.the_geom) as the_geom, b.* EXCEPT(the_geom),
+        (b.HEIGHT_WALL + b.HEIGHT_ROOF) / 2 AS BUILD_HEIGHT
+        FROM $grid as a, $building as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom)) 
+        as foo
+        """.toString())
+    }
+    catch (SQLException ex){
+        buildingCutted = null
+    }
+    return buildingCutted
+}
 /**
  * This process is used to create a grid to aggregate indicators
  *
