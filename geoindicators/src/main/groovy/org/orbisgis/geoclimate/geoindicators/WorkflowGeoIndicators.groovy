@@ -1622,6 +1622,11 @@ String rasterizeIndicators(JdbcDataSource datasource,
         info "The list of indicator names cannot be null or empty"
         return
     }
+
+    //Concert the list of indicators to upper case
+
+    def list_indicators_upper = list_indicators.collect{ it.toUpperCase() }
+
     def tablesToDrop=[]
     // Temporary (and output tables) are created
     def tesselatedSeaLandTab = postfix "TESSELATED_SEA_LAND"
@@ -1635,7 +1640,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     /*
     * Make aggregation process with previous grid and current rsu lcz
     */
-    if (list_indicators.findAll { it.toUpperCase() in ["LCZ_FRACTION", "LCZ_PRIMARY"] } && rsu_lcz) {
+    if (list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY"]) && rsu_lcz) {
         def indicatorName = "LCZ_PRIMARY"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(
                 datasource, grid, grid_column_identifier,
@@ -1644,7 +1649,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
 
-            if (list_indicators*.toUpperCase().contains("LCZ_PRIMARY")) {
+            if (list_indicators_upper.contains("LCZ_PRIMARY")) {
                 def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
                         upperScaleAreaStatistics,  upperScaleAreaStatistics, grid_column_identifier,
                         ["equality", "uniqueness"],
@@ -1693,7 +1698,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     /*
     * Make aggregation process with previous grid and current rsu urban typo area
     */
-    if (list_indicators*.toUpperCase().contains("UTRF_AREA_FRACTION") && rsu_utrf_area) {
+    if (list_indicators_upper.contains("UTRF_AREA_FRACTION") && rsu_utrf_area) {
         String indicatorName = "TYPO_MAJ"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
                 grid, grid_column_identifier, rsu_utrf_area,
@@ -1705,7 +1710,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
     }
 
-    if (list_indicators*.toUpperCase().contains("UTRF_FLOOR_AREA_FRACTION") && rsu_utrf_floor_area) {
+    if (list_indicators_upper.contains("UTRF_FLOOR_AREA_FRACTION") && rsu_utrf_floor_area) {
         def indicatorName = "TYPO_MAJ"
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
                 grid, grid_column_identifier, rsu_utrf_floor_area, indicatorName, "FLOOR_AREA_TYPO_MAJ", false,
@@ -1727,28 +1732,28 @@ String rasterizeIndicators(JdbcDataSource datasource,
     def unweightedBuildingIndicators = [:]
     def weightedBuildingIndicators = [:]
     def height_roof_unweighted_list =[]
-    list_indicators.each {
-        if (it.equalsIgnoreCase("BUILDING_FRACTION")
-                || it.equalsIgnoreCase("BUILDING_SURFACE_DENSITY") ||
-                it.equalsIgnoreCase("ASPECT_RATIO")) {
+    list_indicators_upper.each {
+        if (it == "BUILDING_FRACTION"
+                || it=="BUILDING_SURFACE_DENSITY" ||
+                it=="ASPECT_RATIO") {
             columnFractionsList.put(priorities.indexOf("building"), "building")
-        } else if (it.equalsIgnoreCase("WATER_FRACTION")) {
+        } else if (it=="WATER_FRACTION") {
             columnFractionsList.put(priorities.indexOf("water"), "water")
-        } else if (it.equalsIgnoreCase("VEGETATION_FRACTION")) {
+        } else if (it=="VEGETATION_FRACTION") {
             columnFractionsList.put(priorities.indexOf("high_vegetation"), "high_vegetation")
             columnFractionsList.put(priorities.indexOf("low_vegetation"), "low_vegetation")
-        } else if (it.equalsIgnoreCase("ROAD_FRACTION")) {
+        } else if (it=="ROAD_FRACTION") {
             columnFractionsList.put(priorities.indexOf("road"), "road")
-        } else if (it.equalsIgnoreCase("IMPERVIOUS_FRACTION")) {
+        } else if (it=="IMPERVIOUS_FRACTION") {
             columnFractionsList.put(priorities.indexOf("impervious"), "impervious")
-        } else if (it.equalsIgnoreCase("BUILDING_HEIGHT") && building) {
+        } else if (it=="BUILDING_HEIGHT" && building) {
             height_roof_unweighted_list.addAll( ["AVG", "STD"])
-        } else if (it.equalsIgnoreCase("BUILDING_HEIGHT_WEIGHTED") && building) {
+        } else if (it=="BUILDING_HEIGHT_WEIGHTED" && building) {
             weightedBuildingIndicators["height_roof"] = ["area": ["AVG", "STD"]]
-        } else if (it.equalsIgnoreCase("BUILDING_POP") && building) {
+        } else if (it=="BUILDING_POP" && building) {
             unweightedBuildingIndicators.put("pop", ["SUM"])
         }
-        else if (it.equalsIgnoreCase("HEIGHT_OF_ROUGHNESS_ELEMENTS") && building) {
+        else if (it=="HEIGHT_OF_ROUGHNESS_ELEMENTS" && building) {
             height_roof_unweighted_list.add("GEOM_AVG")
         }
     }
@@ -1818,7 +1823,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     }
 
-    if (list_indicators*.toUpperCase().contains("BUILDING_TYPE") && building) {
+    if (list_indicators_upper.contains("BUILDING_TYPE") && building) {
         if (!buildingCutted) {
             buildingCutted = cutBuilding(datasource, grid, building)
             if(!buildingCutted){
@@ -1839,10 +1844,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
     }
 
-    def freeFacadeDensityExact
 
-    if ((list_indicators*.toUpperCase().containsAll(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO"]) && building) ||
-            (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY") && building)) {
+
+    if ((list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO", "BUILDING_SURFACE_DENSITY"]) && building)) {
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
             createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,
@@ -1853,20 +1857,20 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 return
             }
         }
-        freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(datasource, createScalesRelationsGridBl,
+        def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(datasource, createScalesRelationsGridBl,
                 grid, grid_column_identifier, prefixName)
         if (freeFacadeDensityExact) {
-            if (list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")) {
+            if (list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO"])) {
                 indicatorTablesToJoin.put(freeFacadeDensityExact, grid_column_identifier)
             }
-            if (list_indicators*.toUpperCase().contains("FREE_EXTERNAL_FACADE_DENSITY")) {
+            if (list_indicators_upper.contains("FREE_EXTERNAL_FACADE_DENSITY")) {
                 def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity(
                         datasource, freeFacadeDensityExact,
                         surfaceFractionsProcess,
                         "FREE_EXTERNAL_FACADE_DENSITY",
                         "building_fraction", grid_column_identifier, prefixName)
                 if (buildingSurfDensity) {
-                    if (list_indicators*.toUpperCase().contains("BUILDING_SURFACE_DENSITY")) {
+                    if (list_indicators_upper.contains("BUILDING_SURFACE_DENSITY")) {
                         indicatorTablesToJoin.put(buildingSurfDensity, grid_column_identifier)
                     }
                 }
@@ -1877,7 +1881,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
 
-    if (list_indicators*.toUpperCase().contains("BUILDING_HEIGHT_DIST") && building) {
+    if (list_indicators_upper.contains("BUILDING_HEIGHT_DIST") && building) {
         if (!buildingCutted) {
             buildingCutted = cutBuilding(datasource, grid, building)
             if(!buildingCutted){
@@ -1895,7 +1899,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
     }
 
-    if (list_indicators*.toUpperCase().contains("FRONTAL_AREA_INDEX") && building) {
+    if (list_indicators_upper.contains("FRONTAL_AREA_INDEX") && building) {
         if (!datasource.getTable(building).isEmpty()) {
             if (!createScalesRelationsGridBl) {
                 // Create the relations between grid cells and buildings
@@ -1918,11 +1922,11 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
     }
 
-    if (list_indicators*.toUpperCase().contains("SEA_LAND_FRACTION") && sea_land_mask) {
+    if (list_indicators_upper.contains("SEA_LAND_FRACTION") && sea_land_mask) {
         // If only one type of surface (land or sea) is in the zone, no need for computational fraction calculation
         def sea_land_type_rows = datasource.rows("""SELECT $seaLandTypeField, COUNT(*) AS NB_TYPES
                                                                     FROM $sea_land_mask
-                                                                    GROUP BY $seaLandTypeField""")
+                                                                    GROUP BY $seaLandTypeField""".toString())
         if (sea_land_type_rows[seaLandTypeField].count("sea") == 0) {
             datasource """ 
                             DROP TABLE IF EXISTS $seaLandFractionTab;
@@ -1960,7 +1964,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
 
-    if (list_indicators*.toUpperCase().contains("SVF") &&  building) {
+    if (list_indicators_upper.contains("SVF") &&  building) {
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
             createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
@@ -1982,7 +1986,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         tablesToDrop<<svf_fraction
     }
 
-    if (list_indicators*.toUpperCase().contains("HEIGHT_OF_ROUGHNESS_ELEMENTS") &&  building) {
+    if (list_indicators_upper.contains("HEIGHT_OF_ROUGHNESS_ELEMENTS") &&  building) {
         def heightColumnName = "height_roof"
         def facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50]
         def facadeDensNumberOfDirection = 12
@@ -2022,7 +2026,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
         def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, grid_for_roughness,
                 grid_column_identifier,
-                "projected_facade_area_distribution",
+                "frontal_area_index",
                 "geom_avg_$heightColumnName",
                 facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
         if (!effRoughHeight) {
@@ -2043,7 +2047,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     //Compute the aspect_ratio
-    if (list_indicators*.toUpperCase().contains("ASPECT_RATIO") && building){
+    if (list_indicators_upper.contains("ASPECT_RATIO") && building){
         //Because all other indicators have been yet computed we just alter the table with the aspect_ratio column
         datasource.execute("""
         ALTER TABLE $grid_indicators_table ADD COLUMN ASPECT_RATIO DOUBLE PRECISION;

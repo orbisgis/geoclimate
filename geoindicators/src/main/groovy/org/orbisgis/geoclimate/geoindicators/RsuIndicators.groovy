@@ -861,14 +861,16 @@ String effectiveTerrainRoughnessLength(JdbcDataSource datasource, String rsuTabl
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
 
+    def layerSize = listLayersBottom.size()
     // The lambda_f indicator is first calculated
     def lambdaQuery = "DROP TABLE IF EXISTS $lambdaTable;" +
             "CREATE TABLE $lambdaTable AS SELECT $ID_COLUMN_RSU, $geometricMeanBuildingHeightName, ("
-    for (int i in 1..listLayersBottom.size()) {
+    for (int i in 1..layerSize) {
+        //TODO : why an array here and not a variable
         names[i - 1] = "${projectedFacadeAreaName}_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
-        if (i == listLayersBottom.size()) {
-            names[listLayersBottom.size() - 1] =
-                    "${projectedFacadeAreaName}_H${listLayersBottom[listLayersBottom.size() - 1]}"
+        if (i == layerSize) {
+            names[layerSize - 1] =
+                    "${projectedFacadeAreaName}_H${listLayersBottom[layerSize - 1]}"
         }
         for (int d = 0; d < numberOfDirection / 2; d++) {
             def dirDeg = d * 360 / numberOfDirection
@@ -2017,6 +2019,9 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
         dirList.each { k, v ->
             // Indicator name
             def indicName = "FRONTAL_AREA_INDEX_H${layer_bottom}_${layer_top}_D${k * angleRangeDeg}_${(k + 1) * angleRangeDeg}"
+            if(!distributionAsIndex){
+                indicName = "FRONTAL_AREA_INDEX_H${layer_bottom}_D${k * angleRangeDeg}_${(k + 1) * angleRangeDeg}"
+            }
             // Define query to calculate the vertical fraction of projected facade for buildings and shared facades
             dirQueryVertFrac[k] = """
                                             CASE WHEN $v-AZIMUTH > 0 AND $v-AZIMUTH < PI()

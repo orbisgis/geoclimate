@@ -676,8 +676,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          "rsu_indicators"                                       : [
                                  "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
                          ],"grid_indicators": [
-                                "x_size": 1000,
-                                "y_size": 1000,
+                                "x_size": 100,
+                                "y_size": 100,
                                 //"rowCol": true,
                                 "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
                                                 "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
