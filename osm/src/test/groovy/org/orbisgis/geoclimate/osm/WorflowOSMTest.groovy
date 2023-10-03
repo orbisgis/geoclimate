@@ -682,9 +682,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
                                                 "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                                "BUILDING_HEIGHT_DIST",  "SEA_LAND_FRACTION",
-                                                "ASPECT_RATIO","SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS"]
+                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
+                                                "ASPECT_RATIO","SVF",
+                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
                         ],    "worldpop_indicators": false,
                          "road_traffic"                                         : false,
                          "noise_indicators"                                     : [

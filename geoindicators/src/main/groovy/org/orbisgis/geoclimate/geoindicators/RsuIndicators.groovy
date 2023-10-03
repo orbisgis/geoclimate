@@ -1094,6 +1094,7 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
  * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
  * the resulting database will be stored
  * @param rsuTable the name of the input ITable where are stored the effectiveTerrainRoughnessHeight values
+ * @param id_rsu Unique identifier column name
  * @param effectiveTerrainRoughnessLength the field name corresponding to the RSU effective terrain roughness class due
  * to roughness elements (buildings, trees, etc.) (in the rsuTable)
  * @param prefixName String use as prefix to name the output table
@@ -1102,8 +1103,7 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
  *
  * @author Jérémy Bernard
  */
-String effectiveTerrainRoughnessClass(JdbcDataSource datasource, String rsu, String effectiveTerrainRoughnessLength, String prefixName) {
-    def ID_COLUMN_RSU = "id_rsu"
+String effectiveTerrainRoughnessClass(JdbcDataSource datasource, String rsu, String id_rsu,  String effectiveTerrainRoughnessLength, String prefixName) {
     def BASE_NAME = "effective_terrain_roughness_class"
 
     debug "Executing RSU effective terrain roughness class"
@@ -1113,7 +1113,7 @@ String effectiveTerrainRoughnessClass(JdbcDataSource datasource, String rsu, Str
 
     // Based on the lookup Table of Davenport
     datasource """DROP TABLE IF EXISTS $outputTableName;
-                    CREATE TABLE $outputTableName AS SELECT $ID_COLUMN_RSU, 
+                    CREATE TABLE $outputTableName AS SELECT $id_rsu, 
                     CASEWHEN($effectiveTerrainRoughnessLength<0.0 OR $effectiveTerrainRoughnessLength IS NULL, null,
                     CASEWHEN($effectiveTerrainRoughnessLength<0.00035, 1,
                     CASEWHEN($effectiveTerrainRoughnessLength<0.01525, 2,

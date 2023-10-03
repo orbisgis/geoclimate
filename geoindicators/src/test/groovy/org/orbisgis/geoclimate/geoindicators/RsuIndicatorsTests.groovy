@@ -344,7 +344,7 @@ class RsuIndicatorsTests {
         h2GIS "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
                 "CASEWHEN(id_rsu = 2, 0.1, null)) AS effective_terrain_roughness_length FROM rsu_test"
 
-        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(h2GIS, "rsu_tempo", "effective_terrain_roughness_length",
+        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(h2GIS, "rsu_tempo","id_rsu", "effective_terrain_roughness_length",
                 "test")
         assertNotNull(p)
         def concat = ""

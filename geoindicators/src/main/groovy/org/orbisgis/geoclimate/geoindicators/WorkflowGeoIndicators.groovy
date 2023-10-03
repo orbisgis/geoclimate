@@ -367,7 +367,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                      angleRangeSizeBuDirection     : 30,
                                      svfSimplified                 : true,
                                      indicatorUse                  : ["LCZ", "UTRF", "TEB"],
-                                     surfSuperpositions            : ["high_vegetation": ["water", "building", "low_vegetation", "rail","road", "impervious"]],
+                                     surfSuperpositions            : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
                                      surfPriorities                : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
                                      buildingAreaTypeAndComposition: ["light_industry": ["light_industry"],
                                                                       "heavy_industry": ["heavy_industry"],
@@ -422,7 +422,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     def columnIdRsu = "id_rsu"
     def columnIdBuild = "id_build"
     def BASE_NAME = "rsu_indicators"
-    def tablesToDrop=[]
+    def tablesToDrop = []
     // Maps for intermediate or final joins
     def finalTablesToJoin = [:]
     def intermediateJoin = [:]
@@ -450,9 +450,9 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     if (!surfaceFractions) {
         // Calculate all surface fractions indicators
         // Need to create the smallest geometries used as input of the surface fraction process
-            def superpositionsTable = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
+        def superpositionsTable = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
                 rsu, "id_rsu", buildingTable, road, water, vegetation,
-                impervious,rail, temporaryPrefName)
+                impervious, rail, temporaryPrefName)
         if (!superpositionsTable) {
             info "Cannot compute the smallest commun geometries"
             return
@@ -467,7 +467,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
             return
         }
 
-        tablesToDrop<<superpositionsTable
+        tablesToDrop << superpositionsTable
 
         surfaceFractions = computeSurfaceFractions
     }
@@ -694,7 +694,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                             AS SELECT 1-extended_free_facade_fraction AS GROUND_SKY_VIEW_FACTOR, $columnIdRsu 
                             FROM ${computeExtFF}; DROP TABLE ${computeExtFF}""".toString()
         } else {
-            def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource, intermediateJoinTable,"id_rsu",
+            def computeSVF = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource, intermediateJoinTable, "id_rsu",
                     buildingTable, parameters.svfPointDensity,
                     parameters.svfRayLength, parameters.svfNumberOfDirection,
                     temporaryPrefName)
@@ -710,7 +710,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // rsu_effective_terrain_roughness
     if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
         // Create the join tables to have all needed input fields for aspect ratio computation
-        def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, intermediateJoinTable,"id_rsu",
+        def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, intermediateJoinTable, "id_rsu",
                 "projected_facade_area_distribution",
                 "geom_avg_$heightColumnName",
                 facadeDensListLayersBottom, facadeDensNumberOfDirection, temporaryPrefName)
@@ -722,7 +722,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
 
         // rsu_terrain_roughness_class
         if (indicatorUse*.toUpperCase().contains("LCZ")) {
-            def roughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(datasource, effRoughHeight, "effective_terrain_roughness_length", temporaryPrefName)
+            def roughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(datasource, effRoughHeight, "id_rsu", "effective_terrain_roughness_length", temporaryPrefName)
             if (!roughClass) {
                 info "Cannot compute the roughness class."
                 return
@@ -804,7 +804,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                               String rsu_indicators, Map parameters, String prefixName) {
     info "Start computing Typology indicators..."
 
-    def tablesToDrop=[]
+    def tablesToDrop = []
     def indicatorUse = parameters.indicatorUse
     def utrfModelName = parameters.utrfModelName
     def mapOfWeights = parameters.mapOfWeights
@@ -832,8 +832,8 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
 
     // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
     def rsuLcz = null
-    def utrfArea = "UTRF_RSU_AREA"+baseNameUtrfRsu
-    def utrfFloorArea = "UTRF_RSU_FLOOR_AREA"+baseNameUtrfRsu
+    def utrfArea = "UTRF_RSU_AREA" + baseNameUtrfRsu
+    def utrfFloorArea = "UTRF_RSU_FLOOR_AREA" + baseNameUtrfRsu
 
     if (indicatorUse.contains("LCZ")) {
         info """ The LCZ classification will be performed """
@@ -855,7 +855,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                                 CREATE TABLE $lczIndicTable 
                                         AS SELECT $COLUMN_ID_RSU, $GEOMETRIC_COLUMN, ${queryReplaceNames.join(",")} 
                                         FROM ${rsu_indicators};""".toString()
-        tablesToDrop<<lczIndicTable
+        tablesToDrop << lczIndicTable
 
         // The classification algorithm is called
         def classifyLCZ = Geoindicators.TypologyClassification.identifyLczType(datasource, lczIndicTable,
@@ -879,7 +879,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                 building_indicators, block_indicators,
                 rsu_indicators, "BUILDING",
                 ["AVG", "STD"], prefixName)
-        tablesToDrop<<gatheredScales
+        tablesToDrop << gatheredScales
         if (!datasource.isEmpty(gatheredScales)) {
             def utrfBuild = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
                     gatheredScales, utrfModelName, COLUMN_ID_BUILD, prefixName)
@@ -888,14 +888,14 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                 return
             }
 
-            tablesToDrop<<utrfBuild
+            tablesToDrop << utrfBuild
 
             // Creation of a list which contains all types of the urban typology (in their string version)
             def urbTypoCorrespondenceTabInverted = [:]
             CORRESPONDENCE_TAB_UTRF.each { fin, ini ->
                 urbTypoCorrespondenceTabInverted[ini] = fin
             }
-            datasource.createIndex(utrfBuild,"I_TYPO")
+            datasource.createIndex(utrfBuild, "I_TYPO")
             def queryDistinct = """SELECT DISTINCT I_TYPO AS I_TYPO FROM $utrfBuild"""
             def mapTypos = datasource.rows(queryDistinct.toString())
             def listTypos = []
@@ -912,8 +912,8 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
             }
             queryCaseWhenReplace = queryCaseWhenReplace + " 'unknown' " + endCaseWhen
             utrfBuilding = postfix "UTRF_BUILDING"
-            datasource.createIndex(utrfBuild,COLUMN_ID_BUILD)
-            datasource.createIndex(building_indicators,COLUMN_ID_BUILD)
+            datasource.createIndex(utrfBuild, COLUMN_ID_BUILD)
+            datasource.createIndex(building_indicators, COLUMN_ID_BUILD)
             datasource """  DROP TABLE IF EXISTS $utrfBuilding;
                                 CREATE TABLE $utrfBuilding
                                     AS SELECT   a.$COLUMN_ID_BUILD, a.$COLUMN_ID_RSU, a.THE_GEOM,
@@ -926,9 +926,9 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
             def queryCasewhen = [:]
             queryCasewhen["AREA"] = ""
             queryCasewhen["FLOOR_AREA"] = ""
-            datasource.createIndex(rsu_indicators,COLUMN_ID_RSU)
-            datasource.createIndex(building_indicators,COLUMN_ID_RSU)
-            datasource.createIndex(utrfBuilding,COLUMN_ID_BUILD)
+            datasource.createIndex(rsu_indicators, COLUMN_ID_RSU)
+            datasource.createIndex(building_indicators, COLUMN_ID_RSU)
+            datasource.createIndex(utrfBuilding, COLUMN_ID_BUILD)
 
             queryCasewhen.keySet().each { ind ->
                 def querySum = ""
@@ -946,26 +946,26 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                                                 WHERE b.$COLUMN_ID_RSU IS NOT NULL 
                                                 GROUP BY b.$COLUMN_ID_RSU
                                                 """.toString()
-                tablesToDrop<<distribNotPercent
+                tablesToDrop << distribNotPercent
                 // Calculates the frequency by RSU
-                datasource.createIndex(distribNotPercent,COLUMN_ID_RSU)
+                datasource.createIndex(distribNotPercent, COLUMN_ID_RSU)
                 datasource.execute """  DROP TABLE IF EXISTS TEMPO_DISTRIB;
                                             CREATE TABLE TEMPO_DISTRIB
                                                 AS SELECT   a.$COLUMN_ID_RSU, a.the_geom,
                                                             ${querySum[0..-2]} 
                                                 FROM $rsu_indicators a LEFT JOIN $distribNotPercent b
                                                 ON a.$COLUMN_ID_RSU = b.$COLUMN_ID_RSU""".toString()
-                tablesToDrop<<"TEMPO_DISTRIB"
+                tablesToDrop << "TEMPO_DISTRIB"
                 // Characterize the distribution to identify the 2 most frequent type within a RSU
                 def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(
                         datasource, "TEMPO_DISTRIB",
                         "TEMPO_DISTRIB", COLUMN_ID_RSU, ["uniqueness"],
                         "GREATEST", true, false, "${prefixName}$ind")
-                tablesToDrop<<resultsDistrib
+                tablesToDrop << resultsDistrib
                 // Join main typo table with distribution table and replace typo by null when it has been set
                 // while there is no building in the RSU
-                datasource.createIndex(resultsDistrib,COLUMN_ID_RSU)
-                datasource.createIndex("tempo_distrib",COLUMN_ID_RSU)
+                datasource.createIndex(resultsDistrib, COLUMN_ID_RSU)
+                datasource.createIndex("tempo_distrib", COLUMN_ID_RSU)
                 datasource """  DROP TABLE IF EXISTS UTRF_RSU_$ind$baseNameUtrfRsu;
                                     CREATE TABLE UTRF_RSU_$ind$baseNameUtrfRsu
                                         AS SELECT   a.*, 
@@ -1026,7 +1026,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
                           double surface_hydro, double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
     info "Create the units of analysis..."
     def idRsu = "id_rsu"
-    def tablesToDrop=[]
+    def tablesToDrop = []
     if (!rsu) {
         // Create the RSU
         rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone, road, rail,
@@ -1071,7 +1071,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
         }
         datasource.dropTable(createBlocks)
         inputLowerScaleBuRsu = createScalesRelationsBlBu
-        tablesToDrop<<inputLowerScaleBuRsu
+        tablesToDrop << inputLowerScaleBuRsu
     }
 
 
@@ -1090,7 +1090,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
     //Replace the building table with a new one that contains the relations between block and RSU
     datasource.execute("""DROP TABLE IF EXISTS $building;
             ALTER TABLE $createScalesRelationsRsuBlBu RENAME TO $building; """.toString())
-    tablesToDrop<<createScalesRelationsRsuBlBu
+    tablesToDrop << createScalesRelationsRsuBlBu
     datasource.dropTable(tablesToDrop)
 
     return ["building": building,
@@ -1123,8 +1123,8 @@ Map getParameters() {
             "inputFields"                   : ["id_build", "the_geom"],
             "levelForRoads"                 : [0],
             "angleRangeSizeBuDirection"     : 30,
-            "surfSuperpositions"            : ["high_vegetation": ["water", "building", "low_vegetation", "rail","road", "impervious"]],
-            "surfPriorities"                : ["water", "building", "high_vegetation", "low_vegetation","rail", "road", "impervious"],
+            "surfSuperpositions"            : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
+            "surfPriorities"                : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
             "buildingAreaTypeAndComposition": ["light_industry": ["light_industry"],
                                                "heavy_industry": ["heavy_industry"],
                                                "commercial"    : ["commercial"],
@@ -1232,7 +1232,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
                 road, rail, vegetation,
                 water, impervious,
                 buildingEstimateTableName,
-                sea_land_mask,rsuTable,
+                sea_land_mask, rsuTable,
                 surface_vegetation, surface_hydro,
                 snappingTolerance,
                 buildingHeightModelName, prefixName)
@@ -1298,11 +1298,11 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         }
 
         //Compute Geoindicators (at all scales + typologies)
-        parameters.nbBuildingEstimated=nbBuildingEstimated
+        parameters.nbBuildingEstimated = nbBuildingEstimated
         Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
                 buildingForGeoCalc, blocksForGeoCalc,
                 rsuForGeoCalc, road, vegetation,
-                water, impervious,rail, inputParameters, prefixName)
+                water, impervious, rail, inputParameters, prefixName)
         if (!geoIndicators) {
             error "Cannot build the geoindicators"
             datasource.dropTable(blocksForGeoCalc, rsuForGeoCalc, buildingIndicatorsForHeightEst, rsuIndicatorsForHeightEst)
@@ -1336,7 +1336,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 
         Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
                 relationBuildings, relationBlocks,
-                rsuTable, road, vegetation, water, impervious, rail,inputParameters, prefixName)
+                rsuTable, road, vegetation, water, impervious, rail, inputParameters, prefixName)
         if (!geoIndicators) {
             error "Cannot build the geoindicators"
             return
@@ -1375,7 +1375,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     //Create spatial units and relations : building, block, rsu
     Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
             building, road, rail, vegetation,
-            water, sea_land_mask,rsu,
+            water, sea_land_mask, rsu,
             surface_vegetation, surface_hydro, snappingTolerance, ["UTRF"],
             prefixName)
     if (!spatialUnits) {
@@ -1389,8 +1389,8 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     // Calculates indicators needed for the building height estimation algorithm
     Map geoIndicatorsEstH = computeGeoclimateIndicators(datasource, zone,
             relationBuildings, relationBlocks, rsuTable, road,
-            vegetation, water, impervious,rail,
-            getParameters([indicatorUse:  ["UTRF"]]), prefixName)
+            vegetation, water, impervious, rail,
+            getParameters([indicatorUse: ["UTRF"]]), prefixName)
     if (!geoIndicatorsEstH) {
         error "Cannot build the geoindicators to estimate the building height"
         return
@@ -1451,7 +1451,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
 
         nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
 
-        datasource.createIndex(buildEstimatedHeight,"id_build")
+        datasource.createIndex(buildEstimatedHeight, "id_build")
 
         def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
@@ -1532,7 +1532,7 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String b
     def rsuIndicators = computeRSUIndicators(datasource, buildingIndicators,
             rsu, vegetation,
             road, water,
-            impervious, rail,  parameters, prefixName)
+            impervious, rail, parameters, prefixName)
     if (!rsuIndicators) {
         error "Cannot compute the RSU indicators"
         return null
@@ -1625,9 +1625,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     //Concert the list of indicators to upper case
 
-    def list_indicators_upper = list_indicators.collect{ it.toUpperCase() }
+    def list_indicators_upper = list_indicators.collect { it.toUpperCase() }
 
-    def tablesToDrop=[]
+    def tablesToDrop = []
     // Temporary (and output tables) are created
     def tesselatedSeaLandTab = postfix "TESSELATED_SEA_LAND"
     def seaLandFractionTab = postfix "SEA_LAND_FRACTION"
@@ -1644,14 +1644,14 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def indicatorName = "LCZ_PRIMARY"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(
                 datasource, grid, grid_column_identifier,
-                rsu_lcz, indicatorName,indicatorName,
+                rsu_lcz, indicatorName, indicatorName,
                 false, "lcz")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
 
             if (list_indicators_upper.contains("LCZ_PRIMARY")) {
                 def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
-                        upperScaleAreaStatistics,  upperScaleAreaStatistics, grid_column_identifier,
+                        upperScaleAreaStatistics, upperScaleAreaStatistics, grid_column_identifier,
                         ["equality", "uniqueness"],
                         "GREATEST", true, true,
                         "lcz")
@@ -1663,8 +1663,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;""".toString()
 
                 // Need to replace the string LCZ values by an integer
-                datasource.createIndex(resultsDistrib,"lcz_primary")
-                datasource.createIndex(resultsDistrib,"lcz_secondary")
+                datasource.createIndex(resultsDistrib, "lcz_primary")
+                datasource.createIndex(resultsDistrib, "lcz_secondary")
                 def casewhenQuery1 = ""
                 def casewhenQuery2 = ""
                 def parenthesis = ""
@@ -1686,7 +1686,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                                                     MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
                                         FROM $resultsDistrib;
                                 DROP TABLE IF EXISTS $resultsDistrib""".toString()
-                tablesToDrop<<resultsDistrib
+                tablesToDrop << resultsDistrib
                 indicatorTablesToJoin.put(distribLczTableInt, grid_column_identifier)
             }
 
@@ -1702,7 +1702,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         String indicatorName = "TYPO_MAJ"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
                 grid, grid_column_identifier, rsu_utrf_area,
-                indicatorName,"AREA_TYPO_MAJ", false, "utrf_area")
+                indicatorName, "AREA_TYPO_MAJ", false, "utrf_area")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
         } else {
@@ -1731,34 +1731,33 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     def unweightedBuildingIndicators = [:]
     def weightedBuildingIndicators = [:]
-    def height_roof_unweighted_list =[]
+    def height_roof_unweighted_list = []
     list_indicators_upper.each {
         if (it == "BUILDING_FRACTION"
-                || it=="BUILDING_SURFACE_DENSITY" ||
-                it=="ASPECT_RATIO") {
+                || it == "BUILDING_SURFACE_DENSITY" ||
+                it == "ASPECT_RATIO") {
             columnFractionsList.put(priorities.indexOf("building"), "building")
-        } else if (it=="WATER_FRACTION") {
+        } else if (it == "WATER_FRACTION") {
             columnFractionsList.put(priorities.indexOf("water"), "water")
-        } else if (it=="VEGETATION_FRACTION") {
+        } else if (it == "VEGETATION_FRACTION") {
             columnFractionsList.put(priorities.indexOf("high_vegetation"), "high_vegetation")
             columnFractionsList.put(priorities.indexOf("low_vegetation"), "low_vegetation")
-        } else if (it=="ROAD_FRACTION") {
+        } else if (it == "ROAD_FRACTION") {
             columnFractionsList.put(priorities.indexOf("road"), "road")
-        } else if (it=="IMPERVIOUS_FRACTION") {
+        } else if (it == "IMPERVIOUS_FRACTION") {
             columnFractionsList.put(priorities.indexOf("impervious"), "impervious")
-        } else if (it=="BUILDING_HEIGHT" && building) {
-            height_roof_unweighted_list.addAll( ["AVG", "STD"])
-        } else if (it=="BUILDING_HEIGHT_WEIGHTED" && building) {
+        } else if (it == "BUILDING_HEIGHT" && building) {
+            height_roof_unweighted_list.addAll(["AVG", "STD"])
+        } else if (it == "BUILDING_HEIGHT_WEIGHTED" && building) {
             weightedBuildingIndicators["height_roof"] = ["area": ["AVG", "STD"]]
-        } else if (it=="BUILDING_POP" && building) {
+        } else if (it == "BUILDING_POP" && building) {
             unweightedBuildingIndicators.put("pop", ["SUM"])
-        }
-        else if (it=="HEIGHT_OF_ROUGHNESS_ELEMENTS" && building) {
+        } else if (it == "HEIGHT_OF_ROUGHNESS_ELEMENTS" && building) {
             height_roof_unweighted_list.add("GEOM_AVG")
         }
     }
-    if(height_roof_unweighted_list){
-        unweightedBuildingIndicators.put("height_roof",height_roof_unweighted_list)
+    if (height_roof_unweighted_list) {
+        unweightedBuildingIndicators.put("height_roof", height_roof_unweighted_list)
     }
 
     // Calculate all surface fractions indicators on the GRID cell
@@ -1776,7 +1775,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
             if (surfaceFractionsProcess) {
                 indicatorTablesToJoin.put(surfaceFractionsProcess, grid_column_identifier)
             }
-            tablesToDrop<<superpositionsTableGrid
+            tablesToDrop << superpositionsTableGrid
         } else {
             info "Cannot compute the surface fractions at grid scale"
         }
@@ -1808,7 +1807,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     if (weightedBuildingIndicators) {
         //Cut the building to compute exact fractions
         buildingCutted = cutBuilding(datasource, grid, building)
-        if(!buildingCutted){
+        if (!buildingCutted) {
             info "Cannot split the building with the grid to compute the weighted statistics"
             return
         }
@@ -1826,7 +1825,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     if (list_indicators_upper.contains("BUILDING_TYPE") && building) {
         if (!buildingCutted) {
             buildingCutted = cutBuilding(datasource, grid, building)
-            if(!buildingCutted){
+            if (!buildingCutted) {
                 info "Cannot split the building with the grid to compute the weighted statistics"
                 return
             }
@@ -1835,7 +1834,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource, grid,
                 grid_column_identifier,
                 buildingCutted,
-                indicatorName, indicatorName,false,
+                indicatorName, indicatorName, false,
                 "building_type_fraction")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
@@ -1843,7 +1842,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
             info "Cannot aggregate the building type at grid scale"
         }
     }
-
 
 
     if ((list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO", "BUILDING_SURFACE_DENSITY"]) && building)) {
@@ -1884,14 +1882,14 @@ String rasterizeIndicators(JdbcDataSource datasource,
     if (list_indicators_upper.contains("BUILDING_HEIGHT_DIST") && building) {
         if (!buildingCutted) {
             buildingCutted = cutBuilding(datasource, grid, building)
-            if(!buildingCutted){
+            if (!buildingCutted) {
                 info "Cannot split the building with the grid to compute the building height distance"
                 return
             }
         }
         def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact(datasource,
-                 grid, buildingCutted,grid_column_identifier,
-                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],  false, prefixName)
+                grid, buildingCutted, grid_column_identifier,
+                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], false, prefixName)
         if (roofFractionDistributionExact) {
             indicatorTablesToJoin.put(roofFractionDistributionExact, grid_column_identifier)
         } else {
@@ -1947,9 +1945,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
             def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
                     grid, grid_column_identifier,
-                    tesselatedSeaLandTab, seaLandTypeField,seaLandTypeField,
+                    tesselatedSeaLandTab, seaLandTypeField, seaLandTypeField,
                     prefixName)
-            tablesToDrop<<tesselatedSeaLandTab
+            tablesToDrop << tesselatedSeaLandTab
             if (upperScaleAreaStatistics) {
                 // Modify columns name to postfix with "_FRACTION"
                 datasource """ 
@@ -1964,7 +1962,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
 
-    if (list_indicators_upper.contains("SVF") &&  building) {
+    if (list_indicators_upper.contains("SVF") && building) {
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
             createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
@@ -1975,7 +1973,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 return
             }
         }
-        def svf_fraction = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource,grid, grid_column_identifier, createScalesRelationsGridBl,  0.008, 100, 60, "grid")
+        def svf_fraction = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource, grid, grid_column_identifier, createScalesRelationsGridBl, 0.008, 100, 60, "grid")
 
         if (svf_fraction) {
             datasource """  ALTER TABLE ${svf_fraction} RENAME COLUMN GROUND_SKY_VIEW_FACTOR TO SVF_FRACTION""".toString()
@@ -1983,10 +1981,10 @@ String rasterizeIndicators(JdbcDataSource datasource,
         } else {
             info "Cannot compute the sky view factor."
         }
-        tablesToDrop<<svf_fraction
+        tablesToDrop << svf_fraction
     }
 
-    if (list_indicators_upper.contains("HEIGHT_OF_ROUGHNESS_ELEMENTS") &&  building) {
+    if (list_indicators_upper.intersect(["HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]) && building) {
         def heightColumnName = "height_roof"
         def facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50]
         def facadeDensNumberOfDirection = 12
@@ -2003,26 +2001,24 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution(datasource,
                 createScalesRelationsGridBl, grid, grid_column_identifier,
                 facadeDensListLayersBottom, facadeDensNumberOfDirection, false, prefixName,)
-        if (frontalAreaIndexDistribution) {
-            indicatorTablesToJoin.put(frontalAreaIndexDistribution, grid_column_identifier)
-        } else {
+        if (!frontalAreaIndexDistribution) {
             info "Cannot compute the frontal area index at grid scale."
         }
 
-        def tablesToJoin =[:]
+        def tablesToJoin = [:]
         tablesToJoin.put(frontalAreaIndexDistribution, grid_column_identifier)
         tablesToJoin.put(computeBuildingStats, grid_column_identifier)
         tablesToJoin.put(grid, grid_column_identifier)
 
-        tablesToDrop<<frontalAreaIndexDistribution
+        tablesToDrop << frontalAreaIndexDistribution
 
-        def grid_for_roughness = Geoindicators.DataUtils.joinTables(datasource,tablesToJoin, "grid_for_roughness")
+        def grid_for_roughness = Geoindicators.DataUtils.joinTables(datasource, tablesToJoin, "grid_for_roughness")
         if (!grid_for_roughness) {
             info "Cannot prepare the grid roughness indicators."
             return
         }
 
-        tablesToDrop<<grid_for_roughness
+        tablesToDrop << grid_for_roughness
 
         def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, grid_for_roughness,
                 grid_column_identifier,
@@ -2033,10 +2029,21 @@ String rasterizeIndicators(JdbcDataSource datasource,
             info "Cannot compute the the effective terrain roughness length at grid scale."
             return
         }
-        indicatorTablesToJoin.put(effRoughHeight, grid_column_identifier)
-        tablesToDrop<<effRoughHeight
-    }
 
+        indicatorTablesToJoin.put(effRoughHeight, grid_column_identifier)
+        tablesToDrop << effRoughHeight
+
+        if (list_indicators_upper.contains("TERRAIN_ROUGHNESS_CLASS")) {
+            def roughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(datasource, effRoughHeight,
+                    grid_column_identifier, "effective_terrain_roughness_length", prefixName)
+            if (!roughClass) {
+                info "Cannot compute the roughness class."
+                return
+            }
+            indicatorTablesToJoin.put(roughClass, grid_column_identifier)
+            tablesToDrop << roughClass
+        }
+    }
 
 
     //Join all indicators at grid scale
@@ -2047,16 +2054,15 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     //Compute the aspect_ratio
-    if (list_indicators_upper.contains("ASPECT_RATIO") && building){
+    if (list_indicators_upper.contains("ASPECT_RATIO") && building) {
         //Because all other indicators have been yet computed we just alter the table with the aspect_ratio column
         datasource.execute("""
         ALTER TABLE $grid_indicators_table ADD COLUMN ASPECT_RATIO DOUBLE PRECISION;
         UPDATE $grid_indicators_table SET ASPECT_RATIO = free_external_facade_density / (1 - building_fraction)
         """.toString())
     }
-
-    tablesToDrop<<createScalesRelationsGridBl
-    tablesToDrop<<buildingCutted
+    tablesToDrop << createScalesRelationsGridBl
+    tablesToDrop << buildingCutted
 
     datasource.dropTable(indicatorTablesToJoin.keySet().toArray(new String[0]))
 
@@ -2072,7 +2078,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
  * @param building
  * @return
  */
-String cutBuilding(JdbcDataSource datasource, String grid, String building){
+String cutBuilding(JdbcDataSource datasource, String grid, String building) {
     String buildingCutted = postfix("building_cutted")
     datasource.createSpatialIndex(grid)
     datasource.createSpatialIndex(building)
@@ -2087,7 +2093,7 @@ String cutBuilding(JdbcDataSource datasource, String grid, String building){
         as foo
         """.toString())
     }
-    catch (SQLException ex){
+    catch (SQLException ex) {
         buildingCutted = null
     }
     return buildingCutted
