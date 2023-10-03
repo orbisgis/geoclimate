@@ -124,9 +124,9 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(st_buffer(a.the_geom, -0.01), $epsg) AS the_geom
+                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(a.the_geom, $epsg) AS the_geom
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
+                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))), -0.01) AS the_geom 
                                 FROM $inputTableName)') AS a,
                             $inputzone AS b
                         WHERE a.the_geom && b.the_geom 
@@ -136,9 +136,9 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(st_buffer(a.the_geom, -0.01), $epsg) AS the_geom 
+                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(st_buffer(the_geom, -0.01), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
+                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))),-0.01) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
     }
 
