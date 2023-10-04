@@ -170,24 +170,20 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
     // 4. Calculates the free facade density by RSU (subtract 3 and 2 and divide by RSU area)
     datasource.createIndex(buildLineRsu,idRsu)
     datasource.createIndex(sharedLineRsu,idRsu)
-    if(datasource.getRowCount(sharedLineRsu)>0) {
-        datasource """
+    datasource """
                 DROP TABLE IF EXISTS $onlyBuildRsu;
                 CREATE TABLE $onlyBuildRsu
                     AS SELECT   a.$idRsu,
-                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS FREE_EXTERNAL_FACADE_DENSITY
+                                a.$FACADE_AREA/a.$RSU_AREA AS FREE_EXTERNAL_FACADE_DENSITY
                     FROM $buildLineRsu AS a LEFT JOIN $sharedLineRsu AS b
+                    ON a.$idRsu = b.$idRsu  WHERE b.$idRsu IS NULL
+                    union all
+                    SELECT   a.$idRsu,
+                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS FREE_EXTERNAL_FACADE_DENSITY
+                    FROM $buildLineRsu AS a right JOIN $sharedLineRsu AS b
                     ON a.$idRsu = b.$idRsu
             """.toString()
-    }else{
-        datasource """
-                DROP TABLE IF EXISTS $onlyBuildRsu;
-                CREATE TABLE $onlyBuildRsu
-                    AS SELECT   $idRsu,
-                                $FACADE_AREA/$RSU_AREA AS FREE_EXTERNAL_FACADE_DENSITY
-                    FROM $buildLineRsu
-            """.toString()
-    }
+
 
     // 5. Join RSU having no buildings and set their value to 0
     datasource.createIndex(onlyBuildRsu,idRsu)
