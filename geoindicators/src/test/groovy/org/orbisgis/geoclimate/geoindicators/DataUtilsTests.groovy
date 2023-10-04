@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.orbisgis.data.H2GIS.open
@@ -31,7 +32,7 @@ class DataUtilsTests {
 
     @TempDir
     static File folder
-    private static def h2GIS
+    private static H2GIS h2GIS
 
     @BeforeAll
     static void beforeAll() {

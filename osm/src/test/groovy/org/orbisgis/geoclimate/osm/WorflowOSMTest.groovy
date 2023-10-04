@@ -652,6 +652,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
 
+
        //def nominatim = OSMTools.Utilities.getNominatimData("Lorient")
 
         def osm_parmeters = [
@@ -662,7 +663,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": ["Toulouse"],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
+                        "locations": ["Redon"],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                          "area": 2800,
                         /*"timeout":182,
                         "maxsize": 536870918,
@@ -673,22 +674,21 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
-                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
                          ],"grid_indicators": [
                                 "x_size": 100,
                                 "y_size": 100,
                                 //"rowCol": true,
                                 "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
                                                 "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
-                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION",
-                                                "UTRF_FLOOR_AREA_FRACTION",
-                                                "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
-                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                                "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
-                        ],    "worldpop_indicators": true,
-                         "road_traffic"                                         : true,
+                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
+                                                "ASPECT_RATIO","SVF",
+                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
+                        ],    "worldpop_indicators": false,
+                         "road_traffic"                                         : false,
                          "noise_indicators"                                     : [
-                                 "ground_acoustic": true
+                                 "ground_acoustic": false
                          ]
                         ]
         ]

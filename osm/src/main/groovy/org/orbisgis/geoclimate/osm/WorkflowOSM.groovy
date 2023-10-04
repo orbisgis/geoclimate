@@ -445,7 +445,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
             def extract = OSMTools.Loader.extract(query)
             if (extract) {
-                Geometry geomArea = h2gis_datasource.firstRow("select st_extent(the_geom) as the_geom from ${zones.zone}").the_geom
+                Geometry geomArea = h2gis_datasource.firstRow("select st_extent(the_geom) as the_geom from ${zones.zone}".toString()).the_geom
                 geomArea.setSRID(srid)
                 Map gisLayersResults = OSM.InputDataLoading.createGISLayers(h2gis_datasource, extract, geomArea, srid)
                 if (gisLayersResults) {
@@ -846,8 +846,11 @@ def extractProcessingParameters(def processing_parameters) {
                     return
                 }
                 def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION","UTRF_FLOOR_AREA_FRACTION",  "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
-                                               "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
+                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION","UTRF_FLOOR_AREA_FRACTION",
+                                               "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
+                                               "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DIST",
+                                               "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
+                                               "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if (allowedOutputIndicators) {
                     //Update the RSU indicators list according the grid indicators

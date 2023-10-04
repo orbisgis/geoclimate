@@ -73,7 +73,7 @@ String joinTables(JdbcDataSource datasource, Map inputTableNamesWithId, String o
             }
             leftQuery += " LEFT JOIN $key as $alias ON $alias.$value = $columnKey "
         }
-        indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON $key USING BTREE($value);"
+        indexes += "CREATE INDEX IF NOT EXISTS ${key}_ids ON $key ($value);"
         alias++
     }
 

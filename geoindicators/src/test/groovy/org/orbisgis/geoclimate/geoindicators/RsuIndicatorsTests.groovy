@@ -105,6 +105,33 @@ class RsuIndicatorsTests {
     }
 
     @Test
+    void freeExternalFacadeDensityExactTest2() {
+        // Only the first 1 first created buildings are selected for the tests
+        h2GIS """
+                DROP TABLE IF EXISTS tempo_build, tempo_rsu; 
+                CREATE TABLE tempo_build(id_build int, the_geom geometry, height_wall double);
+                INSERT INTO tempo_build VALUES (1, 'POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY, 10),
+                                               (2, 'POLYGON ((10 0, 20 0, 20 20, 10 20, 10 0))'::GEOMETRY, 10),
+                                               (3, 'POLYGON ((30 30, 50 30, 50 50, 30 50, 30 30))'::GEOMETRY, 10),
+                                               (4, 'POLYGON ((120 60, 130 60, 130 50, 120 50, 120 60))'::GEOMETRY, 10);
+                CREATE TABLE tempo_rsu(id_rsu int, the_geom geometry);
+                INSERT INTO tempo_rsu VALUES    (1, 'POLYGON((0 0, 100 0, 100 100, 0 100, 0 0))'::GEOMETRY),
+               (2, 'POLYGON((100 100, 200 100, 200 0, 100 0, 100 100))'::GEOMETRY) ;
+        """
+        // First calculate the correlation table between buildings and rsu
+        def buildingTableRelation = Geoindicators.SpatialUnits.spatialJoin(h2GIS,
+                "tempo_build", "tempo_rsu", "id_rsu", null, "test")
+
+        assertNotNull(buildingTableRelation)
+        def p = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(h2GIS,
+                buildingTableRelation, "tempo_rsu",
+                "id_rsu", "test")
+        assertNotNull(p)
+        assertEquals 0.16, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").FREE_EXTERNAL_FACADE_DENSITY
+        assertEquals(0.04, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 2").FREE_EXTERNAL_FACADE_DENSITY)
+    }
+
+    @Test
     void groundSkyViewFactorTest() {
         // Only the first 1 first created buildings are selected for the tests
         h2GIS "DROP TABLE IF EXISTS tempo_build, rsu_free_external_facade_density; CREATE TABLE tempo_build AS SELECT * " +
@@ -114,7 +141,7 @@ class RsuIndicatorsTests {
         h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
                 "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build"
 
-        def p = Geoindicators.RsuIndicators.groundSkyViewFactor(h2GIS, "rsu_test", "corr_tempo",
+        def p = Geoindicators.RsuIndicators.groundSkyViewFactor(h2GIS, "rsu_test","id_rsu", "corr_tempo",
                 0.008, 100, 60, "test")
         assertNotNull(p)
         assertEquals 0.54, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor " +
@@ -155,7 +182,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def rangeDeg = 360 / numberOfDirection
-        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", listLayersBottom,
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test","id_rsu", listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(p)
         def concat = ""
@@ -189,7 +216,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def rangeDeg = 360 / numberOfDirection
-        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", listLayersBottom,
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", "id_rsu",listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(p)
         def concat = ""
@@ -275,7 +302,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def pFacadeDistrib = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build",
-                "rsu_test", listLayersBottom,
+                "rsu_test","id_rsu", listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(pFacadeDistrib)
         def pGeomAvg = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(h2GIS, "tempo_build",
@@ -292,7 +319,7 @@ class RsuIndicatorsTests {
         h2GIS "CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
                 "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu"
-        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(h2GIS, "rsu_table",
+        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(h2GIS, "rsu_table","id_rsu",
                 "projected_facade_area_distribution", "geom_avg_height_roof",
                 listLayersBottom, numberOfDirection, "test")
         assertNotNull(p)
@@ -344,7 +371,7 @@ class RsuIndicatorsTests {
         h2GIS "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
                 "CASEWHEN(id_rsu = 2, 0.1, null)) AS effective_terrain_roughness_length FROM rsu_test"
 
-        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(h2GIS, "rsu_tempo", "effective_terrain_roughness_length",
+        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(h2GIS, "rsu_tempo","id_rsu", "effective_terrain_roughness_length",
                 "test")
         assertNotNull(p)
         def concat = ""
@@ -699,7 +726,7 @@ class RsuIndicatorsTests {
                 "tempo_rsu",
                 "id_rsu",
                 [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                12,
+                12,true,
                 "test")
         assertNotNull(p)
         assertEquals 0.00566, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").FRONTAL_AREA_INDEX_H0_5_D30_60, 0.00001

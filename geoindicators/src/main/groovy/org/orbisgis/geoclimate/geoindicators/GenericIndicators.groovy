@@ -447,13 +447,18 @@ String distributionCharacterization(JdbcDataSource datasource, String distribTab
         def outputTableName = prefix prefixName, BASENAME
 
         // Get all columns from the distribution table and remove the geometry column if exists
-        def allColumns = datasource."$distribTableName".columns
+        def allColumns = datasource.getColumnNames(distribTableName)
         if (allColumns.contains(GEOMETRY_FIELD)) {
             allColumns -= GEOMETRY_FIELD
         }
         // Get the distribution columns and the number of columns
         def distribColumns = allColumns.minus(inputId.toUpperCase())
         def nbDistCol = distribColumns.size()
+
+        if(distribColumns.size()==0){
+            error("Any columns to compute the distribution from the table $distribTableName".toString())
+            return
+        }
 
         def idxExtrem = nbDistCol - 1
         def idxExtrem_1 = nbDistCol - 2
