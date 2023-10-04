@@ -428,6 +428,56 @@ class WorkflowGeoIndicatorsTest {
         }
     }
 
+    @Test
+    void rasterizeIndicators1() {
+        datasource.execute("""
+        DROP TABLE IF EXISTS building;
+        CREATE TABLE BUILDING (id_build int, id_block int, id_rsu int, zindex int, the_geom geometry, height_wall float, height_roof float, type varchar, pop double precision );
+        INSERT INTO BUILDING VALUES (1, 1, 1, 0, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY, 5, 10, 'office', 100);
+        """.toString())
+        String grid = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, datasource.getExtent("building"), 10, 10, 0)
+        assertNotNull(grid)
+        String grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, [],
+                "building", null, null, null, null, null,
+                null, null, null)
+        assertNull(grid_indicators)
+        def list_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
+                               "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
+                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+                               "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
+                               "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
+                               "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
+        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators,
+                "building", null, null, null, null, null,
+                null, null, null)
+        assertNotNull(grid_indicators)
+        assertEquals(1, datasource.getRowCount(grid_indicators))
+        def rows = datasource.firstRow("select * from $grid_indicators".toString())
+        println(rows)
+        assertEquals(1d, rows.BUILDING_FRACTION)
+        assertEquals(0d, rows.HIGH_VEGETATION_FRACTION)
+        assertEquals(0d, rows.IMPERVIOUS_FRACTION)
+        assertEquals(0d, rows.LOW_VEGETATION_FRACTION)
+        assertEquals(0d, rows.ROAD_FRACTION)
+        assertEquals(0d, rows.WATER_FRACTION)
+        assertEquals(0d, rows.UNDEFINED_FRACTION)
+        assertEquals(100d, rows.SUM_POP)
+        assertEquals(10d, rows.AVG_HEIGHT_ROOF)
+        assertEquals(0d, rows.STD_HEIGHT_ROOF)
+        assertTrue(10d-rows.GEOM_AVG_HEIGHT_ROOF< 0.0001)
+        assertEquals(10d, rows.AVG_HEIGHT_ROOF_AREA_WEIGHTED)
+        assertEquals(0d, rows.STD_HEIGHT_ROOF_AREA_WEIGHTED)
+        assertEquals(2d, rows.FREE_EXTERNAL_FACADE_DENSITY)
+        assertEquals(3d, rows.BUILDING_SURFACE_DENSITY)
+        assertTrue(1.5 -rows.EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH<0.001)
+        assertEquals(8, rows.EFFECTIVE_TERRAIN_ROUGHNESS_CLASS)
+        assertEquals(2d, rows.ASPECT_RATIO)
+        assertTrue(0.5 -rows.SVF<0.1)
+        assertEquals(1, rows.TYPE_OFFICE)
+
+    }
+
+
     /**
      * Method to check the result for the RSU indicators table
      * Please add new checks here

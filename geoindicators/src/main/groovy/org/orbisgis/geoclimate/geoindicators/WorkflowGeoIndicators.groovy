@@ -1613,7 +1613,7 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String b
  * @return
  */
 String rasterizeIndicators(JdbcDataSource datasource,
-                           String grid, List list_indicators = [],
+                           String grid, List list_indicators,
                            String building, String road, String vegetation,
                            String water, String impervious, String rsu_lcz,
                            String rsu_utrf_area, String rsu_utrf_floor_area, String sea_land_mask,
@@ -1822,7 +1822,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     }
 
-    if (list_indicators_upper.contains("BUILDING_TYPE") && building) {
+    if (list_indicators_upper.contains("BUILDING_TYPE_FRACTION") && building) {
         if (!buildingCutted) {
             buildingCutted = cutBuilding(datasource, grid, building)
             if (!buildingCutted) {
@@ -1838,6 +1838,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 "building_type_fraction")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
+            tablesToDrop<<upperScaleAreaStatistics
         } else {
             info "Cannot aggregate the building type at grid scale"
         }
@@ -1860,6 +1861,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (freeFacadeDensityExact) {
             if (list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO"])) {
                 indicatorTablesToJoin.put(freeFacadeDensityExact, grid_column_identifier)
+                tablesToDrop<<freeFacadeDensityExact
             }
             if (list_indicators_upper.contains("FREE_EXTERNAL_FACADE_DENSITY")) {
                 def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity(
@@ -1872,6 +1874,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                         indicatorTablesToJoin.put(buildingSurfDensity, grid_column_identifier)
                     }
                 }
+                tablesToDrop<<freeFacadeDensityExact
+                tablesToDrop<<buildingSurfDensity
             }
         } else {
             info "Cannot calculate the exact free external facade density"
@@ -1976,7 +1980,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def svf_fraction = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource, grid, grid_column_identifier, createScalesRelationsGridBl, 0.008, 100, 60, "grid")
 
         if (svf_fraction) {
-            datasource """  ALTER TABLE ${svf_fraction} RENAME COLUMN GROUND_SKY_VIEW_FACTOR TO SVF_FRACTION""".toString()
+            datasource """  ALTER TABLE ${svf_fraction} RENAME COLUMN GROUND_SKY_VIEW_FACTOR TO SVF""".toString()
             indicatorTablesToJoin.put(svf_fraction, grid_column_identifier)
         } else {
             info "Cannot compute the sky view factor."
@@ -2058,7 +2062,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         //Because all other indicators have been yet computed we just alter the table with the aspect_ratio column
         datasource.execute("""
         ALTER TABLE $grid_indicators_table ADD COLUMN ASPECT_RATIO DOUBLE PRECISION;
-        UPDATE $grid_indicators_table SET ASPECT_RATIO = free_external_facade_density / (1 - building_fraction)
+        UPDATE $grid_indicators_table SET ASPECT_RATIO = case when building_fraction = 1 then free_external_facade_density else  free_external_facade_density / (1 - building_fraction) end
         """.toString())
     }
     tablesToDrop << createScalesRelationsGridBl
