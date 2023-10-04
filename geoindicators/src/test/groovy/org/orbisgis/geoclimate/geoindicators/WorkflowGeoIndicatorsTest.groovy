@@ -470,7 +470,7 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(3d, rows.BUILDING_SURFACE_DENSITY)
         assertTrue(1.5 -rows.EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH<0.001)
         assertEquals(8, rows.EFFECTIVE_TERRAIN_ROUGHNESS_CLASS)
-        assertEquals(2d, rows.ASPECT_RATIO)
+        assertNull(rows.ASPECT_RATIO)
         assertTrue(0.5 -rows.SVF<0.1)
         assertEquals(1d, rows.TYPE_OFFICE)
 
