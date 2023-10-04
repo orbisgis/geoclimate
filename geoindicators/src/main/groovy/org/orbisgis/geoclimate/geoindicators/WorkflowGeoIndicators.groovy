@@ -2062,7 +2062,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         //Because all other indicators have been yet computed we just alter the table with the aspect_ratio column
         datasource.execute("""
         ALTER TABLE $grid_indicators_table ADD COLUMN ASPECT_RATIO DOUBLE PRECISION;
-        UPDATE $grid_indicators_table SET ASPECT_RATIO = case when building_fraction = 1 then free_external_facade_density else  free_external_facade_density / (1 - building_fraction) end
+        UPDATE $grid_indicators_table SET ASPECT_RATIO = case when building_fraction = 1 then null else  free_external_facade_density / (1 - building_fraction) end
         """.toString())
     }
     tablesToDrop << createScalesRelationsGridBl
