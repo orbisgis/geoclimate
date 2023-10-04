@@ -453,7 +453,6 @@ class WorkflowGeoIndicatorsTest {
         assertNotNull(grid_indicators)
         assertEquals(1, datasource.getRowCount(grid_indicators))
         def rows = datasource.firstRow("select * from $grid_indicators".toString())
-        println(rows)
         assertEquals(1d, rows.BUILDING_FRACTION)
         assertEquals(0d, rows.HIGH_VEGETATION_FRACTION)
         assertEquals(0d, rows.IMPERVIOUS_FRACTION)
@@ -473,7 +472,7 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(8, rows.EFFECTIVE_TERRAIN_ROUGHNESS_CLASS)
         assertEquals(2d, rows.ASPECT_RATIO)
         assertTrue(0.5 -rows.SVF<0.1)
-        assertEquals(1, rows.TYPE_OFFICE)
+        assertEquals(1d, rows.TYPE_OFFICE)
 
     }
 
