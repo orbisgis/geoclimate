@@ -439,7 +439,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 def keysValues = ["building", "railway", "amenity",
                                   "leisure", "highway", "natural",
                                   "landuse", "landcover",
-                                  "vegetation", "waterway", "area", "aeroway", "area:aeroway"]
+                                  "vegetation", "waterway", "area", "aeroway", "area:aeroway", "tourism", "sport"]
                 query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
             }
 
