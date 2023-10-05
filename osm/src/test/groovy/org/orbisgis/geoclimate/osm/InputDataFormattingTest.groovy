@@ -64,7 +64,7 @@ class InputDataFormattingTest {
         assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
-        assertEquals 135, h2GIS.getTable(extractData.vegetation).rowCount
+        assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 10, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
         assertEquals 6, h2GIS.getTable(extractData.urban_areas).rowCount
@@ -248,7 +248,7 @@ class InputDataFormattingTest {
         assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
-        assertEquals 135, h2GIS.getTable(extractData.vegetation).rowCount
+        assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 10, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
 
@@ -311,7 +311,7 @@ class InputDataFormattingTest {
 
             zoneToExtract = "Göteborgs Stad"
 
-        zoneToExtract = "Dijon"
+        zoneToExtract = "Ploemeur"
 
         //zoneToExtract =  [69.24666, 28.3359, 69.32999, 28.41923]
 
