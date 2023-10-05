@@ -1,12 +1,11 @@
 package org.orbisgis.geoclimate.utils
 
 import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.LoggerContext
 import org.slf4j.LoggerFactory
 
-class LoggerUtils {
 
+class LoggerUtils {
 
 
     /**
@@ -27,22 +26,9 @@ class LoggerUtils {
             } else {
                 throw new RuntimeException("Invalid log level. Allowed values are : INFO, DEBUG, TRACE, OFF")
             }
-            var logFac =  LoggerFactory.getILoggerFactory()
-            if(logFac instanceof  LoggerContext){
-                var context = (LoggerContext) LoggerFactory.getILoggerFactory()
-                context.getLoggerList().each { it -> it.setLevel(level) }
-            }
+            var context = (LoggerContext) LoggerFactory.getILoggerFactory()
+            context.getLoggerList().each { it -> it.setLevel(level) }
         }
     }
 
-
-    /**
-     * Create a logback logger
-     * @param aClass
-     * @return
-     */
-    static Logger createLogger(Class aClass){
-        LoggerContext context = new LoggerContext()
-        return context.getLogger(aClass)
-    }
 }

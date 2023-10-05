@@ -31,7 +31,6 @@
 package org.orbisgis.geoclimate.worldpoptools
 
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.orbisgis.geoclimate.utils.LoggerUtils
 
 /**
  * Main script to access to all WorldPop utilities
