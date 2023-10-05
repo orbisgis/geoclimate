@@ -19,8 +19,6 @@
  */
 package org.orbisgis.geoclimate.geoindicators
 
-import ch.qos.logback.classic.Level
-import ch.qos.logback.classic.LoggerContext
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.PRJUtil

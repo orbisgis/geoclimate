@@ -19,7 +19,6 @@
  */
 package org.orbisgis.geoclimate.osmtools.utils
 
-import ch.qos.logback.classic.Logger
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
@@ -28,7 +27,8 @@ import org.locationtech.jts.geom.MultiLineString
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.osmtools.AbstractOSMToolsTest
 import org.orbisgis.geoclimate.osmtools.OSMTools
-import org.orbisgis.geoclimate.utils.LoggerUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -43,7 +43,7 @@ class TransformUtilsTest extends AbstractOSMToolsTest {
     @TempDir(cleanup = CleanupMode.ON_SUCCESS)
     static File folder
 
-    private static final Logger LOGGER = LoggerUtils.createLogger(TransformUtilsTest)
+    private static final Logger LOGGER = LoggerFactory.getLogger(TransformUtilsTest)
 
     static H2GIS h2gis
 

@@ -23,7 +23,6 @@ package org.orbisgis.geoclimate.bdtopo
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.orbisgis.geoclimate.utils.LoggerUtils
 
 /**
  * BDTopo utils

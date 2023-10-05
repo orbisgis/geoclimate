@@ -23,7 +23,6 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.orbisgis.geoclimate.utils.LoggerUtils
 
 /**
  * Main class to access to the OSM processes
