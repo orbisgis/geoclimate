@@ -64,7 +64,7 @@ class InputDataFormattingTest {
         assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
-        assertEquals 135, h2GIS.getTable(extractData.vegetation).rowCount
+        assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 10, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
         assertEquals 6, h2GIS.getTable(extractData.urban_areas).rowCount
@@ -248,7 +248,7 @@ class InputDataFormattingTest {
         assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
-        assertEquals 135, h2GIS.getTable(extractData.vegetation).rowCount
+        assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 10, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
 
