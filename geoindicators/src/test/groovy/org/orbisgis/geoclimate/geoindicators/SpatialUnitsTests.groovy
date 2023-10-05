@@ -79,7 +79,7 @@ class SpatialUnitsTests {
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', 'rail_test',
-                'veget_test', 'hydro_test', "",
+                'veget_test', 'hydro_test', "","",
                 10000, 2500, "block")
 
         assertNotNull(outputTableGeoms)
@@ -103,7 +103,7 @@ class SpatialUnitsTests {
         def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_test",
                 'road_test', 'rail_test',
                 'veget_test', 'hydro_test',
-                "", 10000, 2500, "block")
+                "","", 10000, 2500, "block")
         assert createRSU
 
         assert h2GIS.getSpatialTable(createRSU).save(new File(folder, "rsu.shp").getAbsolutePath(), true)
@@ -188,7 +188,7 @@ class SpatialUnitsTests {
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', 'rail_test', 'veget_test',
-                'hydro_test', "", 10000, 2500, "block")
+                'hydro_test', "", "",10000, 2500, "block")
 
 
         assertNotNull(outputTableGeoms)

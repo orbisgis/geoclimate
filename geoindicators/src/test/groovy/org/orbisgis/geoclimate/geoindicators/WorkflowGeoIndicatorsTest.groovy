@@ -130,7 +130,7 @@ class WorkflowGeoIndicatorsTest {
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
-                inputTableNames.hydrographicTable, "", "", "", "",
+                inputTableNames.hydrographicTable, "", "", "", "","",
                 ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
@@ -173,7 +173,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
-                "", "", "",
+                "", "", "","",
                 ["indicatorUse": indicatorUse, svfSimplified: false, "utrfModelName": "UTRF_BDTOPO_V2_RF_2_2.model"], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
@@ -245,7 +245,7 @@ class WorkflowGeoIndicatorsTest {
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
-                inputTableNames.hydrographicTable, "",
+                inputTableNames.hydrographicTable, "","",
                 "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
@@ -287,7 +287,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
-                "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
+                "", "", "","", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
@@ -327,7 +327,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
-                "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
+                "", "", "", "",["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
@@ -368,7 +368,8 @@ class WorkflowGeoIndicatorsTest {
                 .computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
                         inputTableNames.buildingTable, inputTableNames.roadTable,
                         inputTableNames.railTable, inputTableNames.vegetationTable,
-                        inputTableNames.hydrographicTable, "", "", "", "",
+                        inputTableNames.hydrographicTable, "", "", "",
+                        "","",
                         ["indicatorUse": indicatorUse, "svfSimplified": false],
                         prefixName)
         assertNotNull(geoIndicatorsCompute_i)
@@ -410,7 +411,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
-                "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
+                "", "", "", "",["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         def expectListRsuTempo = listColBasic + listColCommon

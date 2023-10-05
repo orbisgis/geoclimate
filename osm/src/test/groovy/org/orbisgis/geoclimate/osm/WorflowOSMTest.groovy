@@ -101,7 +101,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         datasource.load(urlZone, zone, true)
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, datasource, zone, buildingTableName, roadTableName,
-                railTableName, vegetationTableName, hydrographicTableName, null, "",
+                railTableName, vegetationTableName, hydrographicTableName, null, "","",
                 saveResults, svfSimplified, indicatorUse, prefixName)
     }
 
@@ -196,7 +196,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, datasource, zone, buildingTableName, roadTableName,
-                railTableName, vegetationTableName, hydrographicTableName, imperviousTableName, sealandTableName,
+                railTableName, vegetationTableName, hydrographicTableName, imperviousTableName, sealandTableName,"",
                 saveResults, svfSimplified, indicatorUse, prefixName, true)
     }
 
@@ -663,7 +663,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": ["Redon"],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
+                        "locations": [[47.048751,-1.519032,47.066117,-1.476545]],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                          "area": 2800,
                         /*"timeout":182,
                         "maxsize": 536870918,

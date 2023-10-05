@@ -930,7 +930,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(h2gis_datasource, zone,
                         building, road,
                         rail, vegetation,
-                        water, impervious, "", "", "",
+                        water, impervious, "", "", urban_areas,"",
                         rsu_indicators_params, processing_parameters.prefixName)
                 if (!geoIndicators) {
                     error "Cannot build the geoindicators for the zone $id_zone"

@@ -1006,6 +1006,8 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * @param rail The rail table to be processed
  * @param vegetation The vegetation table to be processed
  * @param water The hydrographic table to be processed
+ * @param sea_land_mask The sea areas to be processed
+ * @param urban_areas The urban areas table to be processed
  * @param rsu Only if the RSU table is provided by the user (otherwise the default RSU is calculated)
  * @param surface_vegetation The minimum area of vegetation that will be considered to delineate the RSU (default 100,000 m²)
  * @param surface_hydro The minimum area of water that will be considered to delineate the RSU (default 2,500 m²)
@@ -1013,7 +1015,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
- * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
+ * be calculated (default is all insea_land_maskdicators : ["LCZ", "UTRF", "TEB"])
  *
  * @return building Table name where are stored the buildings and the RSU and block ID
  * @return block Table name where are stored the blocks and the RSU ID
@@ -1021,7 +1023,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  */
 Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String building,
                           String road, String rail, String vegetation,
-                          String water, String sea_land_mask,
+                          String water, String  sea_land_mask, String urban_areas,
                           String rsu, double surface_vegetation,
                           double surface_hydro, double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
     info "Create the units of analysis..."
@@ -1031,7 +1033,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
         // Create the RSU
         rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone, road, rail,
                 vegetation, water,
-                sea_land_mask, surface_vegetation,
+                sea_land_mask, urban_areas, surface_vegetation,
                 surface_hydro, prefixName)
         if (!rsu) {
             info "Cannot compute the RSU."
@@ -1203,7 +1205,7 @@ Map getParameters(Map parameters) {
  */
 Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String building, String road, String rail, String vegetation,
                             String water, String impervious, String buildingEstimateTableName,
-                            String sea_land_mask, String rsuTable,
+                            String sea_land_mask,String urban_areas, String rsuTable,
                             Map parameters = [:], String prefixName) {
     Map inputParameters = getParameters()
     if (parameters) {
@@ -1232,7 +1234,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
                 road, rail, vegetation,
                 water, impervious,
                 buildingEstimateTableName,
-                sea_land_mask, rsuTable,
+                sea_land_mask, urban_areas, rsuTable,
                 surface_vegetation, surface_hydro,
                 snappingTolerance,
                 buildingHeightModelName, prefixName)
@@ -1272,7 +1274,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
             Map spatialUnitsForCalc = createUnitsOfAnalysis(datasource, zone,
                     building, road, rail,
                     vegetation,
-                    water, sea_land_mask, rsuTable,
+                    water, sea_land_mask, "", rsuTable,
                     surface_vegetation,
                     surface_hydro, snappingTolerance, indicatorUse,
                     prefixName)
@@ -1322,7 +1324,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
                 building, road,
                 rail, vegetation,
-                water, sea_land_mask, "",
+                water, sea_land_mask, "","",
                 surface_vegetation,
                 surface_hydro, snappingTolerance, indicatorUse,
                 prefixName)
@@ -1359,7 +1361,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String building,
                            String road, String rail, String vegetation,
                            String water, String impervious,
-                           String building_estimate, String sea_land_mask, String rsu,
+                           String building_estimate, String sea_land_mask, String urban_areas, String rsu,
                            double surface_vegetation, double surface_hydro,
                            double snappingTolerance, String buildingHeightModelName, String prefixName = "") {
     if (!building_estimate) {
@@ -1375,7 +1377,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     //Create spatial units and relations : building, block, rsu
     Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
             building, road, rail, vegetation,
-            water, sea_land_mask, rsu,
+            water, sea_land_mask, urban_areas, rsu,
             surface_vegetation, surface_hydro, snappingTolerance, ["UTRF"],
             prefixName)
     if (!spatialUnits) {
