@@ -19,15 +19,15 @@
  */
 package org.orbisgis.geoclimate.osm
 
-import ch.qos.logback.classic.Logger
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.geoclimate.utils.LoggerUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
 
 class WorkflowAbstractTest {
 
-    public static Logger logger = LoggerUtils.createLogger(WorkflowAbstractTest.class)
+    public static Logger logger = LoggerFactory.getLogger(WorkflowAbstractTest.class)
 
     /**
      * A method to compute geomorphological indicators

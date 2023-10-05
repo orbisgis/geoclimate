@@ -35,7 +35,6 @@
         <cts-version>1.7.1-SNAPSHOT</cts-version>
         <orbisdata-version>2.1.0-SNAPSHOT</orbisdata-version>
         <slf4j-version>2.0.9</slf4j-version>
-        <logback-version>1.4.11</logback-version>
         <groovy-version>3.0.19</groovy-version>
         <picocli-version>4.6.3</picocli-version>
         <commons-io-version>2.11.0</commons-io-version>
@@ -212,11 +211,6 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j-version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback-version}</version>
             </dependency>
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>

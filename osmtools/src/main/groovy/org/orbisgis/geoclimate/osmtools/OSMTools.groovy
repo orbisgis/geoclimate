@@ -24,7 +24,6 @@ import org.orbisgis.geoclimate.osmtools.Transform as TRANSFORM
 import org.orbisgis.geoclimate.osmtools.utils.TransformUtils as TRANSFORM_UTILS
 import org.orbisgis.geoclimate.osmtools.utils.Utilities as UTILITIES
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.orbisgis.geoclimate.utils.LoggerUtils
 
 /**
  * Main script to access to all processes used to extract, transform and save OSM data as GIS layers.

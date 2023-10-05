@@ -29,8 +29,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.geoclimate.osmtools.OSMTools
-import org.orbisgis.geoclimate.osmtools.utils.Utilities
+import org.orbisgis.geoclimate.utils.LoggerUtils
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -647,6 +646,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     //Use it for debug
     @Test
     void testIntegration() {
+
         String directory = "/tmp/geoclimate"
         File dirFile = new File(directory)
         dirFile.delete()

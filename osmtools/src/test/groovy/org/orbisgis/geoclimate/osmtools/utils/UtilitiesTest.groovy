@@ -19,7 +19,6 @@
  */
 package org.orbisgis.geoclimate.osmtools.utils
 
-import ch.qos.logback.classic.Logger
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
@@ -30,7 +29,8 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.osmtools.AbstractOSMToolsTest
 import org.orbisgis.geoclimate.osmtools.OSMTools
-import org.orbisgis.geoclimate.utils.LoggerUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.util.regex.Pattern
 
@@ -47,7 +47,7 @@ class UtilitiesTest extends AbstractOSMToolsTest {
     @TempDir(cleanup = CleanupMode.ON_SUCCESS)
     static File folder
 
-    private static final Logger LOGGER = LoggerUtils.createLogger(UtilitiesTest)
+    private static final Logger LOGGER = LoggerFactory.getLogger(UtilitiesTest)
 
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeOverPassQuery
