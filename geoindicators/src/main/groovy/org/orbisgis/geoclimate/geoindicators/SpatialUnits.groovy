@@ -50,6 +50,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * @param vegetation The vegetation table to be processed
  * @param water The water table to be processed
  * @param sea_land_mask The table to distinguish sea from land
+ * @param urban_areas The table to distinguish the urban areas
  * @param surface_vegetation A double value to select the vegetation geometry areas.
  * Expressed in geometry unit of the vegetationTable, default 10000
  * @param surface_hydro A double value to select the hydrographic geometry areas.
@@ -59,7 +60,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  */
 String createTSU(JdbcDataSource datasource, String zone,
                  double area = 1f, String road, String rail, String vegetation,
-                 String water, String sea_land_mask,
+                 String water, String sea_land_mask,String urban_areas,
                  double surface_vegetation, double surface_hydro, String prefixName) {
     def BASE_NAME = "rsu"
 
@@ -70,7 +71,7 @@ String createTSU(JdbcDataSource datasource, String zone,
 
     def tsuDataPrepared = prepareTSUData(datasource,
             zone, road, rail,
-            vegetation, water, sea_land_mask, surface_vegetation, surface_hydro, prefixName)
+            vegetation, water, sea_land_mask, urban_areas, surface_vegetation, surface_hydro, prefixName)
     if (!tsuDataPrepared) {
         info "Cannot prepare the data for RSU calculation."
         return
@@ -156,6 +157,8 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
  * @param rail The rail table to be processed
  * @param vegetation The vegetation table to be processed
  * @param water The hydrographic table to be processed
+ * @param water The sea mask to be processed
+ * @param water The urban areas table to be processed
  * @param surface_vegetation A double value to select the vegetation geometry areas.
  * Expressed in geometry unit of the vegetationTable. 10000 m² seems correct.
  * @param sea_land_mask The table to distinguish sea from land
@@ -167,7 +170,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
  * @return A database table name.
  */
 String prepareTSUData(JdbcDataSource datasource, String zone, String road, String rail,
-                      String vegetation, String water, String sea_land_mask,
+                      String vegetation, String water, String sea_land_mask, String urban_areas,
                       double surface_vegetation, double surface_hydro, String prefixName = "unified_abstract_model") {
     if (surface_vegetation <= 100) {
         error("The surface of vegetation must be greater or equal than 100 m²")
@@ -317,6 +320,14 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
             debug "Preparing rail..."
             if(datasource.getColumnNames(rail).size()>0){
             queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
+            }
+        }
+
+        if (water && datasource.hasTable(urban_areas)) {
+            if (datasource.getColumnNames(urban_areas).size() > 0) {
+                debug "Preparing urban areas..."
+                queryCreateOutputTable += [urban_areas_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $urban_areas)"]
+
             }
         }
 

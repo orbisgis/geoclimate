@@ -4,14 +4,22 @@
       "commercial",
       "residential",
       "retail",
-      "industrial"
-    ]
+      "industrial",
+      "construction"
+    ],
+    "construction":[]
   },
   "columns": [
     "landuse",
-    "industrial"
+    "industrial",
+    "construction"
   ],
   "type": {
+    "construction": {
+      "landuse": [
+        "construction"
+      ]
+    },
     "commercial": {
       "landuse": [
         "commercial",

@@ -534,7 +534,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                                 hydrographicTableName, imperviousTableName,
                                 buildingEstimateTableName,
                                 seaLandMaskTableName,
-                                "",
+                                urbanAreasTable,"",
                                 rsu_indicators_params,
                                 processing_parameters.prefixName)
                         if (!geoIndicators) {

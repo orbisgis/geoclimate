@@ -44,13 +44,14 @@ class WorkflowAbstractTest {
      */
     void geoIndicatorsCalc(String directory, def datasource, String zone, String buildingTableName,
                            String roadTableName, String railTableName, String vegetationTableName,
-                           String hydrographicTableName, String imperviousTableName = null, String sealandmaskTableName = "",
+                           String hydrographicTableName, String imperviousTableName , String sealandmaskTableName ,
+                           String urban_areas ,
                            boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "", boolean onlySea = false) {
         //Create spatial units and relations : building, block, rsu
         Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis(datasource, zone, buildingTableName,
                 roadTableName, railTableName, vegetationTableName,
-                hydrographicTableName, sealandmaskTableName, "", 10000,
+                hydrographicTableName, sealandmaskTableName, urban_areas, "", 10000,
                 2500, 0.01, indicatorUse, prefixName)
 
         String relationBuildings = spatialUnits.building
