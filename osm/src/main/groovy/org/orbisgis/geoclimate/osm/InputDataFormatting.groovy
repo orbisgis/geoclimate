@@ -455,14 +455,21 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                 datasource.eachRow(queryMapper) { row ->
                     def type = getTypeValue(row, columnNames, mappingType)
                     if (type) {
-                        def height_class = typeAndVegClass[type]
-                        def zindex = getZIndex(row."layer")
-                        Geometry geom = row.the_geom
-                        int epsg = geom.getSRID()
-                        for (int i = 0; i < geom.getNumGeometries(); i++) {
-                            Geometry subGeom = geom.getGeometryN(i)
-                            if (subGeom instanceof Polygon && subGeom.getArea()>1) {
-                                stmt.addBatch """
+                        //Check surface
+                        boolean addGeom = true
+                        if (row."surface" && row."surface" != "grass") {
+                            addGeom=false
+                        }
+                        if (addGeom) {
+                            def height_class = typeAndVegClass[type]
+                            def zindex = getZIndex(row."layer")
+
+                            Geometry geom = row.the_geom
+                            int epsg = geom.getSRID()
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                    stmt.addBatch """
                                             INSERT INTO $outputTableName VALUES(
                                                 ST_GEOMFROMTEXT('${subGeom}',$epsg), 
                                                 ${rowcount++}, 
@@ -470,6 +477,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                                                 ${singleQuote(type)}, 
                                                 ${singleQuote(height_class)}, ${zindex})
                                     """.toString()
+                                }
                             }
                         }
                     }
