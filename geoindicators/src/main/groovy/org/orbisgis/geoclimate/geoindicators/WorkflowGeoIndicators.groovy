@@ -1015,7 +1015,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
- * be calculated (default is all insea_land_maskdicators : ["LCZ", "UTRF", "TEB"])
+ * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
  *
  * @return building Table name where are stored the buildings and the RSU and block ID
  * @return block Table name where are stored the blocks and the RSU ID
