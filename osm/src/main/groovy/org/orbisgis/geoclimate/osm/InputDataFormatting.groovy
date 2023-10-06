@@ -993,12 +993,22 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
                 queryMapper += ",  a.the_geom as the_geom FROM $urban_areas  as a"
 
             }
+
+            def constructions = ["industrial", "commercial", "residential"]
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
                     def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
                     def use = typeAndUseValues[1]
                     def type = typeAndUseValues[0]
+                    //Check if the urban areas is under construction
+                    if(type == "construction"){
+                        def construction = row."construction"
+                        if(construction && construction in constructions){
+                            type = construction
+                            use = construction
+                        }
+                    }
                     Geometry geom = row.the_geom
                     int epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {

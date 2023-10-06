@@ -67,7 +67,7 @@ class InputDataFormattingTest {
         assertEquals 135, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 10, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
-        assertEquals 6, h2GIS.getTable(extractData.urban_areas).rowCount
+        assertEquals 7, h2GIS.getTable(extractData.urban_areas).rowCount
         assertEquals 0, h2GIS.getTable(extractData.coastline).rowCount
 
         //Buildings
