@@ -101,8 +101,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         datasource.load(urlZone, zone, true)
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, datasource, zone, buildingTableName, roadTableName,
-                railTableName, vegetationTableName, hydrographicTableName, null, "","",
-                saveResults, svfSimplified, indicatorUse, prefixName)
+                railTableName, vegetationTableName, hydrographicTableName, "", "","",
+                saveResults, svfSimplified, indicatorUse, prefixName, false)
     }
 
     @Test

@@ -44,7 +44,7 @@ class WorkflowAbstractTest {
      */
     void geoIndicatorsCalc(String directory, def datasource, String zone, String buildingTableName,
                            String roadTableName, String railTableName, String vegetationTableName,
-                           String hydrographicTableName, String imperviousTableName = null, String sealandmaskTableName ,
+                           String hydrographicTableName, String imperviousTableName , String sealandmaskTableName ,
                            String urban_areas ,
                            boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "", boolean onlySea = false) {
