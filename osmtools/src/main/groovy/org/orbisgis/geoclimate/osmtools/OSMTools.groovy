@@ -19,10 +19,8 @@
  */
 package org.orbisgis.geoclimate.osmtools
 
-import org.orbisgis.geoclimate.osmtools.Loader as LOADER
-import org.orbisgis.geoclimate.osmtools.Transform as TRANSFORM
-import org.orbisgis.geoclimate.osmtools.utils.TransformUtils as TRANSFORM_UTILS
-import org.orbisgis.geoclimate.osmtools.utils.Utilities as UTILITIES
+import org.orbisgis.geoclimate.osmtools.utils.TransformUtils
+import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.geoclimate.utils.AbstractScript
 
 /**
@@ -34,10 +32,10 @@ import org.orbisgis.geoclimate.utils.AbstractScript
  */
 
 abstract class OSMTools extends AbstractScript {
-    def static Loader = new LOADER()
-    def static Transform = new TRANSFORM()
-    def static Utilities = new UTILITIES()
-    def static TransformUtils = new TRANSFORM_UTILS()
+    static Loader Loader = new Loader()
+    static Transform Transform = new Transform()
+    static Utilities Utilities = new Utilities()
+    static TransformUtils TransformUtils = new TransformUtils()
 
     OSMTools() {
         super(OSMTools.class)

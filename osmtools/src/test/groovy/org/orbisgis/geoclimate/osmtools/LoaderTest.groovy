@@ -98,10 +98,10 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
-        assertTrue r.containsKey("zoneEnvelopeTableName")
-        assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
-        assertTrue r.containsKey("osmTablesPrefix")
-        assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
+        assertTrue r.containsKey("envelope")
+        assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.envelope as String).matches()
+        assertTrue r.containsKey("prefix")
+        assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.prefix as String).matches()
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
 
@@ -112,7 +112,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         zone.next()
         assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zone.getGeometry(1).toText()
 
-        def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
+        def zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
@@ -126,10 +126,10 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
-        assertTrue r.containsKey("zoneEnvelopeTableName")
-        assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
-        assertTrue r.containsKey("osmTablesPrefix")
-        assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
+        assertTrue r.containsKey("envelope")
+        assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.envelope as String).matches()
+        assertTrue r.containsKey("prefix")
+        assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.prefix as String).matches()
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
 
@@ -140,7 +140,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         zone.next()
         assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zone.getGeometry(1).toText()
 
-        zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
+        zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
@@ -170,10 +170,10 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
-        assertTrue r.containsKey("zoneEnvelopeTableName")
-        assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
-        assertTrue r.containsKey("osmTablesPrefix")
-        assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
+        assertTrue r.containsKey("envelope")
+        assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.envelope as String).matches()
+        assertTrue r.containsKey("prefix")
+        assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.prefix as String).matches()
 
         def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
@@ -182,7 +182,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         zone.next()
         assertEquals wktReader.read("POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))"), zone.getGeometry(1)
 
-        def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
+        def zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
@@ -196,10 +196,10 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
         assertTrue Pattern.compile("ZONE_$uuidRegex").matcher(r.zone as String).matches()
-        assertTrue r.containsKey("zoneEnvelopeTableName")
-        assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
-        assertTrue r.containsKey("osmTablesPrefix")
-        assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
+        assertTrue r.containsKey("envelope")
+        assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.envelope as String).matches()
+        assertTrue r.containsKey("prefix")
+        assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.prefix as String).matches()
 
         zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
@@ -208,7 +208,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         zone.next()
         assertEquals wktReader.read("POLYGON ((0 0, 0 2, 2 2, 2 0, 0 0))"), zone.getGeometry(1)
 
-        zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
+        zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
@@ -227,9 +227,9 @@ class LoaderTest extends AbstractOSMToolsTest {
         Map r = OSMTools.Loader.fromPlace(ds, placeName)
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
-        assertTrue r.containsKey("zoneEnvelopeTableName")
-        assertTrue r.containsKey("osmTablesPrefix")
-        assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
+        assertTrue r.containsKey("envelope")
+        assertTrue r.containsKey("prefix")
+        assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.prefix as String).matches()
 
         def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
@@ -239,7 +239,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         zone.next()
         assertNotNull zone.getGeometry(1)
 
-        def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
+        def zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 2, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
@@ -269,8 +269,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertTrue zone.columns.contains("ID_ZONE")
         zone.next()
         assertNotNull zone.getGeometry(1)
-
-        def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
+        def zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 2, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")

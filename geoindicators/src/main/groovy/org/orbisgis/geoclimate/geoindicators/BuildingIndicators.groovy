@@ -520,7 +520,9 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
             create index on $inputBuildingTableName_area_sum($ID_POP);
             create table $inputBuildingTableName_pop_sum 
             as select a.$ID_BUILDING, ${sum_popColumns.join(",")} 
-            from $inputBuildingTableName_pop as a, $inputBuildingTableName_area_sum as b where a.$ID_POP=b.$ID_POP group by $ID_BUILDING;
+            from $inputBuildingTableName_pop as a, $inputBuildingTableName_area_sum as b where a.$ID_POP=b.$ID_POP and
+            b.sum_area_building!=0
+            group by $ID_BUILDING;
             CREATE INDEX ON $inputBuildingTableName_pop_sum ($ID_BUILDING);
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName AS SELECT a.*, ${popColumns.join(",")} from $inputBuilding a  

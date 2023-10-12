@@ -652,6 +652,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
 
+        def location = "Redon"
 
        //def nominatim = OSMTools.Utilities.getNominatimData("Lorient")
 
@@ -663,7 +664,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [[47.081403,-1.481352,47.110619,-1.423845]],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
+                        "locations": [location],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                          "area": 2800,
                         /*"timeout":182,
                         "maxsize": 536870918,
@@ -683,12 +684,12 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
-                                                "ASPECT_RATIO","SVF",
+                                                "ASPECT_RATIO",//"SVF",
                                                 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
-                        ],    "worldpop_indicators": false,
-                         "road_traffic"                                         : false,
+                        ],    "worldpop_indicators": true,
+                         "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
-                                 "ground_acoustic": false
+                                 "ground_acoustic": true
                          ]
                         ]
         ]

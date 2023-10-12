@@ -73,7 +73,7 @@ class InputDataLoadingTest {
     @Test
     @Disabled
     void createGISLayersFromFileTestIntegration() {
-        Map extract = OSM.InputDataLoading.createGISLayers(h2GIS, "/tmp/map.osm", 2154)
+        Map extract = OSM.InputDataLoading.createGISLayers(h2GIS, "/tmp/3be46f5e1060bd53fe7c5b97a04102b3f36fa6f6257c87664dbaec3e954879ab.osm", 2154)
 
         //h2GIS.getTable(extract.vegetation).save("./target/osm_vegetation.shp")
 

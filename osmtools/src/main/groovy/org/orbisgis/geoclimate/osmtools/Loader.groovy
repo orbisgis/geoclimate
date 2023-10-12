@@ -98,8 +98,8 @@ Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) {
         if (load(datasource, osmTablesPrefix, extract)) {
             info "Loading OSM data from the area $filterArea"
             return [zone                 : outputZoneTable,
-                    zoneEnvelopeTableName: outputZoneEnvelopeTable,
-                    osmTablesPrefix      : osmTablesPrefix,
+                    envelope : outputZoneEnvelopeTable,
+                    prefix      : osmTablesPrefix,
                     epsg                 : epsg]
         } else {
             error "Cannot load the OSM data from the area $filterArea"
@@ -175,8 +175,8 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) {
         if (load(datasource, osmTablesPrefix, extract)) {
             info "Loading OSM data from the place $placeName"
             return [zone                 : outputZoneTable,
-                    zoneEnvelopeTableName: outputZoneEnvelopeTable,
-                    osmTablesPrefix      : osmTablesPrefix]
+                    envelope: outputZoneEnvelopeTable,
+                    prefix      : osmTablesPrefix]
         } else {
             error "Cannot load the OSM data from the place $placeName"
         }
