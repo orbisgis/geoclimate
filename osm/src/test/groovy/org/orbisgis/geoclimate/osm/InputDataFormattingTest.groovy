@@ -311,7 +311,7 @@ class InputDataFormattingTest {
 
             zoneToExtract = "Göteborgs Stad"
 
-        zoneToExtract = "Ploemeur"
+        zoneToExtract = "Barcelona Eixample"
 
         //zoneToExtract =  [69.24666, 28.3359, 69.32999, 28.41923]
 

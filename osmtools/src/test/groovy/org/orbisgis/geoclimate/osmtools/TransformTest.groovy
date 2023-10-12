@@ -138,7 +138,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def columnsToKeep = []
 
         LOGGER.warn("An error will be thrown next")
-        assertNull OSMTools.Transform.toLines(null, prefix, epsgCode, tags, columnsToKeep)
+            assertNull OSMTools.Transform.toLines(null, prefix, epsgCode, tags, columnsToKeep)
 
         LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toLines(ds, prefix, -1, tags, columnsToKeep)
@@ -875,7 +875,20 @@ class TransformTest extends AbstractOSMToolsTest {
                 }
             }
         }
-
-
     }
+
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void testTransformForDebug() {
+        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE")
+        Map r = OSMTools.Loader.fromArea(h2GIS, [48.733493,-3.076869,48.733995,-3.075829])
+        println(r)
+        def lines = OSMTools.Transform.toPolygons(h2GIS, r.prefix,4326,  [], [])
+        h2GIS.save(lines, "/tmp/building.geojson")
+    }
+
+
 }
