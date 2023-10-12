@@ -94,10 +94,10 @@ String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osm
         error "Invalid EPSG code : $epsgCode"
         return
     }
-    /*if (!tags && !columnsToKeep) {
+    if (!tags && !columnsToKeep) {
         error "No tags nor columns to keep"
         return
-    }*/
+    }
 
     //Start the transformation
     def outputTableName = postfix("OSM_${type.name()}_")
