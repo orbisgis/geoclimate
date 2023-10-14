@@ -41,6 +41,7 @@
         <commons-compress-version>1.21</commons-compress-version>
         <smile-version>2.5.3</smile-version>
         <xstream-version>1.4.19</xstream-version>
+        <logback-version>1.4.11</logback-version>
 
         <!-- Plugins versions -->
         <exec-maven-version>3.0.0</exec-maven-version>
