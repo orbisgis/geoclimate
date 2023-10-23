@@ -53,13 +53,27 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (location in Collection) {
         debug "Loading in the H2GIS database $outputTableName"
-        h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
+        def communeColumns = h2gis_datasource.getColumnNames(inputTables.commune)
+        if(communeColumns.contains("INSEE_COM")) {
+            h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
                     ST_INTERSECTION(the_geom, ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID)) as the_geom, INSEE_COM AS CODE_INSEE  from ${inputTables.commune} where the_geom 
                     && ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID) """.toString())
+        }
+        else {
+            error "Cannot find a column insee_com or code_insee to filter the commune"
+            return
+        }
     } else if (location instanceof String) {
         logger.debug "Loading in the H2GIS database $outputTableName"
+        def communeColumns = h2gis_datasource.getColumnNames(inputTables.commune)
+        if(communeColumns.contains("INSEE_COM")){
         h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 
             INSEE_COM AS CODE_INSEE FROM ${inputTables.commune} WHERE INSEE_COM='$location' or lower(nom)='${location.toLowerCase()}'""".toString())
+        }
+        else {
+            error "Cannot find a column insee_com or code_insee to filter the commune"
+            return
+        }
 
     }
     else {
@@ -87,8 +101,12 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
             outputTableName = "troncon_de_route"
             logger.debug "Loading in the H2GIS database $outputTableName"
             h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; 
-                CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, LARGEUR, POS_SOL, SENS FROM ${inputTables.troncon_de_route}  
-                WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)""".toString())
+                CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, LARGEUR, POS_SOL, SENS,
+                IMPORTANCE, CL_ADMIN, NAT_RESTR FROM ${inputTables.troncon_de_route}  
+                WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY 
+                AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) 
+                AND NATURE NOT IN ('Bac ou liaison maritime', 'Escalier')
+                """.toString())
         } else {
             logger.error "The troncon_de_route table must be provided"
             return
@@ -241,18 +259,30 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     //Check if code is a string or a bbox
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (code in Collection) {
-        //def tmp_insee = code.join("_")
-        String inputTableName = """(SELECT
-                    ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, CODE_INSEE  from $commune_location where 
+        def communeColumns = h2gis_datasource.getColumnNames(commune_location)
+        if(communeColumns.contains("INSEE_COM")) {
+            String inputTableName = """(SELECT
+                    ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, INSEE_COM as CODE_INSEE   from $commune_location where 
                     st_setsrid(the_geom, $commune_srid) 
                     && ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid) and
                     st_intersects(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)))""".toString()
-        logger.debug "Loading in the H2GIS database $outputTableName"
-        IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 10)
+            logger.debug "Loading in the H2GIS database $outputTableName"
+            IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 100)
+        }else {
+            error "Cannot find a column insee_com or code_insee to filter the commune"
+            return
+        }
     } else if (code instanceof String) {
-        String inputTableName = "(SELECT st_setsrid(the_geom, $commune_srid) as the_geom, CODE_INSEE FROM $commune_location WHERE CODE_INSEE='$code' or lower(nom)='${code.toLowerCase()}')"
-        logger.debug "Loading in the H2GIS database $outputTableName"
-        IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
+        def communeColumns = h2gis_datasource.getColumnNames(commune_location)
+        if(communeColumns.contains("insee_com")){
+            String inputTableName = "(SELECT st_setsrid(the_geom, $commune_srid) as the_geom, INSEE_COM as CODE_INSEE FROM $commune_location WHERE INSEE_COM='$code' or lower(nom)='${code.toLowerCase()}')"
+            logger.debug "Loading in the H2GIS database $outputTableName"
+            IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
+        }
+        else {
+            error "Cannot find a column insee_com to filter the commune"
+            return
+        }
     }
     def count = h2gis_datasource."$outputTableName".rowCount
     if (count > 0) {
@@ -268,7 +298,11 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
         def outputTableNameRoad = "troncon_de_route"
         if (inputTables.troncon_de_route) {
             //Extract route
-            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, POS_SOL, FRANCHISST, SENS FROM ${inputTables.troncon_de_route}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = """(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, POS_SOL, 
+            FRANCHISST, SENS, IMPORTANCE, CL_ADMIN, NAT_RESTR  FROM ${inputTables.troncon_de_route}  
+            WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY 
+            AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY)
+            AND NATURE NOT IN ('Bac ou liaison maritime', 'Escalier'))""".toString()
             logger.debug "Loading in the H2GIS database $outputTableNameRoad"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameRoad, -1, 1000)
         } else {

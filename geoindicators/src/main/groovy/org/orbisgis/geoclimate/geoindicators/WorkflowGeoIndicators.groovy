@@ -1724,7 +1724,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
     }
 
-
     // If any surface fraction calculation is needed, create the priority list containing only needed fractions
     // and also set which type of statistics is needed if "BUILDING_HEIGHT" is activated
     def surfaceFractionsProcess

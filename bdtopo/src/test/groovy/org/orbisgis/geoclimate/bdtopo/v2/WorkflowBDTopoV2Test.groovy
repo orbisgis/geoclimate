@@ -33,6 +33,7 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
                 "SURFACE_ROUTE", "SURFACE_ACTIVITE"]
     }
 
+
     @Override
     int getVersion() {
         return 2

@@ -19,11 +19,21 @@
  */
 package org.orbisgis.geoclimate.bdtopo.v3
 
+
+import org.junit.jupiter.api.*
+import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.bdtopo.WorkflowAbstractTest
+
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 class WorkflowBDTopoV3Test extends WorkflowAbstractTest {
 
 
+    public WorkflowBDTopoV3Test(){
+        new File("/tmp/test_bd").mkdir()
+        folder = new File("/tmp/test_bd")
+    }
     @Override
     int getVersion() {
         return 3

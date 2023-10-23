@@ -29,7 +29,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.geoclimate.utils.LoggerUtils
+import org.orbisgis.geoclimate.osmtools.OSMTools
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -654,7 +654,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         def location = "Redon"
 
-       //def nominatim = OSMTools.Utilities.getNominatimData("Lorient")
+       def nominatim = OSMTools.Utilities.getNominatimData("Redon")
+
+        location = nominatim.bbox
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -677,14 +679,16 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          "rsu_indicators"                                       : [
                                  "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
                          ],"grid_indicators": [
-                                "x_size": 100,
-                                "y_size": 100,
+                                "x_size": 200,
+                                "y_size": 200,
                                 //"rowCol": true,
                                 "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
-                                                "BUILDING_TYPE_FRACTION","WATER_FRACTION","VEGETATION_FRACTION",
+                                                //"BUILDING_TYPE_FRACTION",
+                                                "WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
-                                                "ASPECT_RATIO",//"SVF",
+                                                "LCZ_PRIMARY",
+                                                //"BUILDING_HEIGHT_WEIGHTED", //"BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
+                                                "ASPECT_RATIO","SVF",
                                                 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
                         ],    "worldpop_indicators": true,
                          "road_traffic"                                         : true,
@@ -694,6 +698,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         OSM.workflow(osm_parmeters)
+
+
     }
 
     @Disabled

@@ -134,7 +134,10 @@ def loadV2(
     String route = tablesExist.get("route")
     if (!route) {
         route = "route"
-        datasource.execute("DROP TABLE IF EXISTS $route;  CREATE TABLE $route (THE_GEOM geometry(linestring, $srid), ID varchar, LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);".toString())
+        datasource.execute("""DROP TABLE IF EXISTS $route; 
+        CREATE TABLE $route (THE_GEOM geometry(linestring, $srid), ID varchar, 
+        LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar,
+        IMPORTANCE VARCHAR, CL_ADMIN VARCHAR);""".toString())
     }
     String troncon_voie_ferree = tablesExist.get("troncon_voie_ferree")
     if (!troncon_voie_ferree) {
@@ -235,8 +238,13 @@ def loadV2(
     //4. Prepare the Road table (from the layer "ROUTE") that are in the study area (ZONE_BUFFER)
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_ROAD;
-            CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar, SENS varchar)
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, a.FRANCHISST, a.SENS FROM $route a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, ZINDEX integer, CROSSING varchar,
+             DIRECTION varchar, MAXSPEED INTEGER,  RANK INTEGER, ADMIN_SCALE VARCHAR)
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, 
+            a.POS_SOL, a.FRANCHISST, a.SENS ,NULL, 
+            CASE WHEN a.IMPORTANCE IN ('1', '2', '3', '4', '5') THEN CAST (a.IMPORTANCE AS INTEGER) ELSE NULL END ,
+            a.CL_ADMIN
+            FROM $route a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
     //5. Prepare the Rail table (from the layer "TRONCON_VOIE_FERREE") that are in the study area (ZONE)
@@ -429,7 +437,8 @@ Map loadV3(JdbcDataSource datasource,
         troncon_de_route = "troncon_de_route"
         datasource.execute("""DROP TABLE IF EXISTS $troncon_de_route;  
                 CREATE TABLE $troncon_de_route (THE_GEOM geometry(linestring, $srid), ID varchar, 
-                LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar);""".toString())
+                LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar, 
+                 IMPORTANCE VARCHAR, CL_ADMIN VARCHAR, NAT_RESTR VARCHAR);""".toString())
     }
 
     String troncon_de_voie_ferree = tablesExist.get("troncon_de_voie_ferree")
@@ -561,15 +570,29 @@ Map loadV3(JdbcDataSource datasource,
     //4. Prepare the Road table (from the layer "troncon_de_route") that are in the study area (ZONE_BUFFER)
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_ROAD;
-            CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, SURFACE varchar, SIDEWALK varchar, ZINDEX integer, CROSSING varchar, SENS varchar)
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, '', '', a.POS_SOL, CASE WHEN a.POS_SOL=1 THEN 'bridge' else '' end , a.SENS FROM $troncon_de_route a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, 
+            TYPE varchar,  ZINDEX integer, CROSSING varchar, DIRECTION varchar,
+            RANK INTEGER, ADMIN_SCALE VARCHAR)
+            AS SELECT  ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.LARGEUR, CASE WHEN a.NAT_RESTR = 'Piste cyclable' then  a.NAT_RESTR else a.NATURE end,  
+            CASE WHEN a.POS_SOL='Gué ou radier' THEN 0 ELSE CAST(a.POS_SOL AS INT ) END AS POS_SOL, 
+            CASE WHEN a.POS_SOL='1' OR a.POS_SOL='Gué ou radier' THEN a.POS_SOL else null end , 
+            CASE WHEN a.SENS='Double sens' THEN 'Double'
+            WHEN  a.SENS='Sens direct'  THEN 'Direct'
+            WHEN a.SENS='Sens inverse' THEN 'Inverse'
+            ELSE null END AS SENS,
+            CASE WHEN a.IMPORTANCE IN ('1', '2', '3', '4', '5', '6') THEN CAST (a.IMPORTANCE AS INTEGER) ELSE NULL END ,
+            a.CL_ADMIN
+            FROM $troncon_de_route a, 
+            ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
+            and a.POS_SOL not in ('-4' , '-3' ,'-2' ,'-1');
             """.toString())
 
     //5. Prepare the Rail table (from the layer "troncon_de_voie_ferree") that are in the study area (ZONE)
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
             CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, CASE WHEN a.POS_SOL=1 THEN 'bridge' else '' end, 
+            AS SELECT ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.NATURE, 
+            a.POS_SOL, CASE WHEN a.POS_SOL=1 THEN 'Pont' else '' end, 
         CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_de_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 

@@ -56,7 +56,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
             def queryMapper = "SELECT "
             if (zone) {
                 datasource.createSpatialIndex(building, "the_geom")
-                datasource.createSpatialIndex(zone,"the_geom")
+                datasource.createSpatialIndex(zone, "the_geom")
                 queryMapper += " a.*  FROM $building as a,  $zone as b WHERE a.the_geom && b.the_geom and st_intersects(a.the_geom " +
                         ",b.the_geom) "
             } else {
@@ -97,7 +97,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                      "Annexe"                            : ["annex": "building"],
                      "Industriel, agricole ou commercial": ["commercial": "commercial"],
                      "Bâtiment"                          : ["building": "building"],
-                      "Industrie lourde"                 :["heavy_industry":"industrial"]
+                     "Industrie lourde"                  : ["heavy_industry": "industrial"]
                     ]
 
             def building_type_level = ["building"                  : 1,
@@ -122,7 +122,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                                        "sport"                     : 0,
                                        "sports_centre"             : 0,
                                        "grandstand"                : 0,
-                                       "transport"            : 0,
+                                       "transport"                 : 0,
                                        "train_station"             : 0,
                                        "toll_booth"                : 0,
                                        "terminal"                  : 0,
@@ -171,7 +171,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                         def srid = geom.getSRID()
                         for (int i = 0; i < geom.getNumGeometries(); i++) {
                             Geometry subGeom = geom.getGeometryN(i)
-                            if (subGeom instanceof Polygon && subGeom.getArea()>1) {
+                            if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
                                 stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
@@ -193,10 +193,10 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
             }
             //Let's use the urban areas table to improve building qualification
             if (urban_areas) {
-                datasource.createSpatialIndex(outputTableName,"the_geom")
-                datasource.createIndex(outputTableName,"id_build")
-                datasource.createIndex(outputTableName,"type")
-                datasource.createSpatialIndex(urban_areas,"the_geom")
+                datasource.createSpatialIndex(outputTableName, "the_geom")
+                datasource.createIndex(outputTableName, "id_build")
+                datasource.createIndex(outputTableName, "type")
+                datasource.createSpatialIndex(urban_areas, "the_geom")
                 def buildinType = postfix("BUILDING_TYPE")
 
                 datasource.execute """create table $buildinType as SELECT 
@@ -279,6 +279,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
         //Define the mapping between the values in BDTopo and those used in the abstract model
         def road_types =
                 ["Autoroute"          : "motorway",
+                 "Type autoroutier"   : "motorway",
                  'Quasi-autoroute'    : 'trunk',
                  'Bretelle'           : 'highway_link',
                  'Route à 2 chaussées': 'primary',
@@ -293,21 +294,10 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  'Gué ou radier'      : null,
                  'Pont'               : 'bridge',
                  'Tunnel'             : 'tunnel',
-                 'NC'                 : null
-                ]
-
-        def road_surfaces =
-                ["Autoroute"          : "asphalt",
-                 'Quasi-autoroute'    : 'asphalt',
-                 'Bretelle'           : 'asphalt',
-                 'Route à 2 chaussées': 'asphalt',
-                 'Route à 1 chaussée' : 'asphalt',
-                 'Route empierrée'    : 'paved',
-                 'Chemin'             : 'ground',
-                 'Sentier'            : 'ground',
-                 'Pont'               : 'asphalt',
-                 'Tunnel'             : 'asphalt',
-                 'NC': null
+                 'NC'                 : null,
+                 'Rond-point'         : 'roundabout',
+                 'Nationale'          : 'primary',
+                 'Départementale'     : 'secondary'
                 ]
 
         def road_types_width =
@@ -320,10 +310,10 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  "residential" : 8,
                  "unclassified": 3,
                  "track"       : 2,
-                 "path"        : 1,
-                 "footway"     : 1,
-                 "cycleway"    : 1,
-                 "steps"       : 1,
+                 "path"        : 2,
+                 "footway"     : 2,
+                 "cycleway"    : 2,
+                 "steps"       : 2,
                  "highway_link": 8,
                  "roundabout"  : 4,
                  "ferry"       : 0,
@@ -336,7 +326,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
             columnNames.remove("THE_GEOM")
             queryMapper += columnNames.join(",")
             if (zone) {
-                datasource.createSpatialIndex(road,"the_geom")
+                datasource.createSpatialIndex(road, "the_geom")
                 queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$road AS a, $zone AS b " +
@@ -348,48 +338,128 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
-                    def road_type = row.TYPE
-                    def road_surface = row.SURFACE
-                    if (road_type) {
-                        road_type = road_types.get(road_type)
-                        road_surface=road_surfaces.get(road_surface)
-                    } else {
-                        road_type = "unclassified"
+                    def qualified_road_maxspeed = 50
+                    def qualified_road_type = 'unclassified'
+                    def qualified_road_surface = 'asphalt'
+                    def qualified_sidewalk = 'no'
+                    def qualified_road_width = 3
+                    def qualified_crossing = null
+                    def qualified_road_zindex = row.ZINDEX
+                    def road_rank = row.RANK
+                    //def road_admin_scale = row.ADMIN_SCALE
+                    switch (row.TYPE) {
+                        case 'Autoroute':
+                            qualified_road_maxspeed = 130
+                            qualified_road_type = 'motorway'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Type autoroutier':
+                            qualified_road_maxspeed = 130
+                            qualified_road_type = 'motorway'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Quasi-autoroute':
+                            qualified_road_maxspeed = 130
+                            qualified_road_type = 'trunk'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Bretelle':
+                            qualified_road_maxspeed = 50
+                            qualified_road_type = 'highway_link'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Route à 2 chaussées':
+                            qualified_road_maxspeed = 80
+                            qualified_road_type = 'primary'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            if (road_rank == 6) {
+                                qualified_road_maxspeed = 0
+                            } else if (road_rank == 5) {
+                                qualified_road_maxspeed = 30
+                            }
+                            break
+                        case 'Route à 1 chaussée':
+                            if (road_rank == 6) {
+                                qualified_road_maxspeed = 0
+                            } else if (road_rank == 5) {
+                                qualified_road_maxspeed = 30
+                            } else if (road_rank <= 4) {
+                                qualified_road_maxspeed = 80
+                            }
+                            qualified_road_type = 'unclassified'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Route empierrée':
+                            qualified_road_surface = 'paved'
+                            qualified_road_maxspeed = 10
+                            qualified_road_type = 'track'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Chemin':
+                            qualified_road_surface = 'ground'
+                            qualified_road_maxspeed = 0
+                            qualified_road_type = 'track'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Sentier':
+                            qualified_road_surface = 'ground'
+                            qualified_road_maxspeed = 0
+                            qualified_road_type = 'path'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Pont':
+                            qualified_road_maxspeed = 0
+                            qualified_road_type = 'bridge'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'NC':
+                            qualified_road_maxspeed = 0
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Rond-point':
+                            qualified_road_maxspeed = 30
+                            qualified_road_type = 'roundabout'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        case 'Piste cyclable':
+                            qualified_road_maxspeed = 0
+                            qualified_road_type = 'cycleway'
+                            qualified_road_width = road_types_width.get(qualified_road_type)
+                            break
+                        default:
+                            break
                     }
+
+                    //Use the original width
                     def width = row.WIDTH
-                    if (width == null || width <= 0) {
-                        width = road_types_width.get(road_type)
-                    }
-                    def road_zindex = row.ZINDEX
-                    if (!road_zindex) {
-                        road_zindex = 0
+                    if (width || width > 0) {
+                        qualified_road_width = width
                     }
                     def road_crossing = row.CROSSING
-                    if (road_crossing) {
-                        road_crossing = road_types.get(road_crossing)
-                        if(!road_zindex && road_crossing){
-                            road_zindex=1
+                    if (road_crossing == 'Gué ou radier') {
+                        qualified_road_zindex = 0
+                    } else if (road_crossing == 'Pont') {
+                        qualified_crossing = 'bridge'
+                        if (!qualified_road_zindex) {
+                            qualified_road_zindex = 1
                         }
                     }
-                    def road_sens = row.SENS
-                    if (road_sens) {
-                        if (road_sens == "Double") {
-                            road_sens = 3
-                        } else if (road_sens == "Direct") {
-                            road_sens = 1
-                        } else if (road_sens == "Inverse") {
-                            road_sens = 2
-                        } else {
-                            road_sens = -1
-                        }
+
+                    def road_sens = row.DIRECTION
+
+                    if (road_sens == "Double") {
+                        road_sens = 3
+                    } else if (road_sens == "Direct") {
+                        road_sens = 1
+                    } else if (road_sens == "Inverse") {
+                        road_sens = 2
+                    } else {
+                        road_sens = -1
                     }
 
                     def ID_SOURCE = row.ID_SOURCE
-                    def road_sidewalk = row.SIDEWALK
-                    //Not yet managed
-                    def road_maxspeed = null
 
-                    if (road_zindex >= 0 && road_type && road_type!= 'path') {
+                    if (qualified_road_zindex >= 0 && qualified_road_type != 'path') {
                         Geometry geom = row.the_geom
                         def epsg = geom.getSRID()
                         for (int i = 0; i < geom.getNumGeometries(); i++) {
@@ -398,14 +468,14 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                                         '${geom.getGeometryN(i)}',$epsg), 
                                         ${rowcount++}, 
                                         '${ID_SOURCE}', 
-                                        ${width},
-                                        '${road_type}',
-                                        '${road_crossing}', 
-                                        '${road_surface}',
-                                        '${road_sidewalk}',
-                                        ${road_maxspeed},
+                                        ${qualified_road_width},
+                                        '${qualified_road_type}',
+                                        '${qualified_crossing}', 
+                                        '${qualified_road_surface}',
+                                        '${qualified_sidewalk}',
+                                        ${qualified_road_maxspeed},
                                         ${road_sens},
-                                        ${road_zindex})
+                                        ${qualified_road_zindex})
                                         """.toString()
                         }
                     }
@@ -434,7 +504,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
         if (datasource.hasTable(water)) {
             String query
             if (zone) {
-                datasource.createSpatialIndex(water,"the_geom")
+                datasource.createSpatialIndex(water, "the_geom")
                 query = "select st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         ", a.ZINDEX, a.ID_SOURCE" +
                         " FROM " +
@@ -454,7 +524,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                     def epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
-                        if (subGeom instanceof Polygon && subGeom.getArea()>1) {
+                        if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
                             stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}', ${water_zindex})".toString()
                         }
                     }
@@ -487,7 +557,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
             columnNames.remove("THE_GEOM")
             queryMapper += columnNames.join(",")
             if (zone) {
-                datasource.createSpatialIndex(rail,"the_geom")
+                datasource.createSpatialIndex(rail, "the_geom")
                 queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$rail AS a, $zone AS b " +
@@ -500,18 +570,18 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
 
             def rail_types = ['LGV'                       : 'highspeed',
                               'Principale'                : 'rail',
-                               'Voie ferrée principale' :  'rail',
+                              'Voie ferrée principale'    : 'rail',
                               'Voie de service'           : 'service_track',
                               'Voie non exploitée'        : 'disused',
                               'Transport urbain'          : 'tram',
                               'Funiculaire ou crémaillère': 'funicular',
                               'Metro'                     : 'subway',
-                              'Métro'                      : 'subway',
+                              'Métro'                     : 'subway',
                               'Tramway'                   : 'tram',
                               'Pont'                      : 'bridge',
                               'Tunnel'                    : 'tunnel',
-                              'Sans objet' : null,
-                              'NC': null]
+                              'Sans objet'                : null,
+                              'NC'                        : null]
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
@@ -521,9 +591,9 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     } else {
                         rail_type = "unclassified"
                     }
-                    def rail_usage=""
-                    if(rail_type in ["highspeed", "rail", "tram", "bridge"]){
-                        rail_usage="main"
+                    def rail_usage = ""
+                    if (rail_type in ["highspeed", "rail", "tram", "bridge"]) {
+                        rail_usage = "main"
                     }
                     def rail_zindex = row.ZINDEX
                     if (!rail_zindex) {
@@ -532,13 +602,13 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
 
                     //1.435 default value for standard gauge
                     //1 constant for balasting
-                    def rail_width = !row.WIDTH?1.435+1:row.WIDTH+1
+                    def rail_width = !row.WIDTH ? 1.435 + 1 : row.WIDTH + 1
 
                     def rail_crossing = row.CROSSING
                     if (rail_crossing) {
                         rail_crossing = rail_types.get(rail_crossing)
-                        if(!rail_zindex && rail_crossing){
-                            rail_zindex=1
+                        if (!rail_zindex && rail_crossing) {
+                            rail_zindex = 1
                         }
                     }
                     if (rail_zindex >= 0 && rail_type) {
@@ -587,7 +657,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
             columnNames.remove("THE_GEOM")
             queryMapper += columnNames.join(",")
             if (zone) {
-                datasource.createSpatialIndex(vegetation,"the_geom")
+                datasource.createSpatialIndex(vegetation, "the_geom")
                 queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
                         "FROM " +
                         "$vegetation AS a, $zone AS b " +
@@ -614,7 +684,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                                     'Rizière'                  : 'rice_field',
                                     'Piste en herbe'           : 'grass',
                                     'Terrain de football'      : 'grass',
-                                    'Terrain de rugby': 'grass']
+                                    'Terrain de rugby'         : 'grass']
 
             def vegetation_classes = [
                     'tree'         : 'high',
@@ -632,7 +702,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                     'sugar_cane'   : 'low',
                     'unclassified' : 'low',
                     'hops'         : 'low',
-                    'rice_field'   :'low',
+                    'rice_field'   : 'low',
                     'grass'        : 'low'
             ]
 
@@ -654,7 +724,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                     def epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
-                        if (subGeom instanceof Polygon && subGeom.getArea()>1) {
+                        if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
                             stmt.addBatch """
                                             INSERT INTO $outputTableName VALUES(
                                                 ST_GEOMFROMTEXT('${subGeom}',$epsg), 
@@ -748,7 +818,7 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
     def weight_values = [
             "government": 5, "entertainment_arts_culture": 10, "education": 10, "military": 20,
             "industrial": 20, "commercial": 20, "healthcare": 10, "transport": 15, "building": 10,
-            "sport"     : 10, "cemetery": 10, "religious":10]
+            "sport"     : 10, "cemetery": 10, "religious": 10]
 
     //We must remove all overlapping geometries and then choose the attribute TYPE to set according some priorities
     def polygonizedTable = postfix("impervious_polygonized")
@@ -757,7 +827,7 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
             SELECT * from ST_EXPLODE('(select st_polygonize(st_union(st_accum(ST_ToMultiLine( the_geom)))) as the_geom from $impervious)')
             """.toString())
 
-    datasource.createSpatialIndex(impervious,"the_geom")
+    datasource.createSpatialIndex(impervious, "the_geom")
 
     datasource.execute(""" CREATE SPATIAL INDEX ON $polygonizedTable(THE_GEOM);
                         CREATE INDEX ON $polygonizedTable(EXPLOD_ID);""".toString())

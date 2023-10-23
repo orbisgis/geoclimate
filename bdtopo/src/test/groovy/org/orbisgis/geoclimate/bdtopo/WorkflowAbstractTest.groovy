@@ -19,7 +19,6 @@
  */
 package org.orbisgis.geoclimate.bdtopo
 
-
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
@@ -59,6 +58,19 @@ abstract class WorkflowAbstractTest {
      * @return
      */
     abstract ArrayList getFileNames()
+
+
+    Map getResultFiles(String dataFolder){
+        if(dataFolder){
+            def files = [:]
+            new File(dataFolder).eachFileRecurse groovy.io.FileType.FILES, { file ->
+                if (file.name.toLowerCase().endsWith(".geojson")) {
+                    files.put((file.name.take(file.name.lastIndexOf('.'))), file.getAbsolutePath())
+                }
+            }
+            return files
+        }
+    }
 
     /**
      * Return the path of the data sample
@@ -351,4 +363,53 @@ abstract class WorkflowAbstractTest {
         ]
         assertNull(BDTopo.workflow(bdTopoParameters, getVersion()))
     }
+
+    @Test
+    void testFormatData() {
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": folder.absolutePath,
+                        "name"  : "testFormatedData;AUTO_SERVER=TRUE",
+                        "delete": true
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": folder.absolutePath]],
+                "parameters"  :
+                        ["distance": 0]
+        ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+
+        Map resultFiles = getResultFiles(folder.absolutePath)
+        H2GIS h2GIS = H2GIS.open(folder.getAbsolutePath()+File.separator+"bdtopo_${getVersion()}_format")
+        resultFiles.each {
+            h2GIS.load( it.value, it.key,true)
+        }
+        //Check the data
+        //Building
+        int count = h2GIS.getRowCount("building")
+        List building_cols = [ "ID_BUILD", "ID_SOURCE", "HEIGHT_WALL", "HEIGHT_ROOF", "NB_LEV", "TYPE", "MAIN_USE", "ROOF_SHAPE","ZINDEX", "THE_GEOM"]
+        assertTrue h2GIS.getColumnNames("building").intersect(building_cols).size()==building_cols.size()
+        assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) as count FROM building where HEIGHT_WALL = 0 OR HEIGHT_ROOF = 0 OR NB_LEV = 0").count)
+        assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM building where TYPE IS NOT NULL OR  MAIN_USE IS NOT NULL").count)
+        assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM building where ZINDEX BETWEEN -4 AND 4").count)
+
+        //Road
+        count = h2GIS.getRowCount("road")
+        List road_cols = [ "ID_ROAD", "ID_SOURCE", "WIDTH","TYPE", "SURFACE", "SIDEWALK", "CROSSING","MAXSPEED", "DIRECTION", "ZINDEX", "THE_GEOM"]
+        assertTrue h2GIS.getColumnNames("road").intersect(road_cols).size()==road_cols.size()
+        assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where WIDTH = 0 ").count)
+        assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where TYPE IS NOT NULL OR SIDEWALK is not null").count)
+        assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where MAXSPEED !=0 OR MAXSPEED>= -1").count)
+        assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where DIRECTION !=0 OR DIRECTION>= -1").count)
+        assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where ZINDEX BETWEEN -4 AND 4").count)
+
+    }
+
 }
