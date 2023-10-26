@@ -20,11 +20,13 @@
 package org.orbisgis.geoclimate.bdtopo
 
 import groovy.transform.BaseScript
+import net.postgis.jdbc.geometry.LineString
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.geoclimate.Geoindicators
 
 
 @BaseScript BDTopo bdTopo
@@ -168,11 +170,12 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                     def zIndex = 0
                     if (formatedHeight.nbLevels > 0) {
                         Geometry geom = values.the_geom
-                        def srid = geom.getSRID()
-                        for (int i = 0; i < geom.getNumGeometries(); i++) {
-                            Geometry subGeom = geom.getGeometryN(i)
-                            if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                stmt.addBatch """
+                        if (!geom.isEmpty()) {
+                            def srid = geom.getSRID()
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                    stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
@@ -185,7 +188,8 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                                                     ${zIndex}, null)
                                             """.toString()
 
-                                id_build++
+                                    id_build++
+                                }
                             }
                         }
                     }
@@ -322,12 +326,10 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
 
         def queryMapper = "SELECT "
         if (datasource.hasTable(road)) {
-            def columnNames = datasource.getColumnNames(road)
-            columnNames.remove("THE_GEOM")
-            queryMapper += columnNames.join(",")
+            queryMapper += Geoindicators.DataUtils.aliasColumns(datasource, road, "a", ["THE_GEOM"])
             if (zone) {
                 datasource.createSpatialIndex(road, "the_geom")
-                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                queryMapper += ", ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom), 2) as the_geom " +
                         "FROM " +
                         "$road AS a, $zone AS b " +
                         "WHERE " +
@@ -437,14 +439,16 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                     }
                     def road_crossing = row.CROSSING
                     if (road_crossing == 'Gué ou radier') {
+                        qualified_crossing = 'crossing'
                         qualified_road_zindex = 0
                     } else if (road_crossing == 'Pont') {
                         qualified_crossing = 'bridge'
                         if (!qualified_road_zindex) {
                             qualified_road_zindex = 1
                         }
+                    }else if(road_crossing=='NC'){
+                        qualified_crossing=null
                     }
-
                     def road_sens = row.DIRECTION
 
                     if (road_sens == "Double") {
@@ -458,25 +462,29 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                     }
 
                     def ID_SOURCE = row.ID_SOURCE
-
                     if (qualified_road_zindex >= 0 && qualified_road_type != 'path') {
                         Geometry geom = row.the_geom
-                        def epsg = geom.getSRID()
-                        for (int i = 0; i < geom.getNumGeometries(); i++) {
-                            stmt.addBatch """
+                        if (!geom.isEmpty()) {
+                            def epsg = geom.getSRID()
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (!subGeom.isEmpty()) {
+                                    stmt.addBatch """
                                         INSERT INTO $outputTableName VALUES(ST_GEOMFROMTEXT(
-                                        '${geom.getGeometryN(i)}',$epsg), 
+                                        '${subGeom}',$epsg), 
                                         ${rowcount++}, 
                                         '${ID_SOURCE}', 
                                         ${qualified_road_width},
                                         '${qualified_road_type}',
-                                        '${qualified_crossing}', 
+                                        ${qualified_crossing ? "'${qualified_crossing}'" : qualified_crossing}, 
                                         '${qualified_road_surface}',
                                         '${qualified_sidewalk}',
                                         ${qualified_road_maxspeed},
                                         ${road_sens},
                                         ${qualified_road_zindex})
                                         """.toString()
+                                }
+                            }
                         }
                     }
                 }
@@ -498,7 +506,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
     debug('Hydro transformation starts')
     def outputTableName = postfix("HYDRO")
     datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_WATER serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
 
     if (water) {
         if (datasource.hasTable(water)) {
@@ -506,7 +514,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
             if (zone) {
                 datasource.createSpatialIndex(water, "the_geom")
                 query = "select st_intersection(a.the_geom, b.the_geom) as the_geom " +
-                        ", a.ZINDEX, a.ID_SOURCE" +
+                        ", a.ZINDEX, a.ID_SOURCE, a.TYPE " +
                         " FROM " +
                         "$water AS a, $zone AS b " +
                         "WHERE " +
@@ -515,17 +523,49 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                 query = "select * FROM $water "
 
             }
+            def water_types =
+                    ["Aqueduc"               : "aqueduct",
+                     "Canal"                 : "canal",
+                     "Delta"                 : "bay",
+                     "Ecoulement canalisé"   : "canal",
+                     "Ecoulement endoréique" : "water",
+                     "Ecoulement hyporhéique": "water",
+                     "Ecoulement karstique"  : "water",
+                     "Ecoulement naturel"    : "water",
+                     "Ecoulement phréatique" : "water",
+                     "Estuaire"              : "bay",
+                     "Inconnue"              : "water",
+                     "Lac"                   : "lake",
+                     "Lagune"                : "lagoon", "Mangrove": "mangrove",
+                     "Mare"                  : "pond",
+                     "Plan d'eau de gravière": "pond",
+                     "Plan d'eau de mine": "basin", "Ravine": "water",
+                     "Réservoir-bassin"      : "basin",
+                     "Réservoir-bassin d'orage": "basin",
+                     "Réservoir-bassin piscicole": "basin",
+                     "Retenue"               : "basin",
+                     "Retenuebarrage": "basin",
+                     "Retenue-bassin portuaire": "basin",
+                     "Retenue-digue": "basin",
+                     "Surface d'eau" :"water",
+                     "Bassin" :"basin"
+                    ]
+
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(query) { row ->
-                    def water_type = 'water'
+                    def water_type = water_types.get(row.TYPE)
                     def water_zindex = 0
-                    Geometry geom = row.the_geom
-                    def epsg = geom.getSRID()
-                    for (int i = 0; i < geom.getNumGeometries(); i++) {
-                        Geometry subGeom = geom.getGeometryN(i)
-                        if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}', ${water_zindex})".toString()
+                    if (water_type) {
+                        Geometry geom = row.the_geom
+                        if (!geom.isEmpty()) {
+                            def epsg = geom.getSRID()
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}', ${water_zindex})".toString()
+                                }
+                            }
                         }
                     }
                 }
@@ -553,9 +593,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
     if (rail) {
         def queryMapper = "SELECT "
         if (datasource.hasTable(rail)) {
-            def columnNames = datasource.getColumnNames(rail)
-            columnNames.remove("THE_GEOM")
-            queryMapper += columnNames.join(",")
+            queryMapper +=   Geoindicators.DataUtils.aliasColumns(datasource, rail, "a", ["THE_GEOM"])
             if (zone) {
                 datasource.createSpatialIndex(rail, "the_geom")
                 queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
@@ -584,14 +622,14 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                               'NC'                        : null]
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
-                datasource.eachRow(queryMapper) { row ->
+                datasource.eachRow(queryMapper.toString()) { row ->
                     def rail_type = row.TYPE
                     if (rail_type) {
                         rail_type = rail_types.get(rail_type)
                     } else {
                         rail_type = "unclassified"
                     }
-                    def rail_usage = ""
+                    def rail_usage = null
                     if (rail_type in ["highspeed", "rail", "tram", "bridge"]) {
                         rail_usage = "main"
                     }
@@ -613,19 +651,24 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     }
                     if (rail_zindex >= 0 && rail_type) {
                         Geometry geom = row.the_geom
-                        def epsg = geom.getSRID()
-                        for (int i = 0; i < geom.getNumGeometries(); i++) {
-                            stmt.addBatch """
+                        if (!geom.isEmpty()) {
+                            def epsg = geom.getSRID()
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (!subGeom.isEmpty()) {
+                                    stmt.addBatch """
                                     INSERT INTO $outputTableName values(ST_GEOMFROMTEXT(
-                                    '${geom.getGeometryN(i)}',$epsg), 
+                                    '${subGeom}',$epsg), 
                                     ${rowcount++}, 
                                     '${row.ID_SOURCE}',
                                     '${rail_type}',
-                                    '${rail_crossing}',
+                                    ${rail_crossing ? "'${rail_crossing}'" : rail_crossing},
                                     ${rail_zindex},
                                     ${rail_width},
-                                    '${rail_usage}')
+                                    ${rail_usage ? "'${rail_usage}'" : rail_usage})
                                 """
+                                }
+                            }
                         }
                     }
                 }
@@ -649,13 +692,11 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
     def outputTableName = postfix "VEGET"
     datasource """ 
                 DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
     if (vegetation) {
         def queryMapper = "SELECT "
         if (datasource.hasTable(vegetation)) {
-            def columnNames = datasource.getColumnNames(vegetation)
-            columnNames.remove("THE_GEOM")
-            queryMapper += columnNames.join(",")
+            queryMapper +=  Geoindicators.DataUtils.aliasColumns(datasource, vegetation, "a", ["THE_GEOM"])
             if (zone) {
                 datasource.createSpatialIndex(vegetation, "the_geom")
                 queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
@@ -684,7 +725,8 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                                     'Rizière'                  : 'rice_field',
                                     'Piste en herbe'           : 'grass',
                                     'Terrain de football'      : 'grass',
-                                    'Terrain de rugby'         : 'grass']
+                                    'Terrain de rugby'         : 'grass',
+                                    'Marais'                   : 'marsh']
 
             def vegetation_classes = [
                     'tree'         : 'high',
@@ -703,7 +745,8 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                     'unclassified' : 'low',
                     'hops'         : 'low',
                     'rice_field'   : 'low',
-                    'grass'        : 'low'
+                    'grass'        : 'low',
+                    'marsh'        : 'low'
             ]
 
             int rowcount = 1
@@ -857,3 +900,15 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
     debug('Impervious areas transformation finishes')
     return outputTableName
 }
+
+/**
+ *
+ * @return
+ */
+String setAliasOnColumns(String tableName){
+    return  columnNames.inject([]) { result, iter ->
+        result += "a.$iter"
+    }.join(",")
+}
+
+

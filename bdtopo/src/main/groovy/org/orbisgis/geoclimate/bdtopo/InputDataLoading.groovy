@@ -147,7 +147,7 @@ def loadV2(
     String surface_eau = tablesExist.get("surface_eau")
     if (!surface_eau) {
         surface_eau = "surface_eau"
-        datasource.execute("DROP TABLE IF EXISTS $surface_eau;  CREATE TABLE $surface_eau (THE_GEOM geometry(polygon, $srid), ID varchar);".toString())
+        datasource.execute("DROP TABLE IF EXISTS $surface_eau;  CREATE TABLE $surface_eau (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE VARCHAR);".toString())
     }
     String zone_vegetation = tablesExist.get("zone_vegetation")
     if (!zone_vegetation) {
@@ -239,9 +239,9 @@ def loadV2(
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_ROAD;
             CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, ZINDEX integer, CROSSING varchar,
-             DIRECTION varchar, MAXSPEED INTEGER,  RANK INTEGER, ADMIN_SCALE VARCHAR)
+             DIRECTION varchar,  RANK INTEGER, ADMIN_SCALE VARCHAR)
             AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, 
-            a.POS_SOL, a.FRANCHISST, a.SENS ,NULL, 
+            a.POS_SOL, a.FRANCHISST, a.SENS , 
             CASE WHEN a.IMPORTANCE IN ('1', '2', '3', '4', '5') THEN CAST (a.IMPORTANCE AS INTEGER) ELSE NULL END ,
             a.CL_ADMIN
             FROM $route a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
@@ -259,8 +259,8 @@ def loadV2(
     //6. Prepare the Hydrography table (from the layer "SURFACE_EAU") that are in the study area (ZONE_EXTENDED)
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_HYDRO;
-            CREATE TABLE INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer)
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0  FROM $surface_eau a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+            CREATE TABLE INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE VARCHAR)
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE   FROM $surface_eau a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
             """.toString())
 
     //7. Prepare the Vegetation table (from the layer "ZONE_VEGETATION") that are in the study area (ZONE_EXTENDED)
@@ -272,7 +272,6 @@ def loadV2(
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0
             FROM $piste_aerodrome a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NATURE = 'Piste en herbe';
-            ;
             """.toString())
 
     //8. Prepare the Urban areas
@@ -573,9 +572,12 @@ Map loadV3(JdbcDataSource datasource,
             CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, 
             TYPE varchar,  ZINDEX integer, CROSSING varchar, DIRECTION varchar,
             RANK INTEGER, ADMIN_SCALE VARCHAR)
-            AS SELECT  ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.LARGEUR, CASE WHEN a.NAT_RESTR = 'Piste cyclable' then  a.NAT_RESTR else a.NATURE end,  
+            AS SELECT  ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.LARGEUR, 
+            CASE WHEN a.NAT_RESTR = 'Piste cyclable' then  a.NAT_RESTR else a.NATURE end,  
             CASE WHEN a.POS_SOL='Gué ou radier' THEN 0 ELSE CAST(a.POS_SOL AS INT ) END AS POS_SOL, 
-            CASE WHEN a.POS_SOL='1' OR a.POS_SOL='Gué ou radier' THEN a.POS_SOL else null end , 
+            CASE WHEN a.POS_SOL in ('1', '2', '3', '4') THEN 'Pont' 
+            WHEN a.POS_SOL='Gué ou radier' THEN a.POS_SOL
+            else null end , 
             CASE WHEN a.SENS='Double sens' THEN 'Double'
             WHEN  a.SENS='Sens direct'  THEN 'Direct'
             WHEN a.SENS='Sens inverse' THEN 'Inverse'
@@ -592,10 +594,10 @@ Map loadV3(JdbcDataSource datasource,
             DROP TABLE IF EXISTS INPUT_RAIL;
             CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
             AS SELECT ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.NATURE, 
-            a.POS_SOL, CASE WHEN a.POS_SOL=1 THEN 'Pont' else '' end, 
+            a.POS_SOL, 
+            CASE WHEN a.POS_SOL in ('1', '2', '3', '4') THEN 'Pont' else null end, 
         CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_de_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
-
 
     //6. Prepare the Hydrography table (from the layer "surface_hydrographique") that are in the study area (ZONE_EXTENDED)
     datasource.execute("""
@@ -603,6 +605,7 @@ Map loadV3(JdbcDataSource datasource,
             CREATE TABLE INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE varchar)
             AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE FROM $surface_hydrographique a, ZONE_EXTENDED 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0
+            and a.NATURE not in ('Conduit buse', 'Conduit forcé', 'Marais', 'Glacier névé')
             union all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE  FROM $terrain_de_sport a, ZONE_EXTENDED 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
@@ -623,7 +626,10 @@ Map loadV3(JdbcDataSource datasource,
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NAT_DETAIL, 0
             FROM $terrain_de_sport a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NAT_DETAIL in ('Terrain de football', 'Terrain de rugby')
-            ;
+            UNION ALL
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE , 0 FROM $surface_hydrographique a, ZONE_EXTENDED 
+            b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0
+            and a.NATURE  in ('Marais')            ;
             """.toString())
 
     //8. Prepare the Urban areas

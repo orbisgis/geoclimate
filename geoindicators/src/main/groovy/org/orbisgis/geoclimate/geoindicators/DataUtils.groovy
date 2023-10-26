@@ -147,3 +147,33 @@ static Map parametersMapping(def file, def altResourceStream) {
     }
     return jsonSlurper.parse(paramStream)
 }
+
+/**
+ * Create the select projection and alias all columns
+ * @param datasource
+ * @param tableName
+ * @param alias
+ * @return
+ */
+static String aliasColumns(JdbcDataSource datasource, String tableName, String alias){
+    Collection columnNames =  datasource.getColumnNames(tableName)
+    return columnNames.inject([]) { result, iter ->
+        result += "$alias.$iter"
+    }.join(",")
+}
+
+/**
+ * Create the select projection and alias all columns
+ * @param datasource
+ * @param tableName
+ * @param alias
+ * @param exceptColumns
+ * @return
+ */
+static String aliasColumns(JdbcDataSource datasource, String tableName, String alias, Collection exceptColumns){
+    Collection columnNames =  datasource.getColumnNames(tableName)
+    columnNames.removeAll(exceptColumns)
+    return columnNames.inject([]) { result, iter ->
+        result += "$alias.$iter"
+    }.join(",")
+}

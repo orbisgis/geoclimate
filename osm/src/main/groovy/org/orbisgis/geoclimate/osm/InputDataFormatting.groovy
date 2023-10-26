@@ -366,7 +366,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
             }
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
-                datasource.eachRow(queryMapper) { row ->
+                datasource.eachRow(queryMapper.toString()) { row ->
                     def type = getTypeValue(row, columnNames, mappingType)
                     def zIndex = getZIndex(row.'layer')
                     //special treatment if type is subway
