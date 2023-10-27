@@ -169,13 +169,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 ZINDEX INTEGER)"""
         datasource """DROP TABLE IF EXISTS $vegetationTableName;
                     CREATE TABLE $vegetationTableName(THE_GEOM GEOMETRY,
-                                                    ID INTEGER,
+                                                    ID_VEGET INTEGER,
                                                     ID_SOURCE VARCHAR,
                                                     HEIGHT_CLASS VARCHAR,
                                                     ZINDEX INTEGER)"""
         datasource """DROP TABLE IF EXISTS $hydrographicTableName;
                     CREATE TABLE $hydrographicTableName(THE_GEOM GEOMETRY,
-                                                    ID INTEGER,
+                                                    ID_WATER INTEGER,
                                                     ID_SOURCE VARCHAR,
                                                     TYPE VARCHAR,
                                                     ZINDEX INTEGER)"""

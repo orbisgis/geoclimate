@@ -215,13 +215,13 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                 datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocksLow, $subGraphBlocksHigh".toString()
 
-                datasource.createIndex(vegetation, "ID")
+                datasource.createIndex(vegetation, "ID_VEGET")
                 datasource.createSpatialIndex(vegetation, "THE_GEOM")
                 datasource.execute """          
                    CREATE TABLE $vegetation_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                   SELECT CAST((row_number() over()) as Integer), a.ID as START_NODE, b.ID AS END_NODE 
+                   SELECT CAST((row_number() over()) as Integer), a.ID_VEGET as START_NODE, b.ID_VEGET AS END_NODE 
                    FROM $vegetation  AS a, $vegetation AS b 
-                   WHERE a.ID <>b.ID AND a.the_geom && b.the_geom 
+                   WHERE a.ID_VEGET <>b.ID_VEGET AND a.the_geom && b.the_geom 
                    AND ST_INTERSECTS(b.the_geom,a.the_geom);
                    """.toString()
 
@@ -235,14 +235,14 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                 CREATE TABLE $subGraphBlocksLow AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $vegetation A, $subGraphTableNodes B
-                WHERE a.id=b.NODE_ID AND a.HEIGHT_CLASS= 'low' GROUP BY B.CONNECTED_COMPONENT 
+                WHERE a.ID_VEGET=b.NODE_ID AND a.HEIGHT_CLASS= 'low' GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
 
                 //Processing high vegetation
                 datasource """
                 CREATE TABLE $subGraphBlocksHigh AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $vegetation A, $subGraphTableNodes B
-                WHERE a.id=b.NODE_ID AND a.HEIGHT_CLASS= 'high' GROUP BY B.CONNECTED_COMPONENT 
+                WHERE a.ID_VEGET=b.NODE_ID AND a.HEIGHT_CLASS= 'high' GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
 
                 debug "Creating the vegetation block table..."
@@ -252,7 +252,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 AS SELECT the_geom FROM $subGraphBlocksLow
                 UNION ALL SELECT the_geom FROM $subGraphBlocksHigh
                 UNION ALL SELECT  ST_ToMultiLine(a.the_geom) as the_geom FROM $vegetation a 
-                LEFT JOIN $subGraphTableNodes b ON a.id = b.NODE_ID WHERE b.NODE_ID IS NULL 
+                LEFT JOIN $subGraphTableNodes b ON a.ID_VEGET = b.NODE_ID WHERE b.NODE_ID IS NULL 
                 AND st_area(a.the_geom)>=$surface_vegetation;
                 DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocksLow, $subGraphBlocksHigh;""".toString()
                 queryCreateOutputTable += [vegetation_tmp: "(SELECT the_geom FROM $vegetation_tmp)"]
@@ -272,13 +272,13 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                 datasource "DROP TABLE IF EXISTS  $hydrographic_tmp, $water_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
 
-                datasource.createIndex(water, "id")
+                datasource.createIndex(water, "ID_WATER")
                 datasource.createSpatialIndex(water, "THE_GEOM")
                 datasource.execute """          
                    CREATE TABLE $water_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                   SELECT CAST((row_number() over()) as Integer), a.id as START_NODE, b.id AS END_NODE 
+                   SELECT CAST((row_number() over()) as Integer), a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
                    FROM $water  AS a, $water AS b 
-                   WHERE a.id <>b.id AND a.the_geom && b.the_geom 
+                   WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
                    AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0;
                    """.toString()
 
@@ -292,14 +292,14 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                 CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $water A, $subGraphTableNodes B
-                WHERE a.id=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
+                WHERE a.ID_WATER=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;""".toString()
                 debug "Creating the water block table..."
                 datasource """DROP TABLE IF EXISTS $hydrographic_tmp; 
                 CREATE TABLE $hydrographic_tmp (THE_GEOM GEOMETRY) 
                 AS SELECT the_geom FROM $subGraphBlocks
                 UNION ALL SELECT ST_ToMultiLine(a.the_geom) as the_geom  FROM $water a 
-                LEFT JOIN $subGraphTableNodes b ON a.id = b.NODE_ID WHERE b.NODE_ID IS NULL and 
+                LEFT JOIN $subGraphTableNodes b ON a.ID_WATER = b.NODE_ID WHERE b.NODE_ID IS NULL and 
                 st_area(a.the_geom)>=$surface_hydro;
                 DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph, $subGraphBlocks ;""".toString()
 
@@ -311,7 +311,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         if (road && datasource.hasTable(road)) {
                 debug "Preparing road..."
             if(datasource.getColumnNames(road).size()>0) {
-                queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing = 'bridge') " +
+                queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing in ('bridge', 'crossing')) " +
                         "and type not in ('track','service', 'path', 'cycleway', 'steps'))"]
             }
         }

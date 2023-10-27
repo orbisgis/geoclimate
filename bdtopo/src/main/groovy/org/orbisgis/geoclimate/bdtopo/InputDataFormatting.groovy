@@ -280,30 +280,6 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                 SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, ZINDEX INTEGER);
         """.toString()
     if (road) {
-        //Define the mapping between the values in BDTopo and those used in the abstract model
-        def road_types =
-                ["Autoroute"          : "motorway",
-                 "Type autoroutier"   : "motorway",
-                 'Quasi-autoroute'    : 'trunk',
-                 'Bretelle'           : 'highway_link',
-                 'Route à 2 chaussées': 'primary',
-                 'Route à 1 chaussée' : 'unclassified',
-                 'Route empierrée'    : 'track',
-                 'Chemin'             : 'track',
-                 'Bac auto'           : 'ferry',
-                 'Bac piéton'         : 'ferry',
-                 'Piste cyclable'     : 'cycleway',
-                 'Sentier'            : 'path',
-                 'Escalier'           : 'steps',
-                 'Gué ou radier'      : null,
-                 'Pont'               : 'bridge',
-                 'Tunnel'             : 'tunnel',
-                 'NC'                 : null,
-                 'Rond-point'         : 'roundabout',
-                 'Nationale'          : 'primary',
-                 'Départementale'     : 'secondary'
-                ]
-
         def road_types_width =
                 ["highway"     : 8,
                  "motorway"    : 24,
@@ -323,10 +299,8 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  "ferry"       : 0,
                  "pedestrian"  : 3,
                  "service"     : 3]
-
-        def queryMapper = "SELECT "
         if (datasource.hasTable(road)) {
-            queryMapper += Geoindicators.DataUtils.aliasColumns(datasource, road, "a", ["THE_GEOM"])
+            def queryMapper = "SELECT a.ID_SOURCE, a.WIDTH, a.TYPE, a.ZINDEX, a.CROSSING, a.DIRECTION, a.RANK, a.ADMIN_SCALE"
             if (zone) {
                 datasource.createSpatialIndex(road, "the_geom")
                 queryMapper += ", ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom), 2) as the_geom " +
@@ -335,7 +309,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                         "WHERE " +
                         "a.the_geom && b.the_geom "
             } else {
-                queryMapper += ", the_geom FROM $road  as a"
+                queryMapper += ", a.the_geom FROM $road  as a"
             }
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
@@ -591,9 +565,8 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                 ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH FLOAT, USAGE VARCHAR(30));""".toString()
 
     if (rail) {
-        def queryMapper = "SELECT "
         if (datasource.hasTable(rail)) {
-            queryMapper +=   Geoindicators.DataUtils.aliasColumns(datasource, rail, "a", ["THE_GEOM"])
+            def queryMapper = "SELECT a.ID_SOURCE, a.TYPE, a.ZINDEX, a.CROSSING, a.WIDTH"
             if (zone) {
                 datasource.createSpatialIndex(rail, "the_geom")
                 queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
@@ -602,7 +575,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                         "WHERE " +
                         "a.the_geom && b.the_geom "
             } else {
-                queryMapper += ", the_geom FROM $rail  as a"
+                queryMapper += ", a.the_geom FROM $rail  as a"
 
             }
 
@@ -641,14 +614,8 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     //1.435 default value for standard gauge
                     //1 constant for balasting
                     def rail_width = !row.WIDTH ? 1.435 + 1 : row.WIDTH + 1
+                    def rail_crossing = rail_types.get(row.CROSSING)
 
-                    def rail_crossing = row.CROSSING
-                    if (rail_crossing) {
-                        rail_crossing = rail_types.get(rail_crossing)
-                        if (!rail_zindex && rail_crossing) {
-                            rail_zindex = 1
-                        }
-                    }
                     if (rail_zindex >= 0 && rail_type) {
                         Geometry geom = row.the_geom
                         if (!geom.isEmpty()) {
@@ -694,9 +661,8 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
     if (vegetation) {
-        def queryMapper = "SELECT "
         if (datasource.hasTable(vegetation)) {
-            queryMapper +=  Geoindicators.DataUtils.aliasColumns(datasource, vegetation, "a", ["THE_GEOM"])
+            def queryMapper = "SELECT a.ID_SOURCE, a.TYPE, a.ZINDEX"
             if (zone) {
                 datasource.createSpatialIndex(vegetation, "the_geom")
                 queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
@@ -705,7 +671,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                         "WHERE " +
                         "a.the_geom && b.the_geom "
             } else {
-                queryMapper += ", the_geom FROM $vegetation  as a"
+                queryMapper += ", a.the_geom FROM $vegetation  as a"
             }
             def vegetation_types = ['Zone arborée'             : 'wood',
                                     'Forêt fermée de feuillus' : 'forest',

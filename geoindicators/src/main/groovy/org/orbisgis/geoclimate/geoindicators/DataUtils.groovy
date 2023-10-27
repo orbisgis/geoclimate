@@ -170,7 +170,7 @@ static String aliasColumns(JdbcDataSource datasource, String tableName, String a
  * @param exceptColumns
  * @return
  */
-static String aliasColumns(JdbcDataSource datasource, String tableName, String alias, Collection exceptColumns){
+static String aliasColumns(JdbcDataSource datasource, def tableName, def alias, def exceptColumns){
     Collection columnNames =  datasource.getColumnNames(tableName)
     columnNames.removeAll(exceptColumns)
     return columnNames.inject([]) { result, iter ->
