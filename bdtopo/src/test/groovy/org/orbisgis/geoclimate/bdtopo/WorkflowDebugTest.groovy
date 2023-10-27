@@ -50,18 +50,18 @@ class WorkflowDebugTest {
             def user = postgis_b.user
             def password = postgis_b.password
             def url = postgis_b.url
-            def locations = ["35236"]
+            def locations = ["54395"]
             def local_database_name = "geoclimate_test_integration;AUTO_SERVER=TRUE"
 
             /*================================================================================
             * Input database and tables
             */
             def input = [
+                    "locations": locations,
                     "database": [
                             "user"     : user,
                             "password" : password,
                             "url"      : url,
-                            "locations": locations,
                             "tables"   : ["commune"                : "ign_bdtopo_2018.commune",
                                           "bati_indifferencie"     : "ign_bdtopo_2018.bati_indifferencie",
                                           "bati_industriel"        : "ign_bdtopo_2018.bati_industriel",
@@ -113,7 +113,7 @@ class WorkflowDebugTest {
                     ],
                     "input"       : input,
                     "output"      : output,
-                    "parameters"  : ["distance"      : 1000,
+                    "parameters"  : ["distance"      : 100,
                                      "rsu_indicators": [
                                              "indicatorUse": ["LCZ", "UTRF", "TEB"]
                                      ],
@@ -137,7 +137,7 @@ class WorkflowDebugTest {
     @Test
     void testIntegrationFolderInput() {
         def input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo2/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D035_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D035-ED182"
-        def locations = ["Dijon"]
+        def locations = ["Gimont"]
         String directory = "/tmp/bdtopo2"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -169,16 +169,15 @@ class WorkflowDebugTest {
         ]
         //BDTopo.v2(bdTopoParameters)
 
-        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D021_2023-03-15"
+        input_data = "/home/ebocher/Téléchargements/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D032_2023-09-15/BDTOPO"
 
-        directory = "/tmp/bdtopo3"
+        directory = "/tmp/bdtopo3/result"
         dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
 
         bdTopoParameters.input.folder=input_data
         bdTopoParameters.output.folder.path=directory
-
         BDTopo.v3(bdTopoParameters)
 
     }

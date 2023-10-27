@@ -19,7 +19,6 @@
  */
 package org.orbisgis.geoclimate.bdtopo
 
-
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
@@ -53,12 +52,27 @@ abstract class WorkflowAbstractTest {
      */
     abstract String getInseeCode()
 
+    abstract void checkFormatData();
+
 
     /**
      * The names of file used for the test
      * @return
      */
     abstract ArrayList getFileNames()
+
+
+    Map getResultFiles(String dataFolder){
+        if(dataFolder){
+            def files = [:]
+            new File(dataFolder).eachFileRecurse groovy.io.FileType.FILES, { file ->
+                if (file.name.toLowerCase().endsWith(".geojson")) {
+                    files.put((file.name.take(file.name.lastIndexOf('.'))), file.getAbsolutePath())
+                }
+            }
+            return files
+        }
+    }
 
     /**
      * Return the path of the data sample
@@ -351,4 +365,29 @@ abstract class WorkflowAbstractTest {
         ]
         assertNull(BDTopo.workflow(bdTopoParameters, getVersion()))
     }
+
+    @Test
+    void testFormatData() {
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": folder.absolutePath,
+                        "name"  : "testFormatedData;AUTO_SERVER=TRUE",
+                        "delete": true
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": folder.absolutePath]],
+                "parameters"  :
+                        ["distance": 0]
+        ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+        checkFormatData()
+    }
+
 }
