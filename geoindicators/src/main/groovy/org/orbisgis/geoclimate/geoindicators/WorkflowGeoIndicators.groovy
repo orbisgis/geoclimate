@@ -829,6 +829,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
     def CORRESPONDENCE_TAB_UTRF = ["ba"  : 1, "bgh": 2, "icif": 3, "icio": 4, "id": 5, "local": 6, "pcif": 7,
                                    "pcio": 8, "pd": 9, "psc": 10]
     def nameColTypoMaj = "TYPO_MAJ"
+    def nameColTypoSecond = "TYPO_SECOND"
 
     // Output Lcz (and urbanTypo) table names are set to null in case LCZ indicators (and urban typo) are not calculated
     def rsuLcz = null
@@ -974,7 +975,10 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                                                     ELSE        b.UNIQUENESS_VALUE END AS UNIQUENESS_VALUE,
                                                     CASE WHEN   b.UNIQUENESS_VALUE=-1
                                                     THEN        NULL
-                                                    ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj
+                                                    ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL FROM 6)) END AS $nameColTypoMaj,
+                                                    CASE WHEN   b.UNIQUENESS_VALUE=-1
+                                                    THEN        NULL
+                                                    ELSE        LOWER(SUBSTRING(b.EXTREMUM_COL2 FROM 6)) END AS $nameColTypoSecond
                                         FROM    TEMPO_DISTRIB a LEFT JOIN $resultsDistrib b
                                         ON a.$COLUMN_ID_RSU=b.$COLUMN_ID_RSU""".toString()
             }
