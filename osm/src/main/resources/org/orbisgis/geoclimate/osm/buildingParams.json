@@ -541,7 +541,8 @@
       "railway": [
         "station",
         "train_station",
-        "building"
+        "roundhouse"
+
       ],
       "public_transport": [
         "train_station",
