@@ -1430,6 +1430,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
 
     def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
     def nbBuildingEstimated
+    def buildEstimatedHeight
     if (datasource.getTable(gatheredScales).isEmpty()) {
         info "No building height to estimate"
         nbBuildingEstimated = 0
@@ -1437,12 +1438,12 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
                                            CREATE TABLE $buildingTableName 
                                                 AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
                                                     HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $estimated_building_with_indicators""".toString()
+
     } else {
         info "Start estimating the building height"
         //Apply RF model
-        def buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                gatheredScales, buildingHeightModelName,
-                "id_build", prefixName)
+        buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
+                gatheredScales, buildingHeightModelName,"id_build", prefixName)
         if (!buildEstimatedHeight) {
             error "Cannot apply the building height model $buildingHeightModelName"
             return
@@ -1477,14 +1478,14 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
         datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                             $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
                                             $gatheredScales""".toString()
-
-        return ["building"                          : buildingTableName,
-                "rsu"                               : rsuTable,
-                "building_indicators_without_height": buildingIndicatorsForHeightEst,
-                "block_indicators_without_height"   : blockIndicatorsForHeightEst,
-                "rsu_indicators_without_height"     : rsuIndicatorsForHeightEst,
-                "nb_building_estimated"             : nbBuildingEstimated]
     }
+
+    return ["building"                          : buildingTableName,
+            "rsu"                               : rsuTable,
+            "building_indicators_without_height": buildingIndicatorsForHeightEst,
+            "block_indicators_without_height"   : blockIndicatorsForHeightEst,
+            "rsu_indicators_without_height"     : rsuIndicatorsForHeightEst,
+            "nb_building_estimated"             : nbBuildingEstimated]
 }
 
 
