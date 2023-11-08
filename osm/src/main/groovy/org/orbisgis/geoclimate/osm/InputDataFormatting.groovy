@@ -44,7 +44,7 @@ import java.util.regex.Pattern
  * @return outputTableName The name of the final buildings table
  * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
  */
-Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "", String urban_areas = "", int h_lev_min = 3, String jsonFilename = null) {
+Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "", String urban_areas = "", int h_lev_min = 3, String jsonFilename = "") {
     if (!h_lev_min) {
         h_lev_min = 3
     }
@@ -1056,7 +1056,6 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                 def coastLinesIntersectsPoints = "coatline_intersect_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def coastLinesPoints = "coatline_points_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def sea_land_mask = "sea_land_mask${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                def sea_land_mask_in_zone = "sea_land_mask_in_zone${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def water_to_be_filtered = "water_to_be_filtered${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def water_filtered_exploded = "water_filtered_exploded${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def sea_land_triangles = "sea_land_triangles${UUID.randomUUID().toString().replaceAll("-", "_")}"
@@ -1066,10 +1065,10 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                 datasource.createSpatialIndex(coastline, "the_geom")
                 datasource.execute """DROP TABLE IF EXISTS $coastLinesIntersects, 
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
-                        $sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles;
+                        $water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles;
                         CREATE TABLE $coastLinesIntersects AS SELECT ST_intersection(a.the_geom, b.the_geom) as the_geom
                         from $coastline  AS  a,  $zone  AS b WHERE
-                        a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom);     
+                        a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) and "natural"= 'coastline';     
                         """.toString()
 
                 if (water) {
@@ -1088,17 +1087,12 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         UNION ALL
                         SELECT st_tomultiline(the_geom)
                         from $water ;
-
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
-                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');   """.toString()
+                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)')
+                        as foo where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;  """.toString()
 
                     datasource.execute """
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
-
-                        CREATE TABLE $sea_land_mask_in_zone as select the_geom, id, type, ZINDEX 
-                        from st_explode('(SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
-                        FROM $sea_land_mask as a, $zone  as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))') 
-                        where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;                
                        
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
@@ -1116,19 +1110,23 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                        CREATE TABLE $sea_land_triangles AS 
                        SELECT * FROM 
                         st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tessellate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
-                      ID, TYPE, ZINDEX FROM $sea_land_mask_in_zone)');
+                      ID, TYPE, ZINDEX FROM $sea_land_mask)');
 
                     CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_triangles}_the_geom_idx ON $sea_land_triangles (THE_GEOM);
 
                     DROP TABLE IF EXISTS $sea_id_triangles;
                     CREATE TABLE $sea_id_triangles AS SELECT DISTINCT a.id FROM $sea_land_triangles a, 
                     $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
-                                st_contains(a.THE_GEOM, b.THE_GEOM);  
-                    CREATE INDEX ON  $sea_id_triangles (id);
-                    
-                    --Update sea triangles                    
+                                st_intersects(a.THE_GEOM, b.THE_GEOM);  
+                    CREATE INDEX ON  $sea_id_triangles (id);""".toString()
+
+                    //Set the triangles to sea
+                    datasource.execute """                                     
                     UPDATE ${sea_land_triangles} SET TYPE='sea' WHERE ID IN(SELECT ID FROM $sea_id_triangles);   
-                        
+                    """.toString()
+
+                    //Set the triangles to water
+                    datasource.execute """
                     DROP TABLE IF EXISTS $water_id_triangles;
                     CREATE TABLE $water_id_triangles AS SELECT a.ID
                                 FROM ${sea_land_triangles} a, $water b WHERE a.THE_GEOM && b.THE_GEOM AND
@@ -1160,13 +1158,10 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         from $zone ;
 
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
-                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');                
+                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)') as foo where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;                
                         
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
 
-                        CREATE TABLE $sea_land_mask_in_zone as select the_geom, id, type, ZINDEX from st_explode('(SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
-                        FROM $sea_land_mask as a, $zone  as b where a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))') where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;                
-                       
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
@@ -1186,7 +1181,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                        CREATE TABLE $sea_land_triangles AS 
                        SELECT * FROM 
                         st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tessellate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
-                      ID, TYPE, ZINDEX FROM $sea_land_mask_in_zone)');
+                      ID, TYPE, ZINDEX FROM $sea_land_mask)');
 
                     CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_triangles}_the_geom_idx ON $sea_land_triangles (THE_GEOM);
 
@@ -1209,7 +1204,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
 
                 datasource.execute("""DROP TABLE IF EXISTS $coastLinesIntersects,
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
-                        $sea_land_mask_in_zone,$water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles
+                        $water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles
                         """.toString())
                 debug 'The sea/land mask has been computed'
                 return outputTableName

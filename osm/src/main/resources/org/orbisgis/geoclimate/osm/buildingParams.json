@@ -1,10 +1,6 @@
 {
   "tags": {
-    "building": [],
-    "railway": [
-      "station",
-      "train_station"
-    ]
+    "building": []
   },
   "columns": [
     "height",
@@ -183,7 +179,7 @@
         "! church"
       ]
     },
-    "sport:entertainment_arts_culture": {
+    "sport:sport": {
       "building": [
         "swimming_pool",
         "fitness_centre",
@@ -212,7 +208,7 @@
         "track"
       ]
     },
-    "sports_centre:entertainment_arts_culture": {
+    "sports_centre:sport": {
       "building": [
         "sports_centre",
         "sports_hall"
@@ -344,7 +340,7 @@
         "kiosk",
         "money_transfer",
         "market",
-        "market_place",
+        "marketplace",
         "pharmacy",
         "post_office",
         "retail",
@@ -519,6 +515,16 @@
         "! no"
       ]
     },
+    "shelter": {
+      "amenity": [
+        "shelter"
+      ]
+    },
+    "shelter:transport": {
+      "shelter_type": [
+        "public_transport"
+      ]
+    },
     "transport": {
       "building": [
         "train_station",
@@ -535,7 +541,8 @@
       "railway": [
         "station",
         "train_station",
-        "building"
+        "roundhouse"
+
       ],
       "public_transport": [
         "train_station",
@@ -585,6 +592,19 @@
     "entertainment_arts_culture": {
       "leisure": [
         "! no"
+      ], "amenity": [
+        "cinema","arts_centre", "brothel", "casino",
+        "community_centre", "conference_centre",
+        "events_venue", "exhibition_centre", "gambling",
+        "music_venue", "nightclub", "planetarium",
+        "social_centre","studio", "theatre"
+      ],
+      "building": [
+        "cinema","arts_centre", "brothel", "casino",
+        "community_centre", "conference_centre",
+        "events_venue", "exhibition_centre", "gambling",
+        "music_venue", "nightclub", "planetarium",
+        "social_centre","studio", "theatre"
       ]
     },
     "sustenance:commercial": {

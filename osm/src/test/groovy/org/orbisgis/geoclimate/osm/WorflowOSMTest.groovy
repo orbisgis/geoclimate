@@ -29,7 +29,6 @@ import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.geoclimate.osmtools.OSMTools
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -651,13 +650,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
+        def location = "Nice"
 
-        def location = "Redon"
+       //def nominatim = OSMTools.Utilities.getNominatimData("Nantes")
 
-       def nominatim = OSMTools.Utilities.getNominatimData("Redon")
+        location=[47.2, -1.6, 47.4, -1.4]
+       //location = nominatim.bbox
 
-        location = nominatim.bbox
-        location = [33.8, 7.6, 34, 7.8]
+
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -677,7 +677,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
+
                                  "indicatorUse": ["LCZ", "TEB"] //, "UTRF", "TEB"]
+
                          ]/*,"grid_indicators": [
                                 "x_size": 200,
                                 "y_size": 200,
@@ -688,7 +690,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                                                 "LCZ_PRIMARY",
                                                 //"BUILDING_HEIGHT_WEIGHTED", //"BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
-                                                "ASPECT_RATIO","SVF",
+                                                "ASPECT_RATIO",//"SVF",
                                                 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
                         ],    "worldpop_indicators": true,
                          "road_traffic"                                         : true,

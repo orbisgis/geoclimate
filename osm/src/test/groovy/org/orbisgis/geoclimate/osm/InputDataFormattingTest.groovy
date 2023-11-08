@@ -216,8 +216,8 @@ class InputDataFormattingTest {
 
         //Sea/Land mask
         String inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline, zoneEnvelopeTableName)
-        assertEquals(4, h2GIS.getTable(inputSeaLandTableName).getRowCount())
-        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 3
+        assertEquals(2, h2GIS.getTable(inputSeaLandTableName).getRowCount())
+        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 1
         h2GIS.getTable(inputSeaLandTableName).save(new File(folder, "osm_sea_land.geojson").getAbsolutePath(), true)
     }
 
@@ -309,11 +309,10 @@ class InputDataFormattingTest {
         //aeroway Toulouse https://www.openstreetmap.org/way/739797641#map=14/43.6316/1.3590
         zoneToExtract = [43.610539, 1.334152, 43.648808, 1.392689]
 
-            zoneToExtract = "Göteborgs Stad"
+        zoneToExtract = "Göteborgs Stad"
 
-        zoneToExtract = "Barcelona Eixample"
-
-        //zoneToExtract =  [69.24666, 28.3359, 69.32999, 28.41923]
+        zoneToExtract = "Riantec"
+        zoneToExtract =[45.575525,5.913734,45.578859,5.919549]
 
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
@@ -332,37 +331,21 @@ class InputDataFormattingTest {
             h2GIS.getTable(extractData.zone_envelope).save("${file.absolutePath + File.separator}osm_zone_envelope_${formatedPlaceName}.geojson", true)
 
             //Urban Areas
-            /*format = OSM.InputDataFormatting.formatUrbanAreas()
-            format.execute([
-                    datasource                : h2GIS,
-                    inputTableName            : extractData.results.urbanAreasTableName,
-                    inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
-                    epsg                      : epsg])
-            def urbanAreasTableName = format.results.outputTableName;
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_urban_areas_${formatedPlaceName}.geojson", true)
+            def inputUrbanAreas = OSM.InputDataFormatting.formatUrbanAreas(h2GIS,
+                    extractData.urban_areas,extractData.zone)
+            h2GIS.save(inputUrbanAreas,"${file.absolutePath + File.separator}osm_urban_areas_${formatedPlaceName}.geojson", true)
 
             //Buildings
-            format = OSM.InputDataFormatting.formatBuildingLayer()
-            format.execute([
-                    datasource                : h2GIS,
-                    inputTableName            : extractData.results.buildingTableName,
-                    inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
-                    epsg                      : epsg,
-                    urbanAreasTableName       : urbanAreasTableName])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_building_${formatedPlaceName}.geojson", true)
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV is null").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where NB_LEV<0").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL is null").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_WALL<0").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF is null").count == 0
-            assertTrue h2GIS.firstRow("select count(*) as count from ${format.results.outputTableName} where HEIGHT_ROOF<0").count == 0
+            h2GIS.save(extractData.building,"${file.absolutePath + File.separator}building_${formatedPlaceName}.geojson", true)
+            def inputBuildings = OSM.InputDataFormatting.formatBuildingLayer(h2GIS,
+                     extractData.building,extractData.zone,inputUrbanAreas)
+            h2GIS.save(inputBuildings.building,"${file.absolutePath + File.separator}osm_building_${formatedPlaceName}.geojson", true)
 
 
             //Roads
 
-             */
             def inputRoadTableName = OSM.InputDataFormatting.formatRoadLayer( h2GIS,extractData.road, extractData.zone_envelope)
-            h2GIS.getTable(inputRoadTableName).save("${file.absolutePath + File.separator}osm_road_${formatedPlaceName}.geojson", true)
+            h2GIS.save(inputRoadTableName,"${file.absolutePath + File.separator}osm_road_${formatedPlaceName}.geojson", true)
 
             //Rails
             /*format = OSM.InputDataFormatting.formatRailsLayer()
@@ -377,22 +360,26 @@ class InputDataFormattingTest {
             //Vegetation
             def inputVegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(
                     h2GIS,extractData.vegetation,extractData.zone_envelope)
-            h2GIS.getTable(inputVegetationTableName).save("${file.absolutePath + File.separator}osm_vegetation_${formatedPlaceName}.geojson", true)
+            h2GIS.save(inputVegetationTableName,"${file.absolutePath + File.separator}osm_vegetation_${formatedPlaceName}.geojson", true)
 
 
             //Hydrography
             def inputWaterTableName = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
-            h2GIS.getTable(inputWaterTableName).save("${file.absolutePath + File.separator}osm_water_${formatedPlaceName}.geojson", true)
+            h2GIS.save(inputWaterTableName,"${file.absolutePath + File.separator}osm_water_${formatedPlaceName}.geojson", true)
 
             //Impervious
             String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
                     extractData.zone_envelope)
-            h2GIS.getTable(imperviousTable).save("${file.absolutePath + File.separator}osm_impervious_${formatedPlaceName}.geojson", true)
+            h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}osm_impervious_${formatedPlaceName}.geojson", true)
+
+            //Save coastlines to debug
+            h2GIS.save(extractData.coastline,"${file.absolutePath + File.separator}osm_coastlines_${formatedPlaceName}.geojson", true)
+
 
             //Sea/Land mask
             def inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
                     extractData.zone_envelope, inputWaterTableName)
-            h2GIS.getTable(inputSeaLandTableName).save("${file.absolutePath + File.separator}osm_sea_land_${formatedPlaceName}.geojson", true)
+            h2GIS.save(inputSeaLandTableName,"${file.absolutePath + File.separator}osm_sea_land_${formatedPlaceName}.geojson", true)
 
         } else {
             assertTrue(false)
