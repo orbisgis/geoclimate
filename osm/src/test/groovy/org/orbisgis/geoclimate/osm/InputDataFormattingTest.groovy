@@ -216,7 +216,7 @@ class InputDataFormattingTest {
 
         //Sea/Land mask
         String inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline, zoneEnvelopeTableName)
-        assertEquals(4, h2GIS.getTable(inputSeaLandTableName).getRowCount())
+        assertEquals(2, h2GIS.getTable(inputSeaLandTableName).getRowCount())
         assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 3
         h2GIS.getTable(inputSeaLandTableName).save(new File(folder, "osm_sea_land.geojson").getAbsolutePath(), true)
     }
@@ -312,9 +312,7 @@ class InputDataFormattingTest {
         zoneToExtract = "Göteborgs Stad"
 
         zoneToExtract = "Riantec"
-        zoneToExtract =[43.637255,1.426635,43.644476,1.437042]
-
-        //zoneToExtract =  [69.24666, 28.3359, 69.32999, 28.41923]
+        zoneToExtract =[45.575525,5.913734,45.578859,5.919549]
 
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
@@ -335,7 +333,7 @@ class InputDataFormattingTest {
             //Urban Areas
             def inputUrbanAreas = OSM.InputDataFormatting.formatUrbanAreas(h2GIS,
                     extractData.urban_areas,extractData.zone)
-            h2GIS.save(inputUrbanAreas,"./target/osm_urban_areas_${formatedPlaceName}.geojson", true)
+            h2GIS.save(inputUrbanAreas,"${file.absolutePath + File.separator}osm_urban_areas_${formatedPlaceName}.geojson", true)
 
             //Buildings
             h2GIS.save(extractData.building,"${file.absolutePath + File.separator}building_${formatedPlaceName}.geojson", true)

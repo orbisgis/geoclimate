@@ -1158,13 +1158,10 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         from $zone ;
 
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
-                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)');                
+                        st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)') as foo where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;                
                         
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
 
-                        CREATE TABLE $sea_land_mask as select the_geom, id, type, ZINDEX from st_explode('(SELECT st_intersection(a.THE_GEOM, b.the_geom) as the_geom, a.id, a.type,a.ZINDEX 
-                        FROM $sea_land_mask as a, $zone  as b where a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))') where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;                
-                       
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
