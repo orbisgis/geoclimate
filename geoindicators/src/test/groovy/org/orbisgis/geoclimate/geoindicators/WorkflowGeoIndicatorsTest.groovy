@@ -197,6 +197,10 @@ class WorkflowGeoIndicatorsTest {
             // Check that the sum of proportion (or building floor area) for each RSU is equal to 1
             def utrfFloorArea = datasource."$geoIndicatorsCompute_i.rsu_utrf_floor_area"
             def colUtrfFloorArea = utrfFloorArea.getColumns()
+
+            // Test that the TYPO_SECOND is inside the RSU UTRF table
+            assertEquals 1, colUtrfFloorArea.count("TYPO_SECOND")
+
             colUtrfFloorArea = colUtrfFloorArea.minus(["ID_RSU", "THE_GEOM", "TYPO_MAJ", "TYPO_SECOND", "UNIQUENESS_VALUE"])
             def countSumFloorAreaEqual1 = datasource.firstRow("""SELECT COUNT(*) AS NB 
                                                                     FROM ${geoIndicatorsCompute_i.rsu_utrf_floor_area}
