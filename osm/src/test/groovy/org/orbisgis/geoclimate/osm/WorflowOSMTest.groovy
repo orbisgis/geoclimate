@@ -657,7 +657,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
        def nominatim = OSMTools.Utilities.getNominatimData("Redon")
 
         location = nominatim.bbox
-
+        location = [33.8, 7.6, 34, 7.8]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -677,8 +677,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
-                                 "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
-                         ],"grid_indicators": [
+                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF", "TEB"]
+                         ]/*,"grid_indicators": [
                                 "x_size": 200,
                                 "y_size": 200,
                                 //"rowCol": true,
@@ -694,7 +694,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
                                  "ground_acoustic": true
-                         ]
+                         ]*/
                         ]
         ]
         OSM.workflow(osm_parmeters)
