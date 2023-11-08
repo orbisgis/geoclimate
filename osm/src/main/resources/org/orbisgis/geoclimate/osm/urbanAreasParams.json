@@ -1,18 +1,13 @@
 {
   "tags": {
-    "landuse": [
-      "commercial",
-      "residential",
-      "retail",
-      "industrial",
-      "construction"
-    ],
+    "landuse": [],
     "construction":[]
   },
   "columns": [
     "landuse",
     "industrial",
-    "construction"
+    "construction",
+    "anemity"
   ],
   "type": {
     "construction": {
@@ -39,6 +34,26 @@
     "light_industry:industrial": {
       "landuse": [
         "industrial"
+      ]
+    },
+    "government": {
+      "landuse": [
+        "institutional"
+      ]
+    },
+    "education": {
+      "landuse": [
+        "education"
+      ],
+      "amenity": [
+        "school",
+        "university",
+        "research_institute"
+      ]
+    },
+    "military": {
+      "landuse": [
+        "military"
       ]
     }
   }
