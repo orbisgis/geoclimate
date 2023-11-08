@@ -515,6 +515,16 @@
         "! no"
       ]
     },
+    "shelter": {
+      "amenity": [
+        "shelter"
+      ]
+    },
+    "shelter:transport": {
+      "shelter_type": [
+        "public_transport"
+      ]
+    },
     "transport": {
       "building": [
         "train_station",
