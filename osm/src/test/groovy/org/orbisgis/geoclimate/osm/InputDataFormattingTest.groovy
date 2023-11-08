@@ -217,7 +217,7 @@ class InputDataFormattingTest {
         //Sea/Land mask
         String inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline, zoneEnvelopeTableName)
         assertEquals(2, h2GIS.getTable(inputSeaLandTableName).getRowCount())
-        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 3
+        assertTrue h2GIS.firstRow("select count(*) as count from ${inputSeaLandTableName} where type='land'").count == 1
         h2GIS.getTable(inputSeaLandTableName).save(new File(folder, "osm_sea_land.geojson").getAbsolutePath(), true)
     }
 
