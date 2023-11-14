@@ -278,9 +278,12 @@ class UtilitiesTest extends AbstractOSMToolsTest {
                 "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
+                "\tnode[\"building\"];\n" +
+                "\tway[\"building\"];\n" +
+                "\trelation[\"building\"];\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"])
+                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building"])
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 ");\n" +
@@ -315,19 +318,19 @@ class UtilitiesTest extends AbstractOSMToolsTest {
                 "\tway[\"water\"];\n" +
                 ");\n" +
                 ">;);\n" +
-                "out;", Utilities.buildOSMQueryWithAllData(enveloppe, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
+                "out;", OSMTools.Utilities.buildOSMQueryWithAllData(enveloppe, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "((\n" +
                 ");\n" +
                 ">;);\n" +
-                "out;", Utilities.buildOSMQueryWithAllData(enveloppe, ["building", "water"])
+                "out;", OSMTools.Utilities.buildOSMQueryWithAllData(enveloppe, ["building", "water"])
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "((\n" +
                 "\tnode;\n" +
                 "\tway;\n" +
                 ");\n" +
                 ">;);\n" +
-                "out;", Utilities.buildOSMQueryWithAllData(enveloppe, [], OSMElement.NODE, OSMElement.WAY)
+                "out;", OSMTools.Utilities.buildOSMQueryWithAllData(enveloppe, [], OSMElement.NODE, OSMElement.WAY)
     }
 
     /**
@@ -366,9 +369,12 @@ class UtilitiesTest extends AbstractOSMToolsTest {
                 "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
+                "\tnode[\"building\"](poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
+                "\tway[\"building\"](poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
+                "\trelation[\"building\"](poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"])
+                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building"])
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 ");\n" +
