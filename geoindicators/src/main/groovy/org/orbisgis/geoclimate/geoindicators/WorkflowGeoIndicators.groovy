@@ -1029,7 +1029,8 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
                           String road, String rail, String vegetation,
                           String water, String  sea_land_mask, String urban_areas,
                           String rsu, double surface_vegetation,
-                          double surface_hydro, double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
+                          double surface_hydro, double surface_urban_areas,
+                          double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
     info "Create the units of analysis..."
     def idRsu = "id_rsu"
     def tablesToDrop = []
@@ -1038,7 +1039,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
         rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone, road, rail,
                 vegetation, water,
                 sea_land_mask, urban_areas, surface_vegetation,
-                surface_hydro, prefixName)
+                surface_hydro,surface_urban_areas, prefixName)
         if (!rsu) {
             info "Cannot compute the RSU."
             return
@@ -1111,7 +1112,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
  */
 Map getParameters() {
     return [
-            "surface_vegetation"            : 10000d, "surface_hydro": 2500d,
+            "surface_vegetation"            : 10000d, "surface_hydro": 2500d, "surface_urban_areas":10000d,
             "snappingTolerance"             : 0.01d, "indicatorUse": ["LCZ", "UTRF", "TEB"],
             "mapOfWeights"                  : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1218,6 +1219,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
 
     def surface_vegetation = inputParameters.surface_vegetation
     def surface_hydro = inputParameters.surface_hydro
+    def surface_urban_areas = inputParameters.surface_urban_areas
     def snappingTolerance = inputParameters.snappingTolerance
     def buildingHeightModelName = inputParameters.buildingHeightModelName
     def indicatorUse = inputParameters.indicatorUse
@@ -1239,7 +1241,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
                 water, impervious,
                 buildingEstimateTableName,
                 sea_land_mask, urban_areas, rsuTable,
-                surface_vegetation, surface_hydro,
+                surface_vegetation, surface_hydro,surface_urban_areas,
                 snappingTolerance,
                 buildingHeightModelName, prefixName)
         if (!estimHeight) {
@@ -1280,7 +1282,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
                     vegetation,
                     water, sea_land_mask, "", rsuTable,
                     surface_vegetation,
-                    surface_hydro, snappingTolerance, indicatorUse,
+                    surface_hydro, surface_urban_areas, snappingTolerance, indicatorUse,
                     prefixName)
             if (!spatialUnitsForCalc) {
                 error "Cannot create the spatial units"
@@ -1330,7 +1332,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
                 rail, vegetation,
                 water, sea_land_mask, "","",
                 surface_vegetation,
-                surface_hydro, snappingTolerance, indicatorUse,
+                surface_hydro,surface_urban_areas, snappingTolerance, indicatorUse,
                 prefixName)
         if (!spatialUnits) {
             error "Cannot create the spatial units"
@@ -1367,7 +1369,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
                            String water, String impervious,
                            String building_estimate, String sea_land_mask, String urban_areas, String rsu,
                            double surface_vegetation, double surface_hydro,
-                           double snappingTolerance, String buildingHeightModelName, String prefixName = "") {
+                           double snappingTolerance, double surface_urban_areas, String buildingHeightModelName, String prefixName = "") {
     if (!building_estimate) {
         error "To estimate the building height a table that contains the list of building to estimate must be provided"
         return
@@ -1382,7 +1384,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
             building, road, rail, vegetation,
             water, sea_land_mask, urban_areas, rsu,
-            surface_vegetation, surface_hydro, snappingTolerance, ["UTRF"],
+            surface_vegetation, surface_hydro,surface_urban_areas, snappingTolerance, ["UTRF"],
             prefixName)
     if (!spatialUnits) {
         error "Cannot create the spatial units"

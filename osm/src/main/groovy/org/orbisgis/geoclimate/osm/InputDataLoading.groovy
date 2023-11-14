@@ -244,13 +244,12 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationt
             datasource.execute("ALTER TABLE ${impervious} RENAME TO $outputImperviousTableName".toString())
             info "Impervious layer created"
         }
-
         //Create urban areas layer
         paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String urban_areas = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, [],geometry, true)
+        String urban_areas = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags,columnsToKeep,geometry, true)
         debug "Create the urban areas layer"
         if (urban_areas) {
             outputUrbanAreasTableName = postfix("OSM_URBAN_AREAS")

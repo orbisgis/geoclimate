@@ -37,7 +37,8 @@
     "sustenance",
     "office",
     "tourism",
-    "roof:shape"
+    "roof:shape",
+    "wall"
   ],
   "level": {
     "building": 1,
@@ -82,7 +83,9 @@
     "emergency": 0,
     "hotel": 2,
     "hospital": 2,
-    "parking": 1
+    "parking": 1,
+    "slight_construction": 0,
+    "water_tower" : 0
   },
   "type": {
     "terminal:transport": {
@@ -597,7 +600,7 @@
         "community_centre", "conference_centre",
         "events_venue", "exhibition_centre", "gambling",
         "music_venue", "nightclub", "planetarium",
-        "social_centre","studio", "theatre"
+        "social_centre","studio", "theatre", "library"
       ],
       "building": [
         "cinema","arts_centre", "brothel", "casino",
@@ -605,6 +608,8 @@
         "events_venue", "exhibition_centre", "gambling",
         "music_venue", "nightclub", "planetarium",
         "social_centre","studio", "theatre"
+      ], "tourism": [
+        "museum", "aquarium", "gallery", "information"
       ]
     },
     "sustenance:commercial": {
@@ -650,7 +655,7 @@
         "! no"
       ]
     },
-    "building:public": {
+    "government:public": {
       "building": [
         "public"
       ]
@@ -672,6 +677,12 @@
       "tourism": [
         "attraction"
       ]
+    },
+    "slight_construction": {
+      "wall": ["no"]
+    },
+    "water:service": {
+      "man_made": ["water_tower"]
     },
     "building": {
       "building": [

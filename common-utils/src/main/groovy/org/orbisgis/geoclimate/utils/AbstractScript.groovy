@@ -4,6 +4,7 @@ import org.slf4j.Logger
 
 abstract class AbstractScript extends Script {
 
+
     public Logger logger
 
 

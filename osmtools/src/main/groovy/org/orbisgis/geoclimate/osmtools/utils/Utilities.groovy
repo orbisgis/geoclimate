@@ -79,7 +79,7 @@ Map getNominatimData(def placeName) {
 
     def data = [:]
     jsonRoot.features.find() { feature ->
-        if (feature.geometry != null) {
+        if (feature.geometry != null &&  feature.properties.type=="administrative") {
             if (feature.geometry.type.equalsIgnoreCase("polygon")) {
                 def area = parsePolygon(feature.geometry.coordinates, geometryFactory)
                 area.setSRID(4326)
@@ -339,6 +339,21 @@ String toPoly(Geometry geometry) {
     polyStr += "${coord.getY()} ${coord.getX()}"
     return polyStr + "\")"
 }
+/**
+ * Method to build a valid OSM query with a bbox.
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ *
+ * @param envelope The envelope to filter.
+ * @param keys A list of OSM keys. Must be null
+ *
+ * @return A string representation of the OSM query.
+ */
+String buildOSMQuery(Envelope envelope, def keys=null) {
+    return buildOSMQuery(envelope, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+}
+
 
 /**
  * Method to build a valid OSM query with a bbox.
@@ -352,7 +367,7 @@ String toPoly(Geometry geometry) {
  *
  * @return A string representation of the OSM query.
  */
-String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
+ String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
     if (!envelope) {
         error "Cannot create the overpass query from the bbox $envelope."
         return null
@@ -372,6 +387,44 @@ String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
 }
 
 /**
+ * Method to build a valid OSM query with a list of coordinates that define a Bbox.
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ *
+ * @param latLonCoordinates an array of 4 coordinates in lat/lon
+ * @param keys A list of OSM keys.
+ *
+ * @return A string representation of the OSM query.
+ */
+String buildOSMQuery(List latLonCoordinates, def keys=null) {
+    return buildOSMQuery(latLonCoordinates, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+}
+
+/**
+ * Method to build a valid OSM query with a list of coordinates that define a Bbox.
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ *
+ * @param latLonCoordinates an array of 4 coordinates in lat/lon
+ * @param keys A list of OSM keys.
+ * @param osmElement A list of OSM elements to build the query (node, way, relation).
+ *
+ * @return A string representation of the OSM query.
+ */
+ String buildOSMQuery(List latLonCoordinates, def keys, OSMElement... osmElement) {
+    if (!latLonCoordinates) {
+        error "Cannot create the overpass query from the bbox $latLonCoordinates."
+        return null
+    }
+    Geometry geom = OSMTools.Utilities.geometryFromValues(latLonCoordinates)
+    if(geom==null) {
+        error "Invalid BBOX"
+        return null
+    }
+    return buildOSMQuery(geom.getEnvelopeInternal(), keys, osmElement)
+}
+
+/**
  * Method to build a valid OSM query with a bbox to
  * download all the osm data concerning
  *
@@ -384,7 +437,7 @@ String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
  *
  * @return A string representation of the OSM query.
  */
-static String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement... osmElement) {
+ String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement... osmElement) {
     if (!envelope) {
         error "Cannot create the overpass query from the bbox $envelope."
         return null
@@ -401,6 +454,21 @@ static String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement..
     }
     query += ");\n>;);\nout;"
     return query
+}
+
+/**
+ * Method to build a valid and optimized OSM query
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ *
+ * @param polygon The polygon to filter.
+ * @param keys A list of OSM keys.
+ *
+ * @return A string representation of the OSM query.
+ */
+String buildOSMQuery(Polygon polygon, def keys=null) {
+    return buildOSMQuery(polygon, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 }
 
 /**

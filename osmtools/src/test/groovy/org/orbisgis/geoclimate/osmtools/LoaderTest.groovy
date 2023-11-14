@@ -635,4 +635,13 @@ class LoaderTest extends AbstractOSMToolsTest {
             }
         }
     }
+
+    /**
+     * For debug purpose
+     */
+    @Disabled
+    @Test
+    void forDebug() {
+        println(OSMTools.Utilities.getNominatimData("Sassenage"))
+    }
 }

@@ -414,7 +414,7 @@ class RsuIndicatorsTests {
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', '',
                 'veget_test', 'hydro_test', "","",
-                10000, 2500, "prepare_rsu")
+                10000, 2500,10000, "prepare_rsu")
 
         assertNotNull h2GIS.getTable(outputTableGeoms)
 

@@ -1,15 +1,34 @@
 {
   "tags": {
-    "landuse": [],
-    "construction":[]
+    "landuse": [ "commercial",
+      "residential",
+      "retail",
+      "industrial",
+      "construction", "military",
+      "railway", "farmyard"],
+    "construction":[],
+    "amenity": ["school",
+      "university",
+      "research_institute", "community_centre"]
   },
   "columns": [
     "landuse",
     "industrial",
     "construction",
-    "anemity"
+    "amenity",
+    "building"
   ],
   "type": {
+    "education": {
+      "landuse": [
+        "education"
+      ],
+      "amenity": [
+        "school",
+        "university",
+        "research_institute"
+      ]
+    },
     "construction": {
       "landuse": [
         "construction"
@@ -26,14 +45,14 @@
         "residential"
       ]
     },
-    "heavy_industry:industrial": {
+    "heavy_industry": {
       "industrial": [
         "refinery"
       ]
     },
-    "light_industry:industrial": {
+    "light_industry": {
       "landuse": [
-        "industrial"
+        "industrial", "port"
       ]
     },
     "government": {
@@ -41,19 +60,23 @@
         "institutional"
       ]
     },
-    "education": {
-      "landuse": [
-        "education"
-      ],
-      "amenity": [
-        "school",
-        "university",
-        "research_institute"
-      ]
-    },
+    "social_building": {
+    "amenity": [
+      "community_centre"
+    ]},
     "military": {
       "landuse": [
         "military"
+      ]
+    },
+    "transport": {
+      "landuse": [
+        "railway"
+      ]
+    },
+    "agricultural": {
+      "landuse": [
+        "farmyard"
       ]
     }
   }
