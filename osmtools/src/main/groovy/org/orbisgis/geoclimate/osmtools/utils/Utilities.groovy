@@ -269,11 +269,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) {
         connection = url.openConnection()
     }
     connection.requestMethod = "GET"
-    def user_agent = System.getProperty("OVERPASS_USER_AGENT")
-    if (!user_agent) {
-        user_agent = OSM_USER_AGENT
-    }
-    connection.setRequestProperty("User-Agent", user_agent)
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
 
     connection.connect()
 
@@ -691,9 +687,6 @@ static @Field OVERPASS_BASE_URL = "${OVERPASS_ENDPOINT}/interpreter?data="
 /** Url of the status of the Overpass server */
 static @Field OVERPASS_STATUS_URL = "${OVERPASS_ENDPOINT}/status"
 
-/** Default user agent*/
-static @Field OSM_USER_AGENT = "geoclimate"
-
 /** OVERPASS TIMEOUT */
 static @Field int OVERPASS_TIMEOUT = 180
 /**
@@ -760,11 +753,7 @@ boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
         timeout = (int) TimeUnit.MINUTES.toMillis(3);
     }
 
-    def user_agent = System.getProperty("OVERPASS_USER_AGENT")
-    if (!user_agent) {
-        user_agent = OSM_USER_AGENT
-    }
-    connection.setRequestProperty("User-Agent", user_agent)
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
 
     connection.setConnectTimeout(timeout);
     connection.setReadTimeout(timeout);
@@ -826,11 +815,8 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
     } else {
         timeout = (int) TimeUnit.MINUTES.toMillis(3);
     }
-    def user_agent = System.getProperty("OVERPASS_USER_AGENT")
-    if (!user_agent) {
-        user_agent = OSM_USER_AGENT
-    }
-    connection.setRequestProperty("User-Agent", user_agent)
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
+
     connection.setConnectTimeout(timeout)
     connection.setReadTimeout(timeout)
 

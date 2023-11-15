@@ -184,7 +184,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         return
     }
 
-    if (surface_urban_areas < 10000) {
+    if (surface_urban_areas <= 100) {
         error("The surface of urban areas must be greater or equal than 100 m²")
         return
     }

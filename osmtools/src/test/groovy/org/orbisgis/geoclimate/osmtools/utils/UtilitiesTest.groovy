@@ -548,12 +548,12 @@ class UtilitiesTest extends AbstractOSMToolsTest {
     @Disabled
     void getNominatimDataTest() {
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
-        def data = Utilities.getNominatimData("Paimpol")
+        def data = OSMTools.Utilities.getNominatimData("Paimpol")
         assertTrue pattern.matcher(data["geom"].toString()).matches()
         Envelope env = data["geom"].getEnvelopeInternal()
         assertEquals([env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()].toString(), data["bbox"].toString())
         assertEquals(data["extratags"]["ref:INSEE"], "22162")
-        data = Utilities.getNominatimData("Boston")
+        data = OSMTools.Utilities.getNominatimData("Boston")
         assertTrue pattern.matcher(data["geom"].toString()).matches()
         assertEquals(data["extratags"]["population"], "689326")
     }

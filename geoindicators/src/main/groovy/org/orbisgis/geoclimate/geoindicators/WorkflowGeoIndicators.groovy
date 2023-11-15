@@ -1368,8 +1368,8 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
                            String road, String rail, String vegetation,
                            String water, String impervious,
                            String building_estimate, String sea_land_mask, String urban_areas, String rsu,
-                           double surface_vegetation, double surface_hydro,
-                           double snappingTolerance, double surface_urban_areas, String buildingHeightModelName, String prefixName = "") {
+                           double surface_vegetation, double surface_hydro,double surface_urban_areas,
+                           double snappingTolerance, String buildingHeightModelName, String prefixName = "") {
     if (!building_estimate) {
         error "To estimate the building height a table that contains the list of building to estimate must be provided"
         return
