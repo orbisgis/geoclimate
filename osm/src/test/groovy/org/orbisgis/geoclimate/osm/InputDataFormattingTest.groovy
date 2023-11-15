@@ -67,7 +67,7 @@ class InputDataFormattingTest {
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 10, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
-        assertEquals 7, h2GIS.getTable(extractData.urban_areas).rowCount
+        assertEquals 11, h2GIS.getTable(extractData.urban_areas).rowCount
         assertEquals 0, h2GIS.getTable(extractData.coastline).rowCount
 
         //Buildings
@@ -312,7 +312,9 @@ class InputDataFormattingTest {
         zoneToExtract = "Göteborgs Stad"
 
         zoneToExtract = "Riantec"
-        zoneToExtract =[45.575525,5.913734,45.578859,5.919549]
+        zoneToExtract =[45.185546,5.751944,45.204296,5.784216]
+
+       zoneToExtract="Sassenage"
 
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 

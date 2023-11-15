@@ -145,28 +145,64 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.createIndex(outputTableName, "id_build")
                 datasource.createIndex(outputTableName, "type")
                 datasource.createSpatialIndex(urban_areas, "the_geom")
+                def urbanAreasPart = "urbanAreasPart${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def buildinType = "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
-                datasource.execute """create table $buildinType as SELECT max(b.type) as type, max(b.main_use) as main_use, a.id_build FROM $outputTableName a, $urban_areas b 
-                        WHERE a.the_geom && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) AND  a.TYPE ='building' group by a.id_build""".toString()
+                datasource.execute """DROP TABLE IF EXISTS $urbanAreasPart, $buildinType ;
+            CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part FROM $outputTableName a, $urban_areas b 
+                        WHERE a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND  a.TYPE ='building';   
+            CREATE INDEX ON $urbanAreasPart(id_build);                     
+            create table $buildinType as select 
+            MAX(part) FILTER (WHERE type = 'residential') as "residential",
+            MAX(part) FILTER (WHERE  type = 'education')  as "education",
+            MAX(part) FILTER (WHERE  type = 'commercial')  as "commercial",
+            MAX(part) FILTER (WHERE  type = 'heavy_industry')  as "heavy_industry",
+            MAX(part) FILTER (WHERE  type = 'light_industry')  as "light_industry",
+            MAX(part) FILTER (WHERE  type = 'government')  as "government",
+            MAX(part) FILTER (WHERE  type = 'military')  as "military",
+            MAX(part) FILTER (WHERE  type = 'transport')  as "transport",
+            MAX(part) FILTER (WHERE  type = 'construction')  as "construction",
+            MAX(part) FILTER (WHERE  type = 'agricultural')  as "agricultural",
+            MAX(part) FILTER (WHERE  type = 'social_building')  as "social_building",
+            id_build FROM $urbanAreasPart where part > 0.9 group by id_build """.toString()
 
-                datasource.execute("CREATE INDEX ON $buildinType(id_build)".toString())
+                datasource.withBatch(100) { stmt ->
+                    datasource.eachRow("SELECT * FROM $buildinType".toString()) { row ->
+                        def new_type = "building"
+                        def id_build_ =  row.id_build
+                        def mapTypes = row.toRowResult()
+                        mapTypes.remove("ID_BUILD")
+                        mapTypes.removeAll{ it.value == null }
+                        //Only one value type, no overlaps
+                        if(mapTypes.size()==1){
+                            new_type= mapTypes.keySet().stream().findFirst().get()
+                        }else {
+                            String maxKeyType = mapTypes.max { it.value }.key
+                            def sortValues = mapTypes.sort { -it.value }.keySet()
+                            sortValues.remove(maxKeyType)
+                            switch (maxKeyType) {
+                                case "residential":
+                                    if (sortValues.contains("education")) {
+                                        new_type = "education"
+                                    }
+                                    else  {
+                                        new_type = sortValues.take(1)[0]
+                                    }
+                                    break
+                                case "education":
+                                    new_type="education"
+                                    break
+                                default:
+                                    new_type = sortValues.take(1)[0]
+                                    break
+                            }
 
-                def newBuildingWithType = "NEW_BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                        }
+                        stmt.addBatch("UPDATE $outputTableName set type = '${new_type}' , main_use = '${new_type}'where id_build=${id_build_}")
+                    }
+                }
+                datasource.execute("""DROP TABLE IF EXISTS $urbanAreasPart, $buildinType""".toString())
 
-                datasource.execute """DROP TABLE IF EXISTS $newBuildingWithType;
-                                           CREATE TABLE $newBuildingWithType as
-                                            SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
-                                            a.HEIGHT_WALL,
-                                            a.HEIGHT_ROOF,
-                                               a.NB_LEV, 
-                                               COALESCE(b.TYPE, a.TYPE) AS TYPE ,
-                                               COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
-                                               , a.ZINDEX, a.ROOF_SHAPE from $outputTableName
-                                        a LEFT JOIN $buildinType b on a.id_build=b.id_build""".toString()
-
-                datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName;
-                        ALTER TABLE $newBuildingWithType RENAME TO $outputTableName;""".toString()
             }
         }
     }
@@ -610,7 +646,7 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                                     g1.EXPLOD_ID = g2.EXPLOD_ID AND g1.AREA_IMP  > g2.AREA_IMP 
                                  WHERE g2.EXPLOD_ID  IS NULL
                                  ORDER BY g1.EXPLOD_ID  ASC""".toString()) { row ->
-                    //println(row)
+
                     def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                     def use = typeAndUseValues[1]
                     def type = typeAndUseValues[0]
@@ -978,8 +1014,7 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
     debug('Urban areas transformation starts')
     def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR, MAIN_USE VARCHAR);""".toString()
-
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR);""".toString()
     if (urban_areas != null) {
         def paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
         def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
@@ -1001,32 +1036,42 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
                 queryMapper += ",  a.the_geom as the_geom FROM $urban_areas  as a"
 
             }
-
             def constructions = ["industrial", "commercial", "residential"]
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
-                    def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
-                    def use = typeAndUseValues[1]
-                    def type = typeAndUseValues[0]
-                    //Check if the urban areas is under construction
-                    if(type == "construction"){
-                        def construction = row."construction"
-                        if(construction && construction in constructions){
-                            type = construction
-                            use = construction
+                    if (!row.building) {
+                        def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
+                        def type = typeAndUseValues[0]
+                        //Check if the urban areas is under construction
+                        if (type == "construction") {
+                            def construction = row."construction"
+                            if (construction && construction in constructions) {
+                                type = construction
+                            }
                         }
-                    }
-                    Geometry geom = row.the_geom
-                    int epsg = geom.getSRID()
-                    for (int i = 0; i < geom.getNumGeometries(); i++) {
-                        Geometry subGeom = geom.getGeometryN(i)
-                        if (subGeom instanceof Polygon && subGeom.getArea()>1) {
-                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', ${singleQuote(type)},${singleQuote(use)})".toString()
+                        if (type) {
+                            Geometry geom = row.the_geom
+                            int epsg = geom.getSRID()
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', ${singleQuote(type)})".toString()
+                                }
+                            }
                         }
                     }
                 }
             }
+            //Merging landuse
+            def mergingUrbanAreas = postfix("merging_urban_areas")
+            datasource.execute("""
+            CREATE TABLE $mergingUrbanAreas as select CAST((row_number() over()) as Integer) as id_urban,the_geom, type from 
+            ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(the_geom)) as the_geom, type from $outputTableName group by type)');
+            DROP TABLE IF EXISTS $outputTableName;
+            ALTER TABLE  $mergingUrbanAreas RENAME to $outputTableName;
+            """.toString())
+
         }
     }
     debug('Urban areas transformation finishes')
