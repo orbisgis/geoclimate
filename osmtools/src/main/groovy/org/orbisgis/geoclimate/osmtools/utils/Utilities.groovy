@@ -77,9 +77,10 @@ Map getNominatimData(def placeName) {
 
     GeometryFactory geometryFactory = new GeometryFactory()
 
+    def geometry_admin= 0
     def data = [:]
     jsonRoot.features.find() { feature ->
-        if (feature.geometry != null &&  feature.properties.type=="administrative") {
+        if (feature.geometry != null ) {
             if (feature.geometry.type.equalsIgnoreCase("polygon")) {
                 def area = parsePolygon(feature.geometry.coordinates, geometryFactory)
                 area.setSRID(4326)
@@ -88,6 +89,9 @@ Map getNominatimData(def placeName) {
                 data.putAll(feature.properties)
                 def bbox = feature.bbox
                 data.put("bbox", [bbox[1], bbox[0], bbox[3], bbox[2]])
+                if(feature.properties.type=="administrative" && feature.properties.category=='boundary'){
+                    return true
+                }
             } else if (feature.geometry.type.equalsIgnoreCase("multipolygon")) {
                 def mp = feature.geometry.coordinates.collect { it ->
                     parsePolygon(it, geometryFactory)
@@ -99,10 +103,12 @@ Map getNominatimData(def placeName) {
                 data.putAll(feature.properties)
                 def bbox = feature.bbox
                 data.put("bbox", [bbox[1], bbox[0], bbox[3], bbox[2]])
+                if(feature.properties.type=="administrative"&& feature.properties.category=='boundary'){
+                    return true
+                }
             } else {
                 return false
             }
-            return true
         }
         return false
     }
@@ -242,7 +248,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) {
         error "The OSM file should be an instance of File"
         return false
     }
-    def endPoint = System.getProperty("NOMINATIM_ENPOINT");
+    def endPoint = System.getProperty("NOMINATIM_ENDPOINT");
     if (!endPoint) {
         /** nominatim server endpoint as defined by WSDL2 definition */
         endPoint = "https://nominatim.openstreetmap.org/";
@@ -698,7 +704,7 @@ def getServerStatus() {
     final String proxyHost = System.getProperty("http.proxyHost");
     final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
     def connection
-    def endPoint = System.getProperty("OVERPASS_ENPOINT");
+    def endPoint = System.getProperty("OVERPASS_ENDPOINT");
     if (endPoint) {
         OVERPASS_STATUS_URL = "${endPoint}/status"
     }
@@ -797,7 +803,7 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
         error "The output file should not be null or empty."
         return false
     }
-    def endPoint = System.getProperty("OVERPASS_ENPOINT");
+    def endPoint = System.getProperty("OVERPASS_ENDPOINT");
     if (endPoint) {
         OVERPASS_BASE_URL = "${endPoint}/interpreter?data="
     }
@@ -838,6 +844,31 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
         return true
     } else {
         error "Cannot execute the query.\n${getServerStatus()}"
+        return false
+    }
+}
+
+/**
+ * Return the status of the Nominatim server.
+ * @return true is the server is OK
+ */
+def isNominatimReady() {
+    final String proxyHost = System.getProperty("http.proxyHost");
+    final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+    def connection
+    def endPoint = "https://nominatim.openstreetmap.org/status"
+
+    if (proxyHost != null) {
+        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+        connection = new URL(endPoint).openConnection(proxy) as HttpURLConnection
+    } else {
+        connection = new URL(endPoint).openConnection() as HttpURLConnection
+    }
+    connection.requestMethod = GET
+    connection.connect()
+    if (connection.responseCode == 200) {
+        return true
+    } else {
         return false
     }
 }

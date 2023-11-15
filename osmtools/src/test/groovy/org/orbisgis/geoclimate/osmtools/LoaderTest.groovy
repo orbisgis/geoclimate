@@ -221,32 +221,33 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void fromPlaceNoDistTest() {
-        def placeName = "Lezoen, Plourivo"
-        def formattedPlaceName = "Lezoen_Plourivo_"
+        if(OSMTools.Utilities.isNominatimReady()) {
+            def placeName = "Lezoen, Plourivo"
+            def formattedPlaceName = "Lezoen_Plourivo_"
+            Map r = OSMTools.Loader.fromPlace(ds, placeName)
+            assertFalse r.isEmpty()
+            assertTrue r.containsKey("zone")
+            assertTrue r.containsKey("envelope")
+            assertTrue r.containsKey("prefix")
+            assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.prefix as String).matches()
 
-        Map r = OSMTools.Loader.fromPlace(ds, placeName)
-        assertFalse r.isEmpty()
-        assertTrue r.containsKey("zone")
-        assertTrue r.containsKey("envelope")
-        assertTrue r.containsKey("prefix")
-        assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.prefix as String).matches()
+            def zone = ds.getSpatialTable(r.zone)
+            assertEquals 1, zone.rowCount
+            assertEquals 2, zone.getColumnCount()
+            assertTrue zone.columns.contains("THE_GEOM")
+            assertTrue zone.columns.contains("ID_ZONE")
+            zone.next()
+            assertNotNull zone.getGeometry(1)
 
-        def zone = ds.getSpatialTable(r.zone)
-        assertEquals 1, zone.rowCount
-        assertEquals 2, zone.getColumnCount()
-        assertTrue zone.columns.contains("THE_GEOM")
-        assertTrue zone.columns.contains("ID_ZONE")
-        zone.next()
-        assertNotNull zone.getGeometry(1)
-
-        def zoneEnv = ds.getSpatialTable(r.envelope)
-        assertEquals 1, zoneEnv.rowCount
-        assertEquals 2, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columns.contains("THE_GEOM")
-        assertTrue zoneEnv.columns.contains("ID_ZONE")
-        zoneEnv.next()
-        assertEquals "POLYGON ((-3.0790622 48.7298266, -3.0790622 48.7367393, -3.0739517 48.7367393, -3.0739517 48.7298266, -3.0790622 48.7298266))", zoneEnv.getGeometry(1).toText()
-        assertEquals "Lezoen, Plourivo", zoneEnv.getString(2)
+            def zoneEnv = ds.getSpatialTable(r.envelope)
+            assertEquals 1, zoneEnv.rowCount
+            assertEquals 2, zoneEnv.getColumnCount()
+            assertTrue zoneEnv.columns.contains("THE_GEOM")
+            assertTrue zoneEnv.columns.contains("ID_ZONE")
+            zoneEnv.next()
+            assertEquals "POLYGON ((-3.0790622 48.7298266, -3.0790622 48.7367393, -3.0739517 48.7367393, -3.0739517 48.7298266, -3.0790622 48.7298266))", zoneEnv.getGeometry(1).toText()
+            assertEquals "Lezoen, Plourivo", zoneEnv.getString(2)
+        }
     }
 
     /**
