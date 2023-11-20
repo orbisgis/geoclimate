@@ -451,6 +451,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                       svfSimplified     : true,
                                       surface_vegetation: 10000f,
                                       surface_hydro     : 2500f,
+                                      surface_urban_areas: 10000f,
                                       snappingTolerance : 0.01f,
                                       mapOfWeights      : ["sky_view_factor"             : 4,
                                                            "aspect_ratio"                : 3,
@@ -505,6 +506,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 if (surface_hydroP && surface_hydroP in Number) {
                     rsu_indicators_default.surface_hydro = surface_hydroP
                 }
+                def surface_UrbanAreasP = rsu_indicators.surface_urban_areas
+                if (surface_UrbanAreasP && surface_UrbanAreasP in Number) {
+                    rsu_indicators_default.surface_urban_areas = surface_UrbanAreasP
+                }
+
                 def svfSimplifiedP = rsu_indicators.svfSimplified
                 if (svfSimplifiedP && svfSimplifiedP in Boolean) {
                     rsu_indicators_default.svfSimplified = svfSimplifiedP

@@ -608,11 +608,11 @@ class TransformTest extends AbstractOSMToolsTest {
             def extract = OSMTools.Loader.extract(query)
             if (extract) {
                 def prefix = "OSM_FILE_${OSMTools.Utilities.uuid()}"
-                if (OSMTools.Loader.load(h2GIS, prefix, extract)) {
+                if (OSMTools.Loader.load(ds, prefix, extract)) {
                     def tags = ['building']
                     def transform = OSMTools.Transform.toPolygons(h2GIS, prefix, tags)
                     assertNotNull(transform)
-                    assertTrue(h2GIS.getTable(transform).getRowCount() > 0)
+                    assertTrue(ds.getTable(transform).getRowCount() > 0)
                 }
             }
         }
@@ -873,6 +873,23 @@ class TransformTest extends AbstractOSMToolsTest {
                     h2GIS.getTable(outputTableName).save("/tmp/results.shp", true)
 
                 }
+            }
+        }
+    }
+
+    @Test
+    void buildAllPolygons() {
+        def bbox =[47.647353,-2.090192,47.649413,-2.087274]
+        def query = OSMTools.Utilities.buildOSMQuery(bbox)
+        if (!query.isEmpty()) {
+            def extract = OSMTools.Loader.extract(query)
+            if (extract) {
+                def prefix = "OSM"
+                assertTrue OSMTools.Loader.load(ds, prefix,extract)
+                //Create building layer
+                def tags = ["amenity", "landuse", "railway", "water"]
+                String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
+                ds.save(outputTableName, "/tmp/polygons.geojson", true)
             }
         }
     }

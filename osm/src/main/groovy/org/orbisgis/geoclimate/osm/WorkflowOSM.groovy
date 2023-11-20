@@ -753,6 +753,7 @@ def extractProcessingParameters(def processing_parameters) {
                                   svfSimplified     : true,
                                   surface_vegetation: 10000f,
                                   surface_hydro     : 2500f,
+                                  surface_urban_areas  : 10000f,
                                   snappingTolerance : 0.01f,
                                   mapOfWeights      : ["sky_view_factor"             : 4,
                                                        "aspect_ratio"                : 3,
@@ -808,6 +809,11 @@ def extractProcessingParameters(def processing_parameters) {
             if (surface_hydroP && surface_hydroP in Number) {
                 rsu_indicators_default.surface_hydro = surface_hydroP
             }
+            def surface_urbanAreasP = rsu_indicators.surface_urban_areas
+            if (surface_urbanAreasP && surface_urbanAreasP in Number) {
+                rsu_indicators_default.surface_urban_areas = surface_urbanAreasP
+            }
+
             def svfSimplifiedP = rsu_indicators.svfSimplified
             if (svfSimplifiedP && svfSimplifiedP in Boolean) {
                 rsu_indicators_default.svfSimplified = svfSimplifiedP

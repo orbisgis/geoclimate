@@ -66,7 +66,7 @@ class InputDataLoadingTest {
 
         assertEquals 47, h2GIS.getTable(extract.impervious).rowCount
 
-        assertEquals 7, h2GIS.getTable(extract.urban_areas).rowCount
+        assertEquals 11, h2GIS.getTable(extract.urban_areas).rowCount
     }
 
     //This test is used for debug purpose

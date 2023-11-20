@@ -55,13 +55,15 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * Expressed in geometry unit of the vegetationTable, default 10000
  * @param surface_hydro A double value to select the hydrographic geometry areas.
  * Expressed in geometry unit of the vegetationTable, default 2500
+ * @param surface_urban_areas A double value to select the urban  areas.
+ * Expressed in geometry unit of the urban_areas table, default 10000
  *
  * @return A database table name and the name of the column ID
  */
 String createTSU(JdbcDataSource datasource, String zone,
                  double area = 1f, String road, String rail, String vegetation,
                  String water, String sea_land_mask,String urban_areas,
-                 double surface_vegetation, double surface_hydro, String prefixName) {
+                 double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) {
     def BASE_NAME = "rsu"
 
     debug "Creating the reference spatial units"
@@ -71,7 +73,7 @@ String createTSU(JdbcDataSource datasource, String zone,
 
     def tsuDataPrepared = prepareTSUData(datasource,
             zone, road, rail,
-            vegetation, water, sea_land_mask, urban_areas, surface_vegetation, surface_hydro, prefixName)
+            vegetation, water, sea_land_mask, urban_areas, surface_vegetation, surface_hydro, surface_urban_areas, prefixName)
     if (!tsuDataPrepared) {
         info "Cannot prepare the data for RSU calculation."
         return
@@ -114,7 +116,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         error "The input data to compute the TSU cannot be null or empty"
         return null
     }
-    def epsg = datasource.getSpatialTable(inputTableName).srid
+    def epsg = datasource.getSrid(inputTableName)
 
     if (area <= 0) {
         error "The area value to filter the TSU must be greater to 0"
@@ -125,9 +127,9 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(a.the_geom, $epsg) AS the_geom
+                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(a.the_geom,0.01), $epsg) AS the_geom
                         FROM ST_EXPLODE('(
-                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))), -0.01) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
                                 FROM $inputTableName)') AS a,
                             $inputzone AS b
                         WHERE a.the_geom && b.the_geom 
@@ -139,7 +141,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
                     CREATE TABLE $outputTableName AS 
                         SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(st_buffer(the_geom, -0.01), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_BUFFER(ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))),-0.01) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
     }
 
@@ -171,7 +173,8 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
  */
 String prepareTSUData(JdbcDataSource datasource, String zone, String road, String rail,
                       String vegetation, String water, String sea_land_mask, String urban_areas,
-                      double surface_vegetation, double surface_hydro, String prefixName = "unified_abstract_model") {
+                      double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName = "unified_abstract_model") {
+
     if (surface_vegetation <= 100) {
         error("The surface of vegetation must be greater or equal than 100 m²")
         return
@@ -180,6 +183,12 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         error("The surface of water must be greater or equal than 100 m²")
         return
     }
+
+    if (surface_urban_areas <= 100) {
+        error("The surface of urban areas must be greater or equal than 100 m²")
+        return
+    }
+
     def BASE_NAME = "prepared_tsu_data"
 
     debug "Preparing the abstract model to build the TSU"
@@ -326,8 +335,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         if (water && datasource.hasTable(urban_areas)) {
             if (datasource.getColumnNames(urban_areas).size() > 0) {
                 debug "Preparing urban areas..."
-                queryCreateOutputTable += [urban_areas_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $urban_areas)"]
-
+                queryCreateOutputTable += [urban_areas_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $urban_areas WHERE st_area(the_geom)>=$surface_urban_areas and type not in ('social_building'))"]
             }
         }
 

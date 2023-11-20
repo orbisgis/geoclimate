@@ -645,18 +645,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     //Use it for debug
     @Test
     void testIntegration() {
-
         String directory = "/tmp/geoclimate"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
         def location = "Nice"
-
        //def nominatim = OSMTools.Utilities.getNominatimData("Nantes")
-
-        location=[47.2, -1.6, 47.4, -1.4]
+        location="Sassenage"
        //location = nominatim.bbox
-
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -678,7 +674,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
 
-                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
 
                          ]/*,"grid_indicators": [
                                 "x_size": 200,
@@ -776,41 +772,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def subFolder = new File(outputFolder.getAbsolutePath() + File.separator + "osm_" + id_zone)
         Geoindicators.WorkflowUtilities.saveToAscGrid("grid_indicators", subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
     }
-
-    @Disabled
-    @Test
-    void testPopulation_Indicators() {
-        String directory = "/tmp/geoclimate"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        //H2GIS h2gis = H2GIS.open("${directory+File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        //h2gis.load("../cities/Barcelona/lden_barcelona_ref.geojson", "area_zone", true)
-        //def env = h2gis.firstRow("(select st_transform(st_extent(the_geom), 4326) as the_geom from area_zone)").the_geom.getEnvelopeInternal()
-        //def location = [[env.getMinY()as float, env.getMinX() as float, env.getMaxY() as float, env.getMaxX() as float]];
-        def location = [[57.651096, 11.821976, 57.708916, 11.89235]]
-        def tables = ["building", "population", "road_traffic"]
-        tables = ["road_traffic"]
-        def osm_parmeters = [
-                "description" : "Example of configuration file to run only the road traffic estimation",
-                "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
-                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete": false
-                ],
-                "input"       : [
-                        "locations": location],
-                "output"      : [
-                        "folder": ["path"  : directory,
-                                   "tables": tables]],
-                "parameters"  :
-                        ["worldpop_indicators": false, "road_traffic": true]
-        ]
-        OSM.workflow(osm_parmeters)
-        //assertEquals(10,  process.getResults().output["Pont-de-Veyle"].size())
-        //assertTrue h2gis.firstRow("select count(*) as count from ${process.results.output["Pont-de-Veyle"].population} where pop is not null").count>0
-    }
-
 
     @Test
     //Integration tests

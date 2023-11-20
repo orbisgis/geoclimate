@@ -142,7 +142,7 @@ def loadV2(
     String troncon_voie_ferree = tablesExist.get("troncon_voie_ferree")
     if (!troncon_voie_ferree) {
         troncon_voie_ferree = "troncon_voie_ferree"
-        datasource.execute("DROP TABLE IF EXISTS $troncon_voie_ferree;  CREATE TABLE $troncon_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar,LARGEUR DOUBLE PRECISION);".toString())
+        datasource.execute("DROP TABLE IF EXISTS $troncon_voie_ferree;  CREATE TABLE $troncon_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar, POS_SOL integer, FRANCHISST varchar,LARGEUR DOUBLE PRECISION, NB_VOIES INTEGER);".toString())
     }
     String surface_eau = tablesExist.get("surface_eau")
     if (!surface_eau) {
@@ -252,7 +252,8 @@ def loadV2(
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
             CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST, CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST, 
+            CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
 
@@ -445,7 +446,7 @@ Map loadV3(JdbcDataSource datasource,
         troncon_de_voie_ferree = "troncon_de_voie_ferree"
         datasource.execute("""DROP TABLE IF EXISTS $troncon_de_voie_ferree;  
                 CREATE TABLE $troncon_de_voie_ferree (THE_GEOM geometry(linestring, $srid), ID varchar, NATURE varchar,
-                POS_SOL integer, FRANCHISST varchar, LARGEUR DOUBLE PRECISION);""".toString())
+                POS_SOL integer, FRANCHISST varchar, LARGEUR DOUBLE PRECISION, NB_VOIES INTEGER);""".toString())
     }
 
     String surface_hydrographique = tablesExist.get("surface_hydrographique")

@@ -77,9 +77,10 @@ Map getNominatimData(def placeName) {
 
     GeometryFactory geometryFactory = new GeometryFactory()
 
+    def geometry_admin= 0
     def data = [:]
     jsonRoot.features.find() { feature ->
-        if (feature.geometry != null) {
+        if (feature.geometry != null ) {
             if (feature.geometry.type.equalsIgnoreCase("polygon")) {
                 def area = parsePolygon(feature.geometry.coordinates, geometryFactory)
                 area.setSRID(4326)
@@ -88,6 +89,9 @@ Map getNominatimData(def placeName) {
                 data.putAll(feature.properties)
                 def bbox = feature.bbox
                 data.put("bbox", [bbox[1], bbox[0], bbox[3], bbox[2]])
+                if(feature.properties.type=="administrative" && feature.properties.category=='boundary'){
+                    return true
+                }
             } else if (feature.geometry.type.equalsIgnoreCase("multipolygon")) {
                 def mp = feature.geometry.coordinates.collect { it ->
                     parsePolygon(it, geometryFactory)
@@ -99,10 +103,12 @@ Map getNominatimData(def placeName) {
                 data.putAll(feature.properties)
                 def bbox = feature.bbox
                 data.put("bbox", [bbox[1], bbox[0], bbox[3], bbox[2]])
+                if(feature.properties.type=="administrative"&& feature.properties.category=='boundary'){
+                    return true
+                }
             } else {
                 return false
             }
-            return true
         }
         return false
     }
@@ -242,7 +248,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) {
         error "The OSM file should be an instance of File"
         return false
     }
-    def endPoint = System.getProperty("NOMINATIM_ENPOINT");
+    def endPoint = System.getProperty("NOMINATIM_ENDPOINT");
     if (!endPoint) {
         /** nominatim server endpoint as defined by WSDL2 definition */
         endPoint = "https://nominatim.openstreetmap.org/";
@@ -263,11 +269,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) {
         connection = url.openConnection()
     }
     connection.requestMethod = "GET"
-    def user_agent = System.getProperty("OVERPASS_USER_AGENT")
-    if (!user_agent) {
-        user_agent = OSM_USER_AGENT
-    }
-    connection.setRequestProperty("User-Agent", user_agent)
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
 
     connection.connect()
 
@@ -339,6 +341,21 @@ String toPoly(Geometry geometry) {
     polyStr += "${coord.getY()} ${coord.getX()}"
     return polyStr + "\")"
 }
+/**
+ * Method to build a valid OSM query with a bbox.
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ *
+ * @param envelope The envelope to filter.
+ * @param keys A list of OSM keys. Must be null
+ *
+ * @return A string representation of the OSM query.
+ */
+String buildOSMQuery(Envelope envelope, def keys=null) {
+    return buildOSMQuery(envelope, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+}
+
 
 /**
  * Method to build a valid OSM query with a bbox.
@@ -352,7 +369,7 @@ String toPoly(Geometry geometry) {
  *
  * @return A string representation of the OSM query.
  */
-String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
+ String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
     if (!envelope) {
         error "Cannot create the overpass query from the bbox $envelope."
         return null
@@ -372,6 +389,44 @@ String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
 }
 
 /**
+ * Method to build a valid OSM query with a list of coordinates that define a Bbox.
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ *
+ * @param latLonCoordinates an array of 4 coordinates in lat/lon
+ * @param keys A list of OSM keys.
+ *
+ * @return A string representation of the OSM query.
+ */
+String buildOSMQuery(List latLonCoordinates, def keys=null) {
+    return buildOSMQuery(latLonCoordinates, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+}
+
+/**
+ * Method to build a valid OSM query with a list of coordinates that define a Bbox.
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ *
+ * @param latLonCoordinates an array of 4 coordinates in lat/lon
+ * @param keys A list of OSM keys.
+ * @param osmElement A list of OSM elements to build the query (node, way, relation).
+ *
+ * @return A string representation of the OSM query.
+ */
+ String buildOSMQuery(List latLonCoordinates, def keys, OSMElement... osmElement) {
+    if (!latLonCoordinates) {
+        error "Cannot create the overpass query from the bbox $latLonCoordinates."
+        return null
+    }
+    Geometry geom = OSMTools.Utilities.geometryFromValues(latLonCoordinates)
+    if(geom==null) {
+        error "Invalid BBOX"
+        return null
+    }
+    return buildOSMQuery(geom.getEnvelopeInternal(), keys, osmElement)
+}
+
+/**
  * Method to build a valid OSM query with a bbox to
  * download all the osm data concerning
  *
@@ -384,7 +439,7 @@ String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
  *
  * @return A string representation of the OSM query.
  */
-static String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement... osmElement) {
+ String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement... osmElement) {
     if (!envelope) {
         error "Cannot create the overpass query from the bbox $envelope."
         return null
@@ -401,6 +456,21 @@ static String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement..
     }
     query += ");\n>;);\nout;"
     return query
+}
+
+/**
+ * Method to build a valid and optimized OSM query
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ *
+ * @param polygon The polygon to filter.
+ * @param keys A list of OSM keys.
+ *
+ * @return A string representation of the OSM query.
+ */
+String buildOSMQuery(Polygon polygon, def keys=null) {
+    return buildOSMQuery(polygon, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 }
 
 /**
@@ -617,9 +687,6 @@ static @Field OVERPASS_BASE_URL = "${OVERPASS_ENDPOINT}/interpreter?data="
 /** Url of the status of the Overpass server */
 static @Field OVERPASS_STATUS_URL = "${OVERPASS_ENDPOINT}/status"
 
-/** Default user agent*/
-static @Field OSM_USER_AGENT = "geoclimate"
-
 /** OVERPASS TIMEOUT */
 static @Field int OVERPASS_TIMEOUT = 180
 /**
@@ -630,7 +697,7 @@ def getServerStatus() {
     final String proxyHost = System.getProperty("http.proxyHost");
     final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
     def connection
-    def endPoint = System.getProperty("OVERPASS_ENPOINT");
+    def endPoint = System.getProperty("OVERPASS_ENDPOINT");
     if (endPoint) {
         OVERPASS_STATUS_URL = "${endPoint}/status"
     }
@@ -686,11 +753,7 @@ boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
         timeout = (int) TimeUnit.MINUTES.toMillis(3);
     }
 
-    def user_agent = System.getProperty("OVERPASS_USER_AGENT")
-    if (!user_agent) {
-        user_agent = OSM_USER_AGENT
-    }
-    connection.setRequestProperty("User-Agent", user_agent)
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
 
     connection.setConnectTimeout(timeout);
     connection.setReadTimeout(timeout);
@@ -729,7 +792,7 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
         error "The output file should not be null or empty."
         return false
     }
-    def endPoint = System.getProperty("OVERPASS_ENPOINT");
+    def endPoint = System.getProperty("OVERPASS_ENDPOINT");
     if (endPoint) {
         OVERPASS_BASE_URL = "${endPoint}/interpreter?data="
     }
@@ -752,11 +815,8 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
     } else {
         timeout = (int) TimeUnit.MINUTES.toMillis(3);
     }
-    def user_agent = System.getProperty("OVERPASS_USER_AGENT")
-    if (!user_agent) {
-        user_agent = OSM_USER_AGENT
-    }
-    connection.setRequestProperty("User-Agent", user_agent)
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
+
     connection.setConnectTimeout(timeout)
     connection.setReadTimeout(timeout)
 
@@ -770,6 +830,31 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
         return true
     } else {
         error "Cannot execute the query.\n${getServerStatus()}"
+        return false
+    }
+}
+
+/**
+ * Return the status of the Nominatim server.
+ * @return true is the server is OK
+ */
+def isNominatimReady() {
+    final String proxyHost = System.getProperty("http.proxyHost");
+    final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+    def connection
+    def endPoint = "https://nominatim.openstreetmap.org/status"
+
+    if (proxyHost != null) {
+        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+        connection = new URL(endPoint).openConnection(proxy) as HttpURLConnection
+    } else {
+        connection = new URL(endPoint).openConnection() as HttpURLConnection
+    }
+    connection.requestMethod = GET
+    connection.connect()
+    if (connection.responseCode == 200) {
+        return true
+    } else {
         return false
     }
 }
