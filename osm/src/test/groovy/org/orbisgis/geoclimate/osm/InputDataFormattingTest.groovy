@@ -314,7 +314,7 @@ class InputDataFormattingTest {
         zoneToExtract = "Riantec"
         zoneToExtract =[45.185546,5.751944,45.204296,5.784216]
 
-       zoneToExtract="Sassenage"
+        zoneToExtract=[50, 8.6, 50.2, 8.8]
 
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
