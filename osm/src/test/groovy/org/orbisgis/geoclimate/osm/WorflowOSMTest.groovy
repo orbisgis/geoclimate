@@ -651,7 +651,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.mkdir()
         def location = "Nice"
        //def nominatim = OSMTools.Utilities.getNominatimData("Nantes")
-        location="Sassenage"
+        //location=[50, 8.6, 50.2, 8.8]
        //location = nominatim.bbox
 
         def osm_parmeters = [
@@ -674,7 +674,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
 
-                                 "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ", "UTRF"] //, "UTRF", "TEB"]
 
                          ]/*,"grid_indicators": [
                                 "x_size": 200,
