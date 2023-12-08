@@ -316,6 +316,8 @@ class InputDataFormattingTest {
 
        //zoneToExtract="Sassenage"
 
+        zoneToExtract=[50, 8.6, 50.2, 8.8]
+
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
