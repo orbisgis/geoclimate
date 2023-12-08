@@ -595,7 +595,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, geomEnv, 200, 200)
                             if (outputTable) {
                                 String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, outputTable, "id_grid",
-                                        buildingTableName, roadTableName, hydrographicTableName,
+                                        results.building, roadTableName, hydrographicTableName,
                                         vegetationTableName, imperviousTableName)
                                 if (ground_acoustic) {
                                     results.put("ground_acoustic", ground_acoustic)
@@ -618,7 +618,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         if (grid) {
                             String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                                     grid_indicators_params.indicators,
-                                    buildingTableName, roadTableName, vegetationTableName,
+                                    results.building, roadTableName, vegetationTableName,
                                     hydrographicTableName, imperviousTableName,
                                     results.rsu_lcz,
                                     results.rsu_utrf_area,
