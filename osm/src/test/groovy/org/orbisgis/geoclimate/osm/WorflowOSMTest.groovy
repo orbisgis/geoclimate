@@ -650,9 +650,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Nice"
-       //def nominatim = OSMTools.Utilities.getNominatimData("Nantes")
-        location="Sassenage"
-       //location = nominatim.bbox
+       //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData("Redon")
+       // location = nominatim.bbox
+
+        location=[50, 8.6, 50.2, 8.8]
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
