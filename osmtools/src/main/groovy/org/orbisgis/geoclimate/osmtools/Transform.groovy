@@ -929,7 +929,7 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
     query += " GROUP BY a.id_relation;"
-    datasource.execute(query)
+    datasource.execute(query.toString())
     if (geometry) {
         def query_out =""" DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName as SELECT * FROM $allRelationLines as a where """
