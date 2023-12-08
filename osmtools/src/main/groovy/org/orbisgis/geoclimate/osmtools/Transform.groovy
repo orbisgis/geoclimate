@@ -319,8 +319,9 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
                 CREATE INDEX ON $waysPolygonTmp(id_way);
         """.toString()
 
-    String query = """ DROP TABLE IF EXISTS $outputTableName; 
-                CREATE TABLE $outputTableName AS 
+    def allPolygonsTables = postfix "all_polygons_table"
+    String query = """ DROP TABLE IF EXISTS $allPolygonsTables; 
+                CREATE TABLE $allPolygonsTables AS 
                     SELECT 'w'||a.id_way AS id,"""
     if (valid_geom) {
         query += """ case when st_isvalid(a.the_geom) then a.the_geom else  st_makevalid(a.the_geom) end as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)} 
@@ -335,27 +336,34 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
 
+    //TODO : Due to some H2 limitations with the execution plan we create the whole table and then we apply a spatial filter
+    //https://github.com/orbisgis/geoclimate/issues/876
+    query += " GROUP BY  a.id_way;"
+    datasource.execute(query)
     if (geometry) {
+        def query_out  ="""DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName AS SELECT * FROM $allPolygonsTables as a where """
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
-            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
+            query_out += " a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
         } else if (geom_srid == epsgCode) {
-            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
+            query_out += "  a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
         } else {
-            query += " and a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
+            query_out += "  a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
         }
-        datasource.createSpatialIndex(waysPolygonTmp, "the_geom")
+        datasource.createSpatialIndex(allPolygonsTables, "the_geom")
+        datasource """
+                $query_out;
+                DROP TABLE IF EXISTS $waysPolygonTmp, $idWaysPolygons, $allPolygonsTables;""".toString()
+        return outputTableName
     }
-    query += " GROUP BY  a.id_way;"
-
-
-    datasource """
-                $query
-                DROP TABLE IF EXISTS $waysPolygonTmp;
-                DROP TABLE IF EXISTS $idWaysPolygons;
+    else{
+        datasource """
+                ALTER TABLE $allPolygonsTables RENAME TO $outputTableName;
+                DROP TABLE IF EXISTS $waysPolygonTmp, $idWaysPolygons;
         """.toString()
-
-    return outputTableName
+        return outputTableName
+    }
 }
 
 /**
@@ -560,9 +568,10 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                 CREATE INDEX ON $relationsMpHoles(id_relation);
         """.toString()
 
+    String allRelationPolygons = postfix("all_relation_polygons")
     def query = """
-                DROP TABLE IF EXISTS $outputTableName;     
-                CREATE TABLE $outputTableName AS 
+                DROP TABLE IF EXISTS $allRelationPolygons;     
+                CREATE TABLE $allRelationPolygons AS 
                     SELECT 'r'||a.id_relation AS id,"""
     if (valid_geom) {
         query += """ case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(a.the_geom) end as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}
@@ -577,25 +586,32 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
     if(columnsToKeep) {
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
+    query += " GROUP BY  a.the_geom, a.id_relation;"
+    datasource.execute(query.toString())
 
     if (geometry) {
+        def query_out ="""DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName as SELECT * FROM $allRelationPolygons as a where"""
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
-            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
+            query_out += " a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
         } else if (geom_srid == epsgCode) {
-            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
+            query_out += " a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
         } else {
-            query += " and a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
+            query_out += " a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
         }
-        datasource.createSpatialIndex(relationsMpHoles, "the_geom")
+        datasource.createSpatialIndex(allRelationPolygons, "the_geom")
+        datasource.execute(query_out.toString())
+        datasource.dropTable(relationsPolygonsOuter, relationsPolygonsInner, relationsPolygonsOuterExploded,
+                relationsPolygonsInnerExploded,relationsMpHoles,relationFilteredKeys, allRelationPolygons)
+        return outputTableName
+    }else{
+        datasource.execute("""ALTER TABLE $allRelationPolygons RENAME TO $outputTableName""".toString())
+        datasource.dropTable(relationsPolygonsOuter, relationsPolygonsInner, relationsPolygonsOuterExploded,
+                relationsPolygonsInnerExploded,relationsMpHoles,relationFilteredKeys)
+        return outputTableName
     }
 
-    query += " GROUP BY  a.the_geom, a.id_relation;"
-
-    datasource query.toString()
-    datasource.dropTable(relationsPolygonsOuter, relationsPolygonsInner, relationsPolygonsOuterExploded,
-    relationsPolygonsInnerExploded,relationsMpHoles,relationFilteredKeys)
-    return outputTableName
 }
 
 /**
@@ -725,9 +741,11 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
                 CREATE INDEX ON $waysLinesTmp(ID_WAY);
         """.toString()
 
+    def allLinesTables = postfix "all_lines_table"
+
     def query = """
-                DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName AS 
+                DROP TABLE IF EXISTS $allLinesTables;
+                CREATE TABLE $allLinesTables AS 
                     SELECT 'w'||a.id_way AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector,columnsToKeep)} 
                     FROM $waysLinesTmp AS a, ${osmTablesPrefix}_way_tag b 
                     WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false """
@@ -736,25 +754,33 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
 
+    query += " GROUP BY a.id_way;"
+    datasource.execute(query.toString())
     if (geometry) {
+        def  query_out =  """DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName as select * from $allLinesTables as a where """
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
-            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
+            query_out += " a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
         } else if (geom_srid == epsgCode) {
-            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
+            query_out += " a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
         } else {
-            query += " and a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
+            query_out += " a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
         }
-        datasource.createSpatialIndex(waysLinesTmp, "the_geom")
-    }
-
-    query += " GROUP BY a.id_way;"
-
-    datasource """
-                $query
+        datasource.createSpatialIndex(allLinesTables, "the_geom")
+        datasource """
+                $query_out;
+                DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable, $allLinesTables;
+        """.toString()
+        return outputTableName
+    }else{
+        datasource """
+                ALTER TABLE $allLinesTables RENAME TO $outputTableName;
                 DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable;
         """.toString()
-    return outputTableName
+        return outputTableName
+    }
+
 }
 
 /**
@@ -892,30 +918,38 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
 
     def columnsSelector = OSMTools.TransformUtils.getColumnSelector(osmTableTag, tags, columnsToKeep)
 
+    def allRelationLines =  postfix("all_relation_lines")
     def query = """
-                DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName AS
+                DROP TABLE IF EXISTS $allRelationLines;
+                CREATE TABLE $allRelationLines AS
                     SELECT 'r'||a.id_relation AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}
                     FROM $relationsLinesTmp AS a, ${osmTablesPrefix}_relation_tag  b
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false """
     if(columnsToKeep) {
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
-
+    query += " GROUP BY a.id_relation;"
+    datasource.execute(query.toString())
     if (geometry) {
+        def query_out =""" DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName as SELECT * FROM $allRelationLines as a where """
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
-            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
+            query_out += " a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom, st_setsrid('$geometry'::geometry, $epsgCode)) "
         } else if (geom_srid == epsgCode) {
-            query += " and a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
+            query_out += "  a.the_geom && st_setsrid('$geometry'::geometry, $epsgCode) and st_intersects(a.the_geom,st_setsrid('$geometry'::geometry, $epsgCode)) "
         } else {
-            query += " and a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
+            query_out += "  a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
         }
-        datasource.createSpatialIndex(relationsLinesTmp, "the_geom")
-    }
-    query += " GROUP BY a.id_relation;"
-    datasource.execute(""" $query   
+        datasource.createSpatialIndex(allRelationLines, "the_geom")
+        datasource.execute(""" $query_out   ;
+                DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys, $allRelationLines;
+        """.toString())
+        return outputTableName
+    }else{
+        datasource.execute(""" ALTER TABLE $allRelationLines RENAME TO $outputTableName;
                 DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys;
         """.toString())
-    return outputTableName
+        return outputTableName
+    }
 }

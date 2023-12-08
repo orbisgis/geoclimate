@@ -312,7 +312,9 @@ class InputDataFormattingTest {
         zoneToExtract = "Göteborgs Stad"
 
         zoneToExtract = "Riantec"
-        zoneToExtract =[45.185546,5.751944,45.204296,5.784216]
+        zoneToExtract =[50, 8.6, 50.2, 8.8]
+
+       //zoneToExtract="Sassenage"
 
         zoneToExtract=[50, 8.6, 50.2, 8.8]
 
