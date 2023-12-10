@@ -271,6 +271,11 @@ boolean load(JdbcDataSource datasource, String osmTablesPrefix, String osmFilePa
     info "Load the OSM file in the database."
     if (datasource.load(osmFile, osmTablesPrefix, true)) {
         info "The input OSM file has been loaded in the database."
+        //We must check if there is some data at least one tag
+        if (datasource.getRowCount("${osmTablesPrefix}_node".toString())==0) {
+            error "The downloaded OSM file doesn't contain any data.\n Please check the file ${osmFile} to see what happens.".toString()
+            return false
+        }
         return true
     }
     return false
