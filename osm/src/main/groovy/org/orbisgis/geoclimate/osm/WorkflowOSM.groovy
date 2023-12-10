@@ -362,7 +362,7 @@ Map workflow(def input) {
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, osm_size_area,
                 overpass_timeout, overpass_maxsize)
         if (!osmprocessing) {
-            h2gis_datasource.getSpatialTable(logTableZones).save("${databaseFolder + File.separator}logzones.geojson")
+            h2gis_datasource.save(logTableZones,"${file_outputFolder.getAbsolutePath() + File.separator}logzones.geojson", true)
             return null
         }
         if (delete_h2gis) {
@@ -406,7 +406,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
     def outputTableNamesResult = [:]
     //Create the table to log on the processed zone
     h2gis_datasource.execute """DROP TABLE IF EXISTS $logTableZones;
-            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), request VARCHAR, info VARCHAR);""".toString()
+            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
+            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""".toString()
     int nbAreas = id_zones.size()
     info "$nbAreas osm areas will be processed"
     id_zones.each { id_zone ->
@@ -539,8 +540,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                                 processing_parameters.prefixName)
                         if (!geoIndicators) {
                             error "Cannot build the geoindicators for the zone $id_zone"
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing geoindicators')".toString()
-
+                            h2gis_datasource.execute("""
+                            INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,
+                            '$id_zone', 'Error computing geoindicators', 
+                            '${Geoindicators.version()}',
+                            '${Geoindicators.buildNumber()}' )""".toString())
                             return
                         } else {
                             results.putAll(geoIndicators)
@@ -631,7 +635,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             }
                         } else {
                             info "Cannot create a grid to aggregate the indicators"
-                            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators')".toString()
+                            h2gis_datasource.execute("""INSERT INTO $logTableZones 
+                            VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators'
+                            '${Geoindicators.version()}',
+                            '${Geoindicators.buildNumber()}')""".toString())
                         }
                     }
 
@@ -648,19 +655,27 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
 
                 } else {
-                    h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error loading the OSM file')".toString()
+                    h2gis_datasource.execute("""INSERT INTO $logTableZones 
+                    VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error loading the OSM file', 
+                            '${Geoindicators.version()}',
+                            '${Geoindicators.buildNumber()}')""".toString())
                     error "Cannot load the OSM file ${extract}"
                     return
                 }
             } else {
                 //Log in table
-                h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass')".toString()
+                h2gis_datasource.execute("""INSERT INTO $logTableZones 
+                VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass'
+                ,'${Geoindicators.version()}', '${Geoindicators.buildNumber()}')""".toString())
                 error "Cannot execute the overpass query $query"
                 return
             }
         } else {
             //Log in table
-            h2gis_datasource.execute "INSERT INTO $logTableZones VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim')".toString()
+            h2gis_datasource.execute("""INSERT INTO $logTableZones 
+            VALUES(null,'$id_zone', 'Error to extract the zone with Nominatim', 
+                            '${Geoindicators.version()}',
+                            '${Geoindicators.buildNumber()}')""".toString())
             return
         }
     }
