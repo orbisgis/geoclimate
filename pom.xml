@@ -45,7 +45,7 @@
 
         <!-- Plugins versions -->
         <exec-maven-version>3.0.0</exec-maven-version>
-        <gmaven-version>1.13.0</gmaven-version>
+        <gmaven-version>3.0.2</gmaven-version>
         <jacoco-maven-version>0.8.7</jacoco-maven-version>
         <maven-archetype-plugin-version>3.2.0</maven-archetype-plugin-version>
         <maven-assembly-version>3.3.0</maven-assembly-version>
@@ -214,17 +214,17 @@
                 <version>${slf4j-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
+                <groupId>org.apche.groovy</groupId>
                 <artifactId>groovy</artifactId>
                 <version>${groovy-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
+                <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy-json</artifactId>
                 <version>${groovy-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
+                <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy-sql</artifactId>
                 <version>${groovy-version}</version>
             </dependency>
