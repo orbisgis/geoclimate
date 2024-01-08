@@ -30,15 +30,15 @@
         <!-- Dependencies versions -->
         <junit-version>5.9.1</junit-version>
         <jts-version>1.19.0</jts-version>
-        <h2gis-version>2.2.1-SNAPSHOT</h2gis-version>
+        <h2gis-version>2.2.1</h2gis-version>
         <h2-version>2.2.224</h2-version>
-        <cts-version>1.7.1-SNAPSHOT</cts-version>
-        <orbisdata-version>2.1.0-SNAPSHOT</orbisdata-version>
-        <slf4j-version>2.0.9</slf4j-version>
-        <groovy-version>3.0.19</groovy-version>
+        <cts-version>1.7.1</cts-version>
+        <orbisdata-version>2.1.0</orbisdata-version>
+        <slf4j-version>2.0.10</slf4j-version>
+        <groovy-version>4.0.17</groovy-version>
         <picocli-version>4.6.3</picocli-version>
-        <commons-io-version>2.11.0</commons-io-version>
-        <commons-compress-version>1.21</commons-compress-version>
+        <commons-io-version>2.12.0</commons-io-version>
+        <commons-compress-version>1.25.0</commons-compress-version>
         <smile-version>2.5.3</smile-version>
         <xstream-version>1.4.19</xstream-version>
         <logback-version>1.4.11</logback-version>
