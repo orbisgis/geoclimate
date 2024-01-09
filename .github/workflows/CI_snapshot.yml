@@ -59,7 +59,7 @@ jobs:
 
       # Build jar with dependencies
       - name: Build jar with dependencies
-        run: mvn package -pl geoclimate
+        run: mvn package -pl geoclimate-cli
 
       # Export the last git tag into env.
       - name: Export env values
@@ -71,4 +71,4 @@ jobs:
         with:
           name: geoclimate-${{ env.VERSION }}
           path: |
-            geoclimate/target/geoclimate-*.*.*-SNAPSHOT.jar
+            geoclimate-cli/target/geoclimate-*.*.*-SNAPSHOT.jar
