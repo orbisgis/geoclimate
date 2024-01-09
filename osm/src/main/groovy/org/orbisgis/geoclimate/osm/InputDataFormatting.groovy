@@ -177,24 +177,26 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                         if(mapTypes.size()==1){
                             new_type= mapTypes.keySet().stream().findFirst().get()
                         }else {
-                            String maxKeyType = mapTypes.max { it.value }.key
-                            def sortValues = mapTypes.sort { -it.value }.keySet()
-                            sortValues.remove(maxKeyType)
-                            switch (maxKeyType) {
-                                case "residential":
-                                    if (sortValues.contains("education")) {
+                            def maxType = mapTypes.max { it.value }
+                            if(maxType){
+                                String maxKeyType = maxType.key
+                                def sortValues = mapTypes.sort { -it.value }.keySet()
+                                sortValues.remove(maxKeyType)
+                                switch (maxKeyType) {
+                                    case "residential":
+                                        if (sortValues.contains("education")) {
+                                            new_type = "education"
+                                        } else {
+                                            new_type = sortValues.take(1)[0]
+                                        }
+                                        break
+                                    case "education":
                                         new_type = "education"
-                                    }
-                                    else  {
+                                        break
+                                    default:
                                         new_type = sortValues.take(1)[0]
-                                    }
-                                    break
-                                case "education":
-                                    new_type="education"
-                                    break
-                                default:
-                                    new_type = sortValues.take(1)[0]
-                                    break
+                                        break
+                                }
                             }
 
                         }
