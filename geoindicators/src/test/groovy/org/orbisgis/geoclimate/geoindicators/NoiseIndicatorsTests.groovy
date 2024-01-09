@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
+import org.orbisgis.geoclimate.utils.LoggerUtils
 
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
@@ -43,11 +44,11 @@ class NoiseIndicatorsTests {
 
     @Test
     void groundAcousticLayer() {
-        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("building_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
-        def zone = h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("building_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
+        def zone = h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
 
         def env = h2GIS.getSpatialTable(zone).getExtent()
         if (env) {

@@ -405,11 +405,11 @@ class RsuIndicatorsTests {
 
     @Test
     void smallestCommunGeometryTest() {
-        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("building_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("building_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', '',
@@ -751,11 +751,11 @@ class RsuIndicatorsTests {
 
     @Test
     void groundLayer() {
-        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("building_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
-        def zone = h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("building_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
+        def zone = h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
 
         def env = h2GIS.getSpatialTable(zone).getExtent()
         if (env) {

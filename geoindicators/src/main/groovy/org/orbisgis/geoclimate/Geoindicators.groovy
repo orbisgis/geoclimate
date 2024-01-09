@@ -25,7 +25,6 @@ import org.orbisgis.geoclimate.utils.AbstractScript
 abstract class Geoindicators extends AbstractScript {
 
     Geoindicators() {
-        super(Geoindicators.class)
     }
 
     //Processes

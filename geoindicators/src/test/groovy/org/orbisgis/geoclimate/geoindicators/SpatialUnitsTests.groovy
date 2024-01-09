@@ -27,10 +27,9 @@ import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.io.WKTReader
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
-
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.orbisgis.data.H2GIS.open
+import org.orbisgis.data.H2GIS
 
 class SpatialUnitsTests {
 
@@ -44,11 +43,11 @@ class SpatialUnitsTests {
     ]
     static POSTGIS postGIS;
 
-    private static def h2GIS
+    private static H2GIS h2GIS
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open(folder.getAbsolutePath() + File.separator + "spatialUnitsTests;AUTO_SERVER=TRUE")
+        h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "spatialUnitsTests;AUTO_SERVER=TRUE")
         postGIS = POSTGIS.open(dbProperties)
         System.setProperty("test.postgis", Boolean.toString(postGIS != null));
     }
@@ -180,11 +179,11 @@ class SpatialUnitsTests {
 
     @Test
     void prepareGeometriesForRSUWithFilterTest() {
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("road_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("rail_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("veget_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("hydro_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.class.getResource("zone_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("rail_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', 'rail_test', 'veget_test',

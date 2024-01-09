@@ -10,7 +10,7 @@
         <module>geoindicators</module>
         <module>bdtopo</module>
         <module>osm</module>
-        <module>geoclimate</module>
+        <module>geoclimate-cli</module>
         <module>osmtools</module>
         <module>worldpoptools</module>
         <module>common-utils</module>
@@ -30,22 +30,22 @@
         <!-- Dependencies versions -->
         <junit-version>5.9.1</junit-version>
         <jts-version>1.19.0</jts-version>
-        <h2gis-version>2.2.1-SNAPSHOT</h2gis-version>
+        <h2gis-version>2.2.1</h2gis-version>
         <h2-version>2.2.224</h2-version>
-        <cts-version>1.7.1-SNAPSHOT</cts-version>
-        <orbisdata-version>2.1.0-SNAPSHOT</orbisdata-version>
-        <slf4j-version>2.0.9</slf4j-version>
-        <groovy-version>3.0.19</groovy-version>
+        <cts-version>1.7.1</cts-version>
+        <orbisdata-version>2.1.0</orbisdata-version>
+        <slf4j-version>2.0.10</slf4j-version>
+        <groovy-version>4.0.17</groovy-version>
         <picocli-version>4.6.3</picocli-version>
-        <commons-io-version>2.11.0</commons-io-version>
-        <commons-compress-version>1.21</commons-compress-version>
+        <commons-io-version>2.12.0</commons-io-version>
+        <commons-compress-version>1.25.0</commons-compress-version>
         <smile-version>2.5.3</smile-version>
         <xstream-version>1.4.19</xstream-version>
         <logback-version>1.4.11</logback-version>
 
         <!-- Plugins versions -->
         <exec-maven-version>3.0.0</exec-maven-version>
-        <gmaven-version>1.13.0</gmaven-version>
+        <gmaven-version>3.0.2</gmaven-version>
         <jacoco-maven-version>0.8.7</jacoco-maven-version>
         <maven-archetype-plugin-version>3.2.0</maven-archetype-plugin-version>
         <maven-assembly-version>3.3.0</maven-assembly-version>
@@ -214,17 +214,17 @@
                 <version>${slf4j-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
+                <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy</artifactId>
                 <version>${groovy-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
+                <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy-json</artifactId>
                 <version>${groovy-version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
+                <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy-sql</artifactId>
                 <version>${groovy-version}</version>
             </dependency>

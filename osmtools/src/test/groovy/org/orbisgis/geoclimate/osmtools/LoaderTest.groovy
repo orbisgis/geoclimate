@@ -156,11 +156,8 @@ class LoaderTest extends AbstractOSMToolsTest {
     void fromAreaWithDistTest() {
         def geomFacto = new GeometryFactory()
         def dist = 1000
-        def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
-                                               new Coordinate(2, 0),
-                                               new Coordinate(2, 2),
-                                               new Coordinate(0, 2),
-                                               new Coordinate(0, 0)] as Coordinate[])
+
+        def polygon = OSMTools.Utilities.geometryFromValues([ 48.790598,-3.084508,48.791800,-3.082228])
 
         def env = polygon.getEnvelopeInternal()
 
@@ -180,14 +177,14 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
-        assertEquals wktReader.read("POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))"), zone.getGeometry(1)
+        assertEquals wktReader.read("POLYGON ((-3.084508 48.790598, -3.084508 48.7918, -3.082228 48.7918, -3.082228 48.790598, -3.084508 48.790598))"), zone.getGeometry(1)
 
         def zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
-        assertEquals wktReader.read("POLYGON ((-0.008988628470795 -0.0089831528411952, -0.008988628470795 2.008983152841195, 2.008988628470795 2.008983152841195, 2.008988628470795 -0.0089831528411952, -0.008988628470795 -0.0089831528411952))"), zoneEnv.getGeometry(1)
+        assertEquals wktReader.read("POLYGON ((-3.0981436889553313 48.78161484715881, -3.0981436889553313 48.8007831528412, -3.068592311044669 48.8007831528412, -3.068592311044669 48.78161484715881, -3.0981436889553313 48.78161484715881))"), zoneEnv.getGeometry(1)
 
 
         //With envelope
@@ -206,14 +203,14 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
-        assertEquals wktReader.read("POLYGON ((0 0, 0 2, 2 2, 2 0, 0 0))"), zone.getGeometry(1)
+        assertEquals wktReader.read("POLYGON ((-3.084508 48.790598, -3.084508 48.7918, -3.082228 48.7918, -3.082228 48.790598, -3.084508 48.790598))"), zone.getGeometry(1)
 
         zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
-        assertEquals wktReader.read("POLYGON ((-0.008988628470795 -0.0089831528411952, -0.008988628470795 2.008983152841195, 2.008988628470795 2.008983152841195, 2.008988628470795 -0.0089831528411952, -0.008988628470795 -0.0089831528411952))"), zoneEnv.getGeometry(1)
+        assertEquals wktReader.read("POLYGON ((-3.0981436889553313 48.78161484715881, -3.0981436889553313 48.8007831528412, -3.068592311044669 48.8007831528412, -3.068592311044669 48.78161484715881, -3.0981436889553313 48.78161484715881))"), zoneEnv.getGeometry(1)
     }
 
     /**

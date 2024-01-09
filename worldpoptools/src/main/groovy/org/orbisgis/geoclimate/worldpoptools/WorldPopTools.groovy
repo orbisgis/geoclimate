@@ -46,6 +46,5 @@ abstract class WorldPopTools extends AbstractScript {
     def static Extract = new WorldPopExtract()
 
     WorldPopTools() {
-        super(WorldPopTools.class)
     }
 }
