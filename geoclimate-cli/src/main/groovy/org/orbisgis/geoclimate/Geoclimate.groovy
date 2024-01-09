@@ -85,9 +85,9 @@ class Geoclimate implements Callable<Integer> {
     @Override
     Integer call() {
         if (verbose) {
-            LoggerUtils.setLoggerLevel(verbose.trim())
+            System.setProperty(LoggerUtils.LOGLEVEL_KEY, verbose.trim())
         } else {
-            LoggerUtils.setLoggerLevel("INFO")
+            System.setProperty(LoggerUtils.LOGLEVEL_KEY, "INFO")
         }
         if (workflow.trim().equalsIgnoreCase("OSM")) {
             println("The OSM workflow has been started.\nPlease wait...")
