@@ -35,7 +35,6 @@ abstract class OSM extends AbstractScript {
     public static InputDataFormatting = new InputDataFormatting()
 
     OSM() {
-        super(OSM.class)
     }
 
 

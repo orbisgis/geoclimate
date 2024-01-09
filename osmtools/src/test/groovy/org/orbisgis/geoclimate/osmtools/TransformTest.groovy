@@ -26,6 +26,7 @@ import org.locationtech.jts.geom.*
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
+import org.orbisgis.geoclimate.utils.LoggerUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -42,24 +43,11 @@ class TransformTest extends AbstractOSMToolsTest {
     @TempDir
     static File folder
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TransformTest)
-
     static H2GIS ds
 
     @BeforeAll
     static void loadDb() {
         ds = H2GIS.open(folder.getAbsolutePath() + File.separator + "TransformTest;AUTO_SERVER=TRUE;")
-    }
-
-
-    @BeforeEach
-    final void beforeEach(TestInfo testInfo) {
-        LOGGER.info("@ ${testInfo.testMethod.get().name}()")
-    }
-
-    @AfterEach
-    final void afterEach(TestInfo testInfo) {
-        LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
     /**
@@ -71,17 +59,12 @@ class TransformTest extends AbstractOSMToolsTest {
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
-
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toPoints(null, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toPoints(ds, prefix, -1, tags, columnsToKeep)
 
-        LOGGER.warn("A default table is created")
         assertNotNull OSMTools.Transform.toPoints(ds, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toPoints(ds, prefix, epsgCode, null, null)
     }
 
@@ -137,16 +120,12 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = []
         def columnsToKeep = []
 
-        LOGGER.warn("An error will be thrown next")
-            assertNull OSMTools.Transform.toLines(null, prefix, epsgCode, tags, columnsToKeep)
+        assertNull OSMTools.Transform.toLines(null, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toLines(ds, prefix, -1, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toLines(ds, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toLines(ds, prefix, epsgCode, null, null)
     }
 
@@ -206,16 +185,12 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = []
         def columnsToKeep = []
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toPolygons(null, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toPolygons(ds, prefix, -1, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toPolygons(ds, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.toPolygons(ds, prefix, epsgCode, null, null)
     }
 
@@ -273,16 +248,12 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = []
         def columnsToKeep = []
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractWaysAsPolygons(null, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractWaysAsPolygons(ds, prefix, -1, tags, columnsToKeep)
 
-        LOGGER.warn("A default table is created")
         assertNotNull OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, null, null)
     }
 
@@ -376,16 +347,12 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = []
         def columnsToKeep = []
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractRelationsAsPolygons(null, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractRelationsAsPolygons(ds, prefix, -1, tags, columnsToKeep)
 
-        LOGGER.warn("A default table is created")
         assertNotNull OSMTools.Transform.extractRelationsAsPolygons(ds, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractRelationsAsPolygons(ds, prefix, epsgCode, null, null)
     }
 
@@ -452,16 +419,12 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = []
         def columnsToKeep = []
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractWaysAsLines(null, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractWaysAsLines(ds, prefix, -1, tags, columnsToKeep)
 
-        LOGGER.warn("A default table is created")
         assertNotNull OSMTools.Transform.extractWaysAsLines(ds, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractWaysAsLines(ds, prefix, epsgCode, null, null)
     }
 
@@ -529,16 +492,12 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = []
         def columnsToKeep = []
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractRelationsAsLines(null, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractRelationsAsLines(ds, prefix, -1, tags, columnsToKeep)
 
-        LOGGER.warn("A default table is created")
         assertNotNull OSMTools.Transform.extractRelationsAsLines(ds, prefix, epsgCode, tags, columnsToKeep)
 
-        LOGGER.warn("An error will be thrown next")
         assertNull OSMTools.Transform.extractRelationsAsLines(ds, prefix, epsgCode, null, null)
     }
 
@@ -732,9 +691,9 @@ class TransformTest extends AbstractOSMToolsTest {
                           "landuse", "landcover",
                           "vegetation", "waterway"]
 
-        Geometry geom = Utilities.getNominatimData("Redon");
+        Geometry geom = OSMTools.Utilities.getNominatimData("Redon");
 
-        def query = "[maxsize:1073741824]" + Utilities.buildOSMQueryWithAllData(geom.getEnvelopeInternal(), keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+        def query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQueryWithAllData(geom.getEnvelopeInternal(), keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
         if (!query.isEmpty()) {
             def extract = OSMTools.Loader.extract(query)
@@ -827,7 +786,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def location = "Redon"
         float distance = 1000
         def interiorPoint = true
-        def nominatim = Utilities.getNominatimData(location)
+        def nominatim = OSMTools.Utilities.getNominatimData(location)
 
         if (!nominatim) {
             println "Cannot find any OSM data for the location $location"

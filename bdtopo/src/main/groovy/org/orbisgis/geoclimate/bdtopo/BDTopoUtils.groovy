@@ -30,7 +30,6 @@ import org.orbisgis.geoclimate.utils.AbstractScript
 abstract class BDTopoUtils extends AbstractScript {
 
     BDTopoUtils() {
-        super(BDTopoUtils.class)
     }
 
     /**

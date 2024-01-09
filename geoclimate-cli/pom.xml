@@ -85,15 +85,6 @@
             <groupId>org.orbisgis.geoclimate</groupId>
             <artifactId>osmtools</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-       <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback-version}</version>
-        </dependency>
 
         <!-- Test dependencies -->
         <dependency>

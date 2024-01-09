@@ -179,11 +179,11 @@ class SpatialUnitsTests {
 
     @Test
     void prepareGeometriesForRSUWithFilterTest() {
-        h2GIS.load(SpatialUnitsTests.class.getResource("road_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("rail_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("veget_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("hydro_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.class.getResource("zone_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("rail_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', 'rail_test', 'veget_test',

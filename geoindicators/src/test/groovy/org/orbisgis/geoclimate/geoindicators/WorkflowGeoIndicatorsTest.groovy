@@ -110,11 +110,11 @@ class WorkflowGeoIndicatorsTest {
     static void beforeAll() {
         datasource = open(folder.getAbsolutePath() + File.separator + "workflowGeoIndicatorsTest;AUTO_SERVER=TRUE")
         assertNotNull(datasource)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ROAD.geojson"), "ROAD", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("RAIL.geojson"), "RAIL", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("VEGET.geojson"), "VEGET", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("HYDRO.geojson"), "HYDRO", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ROAD.geojson"), "ROAD", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("RAIL.geojson"), "RAIL", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("VEGET.geojson"), "VEGET", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("HYDRO.geojson"), "HYDRO", true)
         inputTableNames = [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
                            railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
     }
@@ -123,8 +123,8 @@ class WorkflowGeoIndicatorsTest {
     @Test
     void GeoIndicatorsTest1() {
         //Reload the building table because the original table is updated with the block and rsu identifiers
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ZONE.geojson"), "ZONE", true)
         def indicatorUse = ["LCZ", "UTRF", "TEB"]
         def prefixName = ""
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
@@ -165,8 +165,8 @@ class WorkflowGeoIndicatorsTest {
     @Test
     void GeoIndicatorsTest2() {
         //Reload the building table because the original table is updated with the block and rsu identifiers
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ZONE.geojson"), "ZONE", true)
         def prefixName = ""
         def indicatorUse = ["UTRF"]
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
@@ -240,8 +240,8 @@ class WorkflowGeoIndicatorsTest {
     @Test
     void GeoIndicatorsTest3() {
         //Reload the building table because the original table is updated with the block and rsu identifiers
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
         def indicatorUse = ["UTRF", "TEB"]
@@ -280,8 +280,8 @@ class WorkflowGeoIndicatorsTest {
     @Test
     void GeoIndicatorsTest4() {
         //Reload the building table because the original table is updated with the block and rsu identifiers
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
 
@@ -321,8 +321,8 @@ class WorkflowGeoIndicatorsTest {
     @Test
     void GeoIndicatorsTest5() {
         //Reload the building table because the original table is updated with the block and rsu identifiers
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = false
         def prefixName = ""
         def indicatorUse = ["LCZ", "TEB"]
@@ -361,8 +361,8 @@ class WorkflowGeoIndicatorsTest {
     @Test
     void GeoIndicatorsTest6() {
         //Reload the building table because the original table is updated with the block and rsu identifiers
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ZONE.geojson"), "ZONE", true)
 
         def prefixName = ""
 
@@ -405,8 +405,8 @@ class WorkflowGeoIndicatorsTest {
     @Test
     void GeoIndicatorsTest7() {
         //Reload the building table because the original table is updated with the block and rsu identifiers
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.class.getResource("ZONE.geojson"), "ZONE", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ZONE.geojson"), "ZONE", true)
         boolean svfSimplified = true
         def prefixName = ""
         def indicatorUse = ["LCZ"]
