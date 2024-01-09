@@ -38,7 +38,6 @@ import java.util.regex.Pattern
  * @param building The name of the raw buildings table in the DB
  * @param zone an envelope to reduce the study area
  * @param urban_areas used to improved the building type
- * @param building The name of the raw buildings table in the DB
  * @param hLevMin Minimum building level height
  * @param jsonFilename Name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final buildings table
@@ -806,6 +805,12 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
             nbLevels = Math.floor(heightWall / h_lev_min)
         }
     }
+
+    // Set the nb of levels to 1 if building height > 0
+    if (nbLevels == 0 && heightRoof > 0 && heightWall > 0){
+        nbLevels = 1
+    }
+
     return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
 }
 
