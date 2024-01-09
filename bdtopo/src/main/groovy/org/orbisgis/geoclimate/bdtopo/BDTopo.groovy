@@ -19,6 +19,8 @@
  */
 package org.orbisgis.geoclimate.bdtopo
 
+import org.orbisgis.geoclimate.utils.LoggerUtils
+
 /**
  * Main module for BDTopo processing tasks
  */
@@ -149,7 +151,7 @@ abstract class BDTopo extends BDTopoUtils {
             BDTopoV3Workflow bdTopoV3Workflow = new BDTopoV3Workflow()
             return bdTopoV3Workflow.execute(input)
         } else {
-            error "Unsupported version. Set number 2 or 3"
+            LoggerUtils.error "Unsupported version. Set number 2 or 3"
             return null
         }
         return null
