@@ -20,11 +20,9 @@
 package org.orbisgis.geoclimate.bdtopo
 
 import groovy.transform.BaseScript
-import net.postgis.jdbc.geometry.LineString
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.data.H2GIS
-import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
@@ -164,7 +162,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                         height_roof = height_wall
                     }
                     //Update NB_LEV, HEIGHT_WALL and HEIGHT_ROOF
-                    def formatedHeight = formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
+                    def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
                             feature_type, building_type_level)
 
                     def zIndex = 0
@@ -751,63 +749,6 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
     }
     debug('Vegetation transformation finishes')
     return outputTableName
-}
-
-
-/**
- * Rule to guarantee the height wall, height roof and number of levels values
- * @param heightWall value
- * @param heightRoof value
- * @param nbLevels value
- * @param h_lev_min value
- * @return a map with the new values
- */
-static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
-                                    def buildingType, def levelBuildingTypeMap) {
-    //Use the BDTopo values
-    if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
-        return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
-    }
-    //Initialisation of heights and number of levels
-    // Update height_wall
-    boolean estimated = false
-    if (heightWall == 0) {
-        if (!heightRoof || heightRoof == 0) {
-            if (nbLevels == 0) {
-                nbLevels = levelBuildingTypeMap[buildingType]
-                if (!nbLevels) {
-                    nbLevels = 1
-                }
-                heightWall = h_lev_min * nbLevels
-                heightRoof = heightWall
-                estimated = true
-            } else {
-                heightWall = h_lev_min * nbLevels
-                heightRoof = heightWall
-            }
-        } else {
-            heightWall = heightRoof
-            nbLevels = Math.max(Math.floor(heightWall / h_lev_min), 1)
-        }
-    } else if (heightWall == heightRoof) {
-        if (nbLevels == 0) {
-            nbLevels = Math.max(Math.floor(heightWall / h_lev_min), 1)
-        }
-    }
-    // Control of heights and number of levels
-    // Check if height_roof is lower than height_wall. If yes, then correct height_roof
-    else if (heightWall > heightRoof) {
-        heightRoof = heightWall
-        if (nbLevels == 0) {
-            nbLevels = Math.max(Math.floor(heightWall / h_lev_min), 1)
-        }
-    } else if (heightRoof > heightWall) {
-        if (nbLevels == 0) {
-            nbLevels = Math.max(Math.floor(heightRoof / h_lev_min), 1)
-        }
-    }
-    return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
-
 }
 
 /**
