@@ -2167,9 +2167,11 @@ String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName,
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
                     def heightRoof = row.height_roof
-                    def heightWall = heightRoof
                     def type = row.type
-                    def nbLevels = Math.max(Math.floor(heightRoof / h_lev_min), 1)
+                    def formatedData = formatHeightsAndNbLevels(null, heightRoof, 0, h_lev_min,
+                            type, null)
+                    def nbLevels = formatedData.nbLevels
+                    def heightWall = formatedData.heightWall
                     stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${row.the_geom}',$epsg), 
