@@ -259,18 +259,18 @@ class InputDataFormattingTest {
         assertEquals 1038, h2GIS.getTable(buildingLayer).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV<0").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV=0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_WALL is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_WALL<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF<0").count == 0
-        assertEquals 1038, h2GIS.getTable(buildingLayers.building_estimated).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayers.building_estimated} where ESTIMATED = false").count == 4
-        assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_estimated} using (id_build, id_source) where 1=1").count == 1038
+        assertEquals 1033, h2GIS.getTable(buildingLayers.building_estimated).rowCount
+        assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_estimated} using (id_build, id_source) where 1=1").count == 1033
 
         //Buildings without estimation state
         buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
         assertEquals 1038, h2GIS.getTable(buildingLayers.building).rowCount
-        assertEquals 1038, h2GIS.getTable(buildingLayers.building_estimated).rowCount
+        assertEquals 1033, h2GIS.getTable(buildingLayers.building_estimated).rowCount
     }
 
 

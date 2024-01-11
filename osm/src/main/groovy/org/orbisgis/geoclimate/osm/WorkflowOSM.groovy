@@ -1065,7 +1065,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
             } else {
                 output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)""".toString()
             }
-            IOMethods.exportToDataBase(h2gis_datasource.getConnection(), "(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save where estimated=true)".toString(),
+            IOMethods.exportToDataBase(h2gis_datasource.getConnection(), "(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save)".toString(),
                     output_datasource.getConnection(), output_table, 2, 100);
         }
     }

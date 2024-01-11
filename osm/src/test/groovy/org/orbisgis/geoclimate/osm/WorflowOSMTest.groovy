@@ -653,7 +653,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
        //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData("Redon")
        // location = nominatim.bbox
 
-        location=[50, 8.6, 50.2, 8.8]
+        location=[43.725068,7.297883,43.727635,7.301284]
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -675,7 +675,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
 
-                                 "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ", "UTRF"] //, "UTRF", "TEB"]
 
                          ]/*,"grid_indicators": [
                                 "x_size": 200,
@@ -781,6 +781,36 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def configFile = getClass().getResource("config/osm_workflow_placename_folderoutput.json").toURI()
         //configFile =getClass().getResource("config/osm_workflow_envelope_folderoutput.json").toURI()
         OSM.WorkflowOSM.workflow(configFile)
+    }
+
+
+    @Test
+    void testEstimateBuildingWithAllInputHeight() {
+        String directory = folder.absolutePath + File.separator + "test_building_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [[43.726898,7.298452,43.727677,7.299632]]],
+                "output"      : [
+                        "folder": ["path"  : directory,
+                                   "tables": ["building", "zone"]]],
+                "parameters"  :
+                        ["distance"       : 0,
+                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                        ]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        def building = tableNames.building[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
     }
 
     /**

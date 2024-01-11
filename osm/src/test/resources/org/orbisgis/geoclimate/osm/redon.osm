@@ -16330,9 +16330,11 @@
     <nd ref="1368940458"/>
     <nd ref="1368940491"/>
     <tag k="addr:housenumber" v="27"/>
-    <tag k="height" v="13.5"/>
+    <tag k="height" v="2"/>
     <tag k="addr:street" v="Grande Rue"/>
     <tag k="building" v="yes"/>
+    <tag k="roof:height" v="0.3"/>
+    <tag k="building:levels" v="1"/>
     <tag k="source" v="cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2011"/>
   </way>
   <way id="122531206">
@@ -16348,6 +16350,7 @@
     <nd ref="1368946413"/>
     <nd ref="1368946465"/>
     <tag k="building" v="yes"/>
+    <tag k="height" v="2"/>
     <tag k="source" v="cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2011"/>
   </way>
   <way id="122531210">

@@ -1225,7 +1225,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
     def indicatorUse = inputParameters.indicatorUse
 
     //Estimate height
-    if (inputParameters.buildingHeightModelName && datasource.getRowCount(building) > 0) {
+    if (inputParameters.buildingHeightModelName && datasource.getRowCount(buildingEstimateTableName) > 0) {
         def start = System.currentTimeMillis()
         enableTableCache()
         def buildingTableName
@@ -1424,7 +1424,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
                                                         FROM $buildingIndicatorsForHeightEst a 
                                                             RIGHT JOIN $building_estimate b 
                                                             ON a.id_build=b.id_build
-                                                        WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
+                                                        WHERE a.ID_RSU IS NOT NULL;""".toString()
 
     info "Collect building indicators to estimate the height"
 
@@ -1435,7 +1435,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
             prefixName)
 
     def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
-    def nbBuildingEstimated
+    int nbBuildingEstimated =0
     def buildEstimatedHeight
     if (datasource.getTable(gatheredScales).isEmpty()) {
         info "No building height to estimate"
@@ -1462,11 +1462,11 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
 
         datasource.createIndex(buildEstimatedHeight, "id_build")
 
-        def newEstimatedHeigthWithIndicators = "NEW_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+        def formatedBuildEstimatedHeight = "INPUT_BUILDING_REFORMATED_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
         //Use build table indicators
-        datasource.execute """DROP TABLE IF EXISTS $newEstimatedHeigthWithIndicators;
-                                               CREATE TABLE $newEstimatedHeigthWithIndicators as 
+        datasource.execute """DROP TABLE IF EXISTS $formatedBuildEstimatedHeight;
+                                               CREATE TABLE $formatedBuildEstimatedHeight as 
                                                 SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                             CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
                                                     COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
@@ -1476,14 +1476,13 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
 
         //We must format only estimated buildings
         //Apply format on the new abstract table
-        def epsg = datasource."$newEstimatedHeigthWithIndicators".srid;
-        buildingTableName = formatEstimatedBuilding(datasource, newEstimatedHeigthWithIndicators, epsg)
-
-
+        def epsg = datasource.getSrid(formatedBuildEstimatedHeight)
+        buildingTableName = formatEstimatedBuilding(datasource, formatedBuildEstimatedHeight, epsg)
         //Drop intermediate tables
         datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
-                                            $newEstimatedHeigthWithIndicators, $buildEstimatedHeight,
+                                            $formatedBuildEstimatedHeight, $buildEstimatedHeight,
                                             $gatheredScales""".toString()
+
     }
 
     return ["building"                          : buildingTableName,
@@ -2164,13 +2163,14 @@ String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName,
         if (inputSpatialTable.rowCount > 0) {
             def columnNames = inputSpatialTable.columns
             queryMapper += " ${columnNames.join(",")} FROM $inputTableName"
-
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
                     def heightRoof = row.height_roof
-                    def heightWall = heightRoof
                     def type = row.type
-                    def nbLevels = Math.floor(heightRoof / h_lev_min)
+                    def formatedData = formatHeightsAndNbLevels(null, heightRoof, 0, h_lev_min,
+                            type, null)
+                    def nbLevels = formatedData.nbLevels
+                    def heightWall = formatedData.heightWall
                     stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${row.the_geom}',$epsg), 
@@ -2191,6 +2191,63 @@ String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName,
     }
     info 'Re-formating building finishes'
     return outputTableName
+}
+
+
+/**
+ * Rule to guarantee the height wall, height roof and number of levels values
+ * @param heightWall value
+ * @param heightRoof value
+ * @param nbLevels value
+ * @param h_lev_min value
+ * @return a map with the new values
+ */
+static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min,
+                                    def buildingType, def levelBuildingTypeMap) {
+    //Use the BDTopo values
+    if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
+        return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
+    }
+    //Initialisation of heights and number of levels
+    // Update height_wall
+    boolean estimated = false
+    if (heightWall == 0) {
+        if (!heightRoof || heightRoof == 0) {
+            if (nbLevels == 0) {
+                nbLevels = levelBuildingTypeMap[buildingType]
+                if (!nbLevels) {
+                    nbLevels = 1
+                }
+                heightWall = h_lev_min * nbLevels
+                heightRoof = heightWall
+                estimated = true
+            } else {
+                heightWall = h_lev_min * nbLevels
+                heightRoof = heightWall
+            }
+        } else {
+            heightWall = heightRoof
+            nbLevels = Math.max(Math.floor(heightWall / h_lev_min), 1)
+        }
+    } else if (heightWall == heightRoof) {
+        if (nbLevels == 0) {
+            nbLevels = Math.max(Math.floor(heightWall / h_lev_min), 1)
+        }
+    }
+    // Control of heights and number of levels
+    // Check if height_roof is lower than height_wall. If yes, then correct height_roof
+    else if (heightWall > heightRoof) {
+        heightRoof = heightWall
+        if (nbLevels == 0) {
+            nbLevels = Math.max(Math.floor(heightWall / h_lev_min), 1)
+        }
+    } else if (heightRoof > heightWall) {
+        if (nbLevels == 0) {
+            nbLevels = Math.max(Math.floor(heightRoof / h_lev_min), 1)
+        }
+    }
+    return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
+
 }
 
 
