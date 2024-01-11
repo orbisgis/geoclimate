@@ -1225,7 +1225,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
     def indicatorUse = inputParameters.indicatorUse
 
     //Estimate height
-    if (inputParameters.buildingHeightModelName && datasource.getRowCount(building) > 0) {
+    if (inputParameters.buildingHeightModelName && datasource.getRowCount(buildingEstimateTableName) > 0) {
         def start = System.currentTimeMillis()
         enableTableCache()
         def buildingTableName
@@ -1424,7 +1424,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
                                                         FROM $buildingIndicatorsForHeightEst a 
                                                             RIGHT JOIN $building_estimate b 
                                                             ON a.id_build=b.id_build
-                                                        WHERE b.ESTIMATED = true AND a.ID_RSU IS NOT NULL;""".toString()
+                                                        WHERE a.ID_RSU IS NOT NULL;""".toString()
 
     info "Collect building indicators to estimate the height"
 
@@ -1460,30 +1460,29 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
 
         nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
 
-        //We must format only estimated buildings
-        //Apply format on the new abstract table
-        def epsg = datasource."$buildEstimatedHeight".srid;
-        def formatedBuildEstimatedHeight = formatEstimatedBuilding(datasource, buildEstimatedHeight, epsg)
+        datasource.createIndex(buildEstimatedHeight, "id_build")
 
-        datasource.createIndex(formatedBuildEstimatedHeight, "id_build")
-
-        buildingTableName = "INPUT_BUILDING_ESTIMATED_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+        def formatedBuildEstimatedHeight = "INPUT_BUILDING_REFORMATED_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
         //Use build table indicators
-        datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
-                                               CREATE TABLE $buildingTableName as 
+        datasource.execute """DROP TABLE IF EXISTS $formatedBuildEstimatedHeight;
+                                               CREATE TABLE $formatedBuildEstimatedHeight as 
                                                 SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                             CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
                                                     COALESCE(b.HEIGHT_ROOF, a.HEIGHT_ROOF) AS HEIGHT_ROOF,
                                                     CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.NB_LEV ELSE 0 END AS NB_LEV, a.TYPE,a.MAIN_USE, a.ZINDEX, a.ID_BLOCK, a.ID_RSU 
                                                 from $buildingIndicatorsForHeightEst
-                                            a LEFT JOIN $formatedBuildEstimatedHeight b on a.id_build=b.id_build""".toString()
+                                            a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
 
-
+        //We must format only estimated buildings
+        //Apply format on the new abstract table
+        def epsg = datasource.getSrid(formatedBuildEstimatedHeight)
+        buildingTableName = formatEstimatedBuilding(datasource, formatedBuildEstimatedHeight, epsg)
         //Drop intermediate tables
         datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                             $formatedBuildEstimatedHeight, $buildEstimatedHeight,
                                             $gatheredScales""".toString()
+
     }
 
     return ["building"                          : buildingTableName,

@@ -243,7 +243,7 @@ def saveToGeojson(def outputTable, def filePath, H2GIS h2gis_datasource, def out
  */
 def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOutputData) {
     if (outputTable && h2gis_datasource.hasTable(outputTable)) {
-        h2gis_datasource.save("(SELECT ID_BUILD, ID_SOURCE FROM $outputTable WHERE estimated=true)", filePath, deleteOutputData)
+        h2gis_datasource.save("(SELECT ID_BUILD, ID_SOURCE FROM $outputTable)", filePath, deleteOutputData)
         info "${outputTable} has been saved in ${filePath}."
     }
 }

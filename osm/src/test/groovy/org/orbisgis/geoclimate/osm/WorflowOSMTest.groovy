@@ -783,6 +783,36 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         OSM.WorkflowOSM.workflow(configFile)
     }
 
+
+    @Test
+    void testEstimateBuildingWithAllInputHeight() {
+        String directory = folder.absolutePath + File.separator + "test_building_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [[43.726898,7.298452,43.727677,7.299632]]],
+                "output"      : [
+                        "folder": ["path"  : directory,
+                                   "tables": ["building", "zone"]]],
+                "parameters"  :
+                        ["distance"       : 0,
+                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                        ]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        def building = tableNames.building[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
+    }
+
     /**
      * Create a configuration file
      * @param osmParameters

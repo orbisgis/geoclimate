@@ -55,8 +55,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                     DROP TABLE if exists ${outputEstimateTableName};
                     CREATE TABLE ${outputEstimateTableName} (
                         id_build INTEGER,
-                        ID_SOURCE VARCHAR,
-                        estimated boolean)
+                        ID_SOURCE VARCHAR)
                 """.toString()
 
     datasource """ 
@@ -124,13 +123,13 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                                     ${roof_shape ? "'" + roof_shape + "'" : null})
                                             """.toString()
 
-                                    stmt.addBatch """
+                                    if(formatedHeight.estimated) {
+                                        stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build, 
-                                                    '${row.id}',
-                                                    ${formatedHeight.estimated})
+                                                    '${row.id}')
                                                 """.toString()
-
+                                    }
                                     id_build++
                                 }
                             }
