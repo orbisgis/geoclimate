@@ -23,8 +23,8 @@ import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.jdbc.JdbcDataSource
+import org.orbisgis.geoclimate.Geoindicators
 
 import java.util.regex.Pattern
 
@@ -100,7 +100,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                         def heightRoof = getHeightRoof(height, heightPattern)
                         def heightWall = getHeightWall(heightRoof, roof_height)
                         def nbLevels = getNbLevels(b_lev, roof_lev)
-                        def formatedHeight = formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
+                        def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
                         def zIndex = getZIndex(row.'layer')
                         String roof_shape = row.'roof:shape'
 
@@ -757,63 +757,6 @@ static float getHeightWall(height, r_height) {
     }
     return result
 }
-
-/**
- * Rule to guarantee the height wall, height roof and number of levels values
- * @param heightWall value
- * @param heightRoof value
- * @param nbLevels value
- * @param h_lev_min value
- * @return a map with the new values
- */
-static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels, def h_lev_min, def buildingType, def levelBuildingTypeMap) {
-    //Use the OSM values
-    if (heightWall != 0 && heightRoof != 0 && nbLevels != 0) {
-        return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: false]
-    }
-    //Initialisation of heights and number of levels
-    // Update height_wall
-    boolean estimated = false
-    if (heightWall == 0) {
-        if (heightRoof == 0) {
-            if (nbLevels == 0) {
-                nbLevels = levelBuildingTypeMap[buildingType]
-                if (!nbLevels) {
-                    nbLevels = 1
-                }
-                heightWall = h_lev_min * nbLevels
-                heightRoof = heightWall
-                estimated = true
-            } else {
-                heightWall = h_lev_min * nbLevels
-                heightRoof = heightWall
-            }
-        } else {
-            heightWall = heightRoof
-            nbLevels = Math.floor(heightWall / h_lev_min)
-        }
-    } else if (heightWall == heightRoof) {
-        if (nbLevels == 0) {
-            nbLevels = Math.floor(heightWall / h_lev_min)
-        }
-    }
-    // Control of heights and number of levels
-    // Check if height_roof is lower than height_wall. If yes, then correct height_roof
-    else if (heightWall > heightRoof) {
-        heightRoof = heightWall
-        if (nbLevels == 0) {
-            nbLevels = Math.floor(heightWall / h_lev_min)
-        }
-    }
-
-    // Set the nb of levels to 1 if building height > 0
-    if (nbLevels == 0 && heightRoof > 0 && heightWall > 0){
-        nbLevels = 1
-    }
-
-    return [heightWall: heightWall, heightRoof: heightRoof, nbLevels: nbLevels, estimated: estimated]
-}
-
 
 /**
  * This function defines the value of the column height_roof according to the values of height and b_height
