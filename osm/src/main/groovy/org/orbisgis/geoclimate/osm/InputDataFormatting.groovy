@@ -1169,7 +1169,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         SELECT st_tomultiline(st_buffer(the_geom, -0.01))
                         from $zone ;
 
-                        CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, null, 0 AS ZINDEX FROM
+                        CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
                         st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)') as foo where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;                
                         
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
@@ -1225,7 +1225,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                 def waterTypes = datasource.firstRow("SELECT COUNT(*) as count, type from $water group by type".toString())
                 //There is only sea geometries then we then decided to put the entire study area in a sea zone
                 //As a result, the water layer is replaced by the entire
-                if (!waterTypes.containsValue("water")) {
+                if (waterTypes && !waterTypes.containsValue("water")) {
                     datasource.execute("""
                             DROP TABLE IF EXISTS $water;
                             CREATE TABLE $water as select CAST(1 AS INTEGER) AS ID_WATER, NULL AS ID_SOURCE , CAST(0 AS INTEGER) AS ZINDEX, the_geom, 'sea' as type from $zone  ;                        
