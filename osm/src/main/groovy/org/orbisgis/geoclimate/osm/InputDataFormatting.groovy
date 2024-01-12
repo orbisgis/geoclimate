@@ -108,7 +108,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                             def srid = geom.getSRID()
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
-                                if (subGeom instanceof Polygon && subGeom.getArea()>1) {
+                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
                                     stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
@@ -123,7 +123,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                                     ${roof_shape ? "'" + roof_shape + "'" : null})
                                             """.toString()
 
-                                    if(formatedHeight.estimated) {
+                                    if (formatedHeight.estimated) {
                                         stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build, 
@@ -167,16 +167,16 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow("SELECT * FROM $buildinType".toString()) { row ->
                         def new_type = "building"
-                        def id_build_ =  row.id_build
+                        def id_build_ = row.id_build
                         def mapTypes = row.toRowResult()
                         mapTypes.remove("ID_BUILD")
-                        mapTypes.removeAll{ it.value == null }
+                        mapTypes.removeAll { it.value == null }
                         //Only one value type, no overlaps
-                        if(mapTypes.size()==1){
-                            new_type= mapTypes.keySet().stream().findFirst().get()
-                        }else {
+                        if (mapTypes.size() == 1) {
+                            new_type = mapTypes.keySet().stream().findFirst().get()
+                        } else {
                             def maxType = mapTypes.max { it.value }
-                            if(maxType){
+                            if (maxType) {
                                 String maxKeyType = maxType.key
                                 def sortValues = mapTypes.sort { -it.value }.keySet()
                                 sortValues.remove(maxKeyType)
@@ -284,8 +284,8 @@ String formatRoadLayer(
                         def crossing = row.'bridge'
                         if (crossing) {
                             crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
-                            if(!zIndex && crossing){
-                                zIndex=1
+                            if (!zIndex && crossing) {
+                                zIndex = 1
                             }
                         }
 
@@ -415,16 +415,16 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     def crossing = row.'bridge'
                     if (crossing) {
                         crossing = crossingValues.bridge.contains(crossing) ? "bridge" : null
-                        if(!zIndex && crossing){
-                            zIndex=1
+                        if (!zIndex && crossing) {
+                            zIndex = 1
                         }
                     }
                     def gauge = row.'gauge'
                     //1.435 default value for standard gauge
                     //1 constant for balasting
                     def rail_width = 1.435 + 1
-                    if(gauge && gauge.isFloat()){
-                        rail_width = (gauge.toFloat()/1000) + 1
+                    if (gauge && gauge.isFloat()) {
+                        rail_width = (gauge.toFloat() / 1000) + 1
                     }
 
                     if (zIndex >= 0 && type) {
@@ -494,7 +494,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                         //Check surface
                         boolean addGeom = true
                         if (row."surface" && row."surface" != "grass") {
-                            addGeom=false
+                            addGeom = false
                         }
                         if (addGeom) {
                             def height_class = typeAndVegClass[type]
@@ -551,14 +551,14 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                         "$water AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom "
-                if(datasource.getColumnNames(water).contains("seamark:type")){
-                    query+=" and (a.\"seamark:type\" is null or a.\"seamark:type\" in ('harbour_basin', 'harbour'))"
+                if (datasource.getColumnNames(water).contains("seamark:type")) {
+                    query += " and (a.\"seamark:type\" is null or a.\"seamark:type\" in ('harbour_basin', 'harbour'))"
                 }
 
             } else {
                 query = "select id,  the_geom, \"natural\", \"layer\" FROM $water "
-                if(datasource.getColumnNames(water).contains("seamark:type")){
-                    query+=" where \"seamark:type\" is null"
+                if (datasource.getColumnNames(water).contains("seamark:type")) {
+                    query += " where \"seamark:type\" is null"
                 }
             }
             int rowcount = 1
@@ -570,7 +570,7 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                     int epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
-                        if (subGeom instanceof Polygon && subGeom.getArea()>1) {
+                        if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
                             stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})".toString()
                         }
                     }
@@ -600,7 +600,7 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
         def mappingTypeAndUse = parametersMap.type
         def queryMapper = "SELECT "
         def columnToMap = parametersMap.get("columns")
-        if (datasource.getRowCount(impervious)> 0) {
+        if (datasource.getRowCount(impervious) > 0) {
             datasource.createSpatialIndex(impervious)
             def columnNames = datasource.getColumnNames(impervious)
             columnNames.remove("THE_GEOM")
@@ -657,7 +657,7 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (!subGeom.isEmpty()) {
-                                    if (subGeom instanceof Polygon && subGeom.getArea()>1) {
+                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
                                         stmt.addBatch "insert into $impervious_prepared values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
                                     }
                                 }
@@ -1038,9 +1038,13 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
  */
 String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zone = "", String water = "") {
     String outputTableName = postfix "INPUT_SEA_LAND_MASK_"
-    if (coastline) {
+    datasource.execute """Drop table if exists $outputTableName;
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, type varchar);""".toString()
+    if(!zone){
+        debug "A zone table must be provided to compute the sea/land mask"
+    }
+    else if (coastline) {
         if (datasource.hasTable(coastline) && datasource.getRowCount(coastline) > 0) {
-            if (zone) {
                 debug 'Computing sea/land mask table'
                 datasource """ DROP TABLE if exists ${outputTableName};""".toString()
                 datasource.createSpatialIndex(coastline, "the_geom")
@@ -1062,17 +1066,19 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         $water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles;
                         CREATE TABLE $coastLinesIntersects AS SELECT ST_intersection(a.the_geom, b.the_geom) as the_geom
                         from $coastline  AS  a,  $zone  AS b WHERE
-                        a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) and "natural"= 'coastline';     
+                        a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) and "natural"= 'coastline';
                         """.toString()
 
                 if (water) {
-                    datasource.createSpatialIndex(water, "the_geom")
-                    datasource.execute """
+                    //Sometimes there is no coastlines
+                    if (datasource.getRowCount(coastLinesIntersects) > 0) {
+                        datasource.createSpatialIndex(water, "the_geom")
+                        datasource.execute """
                         CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
                        SELECT the_geom, EXPLOD_ID  FROM st_explode('(  
                        SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
 
-                    datasource.execute """  
+                        datasource.execute """  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
@@ -1085,7 +1091,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)')
                         as foo where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;  """.toString()
 
-                    datasource.execute """
+                        datasource.execute """
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
                        
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
@@ -1098,8 +1104,8 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
 
                         CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);""".toString()
 
-                    //Perform triangulation to tag the areas as sea or water
-                    datasource.execute """
+                        //Perform triangulation to tag the areas as sea or water
+                        datasource.execute """
                          DROP TABLE IF EXISTS $sea_land_triangles;
                        CREATE TABLE $sea_land_triangles AS 
                        SELECT * FROM 
@@ -1114,13 +1120,13 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                                 st_intersects(a.THE_GEOM, b.THE_GEOM);  
                     CREATE INDEX ON  $sea_id_triangles (id);""".toString()
 
-                    //Set the triangles to sea
-                    datasource.execute """                                     
+                        //Set the triangles to sea
+                        datasource.execute """                                     
                     UPDATE ${sea_land_triangles} SET TYPE='sea' WHERE ID IN(SELECT ID FROM $sea_id_triangles);   
                     """.toString()
 
-                    //Set the triangles to water
-                    datasource.execute """
+                        //Set the triangles to water
+                        datasource.execute """
                     DROP TABLE IF EXISTS $water_id_triangles;
                     CREATE TABLE $water_id_triangles AS SELECT a.ID
                                 FROM ${sea_land_triangles} a, $water b WHERE a.THE_GEOM && b.THE_GEOM AND
@@ -1132,12 +1138,24 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                     UPDATE $sea_land_triangles SET TYPE='water' WHERE ID IN(SELECT ID FROM $water_id_triangles);                         
                          """.toString()
 
-                    //Unioning all geometries
-                    datasource.execute("""
+                        //Unioning all geometries
+                        datasource.execute("""
                     create table $outputTableName as select id , 
                     st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
                     """.toString())
-
+                    } else {
+                        //We look for the type of water
+                        def waterTypes = datasource.firstRow("SELECT COUNT(*) as count, type from $water group by type".toString())
+                        //There is only sea geometries then we then decided to put the entire study area in a sea zone
+                        //As a result, the water layer is replaced by the entire
+                        if (!waterTypes.containsValue("water")) {
+                            datasource.execute("""
+                            DROP TABLE IF EXISTS $water;
+                            CREATE TABLE $water as select CAST(1 AS INTEGER) AS ID_WATER, NULL AS ID_SOURCE , CAST(0 AS INTEGER) AS ZINDEX, the_geom, 'sea' as type from $zone  ;                     
+                            """.toString())
+                            return outputTableName
+                        }
+                    }
                 } else {
                     datasource.execute """
                         CREATE TABLE $islands_mark (the_geom GEOMETRY, ID SERIAL) AS 
@@ -1165,9 +1183,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
 
                         CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
-                        
                          """.toString()
-
 
                     //Perform triangulation to tag the areas as sea or water
                     datasource.execute """
@@ -1202,14 +1218,23 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         """.toString())
                 debug 'The sea/land mask has been computed'
                 return outputTableName
-            } else {
-                debug "A zone table must be provided to compute the sea/land mask"
+        }
+        else {
+            //There is no coatline geometries, we check the water table.
+            if (water) {
+                def waterTypes = datasource.firstRow("SELECT COUNT(*) as count, type from $water group by type".toString())
+                //There is only sea geometries then we then decided to put the entire study area in a sea zone
+                //As a result, the water layer is replaced by the entire
+                if (waterTypes && !waterTypes.containsValue("water")) {
+                    datasource.execute("""
+                            DROP TABLE IF EXISTS $water;
+                            CREATE TABLE $water as select CAST(1 AS INTEGER) AS ID_WATER, NULL AS ID_SOURCE , CAST(0 AS INTEGER) AS ZINDEX, the_geom, 'sea' as type from $zone  ;                        
+                            """.toString())
+                    return outputTableName
+                }
             }
         }
     }
-    datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, type varchar);""".toString()
-
     return outputTableName
 }
 
