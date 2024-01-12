@@ -288,35 +288,7 @@ class InputDataFormattingTest {
 
         def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
 
-        //def zoneToExtract ="Shanghai, Chine"
-        def zoneToExtract = "École Lycée Joliot-Curie,Rennes"
-        zoneToExtract = "New York"
-        zoneToExtract = "Québec, Québec (Agglomération), Capitale-Nationale, Québec, Canada"
-        //zoneToExtract = "Bucarest"
-        zoneToExtract = "Helsinki"
-        //zoneToExtract ="Göteborgs Stad"
-        //zoneToExtract = "Londres, Grand Londres, Angleterre, Royaume-Uni"
-        zoneToExtract = "Vannes"
-        //zoneToExtract="rezé"
-        //zoneToExtract = "Brest"
-
-        //river Göta älv
-        zoneToExtract = [57.6753, 11.7982, 57.6955, 11.8656]
-        //Taal Crater Lake
-        //zoneToExtract =[13.4203,120.2165,14.5969 , 122.0293]
-        //Le Havre
-        zoneToExtract = [49.4370, -0.0230, 49.5359, 0.2053,]
-        //aeroway Toulouse https://www.openstreetmap.org/way/739797641#map=14/43.6316/1.3590
-        zoneToExtract = [43.610539, 1.334152, 43.648808, 1.392689]
-
-        zoneToExtract = "Göteborgs Stad"
-
-        zoneToExtract = "Riantec"
-        zoneToExtract =[50, 8.6, 50.2, 8.8]
-
-       //zoneToExtract="Sassenage"
-
-        zoneToExtract=[50, 8.6, 50.2, 8.8]
+        def zoneToExtract = "Redon"
 
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
@@ -347,19 +319,13 @@ class InputDataFormattingTest {
 
 
             //Roads
-
             def inputRoadTableName = OSM.InputDataFormatting.formatRoadLayer( h2GIS,extractData.road, extractData.zone_envelope)
             h2GIS.save(inputRoadTableName,"${file.absolutePath + File.separator}osm_road_${formatedPlaceName}.geojson", true)
 
             //Rails
-            /*format = OSM.InputDataFormatting.formatRailsLayer()
-            format.execute([
-                    datasource                : h2GIS,
-                    inputTableName            : extractData.results.railTableName,
-                    inputZoneEnvelopeTableName: extractData.results.zoneEnvelopeTableName,
-                    epsg                      : epsg])
-            h2GIS.getTable(format.results.outputTableName).save("./target/osm_rails_${formatedPlaceName}.geojson", true)
-        */
+            def inputRailTableName = OSM.InputDataFormatting.formatRailsLayer( h2GIS,extractData.rail, extractData.zone_envelope)
+            h2GIS.save(inputRailTableName,"${file.absolutePath + File.separator}osm_rail_${formatedPlaceName}.geojson", true)
+
 
             //Vegetation
             def inputVegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(

@@ -2167,7 +2167,7 @@ String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName,
                 datasource.eachRow(queryMapper) { row ->
                     def heightRoof = row.height_roof
                     def type = row.type
-                    def formatedData = formatHeightsAndNbLevels(null, heightRoof, 0, h_lev_min,
+                    def formatedData = formatHeightsAndNbLevels(0, heightRoof, 0, h_lev_min,
                             type, null)
                     def nbLevels = formatedData.nbLevels
                     def heightWall = formatedData.heightWall
