@@ -62,7 +62,7 @@ class GeoclimateTest {
 
     @Test
     void propertiesTest() {
-        assert "0.0.2-SNAPSHOT" == Geoclimate.version
+        assert "1.0.0-SNAPSHOT" == Geoclimate.version
         assert Pattern.compile("^\\d{4}-\\d{2}-\\d{2}").matcher(Geoclimate.build).matches()
     }
 

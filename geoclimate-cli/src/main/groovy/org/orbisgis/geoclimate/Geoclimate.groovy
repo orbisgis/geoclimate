@@ -33,7 +33,7 @@ import java.util.concurrent.Callable
  */
 @CommandLine.Command(name = "Geoclimate",
         sortOptions = false,
-        version = "0.0.2",
+        version = "1.0.0",
         mixinStandardHelpOptions = true,
         description = "Simple command line tool to run Geoclimate algorithms",
         header =

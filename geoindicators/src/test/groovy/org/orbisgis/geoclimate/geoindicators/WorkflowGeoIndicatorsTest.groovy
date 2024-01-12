@@ -534,7 +534,7 @@ class WorkflowGeoIndicatorsTest {
 
     @Test
     void GeoClimateProperties() {
-        assert "0.0.2-SNAPSHOT" == Geoindicators.version()
+        assert "1.0.0-SNAPSHOT" == Geoindicators.version()
         assertNotNull Geoindicators.buildNumber()
     }
 
