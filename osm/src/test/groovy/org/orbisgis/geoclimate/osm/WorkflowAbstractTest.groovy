@@ -70,7 +70,6 @@ class WorkflowAbstractTest {
             assertEquals(countBlocks.count, maxBlocks.max)
         }
 
-
         def maxRSUBlocks = datasource.firstRow("select count(distinct id_block) as max from ${relationBuildings} where id_rsu is not null".toString())
         def countRSU = datasource.firstRow("select count(*) as count from ${relationBlocks} where id_rsu is not null".toString())
         assertEquals(countRSU.count, maxRSUBlocks.max)

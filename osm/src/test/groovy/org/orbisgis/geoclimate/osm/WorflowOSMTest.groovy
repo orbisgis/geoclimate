@@ -649,11 +649,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Nice"
+        def location = "Redon"
        //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData("Redon")
        // location = nominatim.bbox
 
-        location=[43.725068,7.297883,43.727635,7.301284]
+        //location=[47.4, -4.8, 47.6, -4.6]
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -675,7 +675,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
 
-                                 "indicatorUse": ["LCZ", "UTRF"] //, "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
 
                          ]/*,"grid_indicators": [
                                 "x_size": 200,
@@ -697,8 +697,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         OSM.workflow(osm_parmeters)
-
-
     }
 
     @Disabled
@@ -811,6 +809,35 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def building = tableNames.building[0]
         H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
+    }
+
+    @Test
+    void testOneSeaLCZ() {
+        String directory = folder.absolutePath + File.separator + "test_sea_lcz"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "sea_lcz_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [[47.4, -4.8, 47.6, -4.6]]],
+                "parameters"  :
+                        ["distance"       : 0,
+                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                        ]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        def lcz = tableNames.rsu_lcz[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}sea_lcz_db;AUTO_SERVER=TRUE")
+        def lcz_group=  h2gis.firstRow("select  lcz_primary, count(*) as count from $lcz group by lcz_primary".toString())
+        assertTrue(lcz_group.size()==2)
+        assertTrue(lcz_group.lcz_primary==107)
+        assertTrue(lcz_group.count==1)
     }
 
     /**

@@ -316,7 +316,7 @@ class InputDataFormattingTest {
 
        //zoneToExtract="Sassenage"
 
-        zoneToExtract=[50, 8.6, 50.2, 8.8]
+        zoneToExtract=[47.4, -4.8, 47.6, -4.6]
 
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
@@ -369,7 +369,6 @@ class InputDataFormattingTest {
 
             //Hydrography
             def inputWaterTableName = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
-            h2GIS.save(inputWaterTableName,"${file.absolutePath + File.separator}osm_water_${formatedPlaceName}.geojson", true)
 
             //Impervious
             String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
@@ -384,6 +383,9 @@ class InputDataFormattingTest {
             def inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
                     extractData.zone_envelope, inputWaterTableName)
             h2GIS.save(inputSeaLandTableName,"${file.absolutePath + File.separator}osm_sea_land_${formatedPlaceName}.geojson", true)
+
+            //Save it after sea/land mask because the water table can be modified
+            h2GIS.save(inputWaterTableName,"${file.absolutePath + File.separator}osm_water_${formatedPlaceName}.geojson", true)
 
         } else {
             assertTrue(false)
