@@ -652,9 +652,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def location = "Redon"
        //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData("Redon")
        // location = nominatim.bbox
-
         //location=[47.4, -4.8, 47.6, -4.6]
-
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
