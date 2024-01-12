@@ -626,10 +626,6 @@
     </reporting>
 
     <!-- Environment Settings -->
-    <issueManagement>
-        <system>Github</system>
-        <url>https://github.com/orbisgis/geoclimate/issues</url>
-    </issueManagement>
     <repositories>
         <repository>
             <id>orbisgis-release</id>
