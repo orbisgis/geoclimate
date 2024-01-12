@@ -100,6 +100,18 @@
         </developer>
     </developers>
 
+    <scm>
+        <connection>scm:git:https://github.com/orbisgis/geoclimate.git</connection>
+        <developerConnection>scm:git:https://github.com/orbisgis/geoclimate.git</developerConnection>
+        <url>git@github.com:orbisgis/geoclimate.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/orbisgis/geoclimate/issues</url>
+    </issueManagement>
+
     <!-- Dependencies -->
     <dependencyManagement>
         <dependencies>
