@@ -63,7 +63,6 @@ jobs:
             --batch-mode \
             -P deploy \
             -Dmaven.test.skip=true \
-            -P standalone,integration \
             release:prepare release:perform \
             -Dusername=$GITHUB_ACTOR -Dpassword=$GITHUB_TOKEN ${VERSION:+"-DdevelopmentVersion="$VERSION"-SNAPSHOT"}
         env:
