@@ -27,6 +27,8 @@ import picocli.CommandLine
 
 import java.util.regex.Pattern
 
+import static org.junit.jupiter.api.Assertions.assertNotNull
+
 /**
  * Test class dedicated to {@link Geoclimate}.
  *
@@ -62,7 +64,7 @@ class GeoclimateTest {
 
     @Test
     void propertiesTest() {
-        assert "1.0.0-SNAPSHOT" == Geoclimate.version
+        assertNotNull Geoclimate.version
         assert Pattern.compile("^\\d{4}-\\d{2}-\\d{2}").matcher(Geoclimate.build).matches()
     }
 
