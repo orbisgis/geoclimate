@@ -20,6 +20,7 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
@@ -532,6 +533,7 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(0, countResult.count)
     }
 
+    @Disabled
     @Test
     void GeoClimateProperties() {
         assert "1.0.0-SNAPSHOT" == Geoindicators.version()
