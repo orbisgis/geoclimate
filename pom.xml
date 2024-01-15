@@ -3,7 +3,15 @@
     <groupId>org.orbisgis.geoclimate</groupId>
     <artifactId>geoclimate-parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <!-- Project Information -->
+    <name>geoclimate</name>
+    <description>GeoClimate is an opensource geospatial toolbox to compute a set of climate related parameters
+        describing a territory (morphological indicators such as Sky View Factor,
+        urban classifications such as Local Climate Zones, etc.).
+    </description>
+
     <modules>
         <module>geoindicators</module>
         <module>bdtopo</module>
@@ -14,68 +22,11 @@
         <module>common-utils</module>
     </modules>
 
-    <!-- Project Information -->
-    <name>geoclimate</name>
-    <description>GeoClimate is an opensource geospatial toolbox to compute a set of climate related parameters
-        describing a territory (morphological indicators such as Sky View Factor,
-        urban classifications such as Local Climate Zones, etc.).
-    </description>
-
     <organization>
         <name>CNRS</name>
         <url>http://www.cnrs.fr</url>
     </organization>
     <url>http://github.com/orbisgis/geoclimate</url>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>
-        <buildNumber>${maven.build.timestamp}</buildNumber>
-        <site.basedir>${project.basedir}</site.basedir>
-        <buildNumber>${maven.build.timestamp}</buildNumber>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven-version>3.5.0</maven-version>
-        <java-version>11</java-version>
-
-        <!-- Dependencies versions -->
-        <junit-version>5.9.1</junit-version>
-        <jts-version>1.19.0</jts-version>
-        <h2gis-version>2.2.1</h2gis-version>
-        <h2-version>2.2.224</h2-version>
-        <cts-version>1.7.1</cts-version>
-        <orbisdata-version>2.1.0</orbisdata-version>
-        <slf4j-version>2.0.10</slf4j-version>
-        <groovy-version>4.0.17</groovy-version>
-        <picocli-version>4.6.3</picocli-version>
-        <commons-io-version>2.12.0</commons-io-version>
-        <commons-compress-version>1.25.0</commons-compress-version>
-        <smile-version>2.5.3</smile-version>
-        <xstream-version>1.4.19</xstream-version>
-        <logback-version>1.4.11</logback-version>
-
-        <!-- Plugins versions -->
-        <exec-maven-version>3.0.0</exec-maven-version>
-        <gmaven-version>3.0.2</gmaven-version>
-        <maven-archetype-plugin-version>3.2.0</maven-archetype-plugin-version>
-        <maven-assembly-version>3.3.0</maven-assembly-version>
-        <maven-bundle-version>5.1.2</maven-bundle-version>
-        <maven-clean-version>3.1.0</maven-clean-version>
-        <maven-compiler-version>3.8.1</maven-compiler-version>
-        <maven-deploy-version>3.0.0-M1</maven-deploy-version>
-        <maven-enforcer-version>3.0.0</maven-enforcer-version>
-        <maven-gpg-plugin-version>3.0.1</maven-gpg-plugin-version>
-        <maven-install-version>3.0.0-M1</maven-install-version>
-        <maven-jar-version>3.2.0</maven-jar-version>
-        <maven-javadoc-version>3.3.1</maven-javadoc-version>
-        <maven-release-version>3.0.0-M4</maven-release-version>
-        <maven-source-version>3.2.1</maven-source-version>
-        <maven-surefire-version>3.0.0-M5</maven-surefire-version>
-        <version-maven-version>2.8.1</version-maven-version>
-
-        <!-- Extensions version -->
-        <archetype-packaging-version>3.1.2</archetype-packaging-version>
-    </properties>
 
     <licenses>
         <license>
@@ -119,6 +70,60 @@
         <system>Github</system>
         <url>https://github.com/orbisgis/geoclimate/issues</url>
     </issueManagement>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>
+        <buildNumber>${maven.build.timestamp}</buildNumber>
+        <site.basedir>${project.basedir}</site.basedir>
+        <buildNumber>${maven.build.timestamp}</buildNumber>
+        <java-version>11</java-version>
+        <maven.compiler.target>${java-version}</maven.compiler.target>
+        <maven.compiler.source>${java-version}</maven.compiler.source>
+        <maven-version>3.5.0</maven-version>
+
+        <!-- Dependencies versions -->
+        <junit-version>5.9.1</junit-version>
+        <jts-version>1.19.0</jts-version>
+        <h2gis-version>2.2.1</h2gis-version>
+        <h2-version>2.2.224</h2-version>
+        <cts-version>1.7.1</cts-version>
+        <orbisdata-version>2.1.0</orbisdata-version>
+        <slf4j-version>2.0.10</slf4j-version>
+        <groovy-version>4.0.17</groovy-version>
+        <picocli-version>4.6.3</picocli-version>
+        <commons-io-version>2.12.0</commons-io-version>
+        <commons-compress-version>1.25.0</commons-compress-version>
+        <smile-version>2.5.3</smile-version>
+        <xstream-version>1.4.19</xstream-version>
+        <logback-version>1.4.11</logback-version>
+
+        <!-- Plugins versions -->
+        <exec-maven-version>3.0.0</exec-maven-version>
+        <gmaven-version>3.0.2</gmaven-version>
+        <jacoco-maven-version>0.8.7</jacoco-maven-version>
+        <maven-archetype-plugin-version>3.2.0</maven-archetype-plugin-version>
+        <maven-assembly-version>3.3.0</maven-assembly-version>
+        <maven-bundle-version>5.1.2</maven-bundle-version>
+        <maven-clean-version>3.1.0</maven-clean-version>
+        <maven-compiler-version>3.8.1</maven-compiler-version>
+        <maven-deploy-version>3.0.0-M1</maven-deploy-version>
+        <maven-enforcer-version>3.0.0</maven-enforcer-version>
+        <maven-gpg-plugin-version>3.0.1</maven-gpg-plugin-version>
+        <maven-install-version>3.0.0-M1</maven-install-version>
+        <maven-jar-version>3.2.0</maven-jar-version>
+        <maven-javadoc-version>3.3.1</maven-javadoc-version>
+        <maven-project-info-reports-version>3.1.2</maven-project-info-reports-version>
+        <maven-release-version>3.0.0-M4</maven-release-version>
+        <maven-resources-version>3.2.0</maven-resources-version>
+        <maven-site-version>3.9.1</maven-site-version>
+        <maven-surefire-version>3.0.0-M5</maven-surefire-version>
+        <maven-surefire-report-plugin-version>3.0.0-M5</maven-surefire-report-plugin-version>
+        <version-maven-version>2.8.1</version-maven-version>
+
+        <!-- Extensions version -->
+        <archetype-packaging-version>3.1.2</archetype-packaging-version>
+    </properties>
 
     <!-- Dependencies -->
     <dependencyManagement>
@@ -397,6 +402,66 @@
                         </rulesUri>
                     </configuration>
                 </plugin>
+                <!-- Reporting -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>${maven-project-info-reports-version}</version>
+                </plugin>
+                <!-- Test coverage -->
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco-maven-version}</version>
+                    <executions>
+                        <execution>
+                            <id>initialize</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>test</id>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Javadoc generation -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven-javadoc-version}</version>
+                    <configuration>
+                        <doclint>all,-missing</doclint>
+                        <quiet>true</quiet>
+                    </configuration>
+                </plugin>
+                <!-- Execution -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>${exec-maven-version}</version>
+                </plugin>
+                <!-- Assemble the project with dependencies -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>${maven-assembly-version}</version>
+                </plugin>
+                <!-- Package the project into a JAR file -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven-jar-version}</version>
+                </plugin>
+                <!-- Maven archetype generation -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-archetype-plugin</artifactId>
+                    <version>${maven-archetype-plugin-version}</version>
+                </plugin>
                 <!-- Javadoc generation -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -430,30 +495,6 @@
                         </execution>
                     </executions>
                 </plugin>
-                <!-- Execution -->
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <version>${exec-maven-version}</version>
-                </plugin>
-                <!-- Assemble the project with dependencies -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>${maven-assembly-version}</version>
-                </plugin>
-                <!-- Package the project into a JAR file -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>${maven-jar-version}</version>
-                </plugin>
-                <!-- Maven archetype generation -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-archetype-plugin</artifactId>
-                    <version>${maven-archetype-plugin-version}</version>
-                </plugin>
                 <!-- Maven release generation -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -484,6 +525,18 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <!-- Resources -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>${maven-resources-version}</version>
+                </plugin>
+                <!-- Site -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>${maven-site-version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -517,6 +570,7 @@
                 </executions>
                 <inherited>false</inherited>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -526,12 +580,105 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
+
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>deploy</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin-version}</version>
+                        <configuration>
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <!-- reporting -->
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>dependency-updates-report</report>
+                            <report>plugin-updates-report</report>
+                            <report>property-updates-report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <show>public</show>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
+
+    <!-- More Project Information -->
+    <name>OrbisData</name>
+    <description>Data managing for OrbisGIS application</description>
+    <url>https://github.com/orbisgis/orbisdata</url>
+    <licenses>
+        <license>
+            <name>The GNU General Public License, Version 3.0</name>
+            <url>http://www.gnu.org/licenses/gpl-3.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <organization>
+        <name>Lab-STICC - CNRS UMR 6285</name>
+        <url>https://www.labsticc.fr</url>
+    </organization>
+    <developers>
+        <developer>
+            <name>Erwan Bocher</name>
+            <id>ebocher</id>
+            <url>https://github.com/ebocher</url>
+            <organization>Lab-STICC - CNRS UMR 6285</organization>
+            <organizationUrl>Lab-STICC - CNRS UMR 6285</organizationUrl>
+        </developer>
+        <developer>
+            <name>Sylvain Palominos</name>
+            <id>SPalominos</id>
+            <url>https://github.com/spalominos</url>
+            <organization>Lab-STICC - CNRS UMR 6285</organization>
+            <organizationUrl>Lab-STICC - CNRS UMR 6285</organizationUrl>
+        </developer>
+    </developers>
 
     <!-- Environment Settings -->
     <repositories>
