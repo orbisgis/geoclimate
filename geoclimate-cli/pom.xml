@@ -10,6 +10,11 @@
     <artifactId>geoclimate</artifactId>
     <version>1.0.1-SNAPSHOT</version>
 
+    <!-- Project Information -->
+    <name>geoclimate-cli</name>
+    <description>GeoClimate module to run geoclimate workflow with a command line interface.
+    </description>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>

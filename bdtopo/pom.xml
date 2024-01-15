@@ -7,6 +7,11 @@
     <modelVersion>4.0.0</modelVersion>
     <version>1.0.1-SNAPSHOT</version>
 
+    <!-- Project Information -->
+    <name>bdtopo</name>
+    <description>GeoClimate module to format the BDTopo data into the GeoClimate abstract model.
+    </description>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>

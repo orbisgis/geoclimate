@@ -50,6 +50,10 @@ jobs:
           cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
           gpg --list-secret-keys --keyid-format LONG
 
+      # Test build
+      - name: Build test
+        run: mvn -ntp clean validate compile test javadoc:test-javadoc javadoc:jar
+
       # Create the release :
       #   - move from Snapshot version to Release
       #   - commit and tag release
