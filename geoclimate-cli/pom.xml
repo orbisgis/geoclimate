@@ -3,12 +3,12 @@
     <parent>
         <groupId>org.orbisgis.geoclimate</groupId>
         <artifactId>geoclimate-parent</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>geoclimate</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
 
     <!-- Project Information -->
     <name>geoclimate-cli</name>
