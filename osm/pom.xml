@@ -13,6 +13,11 @@
     <groupId>org.orbisgis.geoclimate</groupId>
     <version>1.0.0-SNAPSHOT</version>
 
+    <!-- Project Information -->
+    <name>osm</name>
+    <description>GeoClimate module to format the OSM data into the GeoClimate abstract model.
+    </description>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>

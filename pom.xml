@@ -16,6 +16,13 @@
         <module>common-utils</module>
     </modules>
 
+    <!-- Project Information -->
+    <name>geoclimate</name>
+    <description>GeoClimate is an opensource geospatial toolbox to compute a set of climate related parameters
+        describing a territory (morphological indicators such as Sky View Factor,
+        urban classifications such as Local Climate Zones, etc.).
+    </description>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>YYYY-MM-dd</maven.build.timestamp.format>

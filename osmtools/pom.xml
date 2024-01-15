@@ -12,6 +12,11 @@
     <artifactId>osmtools</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
+    <!-- Project Information -->
+    <name>osmtools</name>
+    <description>GeoClimate module to extract OSM data and tranform it as GIS layers.
+    </description>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
