@@ -4,14 +4,6 @@
     <artifactId>geoclimate-parent</artifactId>
     <packaging>pom</packaging>
     <version>1.0.0-SNAPSHOT</version>
-
-    <!-- Project Information -->
-    <name>geoclimate</name>
-    <description>GeoClimate is an opensource geospatial toolbox to compute a set of climate related parameters
-        describing a territory (morphological indicators such as Sky View Factor,
-        urban classifications such as Local Climate Zones, etc.).
-    </description>
-
     <modules>
         <module>geoindicators</module>
         <module>bdtopo</module>
@@ -21,44 +13,6 @@
         <module>worldpoptools</module>
         <module>common-utils</module>
     </modules>
-
-    <organization>
-        <name>CNRS</name>
-        <url>http://www.cnrs.fr</url>
-    </organization>
-    <url>http://github.com/orbisgis/geoclimate</url>
-
-    <licenses>
-        <license>
-            <name>GNU Lesser General Public License (LGPLV3+)</name>
-            <url>http://www.gnu.org/licenses/lgpl-3.0.html</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
-    <developers>
-        <developer>
-            <name>Jeremy Bernard</name>
-            <organization>CNRS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Erwan Bocher</name>
-            <organization>CNRS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Elisabeth Le Saux Wiederhold</name>
-            <organization>UBS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Sylvain Palominos</name>
-            <organization>UBS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Gwendall Petit</name>
-            <organization>CNRS, Lab-STICC UMR 6285</organization>
-        </developer>
-    </developers>
-
     <scm>
         <connection>scm:git:https://github.com/orbisgis/geoclimate.git</connection>
         <developerConnection>scm:git:https://github.com/orbisgis/geoclimate.git</developerConnection>
@@ -649,9 +603,12 @@
     </reporting>
 
     <!-- More Project Information -->
-    <name>OrbisData</name>
-    <description>Data managing for OrbisGIS application</description>
-    <url>https://github.com/orbisgis/orbisdata</url>
+    <name>geoclimate</name>
+    <description>GeoClimate is an opensource geospatial toolbox to compute a set of climate related parameters
+        describing a territory (morphological indicators such as Sky View Factor,
+        urban classifications such as Local Climate Zones, etc.).
+    </description>
+    <url>http://github.com/orbisgis/geoclimate</url>
     <licenses>
         <license>
             <name>The GNU General Public License, Version 3.0</name>
@@ -665,18 +622,24 @@
     </organization>
     <developers>
         <developer>
+            <name>Jeremy Bernard</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
             <name>Erwan Bocher</name>
-            <id>ebocher</id>
-            <url>https://github.com/ebocher</url>
-            <organization>Lab-STICC - CNRS UMR 6285</organization>
-            <organizationUrl>Lab-STICC - CNRS UMR 6285</organizationUrl>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Elisabeth Le Saux Wiederhold</name>
+            <organization>UBS, Lab-STICC UMR 6285</organization>
         </developer>
         <developer>
             <name>Sylvain Palominos</name>
-            <id>SPalominos</id>
-            <url>https://github.com/spalominos</url>
-            <organization>Lab-STICC - CNRS UMR 6285</organization>
-            <organizationUrl>Lab-STICC - CNRS UMR 6285</organizationUrl>
+            <organization>UBS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Gwendall Petit</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
         </developer>
     </developers>
 
