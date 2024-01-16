@@ -8,6 +8,11 @@
         <version>1.0.1-SNAPSHOT</version>
     </parent>
 
+    <!-- Project Information -->
+    <name>common-utils</name>
+    <description>GeoClimate common utilities.
+    </description>
+
     <artifactId>common-utils</artifactId>
     <version>1.0.1-SNAPSHOT</version>
 

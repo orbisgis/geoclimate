@@ -11,6 +11,11 @@
     <groupId>org.orbisgis.geoclimate</groupId>
     <version>1.0.1-SNAPSHOT</version>
 
+    <!-- Project Information -->
+    <name>worldpoptools</name>
+    <description>GeoClimate module to download population data from the WorldPop OGC services.
+    </description>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>

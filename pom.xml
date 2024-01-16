@@ -13,6 +13,17 @@
         <module>worldpoptools</module>
         <module>common-utils</module>
     </modules>
+    <scm>
+        <connection>scm:git:https://github.com/orbisgis/geoclimate.git</connection>
+        <developerConnection>scm:git:https://github.com/orbisgis/geoclimate.git</developerConnection>
+        <url>git@github.com:orbisgis/geoclimate.git</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>Github</system>
+        <url>https://github.com/orbisgis/geoclimate/issues</url>
+    </issueManagement>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -20,10 +31,10 @@
         <buildNumber>${maven.build.timestamp}</buildNumber>
         <site.basedir>${project.basedir}</site.basedir>
         <buildNumber>${maven.build.timestamp}</buildNumber>
-        <maven.compiler.target>11</maven.compiler.target>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven-version>3.5.0</maven-version>
         <java-version>11</java-version>
+        <maven.compiler.target>${java-version}</maven.compiler.target>
+        <maven.compiler.source>${java-version}</maven.compiler.source>
+        <maven-version>3.5.0</maven-version>
 
         <!-- Dependencies versions -->
         <junit-version>5.9.1</junit-version>
@@ -67,48 +78,6 @@
         <!-- Extensions version -->
         <archetype-packaging-version>3.1.2</archetype-packaging-version>
     </properties>
-
-    <licenses>
-        <license>
-            <name>GNU Lesser General Public License (LGPLV3+)</name>
-            <url>http://www.gnu.org/licenses/lgpl-3.0.html</url>
-        </license>
-    </licenses>
-
-    <developers>
-        <developer>
-            <name>Jeremy Bernard</name>
-            <organization>CNRS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Erwan Bocher</name>
-            <organization>CNRS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Elisabeth Le Saux Wiederhold</name>
-            <organization>UBS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Sylvain Palominos</name>
-            <organization>UBS, Lab-STICC UMR 6285</organization>
-        </developer>
-        <developer>
-            <name>Gwendall Petit</name>
-            <organization>CNRS, Lab-STICC UMR 6285</organization>
-        </developer>
-    </developers>
-
-    <scm>
-        <connection>scm:git:https://github.com/orbisgis/geoclimate.git</connection>
-        <developerConnection>scm:git:https://github.com/orbisgis/geoclimate.git</developerConnection>
-        <url>git@github.com:orbisgis/geoclimate.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
-    <issueManagement>
-        <system>Github</system>
-        <url>https://github.com/orbisgis/geoclimate/issues</url>
-    </issueManagement>
 
     <!-- Dependencies -->
     <dependencyManagement>
@@ -422,29 +391,6 @@
                         <doclint>all,-missing</doclint>
                         <quiet>true</quiet>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <id>attach-javadocs</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>${maven-source-version}</version>
-                    <executions>
-                        <execution>
-                            <id>attach-sources</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>jar-no-fork</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <!-- Execution -->
                 <plugin>
@@ -469,6 +415,39 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-archetype-plugin</artifactId>
                     <version>${maven-archetype-plugin-version}</version>
+                </plugin>
+                <!-- Javadoc generation -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven-javadoc-version}</version>
+                    <configuration>
+                        <doclint>all,-missing</doclint>
+                        <quiet>true</quiet>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${maven-source-version}</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
                 <!-- Maven release generation -->
                 <plugin>
@@ -622,6 +601,47 @@
             </plugin>
         </plugins>
     </reporting>
+
+    <!-- More Project Information -->
+    <name>geoclimate</name>
+    <description>GeoClimate is an opensource geospatial toolbox to compute a set of climate related parameters
+        describing a territory (morphological indicators such as Sky View Factor,
+        urban classifications such as Local Climate Zones, etc.).
+    </description>
+    <url>http://github.com/orbisgis/geoclimate</url>
+    <licenses>
+        <license>
+            <name>The GNU General Public License, Version 3.0</name>
+            <url>http://www.gnu.org/licenses/gpl-3.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <organization>
+        <name>Lab-STICC - CNRS UMR 6285</name>
+        <url>https://www.labsticc.fr</url>
+    </organization>
+    <developers>
+        <developer>
+            <name>Jeremy Bernard</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Erwan Bocher</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Elisabeth Le Saux Wiederhold</name>
+            <organization>UBS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Sylvain Palominos</name>
+            <organization>UBS, Lab-STICC UMR 6285</organization>
+        </developer>
+        <developer>
+            <name>Gwendall Petit</name>
+            <organization>CNRS, Lab-STICC UMR 6285</organization>
+        </developer>
+    </developers>
 
     <!-- Environment Settings -->
     <repositories>
