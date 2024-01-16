@@ -109,7 +109,7 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
     def HEIGHT_WALL = "height_wall"
     def FACADE_AREA = "facade_area"
     def RSU_AREA = "rsu_area"
-    def BASE_NAME = "exact_free_external_facade_density"
+    def BASE_NAME = "free_external_facade_density"
 
     debug "Executing RSU free external facade density (exact version)"
 
@@ -174,12 +174,12 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
                 DROP TABLE IF EXISTS $onlyBuildRsu;
                 CREATE TABLE $onlyBuildRsu
                     AS SELECT   a.$idRsu,
-                                a.$FACADE_AREA/a.$RSU_AREA AS FREE_EXTERNAL_FACADE_DENSITY
+                                a.$FACADE_AREA/a.$RSU_AREA AS $BASE_NAME
                     FROM $buildLineRsu AS a LEFT JOIN $sharedLineRsu AS b
                     ON a.$idRsu = b.$idRsu  WHERE b.$idRsu IS NULL
                     union all
                     SELECT   a.$idRsu,
-                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS FREE_EXTERNAL_FACADE_DENSITY
+                                (a.$FACADE_AREA-b.$FACADE_AREA)/a.$RSU_AREA AS $BASE_NAME
                     FROM $buildLineRsu AS a right JOIN $sharedLineRsu AS b
                     ON a.$idRsu = b.$idRsu
             """.toString()
@@ -191,7 +191,7 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName
                     AS SELECT   a.$idRsu,
-                                COALESCE(b.FREE_EXTERNAL_FACADE_DENSITY, 0) AS FREE_EXTERNAL_FACADE_DENSITY
+                                COALESCE(b.$BASE_NAME, 0) AS $BASE_NAME
                     FROM $rsu AS a LEFT JOIN $onlyBuildRsu AS b
                     ON a.$idRsu = b.$idRsu""".toString()
 
