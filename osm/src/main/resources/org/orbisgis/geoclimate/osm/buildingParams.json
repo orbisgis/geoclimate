@@ -681,7 +681,7 @@
     "slight_construction": {
       "wall": ["no"]
     },
-    "water:service": {
+    "water_tower:service": {
       "man_made": ["water_tower"]
     },
     "building": {
