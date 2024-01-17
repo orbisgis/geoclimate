@@ -653,6 +653,9 @@ Geometry geometryFromValues(def bbox) {
         return buildGeometry([bbox[1], bbox[0], bbox[3], bbox[2]]);
     }
     else if (bbox.size()==3){
+        if(bbox[2]<=0){
+            return null
+        }
         return getAreaFromPoint(bbox[1], bbox[0], bbox[2])
     }
 }
