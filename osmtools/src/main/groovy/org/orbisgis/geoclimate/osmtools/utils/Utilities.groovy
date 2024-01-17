@@ -638,7 +638,8 @@ Geometry geometryFromNominatim(def bbox) {
  *
  * @author Erwan Bocher (CNRS LAB-STICC)
  *
- * @param bbox 4 values to define a bbox
+ * @param bbox 4 values to define a bbox or 3 values to define a point (lat/long)
+ * with a distance around it, expressed in meters
  * @return a JTS polygon
  */
 Geometry geometryFromValues(def bbox) {
@@ -650,6 +651,9 @@ Geometry geometryFromValues(def bbox) {
     }
     if (bbox.size() == 4) {
         return buildGeometry([bbox[1], bbox[0], bbox[3], bbox[2]]);
+    }
+    else if (bbox.size()==3){
+        return getAreaFromPoint(bbox[1], bbox[0], bbox[2])
     }
 }
 

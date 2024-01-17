@@ -663,6 +663,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "input"       : [
                         "locations": [location],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                          "area": 2800,
+                        //"date":"2017-12-31T19:20:00Z",
                         /*"timeout":182,
                         "maxsize": 536870918,
                         "endpoint":"https://lz4.overpass-api.de/api"*/],
@@ -794,6 +795,66 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 ],
                 "input"       : [
                         "locations": [[43.726898,7.298452,43.727677,7.299632]]],
+                "output"      : [
+                        "folder": ["path"  : directory,
+                                   "tables": ["building", "zone"]]],
+                "parameters"  :
+                        ["distance"       : 0,
+                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                        ]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        def building = tableNames.building[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
+    }
+
+    @Test
+    void testEstimateBuildingWithAllInputHeightFromPoint() {
+        String directory = folder.absolutePath + File.separator + "test_building_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [[43.726898,7.298452,100]]],
+                "output"      : [
+                        "folder": ["path"  : directory,
+                                   "tables": ["building", "zone"]]],
+                "parameters"  :
+                        [
+                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                        ]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        def building = tableNames.building[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
+    }
+
+    @Disabled //Because it takes some time to build the OSM query
+    @Test
+    void testEstimateBuildingWithAllInputHeightDate() {
+        String directory = folder.absolutePath + File.separator + "test_building_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [[43.726898,7.298452,43.727677,7.299632]],
+                        "date":"2015-12-31T19:20:00Z"],
                 "output"      : [
                         "folder": ["path"  : directory,
                                    "tables": ["building", "zone"]]],
