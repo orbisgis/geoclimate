@@ -232,6 +232,9 @@ Map workflow(def input) {
         error "The all parameter must be a boolean value"
         return null
     }
+
+    def osm_date= inputParameters.get("date")
+
     def osm_size_area = inputParameters.get("area")
 
     if (!osm_size_area) {
@@ -241,7 +244,6 @@ Map workflow(def input) {
         error "The area of the bounding box to be extracted from OSM must be greater than 0 km²"
         return null
     }
-
     def overpass_timeout = inputParameters.get("timeout")
     if (!overpass_timeout) {
         overpass_timeout = 900
@@ -360,7 +362,7 @@ Map workflow(def input) {
         def logTableZones = postfix("log_zones")
         Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters, locations.findAll { it }, file_outputFolder, outputFileTables,
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, osm_size_area,
-                overpass_timeout, overpass_maxsize)
+                overpass_timeout, overpass_maxsize, osm_date)
         if (!osmprocessing) {
             h2gis_datasource.save(logTableZones,"${file_outputFolder.getAbsolutePath() + File.separator}logzones.geojson", true)
             return null
@@ -401,7 +403,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                    def outputSRID, def downloadAllOSMData,
                    def deleteOutputData, def deleteOSMFile,
                    def logTableZones, def bbox_size,
-                   def overpass_timeout, def overpass_maxsize) {
+                   def overpass_timeout, def overpass_maxsize,def overpass_date) {
     //Store the zone identifier and the names of the tables
     def outputTableNamesResult = [:]
     //Create the table to log on the processed zone
@@ -421,7 +423,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 error "Cannot find any geometry to define the zone to extract the OSM data"
                 return
             }
-            def srid = h2gis_datasource.getSpatialTable(zone).srid
+            def srid = h2gis_datasource.getSrid(zone)
             def reproject = false
             if (outputSRID) {
                 if (outputSRID != srid) {
@@ -432,7 +434,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
             }
             //Prepare OSM extraction
             //TODO set key values ?
-            def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + OSMTools.Utilities.buildOSMQuery(zones.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+            def osm_date=""
+            if(overpass_date){
+               osm_date = "[date:\"$overpass_date\"]"
+            }
+            def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQuery(zones.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
             if (downloadAllOSMData) {
                 //Create a custom OSM query to download all requiered data. It will take more time and resources
@@ -441,7 +447,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                                   "leisure", "highway", "natural",
                                   "landuse", "landcover",
                                   "vegetation", "waterway", "area", "aeroway", "area:aeroway", "tourism", "sport"]
-                query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
             }
 
             def extract = OSMTools.Loader.extract(query)
