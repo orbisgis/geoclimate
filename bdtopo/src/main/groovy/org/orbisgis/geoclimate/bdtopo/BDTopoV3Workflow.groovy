@@ -55,6 +55,14 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         debug "Loading in the H2GIS database $outputTableName"
         def communeColumns = h2gis_datasource.getColumnNames(inputTables.commune)
         if(communeColumns.contains("INSEE_COM")) {
+            if(location.size()==3){
+                if(location[2]<100){
+                    error("The distance to create a bbox from a point must be greater than 100 meters")
+                    return
+                }
+                location = BDTopoUtils.bbox(location[0], location[1],location[2])
+            }
+
             h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
                     ST_INTERSECTION(the_geom, ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID)) as the_geom, INSEE_COM AS CODE_INSEE  from ${inputTables.commune} where the_geom 
                     && ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID) """.toString())
@@ -261,6 +269,13 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     if (code in Collection) {
         def communeColumns = h2gis_datasource.getColumnNames(commune_location)
         if(communeColumns.contains("INSEE_COM")) {
+            if(code.size()==3){
+                if(code[2]<100){
+                    error("The distance to create a bbox from a point must be greater than 100 meters")
+                    return
+                }
+                code = BDTopoUtils.bbox(code[0], code[1],code[2])
+            }
             String inputTableName = """(SELECT
                     ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, INSEE_COM as CODE_INSEE   from $commune_location where 
                     st_setsrid(the_geom, $commune_srid) 

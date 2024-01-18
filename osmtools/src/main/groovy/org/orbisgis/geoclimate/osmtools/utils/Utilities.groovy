@@ -653,7 +653,8 @@ Geometry geometryFromValues(def bbox) {
         return buildGeometry([bbox[1], bbox[0], bbox[3], bbox[2]]);
     }
     else if (bbox.size()==3){
-        if(bbox[2]<=0){
+        if(bbox[2]<100){
+            error("The distance to create a bbox from a point must be greater than 100 meters")
             return null
         }
         return getAreaFromPoint(bbox[1], bbox[0], bbox[2])

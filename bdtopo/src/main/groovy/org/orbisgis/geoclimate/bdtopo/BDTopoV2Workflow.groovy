@@ -85,7 +85,13 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     //Check if code is a string or a bbox
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (code in Collection) {
-        //def tmp_insee = code.join("_")
+        if(code.size()==3){
+            if(code[2]<100){
+                error("The distance to create a bbox from a point must be greater than 100 meters")
+                return
+            }
+            code = BDTopoUtils.bbox(code[0], code[1],code[2])
+        }
         String inputTableName = """(SELECT
                     ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, CODE_INSEE  from $commune_location where 
                     st_setsrid(the_geom, $commune_srid) 
@@ -306,6 +312,13 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
     //Check if code is a string or a bbox
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (location in Collection) {
+        if(location.size()==3){
+            if(location[2]<100){
+                error("The distance to create a bbox from a point must be greater than 100 meters")
+                return
+            }
+            location = BDTopoUtils.bbox(location[0], location[1],location[2])
+        }
         debug "Loading in the H2GIS database $outputTableName"
         h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
                     ST_INTERSECTION(the_geom, ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID)) as the_geom, CODE_INSEE  from ${inputTables.commune} where the_geom 
@@ -314,6 +327,8 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         debug "Loading in the H2GIS database $outputTableName"
         h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 
             CODE_INSEE FROM ${inputTables.commune} WHERE CODE_INSEE='$location' or lower(nom)='${location.toLowerCase()}'""".toString())
+    }else{
+        return
     }
     def count = h2gis_datasource."$outputTableName".rowCount
     if (count > 0) {
