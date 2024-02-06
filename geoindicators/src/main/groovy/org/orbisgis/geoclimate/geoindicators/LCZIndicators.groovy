@@ -212,29 +212,59 @@ String grid_distances(JdbcDataSource datasource, String sprawl, String grid_indi
 /**
  * @author Erwan Bocher (CNRS)
  */
-String scaling_grid(JdbcDataSource datasource, String rsu_lcz) {
+String scaling_grid(JdbcDataSource datasource, String grid_indicators) {
 
-   datasource.execute("""
-    DROP TABLE IF EXISTS GRID_100, GRID_300, GRID_900;
-    CREATE TABLE  GRID_100 AS SELECT * FROM ST_MakeGrid('$rsu_lcz', 100,100);
-    CREATE TABLE  GRID_300 AS SELECT * FROM ST_MakeGrid('$rsu_lcz', 300,300);
-    CREATE TABLE  GRID_900 AS SELECT * FROM ST_MakeGrid('$rsu_lcz', 900,900);
-    """.toString())
-
-    datasource.save("GRID_100", "/tmp/grid_100.geojson", true)
-    datasource.save("GRID_300", "/tmp/grid_300.geojson", true)
-    datasource.save("GRID_900", "/tmp/grid_900.geojson", true)
-
-    def values =[:]
-    int row_index= 0
-    datasource.eachRow("select * from grid_100 order by id_row"){row ->
-        if(row_index<=3){
-            row_index++
-        }
-        else {
-            row_index=0
-        }
+    if (!grid_indicators) {
+        error("No grid_indicators table to aggregate the LCZ fraction")
+        return
     }
+    def gridCols = datasource.getColumnNames(grid_indicators)
+
+    def lcz_columns_cool_areas = ["LCZ_PRIMARY_101", "LCZ_PRIMARY_102",
+                             "LCZ_PRIMARY_103", "LCZ_PRIMARY_104","LCZ_PRIMARY_107"]
+    def lcz_fractions = gridCols.intersect(lcz_columns_cool_areas)
+
+    def grid_scaling_indices = postfix("grid_scaling_indices")
+    def grid_fraction_lod_1 = postfix("grid_fraction_lod_1")
+    def grid_fraction_lod_2 = postfix("grid_fraction_lod_2")
+    datasource.execute("""DROP TABLE IF EXISTS $grid_scaling_indices,$grid_fraction_lod_1,$grid_fraction_lod_2;
+    CREATE TABLE $grid_scaling_indices as SELECT the_geom,
+    ID_GRID, ID_COL as ID_COL_LOD_0, ID_ROW as ID_ROW_LOD_0, (CAST (ID_COL/3 AS INT)+1) AS ID_COL_LOD_1,
+    (CAST (ID_ROW/3 AS INT)+1) AS ID_ROW_LOD_1,
+    (CAST (ID_COL/9 AS INT)+1) AS ID_COL_LOD_2,
+    (CAST (ID_ROW/9 AS INT)+1) AS ID_ROW_LOD_2,
+    ${lcz_fractions.join(",")}, ${lcz_fractions.join("+")} AS SUM_LCZ_COOL FROM $grid_indicators;    
+    CREATE TABLE $grid_fraction_lod_1 as SELECT ID_COL_LOD_1, ID_ROW_LOD_1, SUM(SUM_LCZ_COOL) AS LOD_1_SUM_LCZ_COOL, 
+    ST_UNION(ST_ACCUM(the_geom)) as the_geom, count(*) as count
+    FROM $grid_scaling_indices GROUP BY  ID_COL_LOD_1, ID_ROW_LOD_1;
+    CREATE TABLE $grid_fraction_lod_2 as SELECT ID_COL_LOD_2, ID_ROW_LOD_2, SUM(SUM_LCZ_COOL) AS LOD_2_SUM_LCZ_COOL,
+    ST_UNION(ST_ACCUM(the_geom)) as the_geom,count(*) as count
+    FROM $grid_scaling_indices GROUP BY  ID_COL_LOD_2, ID_ROW_LOD_2;
+    """.toString())
+    datasource.createIndex(grid_scaling_indices, "ID_COL_LOD_1")
+    datasource.createIndex(grid_scaling_indices, "ID_ROW_LOD_1")
+
+    datasource.save(grid_fraction_lod_1, "/tmp/grid_lod1.geojson", true)
+    datasource.save(grid_fraction_lod_2, "/tmp/grid_lod2.geojson", true)
+
+    def grid_fractions = postfix("grid_fractions")
+
+    //"neighbors"
+
+    /*int level =1
+    //Collect neighbors
+
+     datasource.execute( """
+DROP TABLE IF EXISTS neighbors;
+create table neighbors as
+        SELECT the_geom, LOD_${level}_SUM_LCZ_COOL as  LOD_${level}_LCZ_COOL_2 from $grid_fraction_lod_1
+            where ID_COL_LOD_$level=ID_COL_LOD_$level AND ID_ROW_LOD_$level=ID_ROW_LOD_$level-1""".toString())
+
+
+    datasource.save("neighbors", "/tmp/neighbors.geojson", true)*/
+
+
+
     return null
 
 }

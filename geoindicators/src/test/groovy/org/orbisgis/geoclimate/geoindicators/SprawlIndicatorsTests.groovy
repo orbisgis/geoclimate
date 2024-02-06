@@ -47,14 +47,25 @@ class SprawlIndicatorsTests {
         h2GIS.save(buffering_cool_areas, "/tmp/buffering_cool_areas.geojson", true)*/
 
 
+        String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/grid_indicators.geojson", true)
 
-        String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Lorient/grid_indicators.geojson", true)
-
-        String scale_grid = Geoindicators.SprawlIndicators.scaling_grid(h2GIS, grid_indicators)
+        //String scale_grid = Geoindicators.SprawlIndicators.scaling_grid(h2GIS, grid_indicators)
 
        // h2GIS.save(scale_grid, "/tmp/scale_grid.csv", true)
 
-        /*
+        //GRID SCALES
+
+        h2GIS.execute("""DROP TABLE IF EXISTS lod_1,lod_2, lod_3;
+        CREATE TABLE lod_1 as select * from ST_MakeGrid('$grid_indicators', 300,300);
+        CREATE TABLE lod_2 as select * from ST_MakeGrid('$grid_indicators', 900,900);
+        CREATE TABLE lod_3 as select * from ST_MakeGrid('$grid_indicators', 2700,2700);""".toString())
+
+        h2GIS.save("lod_1", "/tmp/lod1.geojson", true)
+        h2GIS.save("lod_2", "/tmp/lod2.geojson", true)
+        h2GIS.save("lod_3", "/tmp/lod3.geojson", true)
+
+
+
         def sprawlLayer = Geoindicators.SprawlIndicators.compute_sprawl_areas(h2GIS, grid_indicators)
 
         h2GIS.save(sprawlLayer, "/tmp/sprawl_areas.geojson", true)
@@ -84,7 +95,7 @@ class SprawlIndicatorsTests {
 
         String cool_areas_distances = Geoindicators.SprawlIndicators.grid_distances(h2GIS, cool_areas_inverse, grid_indicators)
 
-        h2GIS.save(cool_areas_distances, "/tmp/cool_areas_distances.geojson", true)*/
+        h2GIS.save(cool_areas_distances, "/tmp/cool_areas_distances.geojson", true)
 
     }
 
