@@ -915,7 +915,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             def urban_areas = dataFormated.urban_areas
 
 
-            info "BDTOPO V2 GIS layers formated"
+            info "BDTOPO GIS layers formated"
 
             def rsu_indicators_params = processing_parameters.rsu_indicators
             def worldpop_indicators = processing_parameters.worldpop_indicators
