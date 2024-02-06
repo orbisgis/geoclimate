@@ -2098,7 +2098,7 @@ String cutBuilding(JdbcDataSource datasource, String grid, String building) {
         DROP TABLE IF EXISTS $buildingCutted;
         CREATE TABLE $buildingCutted as 
         SELECT *, ST_AREA(THE_GEOM) AS area from 
-        (SELECT a.* EXCEPT(the_geom), st_intersection(a.the_geom, b.the_geom) as the_geom, b.* EXCEPT(the_geom),
+        (SELECT a.* EXCEPT(the_geom), ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom), 3) as the_geom, b.* EXCEPT(the_geom),
         (b.HEIGHT_WALL + b.HEIGHT_ROOF) / 2 AS BUILD_HEIGHT
         FROM $grid as a, $building as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom)) 
         as foo

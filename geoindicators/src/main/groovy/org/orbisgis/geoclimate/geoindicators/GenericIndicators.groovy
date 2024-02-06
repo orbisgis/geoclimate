@@ -967,8 +967,8 @@ String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName
                               DROP TABLE IF EXISTS $spatialJoinTable;
                               CREATE TABLE $spatialJoinTable 
                               AS SELECT b.$upperColumnId, a.$lowerColumnName,
-                                        ST_AREA(ST_INTERSECTION(st_force2d(st_makevalid(a.$lowerGeometryColumn)), 
-                                        st_force2d(st_makevalid(b.$upperGeometryColumn)))) AS area
+                                        ST_AREA(ST_INTERSECTION(a.$lowerGeometryColumn, 
+                                        b.$upperGeometryColumn)) AS area
                               FROM $lowerTableName a, $upperTableName b
                               WHERE a.$lowerGeometryColumn && b.$upperGeometryColumn AND 
                               ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
