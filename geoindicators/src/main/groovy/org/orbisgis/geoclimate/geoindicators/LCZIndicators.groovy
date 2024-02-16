@@ -32,8 +32,9 @@ import org.orbisgis.geoclimate.Geoindicators
  * This method allows to compute a sprawl areas layer.
  * A sprawl geometry represents a continous areas of urban LCZs (1 to 10 plus 105)
  * @author Erwan Bocher (CNRS)
+ * TODO: SPATIAL UNITS
  */
-String compute_sprawl_areas(JdbcDataSource datasource, String grid_indicators, float fraction = 0.65, float distance=100) {
+String compute_sprawl_areas(JdbcDataSource datasource, String grid_indicators, float fraction = 0.65, float distance = 100) {
     if (!grid_indicators) {
         error("No grid_indicators table to compute the sprawl areas layer")
         return
@@ -92,6 +93,7 @@ String compute_sprawl_areas(JdbcDataSource datasource, String grid_indicators, f
  * of the input layer.
  * This layer is used to perform the distances out of the sprawl areas
  * @author Erwan Bocher (CNRS)
+ * TODO : SPATIAL UNITS
  */
 String inverse_geometries(JdbcDataSource datasource, String input_polygons) {
     def outputTableName = postfix("inverse_geometries")
@@ -115,9 +117,10 @@ String inverse_geometries(JdbcDataSource datasource, String input_polygons) {
  * A cool area is continous geometry defined by vegetation and water fractions.
  *
  * @author Erwan Bocher (CNRS)
+ * TODO: SPATIAL UNITS
  */
 String sprawl_cool_areas(JdbcDataSource datasource, String sprawl, String grid_indicators, float fraction = 0.4,
-                         float distance =100 ) {
+                         float distance = 100) {
     if (!grid_indicators) {
         error("No grid_indicators table to compute the sprawl cool areas layer")
         return
@@ -125,7 +128,7 @@ String sprawl_cool_areas(JdbcDataSource datasource, String sprawl, String grid_i
     def gridCols = datasource.getColumnNames(grid_indicators)
 
     def lcz_columns_urban = ["LCZ_PRIMARY_101", "LCZ_PRIMARY_102",
-                             "LCZ_PRIMARY_103", "LCZ_PRIMARY_104","LCZ_PRIMARY_107"]
+                             "LCZ_PRIMARY_103", "LCZ_PRIMARY_104", "LCZ_PRIMARY_107"]
     def lcz_fractions = gridCols.intersect(lcz_columns_urban)
 
     if (lcz_fractions.size() > 0) {
@@ -149,6 +152,8 @@ String sprawl_cool_areas(JdbcDataSource datasource, String sprawl, String grid_i
 
 /**
  * @author Erwan Bocher (CNRS)
+ *
+ * TODO : spatial units
  */
 String inverse_cool_areas(JdbcDataSource datasource, String inverse_sprawl, String cool_areas) {
 
@@ -179,6 +184,8 @@ String inverse_cool_areas(JdbcDataSource datasource, String inverse_sprawl, Stri
 
 /**
  * @author Erwan Bocher (CNRS)
+ *
+ * TODO : GRID INDICATORS
  */
 String grid_distances(JdbcDataSource datasource, String sprawl, String grid_indicators) {
     int epsg = datasource.getSrid(grid_indicators)
@@ -211,59 +218,132 @@ String grid_distances(JdbcDataSource datasource, String sprawl, String grid_indi
 
 /**
  * @author Erwan Bocher (CNRS)
+ *
+ * TODO : grid indicators
  */
-String scaling_grid(JdbcDataSource datasource, String grid_indicators) {
+String scaling_grid(JdbcDataSource datasource, String grid_indicators, int nb_levels = 2) {
 
     if (!grid_indicators) {
         error("No grid_indicators table to aggregate the LCZ fraction")
         return
     }
-    def gridCols = datasource.getColumnNames(grid_indicators)
-
-    def lcz_columns_cool_areas = ["LCZ_PRIMARY_101", "LCZ_PRIMARY_102",
-                             "LCZ_PRIMARY_103", "LCZ_PRIMARY_104","LCZ_PRIMARY_107"]
-    def lcz_fractions = gridCols.intersect(lcz_columns_cool_areas)
-
+    if (nb_levels <= 0 || nb_levels >= 10) {
+        error("The number of levels to aggregate the LCZ fractions must be between 1 and 10")
+        return
+    }
+    datasource.execute("""create index on $grid_indicators(id_row,id_col)""".toString())
+    ///First build the index levels for each cell of the input grid
     def grid_scaling_indices = postfix("grid_scaling_indices")
-    def grid_fraction_lod_1 = postfix("grid_fraction_lod_1")
-    def grid_fraction_lod_2 = postfix("grid_fraction_lod_2")
-    datasource.execute("""DROP TABLE IF EXISTS $grid_scaling_indices,$grid_fraction_lod_1,$grid_fraction_lod_2;
+    def grid_levels_query = []
+    int grid_offset = 3
+    int offsetCol = 0
+    for (int i in 1..nb_levels) {
+        int level = Math.pow(grid_offset, i)
+        grid_levels_query << " (CAST (ABS(ID_ROW-1)/${level}  AS INT)+1) AS ID_ROW_LOD_$i," +
+                "(CAST (ABS(ID_COL-1)/${level} AS INT)+$offsetCol) AS ID_COL_LOD_$i"
+        offsetCol++
+    }
+
+    //Compute the indice for each levels and find the 8 adjacent cells
+    datasource.execute("""DROP TABLE IF EXISTS $grid_scaling_indices;
     CREATE TABLE $grid_scaling_indices as SELECT the_geom,
-    ID_GRID, ID_COL as ID_COL_LOD_0, ID_ROW as ID_ROW_LOD_0, (CAST (ID_COL/3 AS INT)+1) AS ID_COL_LOD_1,
-    (CAST (ID_ROW/3 AS INT)+1) AS ID_ROW_LOD_1,
-    (CAST (ID_COL/9 AS INT)+1) AS ID_COL_LOD_2,
-    (CAST (ID_ROW/9 AS INT)+1) AS ID_ROW_LOD_2,
-    ${lcz_fractions.join(",")}, ${lcz_fractions.join("+")} AS SUM_LCZ_COOL FROM $grid_indicators;    
-    CREATE TABLE $grid_fraction_lod_1 as SELECT ID_COL_LOD_1, ID_ROW_LOD_1, SUM(SUM_LCZ_COOL) AS LOD_1_SUM_LCZ_COOL, 
-    ST_UNION(ST_ACCUM(the_geom)) as the_geom, count(*) as count
-    FROM $grid_scaling_indices GROUP BY  ID_COL_LOD_1, ID_ROW_LOD_1;
-    CREATE TABLE $grid_fraction_lod_2 as SELECT ID_COL_LOD_2, ID_ROW_LOD_2, SUM(SUM_LCZ_COOL) AS LOD_2_SUM_LCZ_COOL,
-    ST_UNION(ST_ACCUM(the_geom)) as the_geom,count(*) as count
-    FROM $grid_scaling_indices GROUP BY  ID_COL_LOD_2, ID_ROW_LOD_2;
+    ID_GRID, ID_ROW as ID_ROW_LOD_0, ID_COL as ID_COL_LOD_0, ${grid_levels_query.join(",")},
+    LCZ_PRIMARY AS LCZ_PRIMARY_LOD_0,   
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL) AS LCZ_PRIMARY_N_LOD_0,
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL+1=a.ID_COL) AS LCZ_PRIMARY_NE_LOD_0,
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW AND ID_COL=a.ID_COL+1) AS LCZ_PRIMARY_E_LOD_0,
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW-1 AND ID_COL=a.ID_COL+1) AS LCZ_PRIMARY_SE_LOD_0,
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW-1 AND ID_COL=a.ID_COL) AS LCZ_PRIMARY_S_LOD_0,
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW-1 AND ID_COL=a.ID_COL-1) AS LCZ_PRIMARY_SW_LOD_0,
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW AND ID_COL=a.ID_COL-1) AS LCZ_PRIMARY_W_LOD_0,
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL-1) AS LCZ_PRIMARY_NW_LOD_0 FROM 
+    $grid_indicators as a;  """.toString())
+
+    datasource.save(grid_scaling_indices, "/tmp/grid_lod_0.geojson", true)
+
+    def tablesToDrop =[]
+    def tablesLevelToJoin =[]
+    tablesToDrop<<grid_scaling_indices
+
+    //Process all level of details
+    for (int i in 1..nb_levels) {
+        //Index the level row and col
+        datasource.execute("""create index on $grid_scaling_indices(id_row_lod_${i},id_col_lod_${i})""".toString())
+        //First compute the number of cells by level of detail
+        //Use the original grid to aggregate the data
+        //A weight is used to select the LCZ value when the mode returns more than one possibility
+        def lcz_count_lod = postfix("lcz_count_lod")
+        tablesToDrop<<lcz_count_lod
+        datasource.execute(""" 
+    drop table if exists $lcz_count_lod;
+    CREATE TABLE $lcz_count_lod as
+    select  COUNT(*) FILTER (WHERE LCZ_PRIMARY_LOD_0 IS NOT NULL) AS COUNT, LCZ_PRIMARY_LOD_0,
+    ID_ROW_LOD_${i}, ID_COL_LOD_${i},
+    CASE WHEN LCZ_PRIMARY_LOD_0=105 THEN 11
+    WHEN LCZ_PRIMARY_LOD_0=107 THEN 12
+    WHEN LCZ_PRIMARY_LOD_0=106 THEN 13
+    WHEN LCZ_PRIMARY_LOD_0= 101 THEN 14
+    WHEN LCZ_PRIMARY_LOD_0 =102 THEN 15
+    WHEN LCZ_PRIMARY_LOD_0 IN (103,104) THEN 16
+    ELSE LCZ_PRIMARY_LOD_0 END AS weight_lcz,
+    from $grid_scaling_indices 
+    WHERE LCZ_PRIMARY_LOD_0 IS NOT NULL 
+    group by ID_ROW_LOD_${i}, ID_COL_LOD_${i}, LCZ_PRIMARY_LOD_0;""".toString())
+
+        //Select the LCZ values according the maximum number of cells and the weight
+        //Note that we compute the number of cells for urban and cool LCZ
+        def lcz_count_lod_mode = postfix("lcz_count_lod_mode")
+        tablesToDrop<<lcz_count_lod_mode
+        datasource.execute(""" 
+    create index on $lcz_count_lod(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
+    DROP TABLE IF EXISTS  $lcz_count_lod_mode;    
+    CREATE TABLE $lcz_count_lod_mode as
+    select distinct on (ID_ROW_LOD_${i}, ID_COL_LOD_${i}) *,
+    (select sum(count) from  $lcz_count_lod where   
+    LCZ_PRIMARY_LOD_0 in (1,2,3,4,5,6,7,8,9,10,105) 
+    and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_PRIMARY_URBAN_LOD_${i},
+    (select sum(count) from  $lcz_count_lod where  
+    LCZ_PRIMARY_LOD_0 in (101,102,103,104,106,107) 
+    and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_PRIMARY_COOL_LOD_${i},
+    from $lcz_count_lod as a
+    order by ID_ROW_LOD_${i}, ID_COL_LOD_${i}, weight_lcz desc, count asc;""".toString())
+
+        //Find the 8 adjacent cells for the current level
+        def grid_lod_level_final = postfix("grid_lod_level_final")
+        tablesToDrop<<grid_lod_level_final
+        datasource.execute("""
+    CREATE INDEX on $lcz_count_lod_mode(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
+    DROP TABLE IF EXISTS $grid_lod_level_final;
+    CREATE TABLE $grid_lod_level_final as select *, 
+    (SELECT LCZ_PRIMARY_LOD_0 FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_N_${i},
+    (SELECT LCZ_PRIMARY_LOD_0 FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}+1=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_NE_${i},
+    (SELECT LCZ_PRIMARY_LOD_0 FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_E_${i},
+    (SELECT LCZ_PRIMARY_LOD_0 FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_SE_${i},
+    (SELECT LCZ_PRIMARY_LOD_0 FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_S_${i},
+    (SELECT LCZ_PRIMARY_LOD_0 FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_SW_${i},
+    (SELECT LCZ_PRIMARY_LOD_0 FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_W_${i},
+    (SELECT LCZ_PRIMARY_LOD_0 FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_NW_${i} FROM 
+    $lcz_count_lod_mode as a;  """.toString())
+
+        tablesLevelToJoin<<grid_lod_level_final
+
+        def grid_lod = postfix("grid_lod")
+        tablesToDrop<<grid_lod
+    datasource.execute("""
+    create index on $grid_lod_level_final(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
+    DROP TABLE IF EXIsTS $grid_lod;
+    CREATE TABLE $grid_lod AS 
+    SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM, B.* 
+    from $grid_scaling_indices as a, $grid_lod_level_final as b 
+    where a.ID_ROW_LOD_${i} = b.ID_ROW_LOD_${i} and a.ID_COL_LOD_${i}= b.ID_COL_LOD_${i}
+    group by a.ID_ROW_LOD_${i}, a.ID_COL_LOD_${i};
     """.toString())
-    datasource.createIndex(grid_scaling_indices, "ID_COL_LOD_1")
-    datasource.createIndex(grid_scaling_indices, "ID_ROW_LOD_1")
 
-    datasource.save(grid_fraction_lod_1, "/tmp/grid_lod1.geojson", true)
-    datasource.save(grid_fraction_lod_2, "/tmp/grid_lod2.geojson", true)
+        datasource.save(grid_lod, "/tmp/grid_lod_${i}.geojson", true)
 
-    def grid_fractions = postfix("grid_fractions")
+    }
 
-    //"neighbors"
-
-    /*int level =1
-    //Collect neighbors
-
-     datasource.execute( """
-DROP TABLE IF EXISTS neighbors;
-create table neighbors as
-        SELECT the_geom, LOD_${level}_SUM_LCZ_COOL as  LOD_${level}_LCZ_COOL_2 from $grid_fraction_lod_1
-            where ID_COL_LOD_$level=ID_COL_LOD_$level AND ID_ROW_LOD_$level=ID_ROW_LOD_$level-1""".toString())
-
-
-    datasource.save("neighbors", "/tmp/neighbors.geojson", true)*/
-
-
+    datasource.dropTable(tablesToDrop)
 
     return null
 
@@ -272,11 +352,13 @@ create table neighbors as
 
 /**
  * @author Erwan Bocher (CNRS)
+ *
+ * TODO: spatial units
  */
 String buffering_cool_areas(JdbcDataSource datasource, String rsu_lcz, String grid_indicators) {
 
-    float  distance = 10
-    def outputTable  = postfix("buffering_cool_areas")
+    float distance = 10
+    def outputTable = postfix("buffering_cool_areas")
     def merging_lcz = postfix("merging_lcz")
     datasource.execute("""
 DROP TABLE IF EXISTS $merging_lcz;
