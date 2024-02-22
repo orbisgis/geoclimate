@@ -52,16 +52,12 @@ class SprawlIndicatorsTests {
 
         String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/grid_indicators.geojson", true)
 
-        String scale_grid = Geoindicators.LCZIndicators.scaling_grid(h2GIS, grid_indicators,1)
 
-       // h2GIS.save(scale_grid, "/tmp/scale_grid.csv", true)
+        def sprawlLayer = Geoindicators.LCZIndicators.compute_sprawl_areas(h2GIS, grid_indicators)
 
-        //GRID SCALES
+        h2GIS.save(sprawlLayer, "/tmp/sprawl_areas_fractions.geojson", true)
 
-        /*def sprawlLayer = Geoindicators.SprawlIndicators.compute_sprawl_areas(h2GIS, grid_indicators)
-
-        h2GIS.save(sprawlLayer, "/tmp/sprawl_areas.geojson", true)
-
+        /*
         String grid_distances = Geoindicators.SprawlIndicators.grid_distances(h2GIS, sprawlLayer, grid_indicators)
 
         h2GIS.save(grid_distances, "/tmp/sprawl_areas_distances.geojson", true)

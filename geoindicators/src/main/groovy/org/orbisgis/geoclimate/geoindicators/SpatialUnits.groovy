@@ -606,3 +606,89 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX, d
     debug "The table $outputTableName has been created"
     return outputTableName
 }
+
+
+/**
+ * This method allows to compute a sprawl areas layer
+ * A sprawl geometry represents a continous areas of urban LCZs (1 to 10 plus 105)
+ * @param datasource connexion to the database
+ * @param grid_indicators a grid that contains the LCZ fractions
+ * @param fraction value to select the cells of the grid to be included in the sprawl areas
+ * @param distance value to erode (delete) small sprawl areas
+ * @author Erwan Bocher (CNRS)
+ */
+String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, float fraction = 0.65, float distance = 100) {
+    //We must compute the grid
+    if (!grid_indicators) {
+        error("No grid_indicators table to compute the sprawl areas layer")
+        return
+    }
+    if (fraction <= 0) {
+        error("Please set a fraction greater than 0")
+        return
+    }
+    if (distance < 0) {
+        error("Please set a fraction greater or equal than 0")
+        return
+    }
+    if (datasource.getRowCount(grid_indicators) == 0) {
+        error("No grid cells to compute the sprawl areas layer")
+        return
+    }
+
+    def gridCols = datasource.getColumnNames(grid_indicators)
+
+    def lcz_columns_urban = ["LCZ_PRIMARY_1", "LCZ_PRIMARY_2", "LCZ_PRIMARY_3", "LCZ_PRIMARY_4", "LCZ_PRIMARY_5", "LCZ_PRIMARY_6", "LCZ_PRIMARY_7",
+                             "LCZ_PRIMARY_8", "LCZ_PRIMARY_9", "LCZ_PRIMARY_10", "LCZ_PRIMARY_105"]
+    def lcz_fractions = gridCols.intersect(lcz_columns_urban)
+
+    if (lcz_fractions.size() > 0) {
+        def outputTableName = postfix("sprawl_areas")
+        def tmp_sprawl = postfix("sprawl_tmp")
+        datasource.execute("""
+        DROP TABLE IF EXISTS  $tmp_sprawl, $outputTableName;
+        CREATE TABLE $tmp_sprawl as select st_buffer(st_buffer(the_geom,-0.1, 'quad_segs=2 endcap=flat
+                     join=mitre mitre_limit=2'),0.1, 'quad_segs=2 endcap=flat
+                     join=mitre mitre_limit=2') as the_geom  from 
+        st_explode('(
+        SELECT ST_UNION(st_removeholes(ST_UNION(ST_ACCUM(the_geom)))) 
+        AS THE_GEOM FROM $grid_indicators where ${lcz_fractions.join("+")} >= $fraction
+        )');
+        CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom
+        FROM
+        ST_EXPLODE('(
+        SELECT 
+        st_buffer(st_union(st_accum(st_buffer(the_geom,$distance, ''quad_segs=2 endcap=flat
+                     join=mitre mitre_limit=2''))),
+                     -$distance, ''quad_segs=2 endcap=flat join=mitre mitre_limit=2'') as the_geom  
+         FROM ST_EXPLODE(''$tmp_sprawl''))') where st_isempty(st_buffer(the_geom, -$distance))=false;
+        DROP TABLE IF EXISTS $tmp_sprawl;
+        """.toString())
+
+        return outputTableName
+    }
+    error("No LCZ fractions columns to compute the sprawl areas layer")
+    return
+}
+
+/**
+ * This method is used to compute the difference between an input layer of polygons and the bounding box
+ * of the input layer.
+ * @param input_polygons a layer that contains polygons
+ * @author Erwan Bocher (CNRS)
+ */
+String inverse_geometries(JdbcDataSource datasource, String input_polygons) {
+    def outputTableName = postfix("inverse_geometries")
+    def tmp_extent = postfix("tmp_extent")
+    datasource.execute("""DROP TABLE IF EXISTS $tmp_extent, $outputTableName;
+    CREATE TABLE $tmp_extent as SELECT ST_EXTENT(THE_GEOM) as the_geom FROM $input_polygons;
+    CREATE TABLE $outputTableName as
+    SELECT CAST((row_number() over()) as Integer) as id, the_geom
+    FROM
+    ST_EXPLODE('(
+        select st_difference(a.the_geom, st_accum(b.the_geom)) as the_geom from $tmp_extent as a, $input_polygons
+        as b where st_dimension(b.the_geom)=2)');        
+    DROP TABLE IF EXISTS $tmp_extent;
+    """.toString())
+    return outputTableName
+}

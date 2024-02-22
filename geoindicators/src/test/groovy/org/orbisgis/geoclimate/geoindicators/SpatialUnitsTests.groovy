@@ -202,7 +202,6 @@ class SpatialUnitsTests {
     @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")
     @Test
     void regularGridTestH2GIS() {
-
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
         def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 1, 1)
@@ -224,5 +223,14 @@ class SpatialUnitsTests {
         assert postGIS."$outputTable"
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 100 == countRows.numberOfRows
+    }
+
+    @Test
+    void sprawlAreasTest() {
+        String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/grid_indicators.geojson", true)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_indicators)
+
+        h2GIS.save(sprawl_areas, "/tmp/sprawl_areas.geojson", true)
+
     }
 }
