@@ -652,7 +652,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def location = "Redon"
        //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData("Redon")
        // location = nominatim.bbox
-        //location=[47.4, -4.8, 47.6, -4.6]
+        location=[47.190062,-1.614389,47.196959,-1.602330]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -674,21 +674,21 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ["distance"                                             : 0,
                          "rsu_indicators"                                       : [
 
-                                 "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
 
-                         ]/*,"grid_indicators": [
-                                "x_size": 200,
-                                "y_size": 200,
+                         ],"grid_indicators": [
+                                "x_size": 100,
+                                "y_size": 100,
                                 //"rowCol": true,
                                 "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
-                                                //"BUILDING_TYPE_FRACTION",
+                                                "BUILDING_TYPE_FRACTION",
                                                 "WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                                                 "LCZ_PRIMARY",
-                                                //"BUILDING_HEIGHT_WEIGHTED", //"BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
-                                                "ASPECT_RATIO",//"SVF",
+                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
+                                                "ASPECT_RATIO","SVF",
                                                 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
-                        ],    "worldpop_indicators": true,
+                        ]/*,    "worldpop_indicators": true,
                          "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
                                  "ground_acoustic": true
@@ -870,7 +870,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
     }
 
+    @Disabled
     @Test
+    //TODO : A fix on OSM must be done because Golfe de Gascogne is tagged as a river.
+    //This geometry must be redesigned because according the International Hydrographic Organization
+    // Golfe de Gascogne must be considered as bay where some main rivers  empty into it
     void testOneSeaLCZ() {
         String directory = folder.absolutePath + File.separator + "test_sea_lcz"
         File dirFile = new File(directory)
@@ -893,6 +897,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def tableNames = process.values()
         def lcz = tableNames.rsu_lcz[0]
         H2GIS h2gis = H2GIS.open("${directory + File.separator}sea_lcz_db;AUTO_SERVER=TRUE")
+        h2gis.save(lcz, "/tmp/sea.geojson", true)
         def lcz_group=  h2gis.firstRow("select  lcz_primary, count(*) as count from $lcz group by lcz_primary".toString())
         assertTrue(lcz_group.size()==2)
         assertTrue(lcz_group.lcz_primary==107)
