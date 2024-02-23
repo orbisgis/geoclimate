@@ -71,6 +71,7 @@
         <maven-release-version>3.0.0-M4</maven-release-version>
         <maven-resources-version>3.2.0</maven-resources-version>
         <maven-site-version>3.9.1</maven-site-version>
+        <maven-source-version>3.3.0</maven-source-version>
         <maven-surefire-version>3.0.0-M5</maven-surefire-version>
         <maven-surefire-report-plugin-version>3.0.0-M5</maven-surefire-report-plugin-version>
         <version-maven-version>2.8.1</version-maven-version>
@@ -255,15 +256,35 @@
                     <version>${gmaven-version}</version>
                     <configuration>
                         <targetBytecode>${maven.compiler.target}</targetBytecode>
+                        <includeClasspath>PROJECT_AND_PLUGIN</includeClasspath>
                     </configuration>
                     <executions>
                         <execution>
+                            <id>compile</id>
+                            <phase>compile</phase>
                             <goals>
+                                <goal>addSources</goal>
+                                <goal>addTestSources</goal>
+                                <goal>addStubSources</goal>
+                                <goal>generateStubs</goal>
                                 <goal>compile</goal>
+                                <goal>generateTestStubs</goal>
                                 <goal>compileTests</goal>
+                                <goal>groovydoc</goal>
+                                <goal>groovydoc-jar</goal>
+                                <goal>removeStubs</goal>
+                                <goal>removeTestStubs</goal>
                             </goals>
                         </execution>
                     </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.groovy</groupId>
+                            <artifactId>groovy-all</artifactId>
+                            <version>4.0.17</version>
+                            <type>pom</type>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <!-- Compilation -->
                 <plugin>
@@ -409,6 +430,35 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>${maven-jar-version}</version>
+                    <executions>
+                        <execution>
+                            <id>default-jar</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>javadoc-jar</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                            <configuration>
+                                <classifier>javadoc</classifier>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>sources-jar</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                            <configuration>
+                                <classifier>sources</classifier>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <!-- Maven archetype generation -->
                 <plugin>
@@ -444,6 +494,8 @@
                             <id>attach-sources</id>
                             <phase>verify</phase>
                             <goals>
+                                <goal>aggregate</goal>
+                                <goal>jar</goal>
                                 <goal>jar-no-fork</goal>
                             </goals>
                         </execution>
