@@ -134,9 +134,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
 
     //Compute the indices for each levels and find the 8 adjacent cells
     datasource.execute("""DROP TABLE IF EXISTS $grid_scaling_indices;
-    CREATE TABLE $grid_scaling_indices as SELECT the_geom,
-    ID_GRID, ID_ROW, ID_COL, ${grid_levels_query.join(",")},
-    LCZ_PRIMARY,   
+    CREATE TABLE $grid_scaling_indices as SELECT *, ${grid_levels_query.join(",")},
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL) AS LCZ_PRIMARY_N,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL+1=a.ID_COL) AS LCZ_PRIMARY_NE,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW AND ID_COL=a.ID_COL+1) AS LCZ_PRIMARY_E,
@@ -267,17 +265,14 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
         error("The input polygons cannot be null or empty")
         return
     }
-
     if (!grid) {
         error("The grid cannot be null or empty")
         return
     }
-
     if (!id_grid) {
         error("Please set the column name identifier for the grid cells")
         return
     }
-
     int epsg = datasource.getSrid(grid)
     def outputTableName = postfix("grid_distance")
 
