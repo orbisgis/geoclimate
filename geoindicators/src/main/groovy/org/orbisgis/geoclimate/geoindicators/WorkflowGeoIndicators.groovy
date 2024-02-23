@@ -1027,7 +1027,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  */
 Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String building,
                           String road, String rail, String vegetation,
-                          String water, String  sea_land_mask, String urban_areas,
+                          String water, String sea_land_mask, String urban_areas,
                           String rsu, double surface_vegetation,
                           double surface_hydro, double surface_urban_areas,
                           double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
@@ -1039,7 +1039,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
         rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone, road, rail,
                 vegetation, water,
                 sea_land_mask, urban_areas, surface_vegetation,
-                surface_hydro,surface_urban_areas, prefixName)
+                surface_hydro, surface_urban_areas, prefixName)
         if (!rsu) {
             info "Cannot compute the RSU."
             return
@@ -1112,7 +1112,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
  */
 Map getParameters() {
     return [
-            "surface_vegetation"            : 10000d, "surface_hydro": 2500d, "surface_urban_areas":10000d,
+            "surface_vegetation"            : 10000d, "surface_hydro": 2500d, "surface_urban_areas": 10000d,
             "snappingTolerance"             : 0.01d, "indicatorUse": ["LCZ", "UTRF", "TEB"],
             "mapOfWeights"                  : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                                "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1210,7 +1210,7 @@ Map getParameters(Map parameters) {
  */
 Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String building, String road, String rail, String vegetation,
                             String water, String impervious, String buildingEstimateTableName,
-                            String sea_land_mask,String urban_areas, String rsuTable,
+                            String sea_land_mask, String urban_areas, String rsuTable,
                             Map parameters = [:], String prefixName) {
     Map inputParameters = getParameters()
     if (parameters) {
@@ -1241,7 +1241,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
                 water, impervious,
                 buildingEstimateTableName,
                 sea_land_mask, urban_areas, rsuTable,
-                surface_vegetation, surface_hydro,surface_urban_areas,
+                surface_vegetation, surface_hydro, surface_urban_areas,
                 snappingTolerance,
                 buildingHeightModelName, prefixName)
         if (!estimHeight) {
@@ -1330,9 +1330,9 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
                 building, road,
                 rail, vegetation,
-                water, sea_land_mask, "","",
+                water, sea_land_mask, "", "",
                 surface_vegetation,
-                surface_hydro,surface_urban_areas, snappingTolerance, indicatorUse,
+                surface_hydro, surface_urban_areas, snappingTolerance, indicatorUse,
                 prefixName)
         if (!spatialUnits) {
             error "Cannot create the spatial units"
@@ -1368,7 +1368,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
                            String road, String rail, String vegetation,
                            String water, String impervious,
                            String building_estimate, String sea_land_mask, String urban_areas, String rsu,
-                           double surface_vegetation, double surface_hydro,double surface_urban_areas,
+                           double surface_vegetation, double surface_hydro, double surface_urban_areas,
                            double snappingTolerance, String buildingHeightModelName, String prefixName = "") {
     if (!building_estimate) {
         error "To estimate the building height a table that contains the list of building to estimate must be provided"
@@ -1384,7 +1384,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
             building, road, rail, vegetation,
             water, sea_land_mask, urban_areas, rsu,
-            surface_vegetation, surface_hydro,surface_urban_areas, snappingTolerance, ["UTRF"],
+            surface_vegetation, surface_hydro, surface_urban_areas, snappingTolerance, ["UTRF"],
             prefixName)
     if (!spatialUnits) {
         error "Cannot create the spatial units"
@@ -1435,7 +1435,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
             prefixName)
 
     def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
-    int nbBuildingEstimated =0
+    int nbBuildingEstimated = 0
     def buildEstimatedHeight
     if (datasource.getTable(gatheredScales).isEmpty()) {
         info "No building height to estimate"
@@ -1449,7 +1449,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
         info "Start estimating the building height"
         //Apply RF model
         buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                gatheredScales, buildingHeightModelName,"id_build", prefixName)
+                gatheredScales, buildingHeightModelName, "id_build", prefixName)
         if (!buildEstimatedHeight) {
             error "Cannot apply the building height model $buildingHeightModelName"
             return
@@ -1645,6 +1645,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
     def grid_column_identifier = "id_grid"
     def indicatorTablesToJoin = [:]
     indicatorTablesToJoin.put(grid, grid_column_identifier)
+
+    //An array to execute some commands on the final table
+    def sqlUpdateCommand =[]
     /*
     * Make aggregation process with previous grid and current rsu lcz
     */
@@ -1845,7 +1848,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 "building_type_fraction")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
-            tablesToDrop<<upperScaleAreaStatistics
+            tablesToDrop << upperScaleAreaStatistics
         } else {
             info "Cannot aggregate the building type at grid scale"
         }
@@ -1868,7 +1871,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (freeFacadeDensityExact) {
             if (list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO"])) {
                 indicatorTablesToJoin.put(freeFacadeDensityExact, grid_column_identifier)
-                tablesToDrop<<freeFacadeDensityExact
+                tablesToDrop << freeFacadeDensityExact
             }
             if (list_indicators_upper.contains("FREE_EXTERNAL_FACADE_DENSITY")) {
                 def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity(
@@ -1881,8 +1884,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                         indicatorTablesToJoin.put(buildingSurfDensity, grid_column_identifier)
                     }
                 }
-                tablesToDrop<<freeFacadeDensityExact
-                tablesToDrop<<buildingSurfDensity
+                tablesToDrop << freeFacadeDensityExact
+                tablesToDrop << buildingSurfDensity
             }
         } else {
             info "Cannot calculate the exact free external facade density"
@@ -1932,20 +1935,21 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     if (list_indicators_upper.contains("SEA_LAND_FRACTION") && sea_land_mask) {
-        // If only one type of surface (land or sea) is in the zone, no need for computational fraction calculation
-        def sea_land_type_rows = datasource.rows("""SELECT $seaLandTypeField, COUNT(*) AS NB_TYPES
+        if (datasource.getRowCount(sea_land_mask) > 0) {
+            // If only one type of surface (land or sea) is in the zone, no need for computational fraction calculation
+            def sea_land_type_rows = datasource.rows("""SELECT $seaLandTypeField, COUNT(*) AS NB_TYPES
                                                                     FROM $sea_land_mask
                                                                     GROUP BY $seaLandTypeField""".toString())
-        if (sea_land_type_rows[seaLandTypeField].count("sea") == 0) {
-            datasource """ 
+            if (sea_land_type_rows[seaLandTypeField].count("sea") == 0) {
+                datasource """ 
                             DROP TABLE IF EXISTS $seaLandFractionTab;
                             CREATE TABLE $seaLandFractionTab
                                 AS SELECT $grid_column_identifier, 1 AS LAND_FRACTION
                                 FROM $grid"""
-            indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
-        } else {
-            // Split the potentially big complex seaLand geometries into smaller triangles in order to makes calculation faster
-            datasource """
+                indicatorTablesToJoin.put(seaLandFractionTab, grid_column_identifier)
+            } else {
+                // Split the potentially big complex seaLand geometries into smaller triangles in order to makes calculation faster
+                datasource """
                             DROP TABLE IF EXISTS $tesselatedSeaLandTab;
                             CREATE TABLE $tesselatedSeaLandTab(id_tesselate serial, the_geom geometry, $seaLandTypeField VARCHAR)
                                 AS SELECT explod_id, the_geom, $seaLandTypeField
@@ -1954,21 +1958,26 @@ String rasterizeIndicators(JdbcDataSource datasource,
                                                     WHERE ST_DIMENSION(the_geom) = 2 AND ST_ISEMPTY(the_geom) IS NOT TRUE
                                                             AND ST_AREA(the_geom)>0)')"""
 
-            def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
-                    grid, grid_column_identifier,
-                    tesselatedSeaLandTab, seaLandTypeField, seaLandTypeField,
-                    prefixName)
-            tablesToDrop << tesselatedSeaLandTab
-            if (upperScaleAreaStatistics) {
-                // Modify columns name to postfix with "_FRACTION"
-                datasource """ 
+                def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
+                        grid, grid_column_identifier,
+                        tesselatedSeaLandTab, seaLandTypeField, seaLandTypeField,
+                        prefixName)
+                tablesToDrop << tesselatedSeaLandTab
+                if (upperScaleAreaStatistics) {
+                    // Modify columns name to postfix with "_FRACTION"
+                    datasource """ 
                             ALTER TABLE ${upperScaleAreaStatistics} RENAME COLUMN TYPE_LAND TO LAND_FRACTION;
                             ALTER TABLE ${upperScaleAreaStatistics} RENAME COLUMN TYPE_SEA TO SEA_FRACTION;
                             ALTER TABLE ${upperScaleAreaStatistics} DROP COLUMN THE_GEOM;"""
-                indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
-            } else {
-                info "Cannot compute the frontal area index."
+                    indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
+                } else {
+                    info "Cannot compute the sea land fractions."
+                }
             }
+        }else{
+            //Update the final table
+            sqlUpdateCommand<<"""ALTER TABLE $grid_indicators_table ADD COLUMN LAND_FRACTION DOUBLE PRECISION DEFAULT 1;
+            ALTER TABLE $grid_indicators_table ADD COLUMN SEA_FRACTION DOUBLE PRECISION DEFAULT 0;"""
         }
     }
 
@@ -2072,6 +2081,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
         UPDATE $grid_indicators_table SET ASPECT_RATIO = case when building_fraction = 1 then null else  free_external_facade_density / (1 - building_fraction) end
         """.toString())
     }
+    //Execute commands
+    datasource.execute(sqlUpdateCommand.join(" "))
+
     tablesToDrop << createScalesRelationsGridBl
     tablesToDrop << buildingCutted
 
