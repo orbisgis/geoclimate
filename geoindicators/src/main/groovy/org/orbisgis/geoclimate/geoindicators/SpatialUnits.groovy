@@ -609,11 +609,13 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX, d
 
 
 /**
- * This method allows to compute a sprawl areas layer
+ * This method allows to compute a sprawl areas layer from a regular grid that
+ * contains the fraction area of each LCZ type for each cell.
+ *
  * A sprawl geometry represents a continous areas of urban LCZs (1 to 10 plus 105)
  * @param datasource connexion to the database
  * @param grid_indicators a grid that contains the LCZ fractions
- * @param fraction value to select the cells of the grid to be included in the sprawl areas
+ * @param fraction value to select the cells of the grid to be included in the sprawl areas.
  * @param distance value to erode (delete) small sprawl areas
  * @author Erwan Bocher (CNRS)
  */

@@ -227,8 +227,21 @@ class SpatialUnitsTests {
 
     @Test
     void sprawlAreasTest() {
-        String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/grid_indicators.geojson", true)
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_indicators)
+        //Data for test
+        h2GIS.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 0 AS LCZ_PRIMARY_1, 1 AS LCZ_PRIMARY_104 FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 100, 100);
+        --Center cell urban
+        UPDATE grid SET LCZ_PRIMARY_1= 1 , LCZ_PRIMARY_104 =0 WHERE id_row = 5 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY_1= 1 , LCZ_PRIMARY_104 =0  WHERE id_row = 6 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0  WHERE id_row = 5 AND id_col = 6; 
+        """.toString())
+        //String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/grid_indicators.geojson", true)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0.65, 10)
 
         h2GIS.save(sprawl_areas, "/tmp/sprawl_areas.geojson", true)
 

@@ -2,6 +2,7 @@ package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
@@ -54,20 +55,44 @@ class GridIndicatorsTests {
         UPDATE grid SET lcz_primary= 2 WHERE id_row = 7 AND id_col = 8; 
         UPDATE grid SET lcz_primary= 2 WHERE id_row = 7 AND id_col = 9; 
         """.toString())
-        String grid_scale = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS, "grid", 1)
+        String grid_scale = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS, "grid", 2)
 
-        def values =  h2GIS.firstRow("SELECT * EXCEPT(THE_GEOM) FROM $grid_scale  WHERE id_row = 2 AND id_col = 2 ".toString())
+        def values = h2GIS.firstRow("SELECT * EXCEPT(THE_GEOM) FROM $grid_scale  WHERE id_row = 2 AND id_col = 2 ".toString())
 
-        def expectedValues=[ID_GRID:10, ID_ROW:2, ID_COL:2, LCZ_PRIMARY:2, LCZ_PRIMARY_N:104, LCZ_PRIMARY_NE:104, LCZ_PRIMARY_E:104, LCZ_PRIMARY_SE:104, LCZ_PRIMARY_S:104, LCZ_PRIMARY_SW:104, LCZ_PRIMARY_W:104, LCZ_PRIMARY_NW:104, ID_ROW_LOD_1:1, ID_COL_LOD_1:0, LCZ_PRIMARY_URBAN_LOD_1:1, LCZ_PRIMARY_COOL_LOD_1:8, LCZ_PRIMARY_LOD_1:104, LCZ_PRIMARY_N_LOD_1:104, LCZ_PRIMARY_NE_LOD_1:null, LCZ_PRIMARY_E_LOD_1:104, LCZ_PRIMARY_SE_LOD_1:null, LCZ_PRIMARY_S_LOD_1:null, LCZ_PRIMARY_SW_LOD_1:null, LCZ_PRIMARY_W_LOD_1:null, LCZ_PRIMARY_NW_LOD_1:null]
+        def expectedValues = [ID_COL: 2, ID_ROW: 2, ID_GRID: 10, LCZ_PRIMARY: 2, LCZ_PRIMARY_N: 104, LCZ_PRIMARY_NE: 104, LCZ_PRIMARY_E: 104, LCZ_PRIMARY_SE: 104, LCZ_PRIMARY_S: 104, LCZ_PRIMARY_SW: 104, LCZ_PRIMARY_W: 104, LCZ_PRIMARY_NW: 104, ID_ROW_LOD_1: 1, ID_COL_LOD_1: 1, LCZ_WARM_LOD_1: 1, LCZ_COOL_LOD_1: 8, LCZ_PRIMARY_LOD_1: 104, LCZ_PRIMARY_N_LOD_1: 104, LCZ_PRIMARY_NE_LOD_1: 2, LCZ_PRIMARY_E_LOD_1: 104, LCZ_PRIMARY_SE_LOD_1: null, LCZ_PRIMARY_S_LOD_1: null, LCZ_PRIMARY_SW_LOD_1: null, LCZ_PRIMARY_W_LOD_1: null, LCZ_PRIMARY_NW_LOD_1: null, LCZ_WARM_N_LOD_1: null, LCZ_WARN_NE_LOD_1: 4, LCZ_WARN_E_LOD_1: null, LCZ_WARN_SE_LOD_1: null, LCZ_WARN_S_LOD_1: null, LCZ_WARN_SW_LOD_1: null, LCZ_WARN_W_LOD_1: null, LCZ_WARN_NW_LOD_1: null]
 
         assertTrue(values == expectedValues)
 
-        values =  h2GIS.firstRow("SELECT * EXCEPT(THE_GEOM) FROM $grid_scale  WHERE id_row = 5 AND id_col = 5 ".toString())
+        values = h2GIS.firstRow("SELECT * EXCEPT(THE_GEOM) FROM $grid_scale  WHERE id_row = 5 AND id_col = 5 ".toString())
 
-        expectedValues=[ID_GRID:40, ID_ROW:5, ID_COL:5, LCZ_PRIMARY:102, LCZ_PRIMARY_N:2, LCZ_PRIMARY_NE:2, LCZ_PRIMARY_E:2, LCZ_PRIMARY_SE:104, LCZ_PRIMARY_S:104, LCZ_PRIMARY_SW:104, LCZ_PRIMARY_W:104, LCZ_PRIMARY_NW:2, ID_ROW_LOD_1:2, ID_COL_LOD_1:1, LCZ_PRIMARY_URBAN_LOD_1:4, LCZ_PRIMARY_COOL_LOD_1:5, LCZ_PRIMARY_LOD_1:104, LCZ_PRIMARY_N_LOD_1:104, LCZ_PRIMARY_NE_LOD_1:104, LCZ_PRIMARY_E_LOD_1:104, LCZ_PRIMARY_SE_LOD_1:104, LCZ_PRIMARY_S_LOD_1:104, LCZ_PRIMARY_SW_LOD_1:104, LCZ_PRIMARY_W_LOD_1:104, LCZ_PRIMARY_NW_LOD_1:104]
+        expectedValues = [ID_COL: 5, ID_ROW: 5, ID_GRID: 40, LCZ_PRIMARY: 102, LCZ_PRIMARY_N: 2, LCZ_PRIMARY_NE: 2, LCZ_PRIMARY_E: 2, LCZ_PRIMARY_SE: 104, LCZ_PRIMARY_S: 104, LCZ_PRIMARY_SW: 104, LCZ_PRIMARY_W: 104, LCZ_PRIMARY_NW: 2, ID_ROW_LOD_1: 2, ID_COL_LOD_1: 2, LCZ_WARM_LOD_1: 4, LCZ_COOL_LOD_1: 5, LCZ_PRIMARY_LOD_1: 2, LCZ_PRIMARY_N_LOD_1: 104, LCZ_PRIMARY_NE_LOD_1: 2, LCZ_PRIMARY_E_LOD_1: 104, LCZ_PRIMARY_SE_LOD_1: 104, LCZ_PRIMARY_S_LOD_1: 104, LCZ_PRIMARY_SW_LOD_1: 104, LCZ_PRIMARY_W_LOD_1: 104, LCZ_PRIMARY_NW_LOD_1: 104, LCZ_WARM_N_LOD_1: null, LCZ_WARN_NE_LOD_1: 5, LCZ_WARN_E_LOD_1: null, LCZ_WARN_SE_LOD_1: null, LCZ_WARN_S_LOD_1: null, LCZ_WARN_SW_LOD_1: 1, LCZ_WARN_W_LOD_1: null, LCZ_WARN_NW_LOD_1: null]
 
         assertTrue(values == expectedValues)
 
         h2GIS.dropTable("grid")
+    }
+
+    @Test
+    @Disabled
+    //Todo a test that shows how to create the a geom layer for each lod
+    void multiscaleLCZGridGeomTest() {
+        String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/grid_indicators.geojson", true)
+        int nb_levels= 3
+        String grid_scale = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS, grid_indicators, nb_levels)
+
+        for (int i in 1..nb_levels) {
+            def grid_lod = "grid_lod_$i"
+            h2GIS.execute("""
+            create index on $grid_scale(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
+            DROP TABLE IF EXIsTS $grid_lod;
+            CREATE TABLE $grid_lod AS 
+            SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM, MAX(LCZ_PRIMARY_LOD_${i}) AS LCZ_PRIMARY
+            from $grid_scale
+            group by ID_ROW_LOD_${i}, ID_COL_LOD_${i};
+            """.toString())
+            h2GIS.save(grid_lod, "/tmp/grid_lod_${i}.geojson", true)
+            h2GIS.dropTable(grid_lod)
+        }
+
     }
 }

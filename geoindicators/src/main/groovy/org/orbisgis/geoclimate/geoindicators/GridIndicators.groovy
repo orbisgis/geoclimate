@@ -49,8 +49,8 @@ String gridPopulation(JdbcDataSource datasource, String gridTable, String popula
     def outputTableName = postfix BASE_NAME
 
     //Indexing table
-    datasource.createSpatialIndex(gridTable,"the_geom")
-    datasource.createSpatialIndex(populationTable,"the_geom")
+    datasource.createSpatialIndex(gridTable, "the_geom")
+    datasource.createSpatialIndex(populationTable, "the_geom")
     def popColumns = []
     def sum_popColumns = []
     if (populationColumns) {
@@ -124,11 +124,11 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
     def grid_scaling_indices = postfix("grid_scaling_indices")
     def grid_levels_query = []
     int grid_offset = 3
-    int offsetCol = 0
+    int offsetCol = 1
     for (int i in 1..nb_levels) {
         int level = Math.pow(grid_offset, i)
         grid_levels_query << " (CAST (ABS(ID_ROW-1)/${level}  AS INT)+1) AS ID_ROW_LOD_$i," +
-                "(CAST (ABS(ID_COL-1)/${level} AS INT)+$offsetCol) AS ID_COL_LOD_$i"
+                "(CAST (ABS(ID_COL-1)/${level} AS INT)+$offsetCol-1) AS ID_COL_LOD_$i"
         offsetCol++
     }
 
@@ -136,7 +136,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
     datasource.execute("""DROP TABLE IF EXISTS $grid_scaling_indices;
     CREATE TABLE $grid_scaling_indices as SELECT *, ${grid_levels_query.join(",")},
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL) AS LCZ_PRIMARY_N,
-    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL+1=a.ID_COL) AS LCZ_PRIMARY_NE,
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL+1) AS LCZ_PRIMARY_NE,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW AND ID_COL=a.ID_COL+1) AS LCZ_PRIMARY_E,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW-1 AND ID_COL=a.ID_COL+1) AS LCZ_PRIMARY_SE,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW-1 AND ID_COL=a.ID_COL) AS LCZ_PRIMARY_S,
@@ -145,9 +145,9 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL-1) AS LCZ_PRIMARY_NW FROM 
     $grid_indicators as a;  """.toString())
 
-    def tablesToDrop =[]
+    def tablesToDrop = []
     def tableLevelToJoin = grid_scaling_indices
-    tablesToDrop<<grid_scaling_indices
+    tablesToDrop << grid_scaling_indices
 
     //Process all level of details
     for (int i in 1..nb_levels) {
@@ -158,7 +158,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
         //Use the original grid to aggregate the data
         //A weight is used to select the LCZ value when the mode returns more than one possibility
         def lcz_count_lod = postfix("lcz_count_lod")
-        tablesToDrop<<lcz_count_lod
+        tablesToDrop << lcz_count_lod
         datasource.execute(""" 
     drop table if exists $lcz_count_lod;
     CREATE TABLE $lcz_count_lod as
@@ -178,7 +178,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
         //Select the LCZ values according the maximum number of cells and the weight
         //Note that we compute the number of cells for urban and cool LCZ
         def lcz_count_lod_mode = postfix("lcz_count_lod_mode")
-        tablesToDrop<<lcz_count_lod_mode
+        tablesToDrop << lcz_count_lod_mode
         datasource.execute(""" 
     create index on $lcz_count_lod(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
     DROP TABLE IF EXISTS  $lcz_count_lod_mode;    
@@ -186,31 +186,41 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
     select distinct on (ID_ROW_LOD_${i}, ID_COL_LOD_${i}) *,
     (select sum(count) from  $lcz_count_lod where   
     LCZ_PRIMARY in (1,2,3,4,5,6,7,8,9,10,105) 
-    and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_PRIMARY_URBAN_LOD_${i},
+    and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_WARM_LOD_${i},
     (select sum(count) from  $lcz_count_lod where  
     LCZ_PRIMARY in (101,102,103,104,106,107) 
-    and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_PRIMARY_COOL_LOD_${i},
+    and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_COOL_LOD_${i},
     from $lcz_count_lod as a
-    order by ID_ROW_LOD_${i}, ID_COL_LOD_${i}, weight_lcz desc, count asc;""".toString())
+    order by count desc, ID_ROW_LOD_${i}, ID_COL_LOD_${i}, weight_lcz;""".toString())
 
         //Find the 8 adjacent cells for the current level
         def grid_lod_level_final = postfix("grid_lod_level_final")
-        tablesToDrop<<grid_lod_level_final
+        tablesToDrop << grid_lod_level_final
         datasource.execute("""
     CREATE INDEX on $lcz_count_lod_mode(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
     DROP TABLE IF EXISTS $grid_lod_level_final;
     CREATE TABLE $grid_lod_level_final as select * EXCEPT(LCZ_PRIMARY, COUNT, weight_lcz), LCZ_PRIMARY AS LCZ_PRIMARY_LOD_${i},
     (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_N_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}+1=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_NE_LOD_${i},
+    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_NE_LOD_${i},
     (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_E_LOD_${i},
     (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_SE_LOD_${i},
     (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_S_LOD_${i},
     (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_SW_LOD_${i},
     (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_W_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_NW_LOD_${i} FROM 
-    $lcz_count_lod_mode as a;  """.toString())
+    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_NW_LOD_${i},
+ 
+    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_WARM_N_LOD_${i},
+    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARN_NE_LOD_${i},
+    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARN_E_LOD_${i},
+    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARN_SE_LOD_${i},
+    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_WARN_S_LOD_${i},
+    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARN_SW_LOD_${i},
+    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARN_W_LOD_${i},
+    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARN_NW_LOD_${i},
+ 
+     FROM  $lcz_count_lod_mode as a;  """.toString())
 
-        tableLevelToJoin<<grid_lod_level_final
+        tableLevelToJoin << grid_lod_level_final
 
         //Join the final grid level with the original grid
         def grid_level_join = postfix("grid_level_join")
@@ -223,27 +233,8 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
         where a.ID_ROW_LOD_${i} = b.ID_ROW_LOD_${i} and a.ID_COL_LOD_${i}= b.ID_COL_LOD_${i}
         group by a.ID_ROW_LOD_${i}, a.ID_COL_LOD_${i}, a.the_geom;
         """.toString())
-        tableLevelToJoin=grid_level_join
+        tableLevelToJoin = grid_level_join
     }
-
-    datasource.save(tableLevelToJoin, "/tmp/tableLevelToJoin.geojson", true)
-
-    for (int i in 1..nb_levels) {
-
-        def grid_lod = postfix("grid_lod")
-        tablesToDrop << grid_lod
-        datasource.execute("""
-    create index on $tableLevelToJoin(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
-    DROP TABLE IF EXIsTS $grid_lod;
-    CREATE TABLE $grid_lod AS 
-    SELECT ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM
-    from $tableLevelToJoin
-    group by ID_ROW_LOD_${i}, ID_COL_LOD_${i};
-    """.toString())
-
-        datasource.save(grid_lod, "/tmp/grid_lod_${i}.geojson", true)
-    }
-
     datasource.dropTable(tablesToDrop)
 
     return tableLevelToJoin
@@ -259,6 +250,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
  * @param grid a regular grid
  * @param id_grid name of the unique identifier column for the cells of the grid
  * @author Erwan Bocher (CNRS)
+ * TODO : convert this method as a function table in H2GIS
  */
 String gridDistances(JdbcDataSource datasource, String input_polygons, String grid, String id_grid) {
     if (!input_polygons) {
