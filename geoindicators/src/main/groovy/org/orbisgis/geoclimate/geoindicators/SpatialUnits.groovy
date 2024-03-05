@@ -62,7 +62,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  */
 String createTSU(JdbcDataSource datasource, String zone,
                  double area = 1f, String road, String rail, String vegetation,
-                 String water, String sea_land_mask,String urban_areas,
+                 String water, String sea_land_mask, String urban_areas,
                  double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) {
     def BASE_NAME = "rsu"
 
@@ -214,7 +214,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         }
         if (vegetation && datasource.hasTable(vegetation)) {
             debug "Preparing vegetation..."
-            if(datasource.getColumnNames(vegetation)) {
+            if (datasource.getColumnNames(vegetation)) {
                 vegetation_tmp = postfix "vegetation_tmp"
                 def vegetation_graph = postfix "vegetation_graph"
                 def subGraphTableNodes = postfix vegetation_graph, "NODE_CC"
@@ -270,7 +270,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         }
 
         if (water && datasource.hasTable(water)) {
-            if(datasource.getColumnNames(water).size()>0) {
+            if (datasource.getColumnNames(water).size() > 0) {
                 //Extract water
                 debug "Preparing hydrographic..."
                 hydrographic_tmp = postfix "hydrographic_tmp"
@@ -318,8 +318,8 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         }
 
         if (road && datasource.hasTable(road)) {
-                debug "Preparing road..."
-            if(datasource.getColumnNames(road).size()>0) {
+            debug "Preparing road..."
+            if (datasource.getColumnNames(road).size() > 0) {
                 queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing in ('bridge', 'crossing')) " +
                         "and type not in ('track','service', 'path', 'cycleway', 'steps'))"]
             }
@@ -327,8 +327,8 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
         if (rail && datasource.hasTable(rail)) {
             debug "Preparing rail..."
-            if(datasource.getColumnNames(rail).size()>0){
-            queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
+            if (datasource.getColumnNames(rail).size() > 0) {
+                queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
             }
         }
 
@@ -637,7 +637,6 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
         error("No grid cells to compute the sprawl areas layer")
         return
     }
-
     def gridCols = datasource.getColumnNames(grid_indicators)
 
     def lcz_columns_urban = ["LCZ_PRIMARY_1", "LCZ_PRIMARY_2", "LCZ_PRIMARY_3", "LCZ_PRIMARY_4", "LCZ_PRIMARY_5", "LCZ_PRIMARY_6", "LCZ_PRIMARY_7",
@@ -646,8 +645,20 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
 
     if (lcz_fractions.size() > 0) {
         def outputTableName = postfix("sprawl_areas")
-        def tmp_sprawl = postfix("sprawl_tmp")
-        datasource.execute("""
+        if (distance == 0) {
+            datasource.execute("""
+        DROP TABLE IF EXISTS   $outputTableName;
+        CREATE TABLE $outputTableName as select CAST((row_number() over()) as Integer) as id, st_removeholes(st_buffer(st_buffer(the_geom,-0.1, 'quad_segs=2 endcap=flat
+                     join=mitre mitre_limit=2'),0.1, 'quad_segs=2 endcap=flat
+                     join=mitre mitre_limit=2')) as the_geom  from 
+        st_explode('(
+        SELECT ST_UNION(st_removeholes(ST_UNION(ST_ACCUM(the_geom)))) 
+        AS THE_GEOM FROM $grid_indicators where ${lcz_fractions.join("+")} >= $fraction
+        )');""".toString())
+            return outputTableName
+        } else {
+            def tmp_sprawl = postfix("sprawl_tmp")
+            datasource.execute("""
         DROP TABLE IF EXISTS  $tmp_sprawl, $outputTableName;
         CREATE TABLE $tmp_sprawl as select st_buffer(st_buffer(the_geom,-0.1, 'quad_segs=2 endcap=flat
                      join=mitre mitre_limit=2'),0.1, 'quad_segs=2 endcap=flat
@@ -655,8 +666,9 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
         st_explode('(
         SELECT ST_UNION(st_removeholes(ST_UNION(ST_ACCUM(the_geom)))) 
         AS THE_GEOM FROM $grid_indicators where ${lcz_fractions.join("+")} >= $fraction
-        )');
-        CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom
+        )');""".toString())
+
+        datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom
         FROM
         ST_EXPLODE('(
         SELECT 
@@ -666,8 +678,8 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
          FROM ST_EXPLODE(''$tmp_sprawl''))') where st_isempty(st_buffer(the_geom, -$distance))=false;
         DROP TABLE IF EXISTS $tmp_sprawl;
         """.toString())
-
-        return outputTableName
+            return outputTableName
+        }
     }
     error("No LCZ fractions columns to compute the sprawl areas layer")
     return
@@ -679,7 +691,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
  * @param input_polygons a layer that contains polygons
  * @author Erwan Bocher (CNRS)
  */
-String inverse_geometries(JdbcDataSource datasource, String input_polygons) {
+String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) {
     def outputTableName = postfix("inverse_geometries")
     def tmp_extent = postfix("tmp_extent")
     datasource.execute("""DROP TABLE IF EXISTS $tmp_extent, $outputTableName;
