@@ -79,7 +79,6 @@ class GridIndicatorsTests {
         String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/grid_indicators.geojson", true)
         int nb_levels= 3
         String grid_scale = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS, grid_indicators, nb_levels)
-
         for (int i in 1..nb_levels) {
             def grid_lod = "grid_lod_$i"
             h2GIS.execute("""
@@ -93,6 +92,34 @@ class GridIndicatorsTests {
             h2GIS.save(grid_lod, "/tmp/grid_lod_${i}.geojson", true)
             h2GIS.dropTable(grid_lod)
         }
+    }
 
+    @Test
+    void gridDistancesTest1() {
+        //Data for test
+        h2GIS.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid, polygons;
+        CREATE TABLE grid AS SELECT  *   FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
+        CREATE TABLE polygons AS SELECT  'POLYGON ((4 4, 6 4, 6 6, 4 6, 4 4))'::GEOMETRY AS THE_GEOM ;
+        """.toString())
+
+        String grid_distances = Geoindicators.GridIndicators.gridDistances(h2GIS, "polygons","grid", "id")
+        assertEquals(4, h2GIS.firstRow("select count(*) as count from $grid_distances where distance =0.5".toString()).count)
+    }
+
+    @Test
+    void gridDistancesTest2() {
+        //Data for test
+        h2GIS.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid, polygons;
+        CREATE TABLE grid AS SELECT  *   FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
+        CREATE TABLE polygons AS SELECT  'POLYGON ((2 2, 6 2, 6 6, 2 6, 2 2), (3 5, 5 5, 5 3, 3 3, 3 5))'::GEOMETRY AS THE_GEOM ;
+        """.toString())
+        String grid_distances = Geoindicators.GridIndicators.gridDistances(h2GIS, "polygons","grid", "id")
+        assertEquals(12, h2GIS.firstRow("select count(*) as count from $grid_distances where distance =0.5".toString()).count)
     }
 }

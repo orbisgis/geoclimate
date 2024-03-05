@@ -266,10 +266,10 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
         return
     }
     int epsg = datasource.getSrid(grid)
-    def outputTableName = postfix("grid_distance")
+    def outputTableName = postfix("grid_distances")
 
     datasource.execute(""" DROP TABLE IF EXISTS $outputTableName;
-        CREATE TABLE $outputTableName ( THE_GEOM GEOMETRY,ID INT, DISTANCE FLOAT);
+        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY,ID INT, DISTANCE FLOAT);
         """.toString())
 
     datasource.createSpatialIndex(input_polygons)
@@ -285,7 +285,7 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
             st_intersects(ST_GEOMFROMTEXT('${geom}',$epsg) , ST_POINTONSURFACE(the_geom))""".toString()) { cell ->
                     Geometry cell_geom = cell.the_geom
                     double distance = indexedFacetDistance.distance(cell_geom.getCentroid())
-                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${cell_geom}',$epsg), ${cell_geom.id},${distance})".toString()
+                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${cell_geom}',$epsg), ${cell.id},${distance})".toString()
                 }
             }
         }
