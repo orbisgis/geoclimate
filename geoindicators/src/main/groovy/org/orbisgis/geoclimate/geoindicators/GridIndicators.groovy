@@ -142,12 +142,28 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW-1 AND ID_COL=a.ID_COL) AS LCZ_PRIMARY_S,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW-1 AND ID_COL=a.ID_COL-1) AS LCZ_PRIMARY_SW,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW AND ID_COL=a.ID_COL-1) AS LCZ_PRIMARY_W,
-    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL-1) AS LCZ_PRIMARY_NW FROM 
+    (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL-1) AS LCZ_PRIMARY_NW
+    FROM 
     $grid_indicators as a;  """.toString())
+    //Add LCZ_WARM count at this first level
+    def lcz_warm_first_level = postfix("lcz_warm_first_level")
+    datasource.execute("""DROP TABLE IF EXISTS $lcz_warm_first_level;
+    CREATE TABLE $lcz_warm_first_level as SELECT *,
+    (CASE WHEN LCZ_PRIMARY_N in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END +
+    CASE WHEN  LCZ_PRIMARY_NE in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END +
+    CASE WHEN  LCZ_PRIMARY_E in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END +
+    CASE WHEN  LCZ_PRIMARY_SE in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END +
+    CASE WHEN  LCZ_PRIMARY_S in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END +
+    CASE WHEN  LCZ_PRIMARY_SW in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END +
+    CASE WHEN  LCZ_PRIMARY_W in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END +
+    CASE WHEN  LCZ_PRIMARY_NW in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END+
+    CASE WHEN  LCZ_PRIMARY in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 ELSE 0 END)  AS LCZ_WARM 
+    FROM $grid_scaling_indices """.toString())
 
     def tablesToDrop = []
-    def tableLevelToJoin = grid_scaling_indices
+    def tableLevelToJoin = lcz_warm_first_level
     tablesToDrop << grid_scaling_indices
+    tablesToDrop << lcz_warm_first_level
 
     //Process all level of details
     for (int i in 1..nb_levels) {
@@ -229,14 +245,28 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
         create index on $grid_lod_level_final(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
         DROP TABLE IF EXISTS $grid_level_join;
         CREATE TABLE $grid_level_join as 
-        select a.* EXCEPT(ID_ROW_LOD_${i}, ID_COL_LOD_${i}), b.* from $tableLevelToJoin as a,  $grid_lod_level_final as b 
+        select a.* EXCEPT(ID_ROW_LOD_${i}, ID_COL_LOD_${i}),  
+        b.* from $tableLevelToJoin as a,  $grid_lod_level_final as b 
         where a.ID_ROW_LOD_${i} = b.ID_ROW_LOD_${i} and a.ID_COL_LOD_${i}= b.ID_COL_LOD_${i}
         group by a.ID_ROW_LOD_${i}, a.ID_COL_LOD_${i}, a.the_geom;
         """.toString())
         tableLevelToJoin = grid_level_join
     }
     datasource.dropTable(tablesToDrop)
-
+    /*def output = postfix("lcz_tiles")
+    datasource.execute("""
+    DROP TABLE IF EXISTS $output;    
+    CREATE TABLE $output as
+    select *, 
+    SUM(CASE WHEN LCZ_PRIMARY_N in (1,2,3,4,5,6,7,8,9,10,105)
+    or LCZ_PRIMARY_NE in (1,2,3,4,5,6,7,8,9,10,105)
+    or LCZ_PRIMARY_E in (1,2,3,4,5,6,7,8,9,10,105)
+    or LCZ_PRIMARY_SE in (1,2,3,4,5,6,7,8,9,10,105)
+    or LCZ_PRIMARY_S in (1,2,3,4,5,6,7,8,9,10,105)
+    or LCZ_PRIMARY_SW in (1,2,3,4,5,6,7,8,9,10,105)
+    or LCZ_PRIMARY_W in (1,2,3,4,5,6,7,8,9,10,105)
+    or LCZ_PRIMARY_NW in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 else 0 end) AS LCZ_WARM
+    FROM $tableLevelToJoin group by the_geom """.toString())*/
     return tableLevelToJoin
 
 }

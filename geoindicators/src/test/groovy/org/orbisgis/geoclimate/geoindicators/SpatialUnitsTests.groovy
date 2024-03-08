@@ -234,16 +234,17 @@ class SpatialUnitsTests {
         h2GIS.execute("""
         --Grid values
         DROP TABLE IF EXISTS grid;
-        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 0 AS LCZ_PRIMARY_1, 1 AS LCZ_PRIMARY_104 FROM 
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
         --Center cell urban
-        UPDATE grid SET LCZ_PRIMARY_1= 1 , LCZ_PRIMARY_104 =0 WHERE id_row = 5 AND id_col = 5;
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 4; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 5;
-        UPDATE grid SET LCZ_PRIMARY_1= 1 , LCZ_PRIMARY_104 =0  WHERE id_row = 6 AND id_col = 6; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0  WHERE id_row = 5 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 6; 
         """.toString())
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0.65, 0)
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid",1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(5, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
     }
@@ -254,10 +255,11 @@ class SpatialUnitsTests {
         h2GIS.execute("""
         --Grid values
         DROP TABLE IF EXISTS grid;
-        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 0 AS LCZ_PRIMARY_1, 1 AS LCZ_PRIMARY_104 FROM 
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
         """.toString())
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0.65, 0)
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid",1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertTrue(h2GIS.firstRow("select st_union(st_accum(the_geom)) as the_geom from $sprawl_areas".toString()).the_geom.isEmpty())
     }
@@ -268,18 +270,19 @@ class SpatialUnitsTests {
         h2GIS.execute("""
         --Grid values
         DROP TABLE IF EXISTS grid;
-        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 0 AS LCZ_PRIMARY_1, 1 AS LCZ_PRIMARY_104 FROM 
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid,104 AS LCZ_PRIMARY FROM 
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);        
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 4 AND id_col = 4; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 4 AND id_col = 5; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 4 AND id_col = 6; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 5 AND id_col = 4; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 5 AND id_col = 6; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 4;
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 5;
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 6;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 5; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 5 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 5 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 4;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 6;
         """.toString())
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0.65, 0)
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid",1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(9, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
     }
@@ -290,23 +293,26 @@ class SpatialUnitsTests {
         h2GIS.execute("""
         --Grid values
         DROP TABLE IF EXISTS grid;
-        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 0 AS LCZ_PRIMARY_1, 1 AS LCZ_PRIMARY_104 FROM 
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);       
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 4 AND id_col = 4; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 4 AND id_col = 5; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 4 AND id_col = 6; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 5 AND id_col = 4; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 5 AND id_col = 6; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 4;
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 5;
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 6 AND id_col = 6;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 5; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 5 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 5 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 4;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 6;
         
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 9 AND id_col = 9; 
-        UPDATE grid SET LCZ_PRIMARY_1= 1  , LCZ_PRIMARY_104 =0 WHERE id_row = 1 AND id_col = 1; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 9 AND id_col = 9; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 1 AND id_col = 1; 
         """.toString())
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0.65, 0)
-        assertEquals(3, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
-        assertEquals(11, h2GIS.firstRow("select st_area(st_accum(the_geom)) as area from $sprawl_areas".toString()).area, 0.0001)
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid",1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        h2GIS.save(sprawl_areas, "/tmp/sprawl_areas.geojson", true)
+        h2GIS.save(grid_scales, "/tmp/grid_scales.geojson", true)
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
+        assertEquals(9, h2GIS.firstRow("select st_area(st_accum(the_geom)) as area from $sprawl_areas".toString()).area, 0.0001)
     }
 
     @Test
@@ -350,5 +356,15 @@ class SpatialUnitsTests {
         String inverse = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS, "polygons")
         assertEquals(2, h2GIS.firstRow("select count(*) as count from $inverse".toString()).count)
         assertTrue(expectedGeom.equals(h2GIS.firstRow("select st_accum(the_geom) as the_geom  from $inverse".toString()).the_geom))
+    }
+
+    @Test
+    void sprawlAreasTestIntegration() {
+        //Data for test
+        String path = "/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/"
+        String data  = h2GIS.load("${path}grid_indicators.geojson")
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,data,1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        h2GIS.save(sprawl_areas, "/tmp/sprawl_areas_indic.geojson", true)
     }
 }

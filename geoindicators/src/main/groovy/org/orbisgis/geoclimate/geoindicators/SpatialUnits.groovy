@@ -613,24 +613,20 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX, d
  * contains the fraction area of each LCZ type for each cell.
  *
  * A sprawl geometry represents a continous areas of urban LCZs (1 to 10 plus 105)
+ * It is important to note that pixels that do not have at least 1 urban neighbor are not kept.
  * @param datasource connexion to the database
  * @param grid_indicators a grid that contains the LCZ fractions
- * @param fraction value to select the cells of the grid to be included in the sprawl areas.
  * @param distance value to erode (delete) small sprawl areas
  * @author Erwan Bocher (CNRS)
  */
-String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, float fraction = 0.65, float distance = 100) {
+String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, float distance = 100) {
     //We must compute the grid
     if (!grid_indicators) {
         error("No grid_indicators table to compute the sprawl areas layer")
         return
     }
-    if (fraction <= 0) {
-        error("Please set a fraction greater than 0")
-        return
-    }
     if (distance < 0) {
-        error("Please set a fraction greater or equal than 0")
+        error("Please set a distance greater or equal than 0")
         return
     }
     if (datasource.getRowCount(grid_indicators) == 0) {
@@ -638,50 +634,43 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
         return
     }
     def gridCols = datasource.getColumnNames(grid_indicators)
-
-    def lcz_columns_urban = ["LCZ_PRIMARY_1", "LCZ_PRIMARY_2", "LCZ_PRIMARY_3", "LCZ_PRIMARY_4", "LCZ_PRIMARY_5", "LCZ_PRIMARY_6", "LCZ_PRIMARY_7",
-                             "LCZ_PRIMARY_8", "LCZ_PRIMARY_9", "LCZ_PRIMARY_10", "LCZ_PRIMARY_105"]
-    def lcz_fractions = gridCols.intersect(lcz_columns_urban)
-
-    if (lcz_fractions.size() > 0) {
+    def lcz_columns_urban = ["LCZ_PRIMARY", "LCZ_WARM"]
+    def lcz_columns = gridCols.intersect(lcz_columns_urban)
+    if (lcz_columns.size()>0) {
         def outputTableName = postfix("sprawl_areas")
         if (distance == 0) {
-            datasource.execute("""
-        DROP TABLE IF EXISTS   $outputTableName;
-        CREATE TABLE $outputTableName as select CAST((row_number() over()) as Integer) as id, st_removeholes(st_buffer(st_buffer(the_geom,-0.1, 'quad_segs=2 endcap=flat
-                     join=mitre mitre_limit=2'),0.1, 'quad_segs=2 endcap=flat
-                     join=mitre mitre_limit=2')) as the_geom  from 
-        st_explode('(
-        SELECT ST_UNION(st_removeholes(ST_UNION(ST_ACCUM(the_geom)))) 
-        AS THE_GEOM FROM $grid_indicators where ${lcz_fractions.join("+")} >= $fraction
-        )');""".toString())
+            datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+        create table $outputTableName as 
+        select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
+        select st_union(st_accum(the_geom)) as the_geom from
+        $grid_indicators where lcz_warm>=2 
+        and LCZ_PRIMARY NOT IN (101, 102,104,103,107, 106))')""".toString())
             return outputTableName
         } else {
             def tmp_sprawl = postfix("sprawl_tmp")
             datasource.execute("""
         DROP TABLE IF EXISTS  $tmp_sprawl, $outputTableName;
-        CREATE TABLE $tmp_sprawl as select st_buffer(st_buffer(the_geom,-0.1, 'quad_segs=2 endcap=flat
-                     join=mitre mitre_limit=2'),0.1, 'quad_segs=2 endcap=flat
-                     join=mitre mitre_limit=2') as the_geom  from 
-        st_explode('(
-        SELECT ST_UNION(st_removeholes(ST_UNION(ST_ACCUM(the_geom)))) 
-        AS THE_GEOM FROM $grid_indicators where ${lcz_fractions.join("+")} >= $fraction
-        )');""".toString())
-
-        datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom
+         create table $tmp_sprawl as 
+        select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
+        select st_union(st_accum(the_geom)) as the_geom from
+        $grid_indicators where lcz_warm>=2 
+        and LCZ_PRIMARY NOT IN (101, 102,104,103,107, 106))') 
+        where st_isempty(st_buffer(the_geom, -100)) =false""".toString())
+        datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
+         the_geom
         FROM
         ST_EXPLODE('(
         SELECT 
-        st_buffer(st_union(st_accum(st_buffer(the_geom,$distance, ''quad_segs=2 endcap=flat
+        st_removeholes(st_buffer(st_union(st_accum(st_buffer(st_removeholes(the_geom),$distance, ''quad_segs=2 endcap=flat
                      join=mitre mitre_limit=2''))),
-                     -$distance, ''quad_segs=2 endcap=flat join=mitre mitre_limit=2'') as the_geom  
-         FROM ST_EXPLODE(''$tmp_sprawl''))') where st_isempty(st_buffer(the_geom, -$distance))=false;
+                     -$distance, ''quad_segs=2 endcap=flat join=mitre mitre_limit=2'')) as the_geom  
+         FROM ST_EXPLODE(''$tmp_sprawl'') )') ;
         DROP TABLE IF EXISTS $tmp_sprawl;
         """.toString())
             return outputTableName
         }
     }
-    error("No LCZ fractions columns to compute the sprawl areas layer")
+    error("No LCZ_PRIMARY column to compute the sprawl areas layer")
     return
 }
 

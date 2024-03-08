@@ -971,7 +971,7 @@ String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName
                                         st_force2d(st_makevalid(b.$upperGeometryColumn)))) AS area
                               FROM $lowerTableName a, $upperTableName b
                               WHERE a.$lowerGeometryColumn && b.$upperGeometryColumn AND 
-                              ST_INTERSECTS(st_force2d(a.$lowerGeometryColumn), st_force2d(b.$upperGeometryColumn));
+                              ST_INTERSECTS(a.$lowerGeometryColumn, b.$upperGeometryColumn);
                               """
     datasource.execute(spatialJoin.toString())
     datasource """CREATE INDEX ON $spatialJoinTable ($lowerColumnName);
