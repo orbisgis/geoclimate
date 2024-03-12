@@ -22,11 +22,21 @@
     "education": {
       "landuse": [
         "education"
-      ],
+      ]
+    },
+    "university": {
       "amenity": [
-        "school",
-        "university",
+        "university"
+      ]
+    },
+    "research_institute": {
+      "amenity": [
         "research_institute"
+      ]
+    },
+    "school": {
+      "amenity": [
+        "school"
       ]
     },
     "construction": {
@@ -36,7 +46,11 @@
     },
     "commercial": {
       "landuse": [
-        "commercial",
+        "commercial"
+      ]
+    },
+    "retail": {
+      "landuse": [
         "retail"
       ]
     },
@@ -45,14 +59,19 @@
         "residential"
       ]
     },
-    "heavy_industry": {
-      "industrial": [
-        "refinery"
+    "industrial": {
+      "landuse": [
+        "industrial"
       ]
     },
-    "light_industry": {
+    "port": {
       "landuse": [
-        "industrial", "port"
+        "port"
+      ]
+    },
+    "industrial": {
+      "industrial": [
+        "refinery"
       ]
     },
     "government": {
@@ -60,21 +79,22 @@
         "institutional"
       ]
     },
-    "social_building": {
-    "amenity": [
-      "community_centre"
-    ]},
+    "community_centre": {
+      "amenity": [
+        "community_centre"
+      ]
+    },
     "military": {
       "landuse": [
         "military"
       ]
     },
-    "transport": {
+    "railway": {
       "landuse": [
         "railway"
       ]
     },
-    "agricultural": {
+    "farmyard": {
       "landuse": [
         "farmyard"
       ]
