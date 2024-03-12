@@ -181,7 +181,8 @@
     "fast_food": 0,
     "ice_cream": 0,
     "pub": 0,
-    "attraction": 0
+    "attraction": 0,
+    "refinery": 0
   },
   "type": {
     "terminal:transport": {
@@ -950,6 +951,11 @@
     "well_cluster:industrial": {
       "industrial": [
         "well_cluster"
+      ]
+    },
+    "refinery:industrial": {
+      "industrial": [
+        "refinery"
       ]
     },
     "house:residential": {
