@@ -21,15 +21,19 @@ package org.orbisgis.geoclimate.geoindicators
 
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.io.TempDir
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import org.orbisgis.data.H2GIS
+
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 class SpatialUnitsTests {
 
@@ -202,7 +206,6 @@ class SpatialUnitsTests {
     @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")
     @Test
     void regularGridTestH2GIS() {
-
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
         def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 1, 1)
@@ -224,5 +227,157 @@ class SpatialUnitsTests {
         assert postGIS."$outputTable"
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 100 == countRows.numberOfRows
+    }
+
+    @Test
+    void sprawlAreasTest1() {
+        //Data for test
+        h2GIS.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
+        --Center cell urban
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 6; 
+        """.toString())
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid","id_grid",1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
+        assertEquals(5, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
+    }
+
+    @Test
+    void sprawlAreasTest2() {
+        //Data for test
+        h2GIS.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
+        """.toString())
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid","id_grid",1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
+        assertTrue(h2GIS.firstRow("select st_union(st_accum(the_geom)) as the_geom from $sprawl_areas".toString()).the_geom.isEmpty())
+    }
+
+    @Test
+    void sprawlAreasTest3() {
+        //Data for test
+        h2GIS.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid,104 AS LCZ_PRIMARY FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);        
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 5; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 5 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 5 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 4;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 6;
+        """.toString())
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid","id_grid",1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
+        assertEquals(9, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
+    }
+
+    @Test
+    void sprawlAreasTest4() {
+        //Data for test
+        h2GIS.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);       
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 5; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 4 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 5 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 5 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 4;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 6;
+        
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 9 AND id_col = 9; 
+        UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 1 AND id_col = 1; 
+        """.toString())
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid","id_grid",1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        h2GIS.save(sprawl_areas, "/tmp/sprawl_areas.geojson", true)
+        h2GIS.save(grid_scales, "/tmp/grid_scales.geojson", true)
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
+        assertEquals(9, h2GIS.firstRow("select st_area(st_accum(the_geom)) as area from $sprawl_areas".toString()).area, 0.0001)
+    }
+
+    @Test
+    void inverseGeometriesTest1() {
+        //Data for test
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS polygons;
+        CREATE TABLE polygons AS SELECT  'POLYGON ((160 290, 260 290, 260 190, 160 190, 160 290))'::GEOMETRY as the_geom;  
+        """.toString())
+        String inverse = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS, "polygons")
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from $inverse".toString()).count)
+        assertTrue(h2GIS.firstRow("select st_accum(the_geom) as the_geom from $inverse".toString()).the_geom.isEmpty())
+    }
+
+    @Test
+    void inverseGeometriesTest2() {
+        def wktReader = new WKTReader()
+        Geometry expectedGeom =  wktReader.read("POLYGON ((160 190, 260 190, 260 290, 320 290, 320 150, 240 150, 240 80, 160 80, 160 190))")
+        //Data for test
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS polygons;
+        CREATE TABLE polygons AS SELECT  'MULTIPOLYGON (((160 290, 260 290, 260 190, 160 190, 160 290)), 
+        ((240 150, 320 150, 320 80, 240 80, 240 150)))'::GEOMETRY as the_geom;  
+        """.toString())
+        String inverse = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS, "polygons")
+        h2GIS.save(inverse, "/tmp/inverse.geojson", true)
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from $inverse".toString()).count)
+        assertTrue(expectedGeom.equals(h2GIS.firstRow("select the_geom  from $inverse".toString()).the_geom))
+    }
+
+    @Test
+    void inverseGeometriesTest3() {
+        def wktReader = new WKTReader()
+        Geometry expectedGeom =  wktReader.read("MULTIPOLYGON (((160 190, 260 190, 260 290, 320 290, 320 150, 240 150, 240 80, 160 80, 160 190)), ((230 265, 230 230, 189 230, 189 265, 230 265)))")
+        //Data for test
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS polygons;
+        CREATE TABLE polygons AS SELECT  'MULTIPOLYGON (((160 290, 260 290, 260 190, 160 190, 160 290),  
+        (189 265, 230 265, 230 230, 189 230, 189 265)), ((240 150, 320 150, 320 80, 240 80, 240 150)))'::GEOMETRY as the_geom;  
+        """.toString())
+        String inverse = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS, "polygons")
+        assertEquals(2, h2GIS.firstRow("select count(*) as count from $inverse".toString()).count)
+        assertTrue(expectedGeom.equals(h2GIS.firstRow("select st_accum(the_geom) as the_geom  from $inverse".toString()).the_geom))
+    }
+
+    @Test
+    @Disabled
+    void sprawlAreasTestIntegration() {
+        //Data for test
+        String path = "/home/ebocher/Autres/data/geoclimate/uhi_lcz/Angers/"
+        String data  = h2GIS.load("${path}grid_indicators.geojson")
+        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,data,"id_grid", 1)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 100)
+        h2GIS.save(sprawl_areas, "/tmp/sprawl_areas_indic.geojson", true)
+        h2GIS.save(grid_scales, "/tmp/grid_indicators.geojson", true)
+        String distances = Geoindicators.GridIndicators.gridDistances(h2GIS, sprawl_areas, data, "id_grid")
+        h2GIS.save(distances, "/tmp/distances.geojson", true)
+
+        //Method to compute the cool areas distances
+        String cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(h2GIS, grid_scales)
+        h2GIS.save(cool_areas, "/tmp/cool_areas.geojson", true)
+        String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS,cool_areas)
+        h2GIS.save(inverse_cool_areas, "/tmp/inverse_cool_areas.geojson", true)
+        distances = Geoindicators.GridIndicators.gridDistances(h2GIS, inverse_cool_areas, data, "id_grid")
+        h2GIS.save(distances, "/tmp/cool_inverse_distances.geojson", true)
     }
 }

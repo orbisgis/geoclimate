@@ -62,7 +62,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  */
 String createTSU(JdbcDataSource datasource, String zone,
                  double area = 1f, String road, String rail, String vegetation,
-                 String water, String sea_land_mask,String urban_areas,
+                 String water, String sea_land_mask, String urban_areas,
                  double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) {
     def BASE_NAME = "rsu"
 
@@ -214,7 +214,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         }
         if (vegetation && datasource.hasTable(vegetation)) {
             debug "Preparing vegetation..."
-            if(datasource.getColumnNames(vegetation)) {
+            if (datasource.getColumnNames(vegetation)) {
                 vegetation_tmp = postfix "vegetation_tmp"
                 def vegetation_graph = postfix "vegetation_graph"
                 def subGraphTableNodes = postfix vegetation_graph, "NODE_CC"
@@ -270,7 +270,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         }
 
         if (water && datasource.hasTable(water)) {
-            if(datasource.getColumnNames(water).size()>0) {
+            if (datasource.getColumnNames(water).size() > 0) {
                 //Extract water
                 debug "Preparing hydrographic..."
                 hydrographic_tmp = postfix "hydrographic_tmp"
@@ -318,8 +318,8 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
         }
 
         if (road && datasource.hasTable(road)) {
-                debug "Preparing road..."
-            if(datasource.getColumnNames(road).size()>0) {
+            debug "Preparing road..."
+            if (datasource.getColumnNames(road).size() > 0) {
                 queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing in ('bridge', 'crossing')) " +
                         "and type not in ('track','service', 'path', 'cycleway', 'steps'))"]
             }
@@ -327,8 +327,8 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
         if (rail && datasource.hasTable(rail)) {
             debug "Preparing rail..."
-            if(datasource.getColumnNames(rail).size()>0){
-            queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
+            if (datasource.getColumnNames(rail).size() > 0) {
+                queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
             }
         }
 
@@ -605,4 +605,125 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX, d
     }
     debug "The table $outputTableName has been created"
     return outputTableName
+}
+
+
+/**
+ * This method allows to compute a sprawl areas layer from a regular grid that
+ * contains the fraction area of each LCZ type for each cell.
+ *
+ * A sprawl geometry represents a continous areas of urban LCZs (1 to 10 plus 105)
+ * It is important to note that pixels that do not have at least 1 urban neighbor are not kept.
+ * @param datasource connexion to the database
+ * @param grid_indicators a grid that contains the LCZ fractions
+ * @param distance value to erode (delete) small sprawl areas
+ * @author Erwan Bocher (CNRS)
+ */
+String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, float distance = 100) {
+    //We must compute the grid
+    if (!grid_indicators) {
+        error("No grid_indicators table to compute the sprawl areas layer")
+        return
+    }
+    if (distance < 0) {
+        error("Please set a distance greater or equal than 0")
+        return
+    }
+    if (datasource.getRowCount(grid_indicators) == 0) {
+        error("No grid cells to compute the sprawl areas layer")
+        return
+    }
+    def gridCols = datasource.getColumnNames(grid_indicators)
+    def lcz_columns_urban = ["LCZ_PRIMARY", "LCZ_WARM"]
+    def lcz_columns = gridCols.intersect(lcz_columns_urban)
+    if (lcz_columns.size()>0) {
+        def outputTableName = postfix("sprawl_areas")
+        if (distance == 0) {
+            datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+        create table $outputTableName as 
+        select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
+        select st_union(st_accum(the_geom)) as the_geom from
+        $grid_indicators where lcz_warm>=2 
+        and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))')""".toString())
+            return outputTableName
+        } else {
+            def tmp_sprawl = postfix("sprawl_tmp")
+            datasource.execute("""
+        DROP TABLE IF EXISTS  $tmp_sprawl, $outputTableName;
+         create table $tmp_sprawl as 
+        select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
+        select st_union(st_accum(the_geom)) as the_geom from
+        $grid_indicators where lcz_warm>=2 
+        and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
+        where st_isempty(st_buffer(the_geom, -100)) =false""".toString())
+        datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
+         the_geom
+        FROM
+        ST_EXPLODE('(
+        SELECT 
+        st_removeholes(st_buffer(st_union(st_accum(st_buffer(st_removeholes(the_geom),$distance, ''quad_segs=2 endcap=flat
+                     join=mitre mitre_limit=2''))),
+                     -$distance, ''quad_segs=2 endcap=flat join=mitre mitre_limit=2'')) as the_geom  
+         FROM ST_EXPLODE(''$tmp_sprawl'') )') ;
+        DROP TABLE IF EXISTS $tmp_sprawl;
+        """.toString())
+            return outputTableName
+        }
+    }
+    error("No LCZ_PRIMARY column to compute the sprawl areas layer")
+    return
+}
+
+/**
+ * This method is used to compute the difference between an input layer of polygons and the bounding box
+ * of the input layer.
+ * @param input_polygons a layer that contains polygons
+ * @author Erwan Bocher (CNRS)
+ */
+String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) {
+    def outputTableName = postfix("inverse_geometries")
+    def tmp_extent = postfix("tmp_extent")
+    datasource.execute("""DROP TABLE IF EXISTS $tmp_extent, $outputTableName;
+    CREATE TABLE $tmp_extent as SELECT ST_EXTENT(THE_GEOM) as the_geom FROM $input_polygons;
+    CREATE TABLE $outputTableName as
+    SELECT CAST((row_number() over()) as Integer) as id, the_geom
+    FROM
+    ST_EXPLODE('(
+        select st_difference(a.the_geom, st_accum(b.the_geom)) as the_geom from $tmp_extent as a, $input_polygons
+        as b where st_dimension(b.the_geom)=2)');        
+    DROP TABLE IF EXISTS $tmp_extent;
+    """.toString())
+    return outputTableName
+}
+
+
+
+/**
+ * This methods allows to extract the cool area geometries inside polygons
+ * A cool area is continous geometry defined by vegetation and water fractions.
+ *
+ * @author Erwan Bocher (CNRS)
+ */
+String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,float distance = 100) {
+    if (!grid_indicators) {
+        error("No grid_indicators table to extract the cool areas layer")
+        return
+    }
+    def gridCols = datasource.getColumnNames(grid_indicators)
+    def lcz_columns_urban = ["LCZ_PRIMARY"]
+    def lcz_columns = gridCols.intersect(lcz_columns_urban)
+
+    if (lcz_columns.size()>0) {
+        def outputTableName = postfix("cool_areas")
+        datasource.execute("""
+        DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id,  the_geom FROM ST_EXPLODE('(
+        SELECT ST_UNION(ST_ACCUM(a.THE_GEOM)) AS THE_GEOM FROM $grid_indicators as a
+        where 
+         a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107))') ${distance>0?" where st_isempty(st_buffer(the_geom, -$distance)) =false":""};
+        """.toString())
+        return outputTableName
+    }
+    error("No LCZ_PRIMARY column to extract the cool areas")
+    return
 }
