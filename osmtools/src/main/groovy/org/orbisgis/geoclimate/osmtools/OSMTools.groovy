@@ -23,8 +23,6 @@ package org.orbisgis.geoclimate.osmtools
 import org.orbisgis.geoclimate.osmtools.utils.TransformUtils
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
 import org.orbisgis.geoclimate.utils.AbstractScript
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * Main script to access to all processes used to extract, transform and save OSM data as GIS layers.

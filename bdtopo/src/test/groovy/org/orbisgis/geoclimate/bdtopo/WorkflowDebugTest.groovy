@@ -137,7 +137,7 @@ class WorkflowDebugTest {
     @Test
     void testIntegrationFolderInput() {
         def input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo2/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D035_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D035-ED182"
-        def locations = ["Gimont"]
+        def locations = [ "Redon"]
         String directory = "/tmp/bdtopo2"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -158,20 +158,27 @@ class WorkflowDebugTest {
                 "parameters"  :
                         ["distance"       : 0,
                          rsu_indicators   : [
-                                 "indicatorUse": ["LCZ"]//, "UTRF"]
+                                 "indicatorUse": ["LCZ",  "UTRF",  "URBAN_TYPOLOGY"]
                          ],
-                         /*"grid_indicators": [
+                         "grid_indicators": [
                                  "x_size"    : 1000,
                                  "y_size"    : 1000,
-                                 "indicators": ["LCZ_FRACTION"]
-                         ]*/
+                                 "indicators" :["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
+                                 "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
+                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
+                                 "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
+                                 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
+                                 "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
+                                 "LCZ_PRIMARY"]
+                         ]
                         ]
         ]
         //BDTopo.v2(bdTopoParameters)
 
-        input_data = "/home/ebocher/Téléchargements/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D032_2023-09-15/BDTOPO"
+        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-0_TOUSTHEMES_SHP_LAMB93_D035_2022-09-15/BDTOPO"
 
-        directory = "/tmp/bdtopo3/result"
+        directory = "/tmp/bdtopo3"
         dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
