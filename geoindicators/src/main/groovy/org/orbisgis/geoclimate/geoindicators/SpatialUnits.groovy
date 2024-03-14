@@ -644,7 +644,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
         select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
         select st_union(st_accum(the_geom)) as the_geom from
         $grid_indicators where lcz_warm>=2 
-        and LCZ_PRIMARY NOT IN (101, 102,104,103,107, 106))')""".toString())
+        and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))')""".toString())
             return outputTableName
         } else {
             def tmp_sprawl = postfix("sprawl_tmp")
@@ -654,7 +654,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
         select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
         select st_union(st_accum(the_geom)) as the_geom from
         $grid_indicators where lcz_warm>=2 
-        and LCZ_PRIMARY NOT IN (101, 102,104,103,107, 106))') 
+        and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
         where st_isempty(st_buffer(the_geom, -100)) =false""".toString())
         datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
          the_geom
@@ -694,4 +694,36 @@ String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) {
     DROP TABLE IF EXISTS $tmp_extent;
     """.toString())
     return outputTableName
+}
+
+
+
+/**
+ * This methods allows to extract the cool area geometries inside polygons
+ * A cool area is continous geometry defined by vegetation and water fractions.
+ *
+ * @author Erwan Bocher (CNRS)
+ */
+String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,float distance = 100) {
+    if (!grid_indicators) {
+        error("No grid_indicators table to extract the cool areas layer")
+        return
+    }
+    def gridCols = datasource.getColumnNames(grid_indicators)
+    def lcz_columns_urban = ["LCZ_PRIMARY"]
+    def lcz_columns = gridCols.intersect(lcz_columns_urban)
+
+    if (lcz_columns.size()>0) {
+        def outputTableName = postfix("cool_areas")
+        datasource.execute("""
+        DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id,  the_geom FROM ST_EXPLODE('(
+        SELECT ST_UNION(ST_ACCUM(a.THE_GEOM)) AS THE_GEOM FROM $grid_indicators as a
+        where 
+         a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107))') ${distance>0?" where st_isempty(st_buffer(the_geom, -$distance)) =false":""};
+        """.toString())
+        return outputTableName
+    }
+    error("No LCZ_PRIMARY column to extract the cool areas")
+    return
 }

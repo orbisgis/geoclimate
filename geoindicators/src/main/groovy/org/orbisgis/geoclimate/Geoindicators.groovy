@@ -39,7 +39,6 @@ abstract class Geoindicators extends AbstractScript {
     public static PopulationIndicators = new PopulationIndicators()
     public static GridIndicators = new GridIndicators()
     public static NoiseIndicators = new NoiseIndicators()
-    public static LCZIndicators = new LCZIndicators()
     public static WorkflowUtilities = new WorkflowUtilities()
 
     //Cache the XStream models

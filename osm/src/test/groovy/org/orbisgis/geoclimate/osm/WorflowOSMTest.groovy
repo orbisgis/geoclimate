@@ -649,9 +649,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Redon"
-       //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData("Redon")
-       // location = nominatim.bbox
+        def location = "Dijon"
+        def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
+        def grid_size = 100
+        location = nominatim.bbox
         //location=[47.4, -4.8, 47.6, -4.6]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -676,9 +677,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
                                  "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
 
-                         ]/*,"grid_indicators": [
-                                "x_size": 200,
-                                "y_size": 200,
+                         ],"grid_indicators": [
+                                "x_size": grid_size,
+                                "y_size": grid_size,
                                 //"rowCol": true,
                                 "indicators":  ["BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
                                                 //"BUILDING_TYPE_FRACTION",
@@ -688,14 +689,26 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 //"BUILDING_HEIGHT_WEIGHTED", //"BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
                                                 "ASPECT_RATIO",//"SVF",
                                                 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
-                        ],    "worldpop_indicators": true,
+                        ],   /* "worldpop_indicators": true,
                          "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
                                  "ground_acoustic": true
                          ]*/
                         ]
         ]
-        OSM.workflow(osm_parmeters)
+        Map results = OSM.workflow(osm_parmeters)
+        if(results) {
+            H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_test_integration;AUTO_SERVER=TRUE")
+            def tableNames = results.values()
+            def gridTable = tableNames.grid_indicators[0]
+            String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis, gridTable,grid_size, grid_size*grid_size)
+            def folder_save =location in Collection ? location.join("_") : location
+            def path = directory + File.separator + "osm_$folder_save" +  File.separator
+            path = "/tmp/"
+            h2gis.save(sprawl_areas, path + "sprawl_areas.fgb", true)
+
+            h2gis.save(tableNames.rsu_lcz[0], path + "rsu_lcz.fgb", true)
+        }
     }
 
     @Disabled

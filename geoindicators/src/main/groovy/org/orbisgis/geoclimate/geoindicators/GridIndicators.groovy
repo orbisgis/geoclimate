@@ -97,6 +97,7 @@ String gridPopulation(JdbcDataSource datasource, String gridTable, String popula
     return outputTableName
 }
 
+
 /**
  * Create a multi-scale grid and aggregate the LCZ_PRIMARY indicators for each level of the grid.
  * For each level, the adjacent cells are preserved as well as the number of urban and natural cells.
@@ -105,12 +106,13 @@ String gridPopulation(JdbcDataSource datasource, String gridTable, String popula
  *
  * @param datasource connection to the database
  * @param grid_indicators a grid that contains for each cell the LCZ_PRIMARY
+ * @param  id_grid grid cell column identifier
  * @param nb_levels number of aggregate levels. Default is 1
  *
  * @return a the initial grid with all aggregated values by levels and the indexes (row, col) for each levels
  * @author Erwan Bocher (CNRS)
  */
-String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int nb_levels = 1) {
+String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, String id_grid, int nb_levels = 1) {
     if (!grid_indicators) {
         error("No grid_indicators table to aggregate the LCZ values")
         return
@@ -119,6 +121,14 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
         error("The number of levels to aggregate the LCZ values must be between 1 and 10")
         return
     }
+
+    def gridColumns = datasource.getColumnNames(grid_indicators)
+
+    if(gridColumns.intersect(["LCZ_PRIMARY", "ID_ROW", "ID_COLUMN", id_grid]).size()==0){
+        error("The grid indicators table must contain the columns LCZ_PRIMARY, ID_ROW, $id_grid")
+        return
+    }
+
     datasource.execute("""create index on $grid_indicators(id_row,id_col)""".toString())
     ///First build the index levels for each cell of the input grid
     def grid_scaling_indices = postfix("grid_scaling_indices")
@@ -176,65 +186,65 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
         def lcz_count_lod = postfix("lcz_count_lod")
         tablesToDrop << lcz_count_lod
         datasource.execute(""" 
-    drop table if exists $lcz_count_lod;
-    CREATE TABLE $lcz_count_lod as
-    select  COUNT(*) FILTER (WHERE LCZ_PRIMARY IS NOT NULL) AS COUNT, LCZ_PRIMARY,
-    ID_ROW_LOD_${i}, ID_COL_LOD_${i},
-    CASE WHEN LCZ_PRIMARY=105 THEN 11
-    WHEN LCZ_PRIMARY=107 THEN 12
-    WHEN LCZ_PRIMARY=106 THEN 13
-    WHEN LCZ_PRIMARY= 101 THEN 14
-    WHEN LCZ_PRIMARY =102 THEN 15
-    WHEN LCZ_PRIMARY IN (103,104) THEN 16
-    ELSE LCZ_PRIMARY END AS weight_lcz,
-    from $grid_scaling_indices 
-    WHERE LCZ_PRIMARY IS NOT NULL 
-    group by ID_ROW_LOD_${i}, ID_COL_LOD_${i}, LCZ_PRIMARY;""".toString())
+        DROP TABLE IF EXISTS $lcz_count_lod;
+        CREATE TABLE $lcz_count_lod as
+        SELECT  COUNT(*) FILTER (WHERE LCZ_PRIMARY IS NOT NULL) AS COUNT, LCZ_PRIMARY,
+        ID_ROW_LOD_${i}, ID_COL_LOD_${i},
+        CASE WHEN LCZ_PRIMARY=105 THEN 11
+        WHEN LCZ_PRIMARY=107 THEN 12
+        WHEN LCZ_PRIMARY=106 THEN 13
+        WHEN LCZ_PRIMARY= 101 THEN 14
+        WHEN LCZ_PRIMARY =102 THEN 15
+        WHEN LCZ_PRIMARY IN (103,104) THEN 16
+        ELSE LCZ_PRIMARY END AS weight_lcz,
+        FROM $grid_scaling_indices 
+        WHERE LCZ_PRIMARY IS NOT NULL 
+        GROUP BY ID_ROW_LOD_${i}, ID_COL_LOD_${i}, LCZ_PRIMARY;""".toString())
 
         //Select the LCZ values according the maximum number of cells and the weight
         //Note that we compute the number of cells for urban and cool LCZ
         def lcz_count_lod_mode = postfix("lcz_count_lod_mode")
         tablesToDrop << lcz_count_lod_mode
         datasource.execute(""" 
-    create index on $lcz_count_lod(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
-    DROP TABLE IF EXISTS  $lcz_count_lod_mode;    
-    CREATE TABLE $lcz_count_lod_mode as
-    select distinct on (ID_ROW_LOD_${i}, ID_COL_LOD_${i}) *,
-    (select sum(count) from  $lcz_count_lod where   
-    LCZ_PRIMARY in (1,2,3,4,5,6,7,8,9,10,105) 
-    and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_WARM_LOD_${i},
-    (select sum(count) from  $lcz_count_lod where  
-    LCZ_PRIMARY in (101,102,103,104,106,107) 
-    and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_COOL_LOD_${i},
-    from $lcz_count_lod as a
-    order by count desc, ID_ROW_LOD_${i}, ID_COL_LOD_${i}, weight_lcz;""".toString())
+        CREATE INDEX ON $lcz_count_lod(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
+        DROP TABLE IF EXISTS  $lcz_count_lod_mode;    
+        CREATE TABLE $lcz_count_lod_mode as
+        select distinct on (ID_ROW_LOD_${i}, ID_COL_LOD_${i}) *,
+        (select sum(count) from  $lcz_count_lod where   
+        LCZ_PRIMARY in (1,2,3,4,5,6,7,8,9,10,105) 
+        and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_WARM_LOD_${i},
+        (select sum(count) from  $lcz_count_lod where  
+        LCZ_PRIMARY in (101,102,103,104,106,107) 
+        and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_COOL_LOD_${i},
+        from $lcz_count_lod as a
+        order by count desc, ID_ROW_LOD_${i}, ID_COL_LOD_${i}, weight_lcz;""".toString())
 
         //Find the 8 adjacent cells for the current level
         def grid_lod_level_final = postfix("grid_lod_level_final")
         tablesToDrop << grid_lod_level_final
         datasource.execute("""
-    CREATE INDEX on $lcz_count_lod_mode(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
-    DROP TABLE IF EXISTS $grid_lod_level_final;
-    CREATE TABLE $grid_lod_level_final as select * EXCEPT(LCZ_PRIMARY, COUNT, weight_lcz), LCZ_PRIMARY AS LCZ_PRIMARY_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_N_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_NE_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_E_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_SE_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_S_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_SW_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_W_LOD_${i},
-    (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_NW_LOD_${i},
- 
-    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_WARM_N_LOD_${i},
-    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARN_NE_LOD_${i},
-    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARN_E_LOD_${i},
-    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARN_SE_LOD_${i},
-    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_WARN_S_LOD_${i},
-    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARN_SW_LOD_${i},
-    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARN_W_LOD_${i},
-    (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARN_NW_LOD_${i},
- 
-     FROM  $lcz_count_lod_mode as a;  """.toString())
+        CREATE INDEX on $lcz_count_lod_mode(ID_ROW_LOD_${i}, ID_COL_LOD_${i});
+        DROP TABLE IF EXISTS $grid_lod_level_final;
+        CREATE TABLE $grid_lod_level_final as select * EXCEPT(LCZ_PRIMARY, COUNT, weight_lcz), LCZ_PRIMARY AS LCZ_PRIMARY_LOD_${i},
+        (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_N_LOD_${i},
+        (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_NE_LOD_${i},
+        (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_E_LOD_${i},
+        (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_PRIMARY_SE_LOD_${i},
+        (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_PRIMARY_S_LOD_${i},
+        (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_SW_LOD_${i},
+        (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_W_LOD_${i},
+        (SELECT LCZ_PRIMARY FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_PRIMARY_NW_LOD_${i},
+     
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_WARM_N_LOD_${i},
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARM_NE_LOD_${i},
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARM_E_LOD_${i},
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}+1) AS LCZ_WARM_SE_LOD_${i},
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_WARM_S_LOD_${i},
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARM_SW_LOD_${i},
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARM_W_LOD_${i},
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARM_NW_LOD_${i},
+     
+         FROM  $lcz_count_lod_mode as a;  """.toString())
 
         tableLevelToJoin << grid_lod_level_final
 
@@ -248,25 +258,11 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, int 
         select a.* EXCEPT(ID_ROW_LOD_${i}, ID_COL_LOD_${i}),  
         b.* from $tableLevelToJoin as a,  $grid_lod_level_final as b 
         where a.ID_ROW_LOD_${i} = b.ID_ROW_LOD_${i} and a.ID_COL_LOD_${i}= b.ID_COL_LOD_${i}
-        group by a.ID_ROW_LOD_${i}, a.ID_COL_LOD_${i}, a.the_geom;
+        group by a.ID_ROW_LOD_${i}, a.ID_COL_LOD_${i} , a.id_grid;
         """.toString())
         tableLevelToJoin = grid_level_join
     }
     datasource.dropTable(tablesToDrop)
-    /*def output = postfix("lcz_tiles")
-    datasource.execute("""
-    DROP TABLE IF EXISTS $output;    
-    CREATE TABLE $output as
-    select *, 
-    SUM(CASE WHEN LCZ_PRIMARY_N in (1,2,3,4,5,6,7,8,9,10,105)
-    or LCZ_PRIMARY_NE in (1,2,3,4,5,6,7,8,9,10,105)
-    or LCZ_PRIMARY_E in (1,2,3,4,5,6,7,8,9,10,105)
-    or LCZ_PRIMARY_SE in (1,2,3,4,5,6,7,8,9,10,105)
-    or LCZ_PRIMARY_S in (1,2,3,4,5,6,7,8,9,10,105)
-    or LCZ_PRIMARY_SW in (1,2,3,4,5,6,7,8,9,10,105)
-    or LCZ_PRIMARY_W in (1,2,3,4,5,6,7,8,9,10,105)
-    or LCZ_PRIMARY_NW in (1,2,3,4,5,6,7,8,9,10,105) THEN 1 else 0 end) AS LCZ_WARM
-    FROM $tableLevelToJoin group by the_geom """.toString())*/
     return tableLevelToJoin
 
 }
