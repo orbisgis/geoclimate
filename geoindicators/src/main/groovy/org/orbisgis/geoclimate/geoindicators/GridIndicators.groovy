@@ -101,12 +101,12 @@ String gridPopulation(JdbcDataSource datasource, String gridTable, String popula
 /**
  * Create a multi-scale grid and aggregate the LCZ_PRIMARY indicators for each level of the grid.
  * For each level, the adjacent cells are preserved as well as the number of urban and natural cells.
- * To distinguish between LCZ cells with the same count per level, a weight is used corresponding
- * to their potential impact on heat
+ * To distinguish between LCZ cells with the same count per level, a weight is used to select only one LCZ type
+ * corresponding to their potential impact on heat
  *
  * @param datasource connection to the database
  * @param grid_indicators a grid that contains for each cell the LCZ_PRIMARY
- * @param  id_grid grid cell column identifier
+ * @param id_grid grid cell column identifier
  * @param nb_levels number of aggregate levels. Default is 1
  *
  * @return a the initial grid with all aggregated values by levels and the indexes (row, col) for each levels
