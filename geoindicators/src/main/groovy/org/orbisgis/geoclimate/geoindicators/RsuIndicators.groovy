@@ -1003,8 +1003,8 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                     caseQueryDens = "SUM(ST_LENGTH(the_geom))/rsu_area AS linear_road_density "
                     for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
                         caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d, length, 0)) AS " +
-                                "road_direction_distribution_d${d - angleRangeSize}_$d,"
-                        nameDistrib.add(getRoadDirIndic(d, angleRangeSize, null as Integer))
+                                "${getRoadDirIndic(d, angleRangeSize, null)},"
+                        nameDistrib.add(getRoadDirIndic(d, angleRangeSize, null))
                     }
                 }
                 // If only certain levels are considered independently
@@ -1017,9 +1017,8 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                         for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
                             caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d AND " +
                                     "zindex = $lev, length, 0)) AS " +
-                                    "road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
-                                    "_d${d - angleRangeSize}_$d,"
-                            nameDistrib.add(getRoadDirIndic(d, angleRangeSize, lev as Integer))
+                                    "${getRoadDirIndic(d, angleRangeSize, lev)},"
+                            nameDistrib.add(getRoadDirIndic(d, angleRangeSize, lev))
                         }
                     }
                 }
@@ -1095,7 +1094,7 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
     }
 }
 
-String getRoadDirIndic(int d, int angleRangeSize, int lev){
+String getRoadDirIndic(int d, Integer angleRangeSize, Integer lev){
     String name
     if(lev == null){
         name = "road_direction_distribution_d${d - angleRangeSize}_$d"
