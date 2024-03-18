@@ -994,7 +994,7 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                     for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
                         caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d, length, 0)) AS " +
                                 "road_direction_distribution_d${d - angleRangeSize}_$d,"
-                        nameDistrib.add("road_direction_distribution_d${d - angleRangeSize}_$d")
+                        nameDistrib.add(getRoadDirIndic(d, angleRangeSize, null as Integer))
                     }
                 }
                 // If only certain levels are considered independently
@@ -1009,8 +1009,7 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                                     "zindex = $lev, length, 0)) AS " +
                                     "road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
                                     "_d${d - angleRangeSize}_$d,"
-                            nameDistrib.add("road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
-                                    "_d${d - angleRangeSize}_$d")
+                            nameDistrib.add(getRoadDirIndic(d, angleRangeSize, lev as Integer))
                         }
                     }
                 }
@@ -1084,6 +1083,19 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
     } else {
         error "Cannot compute the indicator. The range size (angleRangeSize) should be a divisor of 180°"
     }
+}
+
+String getRoadDirIndic(int d, int angleRangeSize, int lev){
+    String name
+    if(!lev){
+        name = "road_direction_distribution_d${d - angleRangeSize}_$d"
+    }
+    else{
+        name = "road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
+                        "_d${d - angleRangeSize}_$d"
+    }
+
+    return name
 }
 
 /**

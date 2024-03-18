@@ -368,6 +368,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                      inputFields                        : ["id_build", "the_geom"],
                                      levelForRoads                      : [0],
                                      angleRangeSizeBuDirection          : 30,
+                                     angleRangeSizeRoDirection          : 30,
                                      svfSimplified                      : true,
                                      indicatorUse                       : ["LCZ", "UTRF", "TEB"],
                                      surfSuperpositions                 : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
@@ -681,7 +682,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
             roadOperations = ["road_direction_distribution", "linear_road_density"]
         }
         def linearRoadOperations = Geoindicators.RsuIndicators.linearRoadOperations(datasource, rsu,
-                road, roadOperations, 30, [0], temporaryPrefName)
+                road, roadOperations, parameters.angleRangeSizeRoDirection, [0], temporaryPrefName)
         if (!linearRoadOperations) {
             info "Cannot compute the linear road density and road direction distribution"
             return
@@ -1202,6 +1203,7 @@ Map getParameters() {
             "inputFields"                   : ["id_build", "the_geom"],
             "levelForRoads"                 : [0],
             "angleRangeSizeBuDirection"     : 30,
+            "angleRangeSizeRoDirection"     : 30,
             "surfSuperpositions"            : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
             "surfPriorities"                : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
             "buildingAreaTypeAndCompositionLcz"  : ["light_industry_lcz": ["industrial", "factory", "warehouse", "port"],

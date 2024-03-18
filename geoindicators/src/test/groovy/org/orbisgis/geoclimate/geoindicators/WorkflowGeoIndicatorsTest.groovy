@@ -39,10 +39,18 @@ class WorkflowGeoIndicatorsTest {
 
     public static Logger logger = LoggerFactory.getLogger(WorkflowGeoIndicatorsTest.class)
 
+    // Default geoindicator parameters
+    public static parameters = Geoindicators.WorkflowGeoIndicators.getParameters()
+
     // Indicator list (at RSU scale) for each type of use
+    public static List listRoadDir = []
+    for (int d = parameters.angleRangeSizeRoDirection; d <= 180; d += angleRangeSize) {
+        listRoadDir.add(Geoindicators.RsuIndicators.getRoadDirIndic(parameters.angleRangeSizeRoDirection, d, 0))
+    }
     public static listNames = [
-            "TEB" : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY",
-                     "ROAD_DIRECTION_DISTRIBUTION_H0_D0_30", "ROAD_DIRECTION_DISTRIBUTION_H0_D60_90",
+            "TEB" : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY"] +
+                    listRoadDir +
+                    ["ROAD_DIRECTION_DISTRIBUTION_H0_D0_30", "ROAD_DIRECTION_DISTRIBUTION_H0_D60_90",
                      "ROAD_DIRECTION_DISTRIBUTION_H0_D90_120", "ROAD_DIRECTION_DISTRIBUTION_H0_D120_150",
                      "ROAD_DIRECTION_DISTRIBUTION_H0_D150_180", "ROAD_DIRECTION_DISTRIBUTION_H0_D30_60",
                      "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30",
