@@ -42,46 +42,65 @@ class WorkflowGeoIndicatorsTest {
     // Default geoindicator parameters
     public static parameters = Geoindicators.WorkflowGeoIndicators.getParameters()
 
-    // Indicator list (at RSU scale) for each type of use
+    // Indicator list (at RSU scale) for each road direction
     public static List listRoadDir = []
-    for (int d = parameters.angleRangeSizeRoDirection; d <= 180; d += angleRangeSize) {
-        listRoadDir.add(Geoindicators.RsuIndicators.getRoadDirIndic(parameters.angleRangeSizeRoDirection, d, 0))
+    static {
+                for (int d = parameters.angleRangeSizeRoDirection; d <= 180; d += parameters.angleRangeSizeRoDirection) {
+                    listRoadDir.add(Geoindicators.RsuIndicators.getRoadDirIndic(parameters.angleRangeSizeRoDirection, d, 0))
+                }
+            }
+    // Indicator list (at RSU scale) for each facade direction and height (projected facade distrib)
+    // and also for height only (vert and non vert roof density)
+    public static List listFacadeDistrib = []
+    public static List listHeightDistrib = []
+
+    static {
+        int rangeDeg = 360 / parameters.angleRangeSizeRoDirection
+        for (i in 0..parameters.facadeDensListLayersBottom.size()) {
+            Integer h_bot = parameters.facadeDensListLayersBottom[i]
+            Integer h_up
+            if (h_bot == parameters.facadeDensListLayersBottom[-1]){
+                h_up = null
+            }
+            else{
+                h_up = parameters.facadeDensListLayersBottom[i+1]
+            }
+            // Create names for vert and non vert roof density
+            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("vert_roof_area", 'h', h_bot, h_up))
+            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("non_vert_roof_area", 'h', h_bot, h_up))
+
+            // Create names for facade density
+            String name_h = Geoindicators.RsuIndicators.getDistribIndicName("projected_facade_area_distribution", 'h', h_bot, h_up)
+            for (Integer d = 0; d < parameters.facadeDensNumberOfDirection / 2; d++){
+                Integer d_bot = d * 360 / parameters.facadeDensNumberOfDirection
+                Integer d_up = d_bot + rangeDeg
+                listFacadeDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName(name_h, 'd', d_bot, d_up))
+            }
+        }
     }
+
+    // Indicator list (at RSU scale) for each type of use
+    public static List listBuildTypTeb = []
+    public static List listBuildTypLcz = []
+    static {
+        for (type in parameters.buildingAreaTypeAndCompositionTeb.keySet()) {
+            listBuildTypTeb.add("AREA_FRACTION_${type}")
+        }
+        for (type in parameters.floorAreaTypeAndCompositionTeb.keySet()) {
+            listBuildTypTeb.add("FLOOR_AREA_FRACTION_${type}")
+        }
+        for (type in parameters.buildingAreaTypeAndCompositionLcz.keySet()) {
+            listBuildTypLcz.add("AREA_FRACTION_${type}")
+        }
+        for (type in parameters.floorAreaTypeAndCompositionLcz.keySet()) {
+            listBuildTypLcz.add("FLOOR_AREA_FRACTION_${type}")
+        }
+    }
+
     public static listNames = [
             "TEB" : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY"] +
-                    listRoadDir +
-                    ["ROAD_DIRECTION_DISTRIBUTION_H0_D0_30", "ROAD_DIRECTION_DISTRIBUTION_H0_D60_90",
-                     "ROAD_DIRECTION_DISTRIBUTION_H0_D90_120", "ROAD_DIRECTION_DISTRIBUTION_H0_D120_150",
-                     "ROAD_DIRECTION_DISTRIBUTION_H0_D150_180", "ROAD_DIRECTION_DISTRIBUTION_H0_D30_60",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D0_30",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D0_30",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D0_30", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D0_30",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D30_60",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D30_60",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D30_60", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D30_60",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D60_90",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D60_90",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D60_90", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D60_90",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D90_120",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D90_120",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D90_120", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D90_120",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D120_150",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D120_150",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D120_150", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D120_150",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H0_10_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H10_20_D150_180",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H20_30_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H30_40_D150_180",
-                     "PROJECTED_FACADE_AREA_DISTRIBUTION_H40_50_D150_180", "PROJECTED_FACADE_AREA_DISTRIBUTION_H50_D150_180",
-                     "NON_VERT_ROOF_AREA_H0_10", "NON_VERT_ROOF_AREA_H10_20", "NON_VERT_ROOF_AREA_H20_30",
-                     "NON_VERT_ROOF_AREA_H30_40", "NON_VERT_ROOF_AREA_H40_50", "NON_VERT_ROOF_AREA_H50",
-                     "VERT_ROOF_AREA_H0_10", "VERT_ROOF_AREA_H10_20", "VERT_ROOF_AREA_H20_30", "VERT_ROOF_AREA_H30_40",
-                     "VERT_ROOF_AREA_H40_50", "VERT_ROOF_AREA_H50", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH",
-                     "AREA_FRACTION_INDIVIDUAL_HOUSING", "AREA_FRACTION_COLLECTIVE_HOUSING",
-                     "AREA_FRACTION_OTHER_RESIDENTIAL", "AREA_FRACTION_COMMERCIAL", "AREA_FRACTION_TERTIARY", "AREA_FRACTION_EDUCATION",
-                     "AREA_FRACTION_LIGHT_INDUSTRIAL", "AREA_FRACTION_HEAVY_INDUSTRIAL", "AREA_FRACTION_NON_HEATED",
-                     "FLOOR_AREA_FRACTION_INDIVIDUAL_HOUSING", "FLOOR_AREA_FRACTION_COLLECTIVE_HOUSING",
-                     "FLOOR_AREA_FRACTION_OTHER_RESIDENTIAL", "FLOOR_AREA_FRACTION_COMMERCIAL", "FLOOR_AREA_FRACTION_TERTIARY",
-                     "FLOOR_AREA_FRACTION_EDUCATION", "FLOOR_AREA_FRACTION_LIGHT_INDUSTRIAL", "FLOOR_AREA_FRACTION_HEAVY_INDUSTRIAL",
-                     "FLOOR_AREA_FRACTION_NON_HEATED"],
+                    listRoadDir + listFacadeDistrib + listHeightDistrib + listBuildTypTeb +
+                    ["EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
             "UTRF": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                      "VEGETATION_FRACTION_UTRF", "LOW_VEGETATION_FRACTION_UTRF", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_UTRF",
                      "HIGH_VEGETATION_PERVIOUS_FRACTION_UTRF", "ROAD_FRACTION_UTRF", "IMPERVIOUS_FRACTION_UTRF",
@@ -90,17 +109,10 @@ class WorkflowGeoIndicatorsTest {
                      "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_LINEAR_ROAD_DENSITY",
                      "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
                      "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
-                     "BUILDING_DIRECTION_EQUALITY", "AREA_FRACTION_INDIVIDUAL_HOUSING", "AREA_FRACTION_COLLECTIVE_HOUSING",
-                     "AREA_FRACTION_OTHER_RESIDENTIAL", "AREA_FRACTION_COMMERCIAL", "AREA_FRACTION_TERTIARY", "AREA_FRACTION_EDUCATION",
-                     "AREA_FRACTION_LIGHT_INDUSTRIAL", "AREA_FRACTION_HEAVY_INDUSTRIAL", "AREA_FRACTION_NON_HEATED",
-                     "FLOOR_AREA_FRACTION_INDIVIDUAL_HOUSING", "FLOOR_AREA_FRACTION_COLLECTIVE_HOUSING",
-                     "FLOOR_AREA_FRACTION_OTHER_RESIDENTIAL", "FLOOR_AREA_FRACTION_COMMERCIAL", "FLOOR_AREA_FRACTION_TERTIARY",
-                     "FLOOR_AREA_FRACTION_EDUCATION", "FLOOR_AREA_FRACTION_LIGHT_INDUSTRIAL", "FLOOR_AREA_FRACTION_HEAVY_INDUSTRIAL",
-                     "FLOOR_AREA_FRACTION_NON_HEATED"],
+                     "BUILDING_DIRECTION_EQUALITY"],
             "LCZ" : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
                      "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
-                     "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ", "AREA_FRACTION_LIGHT_INDUSTRY_LCZ",
-                     "AREA_FRACTION_COMMERCIAL_LCZ", "AREA_FRACTION_HEAVY_INDUSTRY_LCZ", "AREA_FRACTION_RESIDENTIAL_LCZ"]]
+                     "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ"] + listBuildTypLcz]
 
     // Basic columns at RSU scale
     public static listColBasic = ["ID_RSU", "THE_GEOM"]

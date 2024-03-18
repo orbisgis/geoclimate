@@ -596,7 +596,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         }
         finalTablesToJoin.put(rsuTableTypeProportionLcz, columnIdRsu)
     }
-    if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("TEB")) {
+    if (indicatorUse*.toUpperCase().contains("TEB")) {
         def rsuTableTypeProportionTeb = Geoindicators.GenericIndicators.typeProportion(datasource, buildingTable,
                 columnIdRsu, "type", rsu, parameters.buildingAreaTypeAndCompositionTeb,
                 parameters.floorAreaTypeAndCompositionTeb, temporaryPrefName + "_TEB")
