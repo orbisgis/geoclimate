@@ -95,8 +95,9 @@ class InputDataFormattingTest {
         assertTrue(rows.type == ['residential', 'residential'])
 
         rows = h2GIS.rows("select type from ${buiding_imp} where id_build=881 or id_build=484 or id_build=610".toString())
+
         assertEquals(3, rows.size())
-        assertTrue(rows.type == ['light_industry', 'light_industry', 'light_industry'])
+        assertTrue(rows.type == ['industrial', 'industrial', 'industrial'])
 
 
         //Roads
