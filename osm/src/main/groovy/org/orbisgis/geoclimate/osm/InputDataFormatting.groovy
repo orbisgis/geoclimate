@@ -49,7 +49,6 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
     if (!h_lev_min) {
         h_lev_min = 3
     }
-
     def outputTableName = postfix "INPUT_BUILDING"
     debug 'Formating building layer'
     def outputEstimateTableName = "EST_${outputTableName}"

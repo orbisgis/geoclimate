@@ -848,7 +848,7 @@ class TransformTest extends AbstractOSMToolsTest {
                 //Create building layer
                 def tags = ["amenity", "landuse", "railway", "water"]
                 String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
-                ds.save(outputTableName, "/tmp/polygons.geojson", true)
+                ds.save(outputTableName, "/tmp/polygons.fgb", true)
             }
         }
     }
@@ -863,7 +863,7 @@ class TransformTest extends AbstractOSMToolsTest {
         Map r = OSMTools.Loader.fromArea(h2GIS, [48.733493,-3.076869,48.733995,-3.075829])
         println(r)
         def lines = OSMTools.Transform.toPolygons(h2GIS, r.prefix,4326,  [], [])
-        h2GIS.save(lines, "/tmp/building.geojson")
+        h2GIS.save(lines, "/tmp/building.fgb")
     }
 
 

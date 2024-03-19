@@ -1030,7 +1030,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         outputFiles.each {
             if (it == "grid_indicators") {
                 if (outputGrid == "geojson") {
-                    Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+                    Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
                 } else if (outputGrid == "asc") {
                     Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", outputFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
                 }

@@ -91,7 +91,7 @@ class PopulationIndicatorsTests {
                 "building", "rsu", "grid")
 
         results.each { it ->
-            h2GIS.save(it.value, "./target/${it.value}.geojson", true)
+            h2GIS.save(it.value, "./target/${it.value}.fgb", true)
         }
 
         def rows = h2GIS.rows("SELECT id_build, pop from ${results.buildingTable} order by id_build".toString())

@@ -364,7 +364,7 @@ Map workflow(def input) {
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, osm_size_area,
                 overpass_timeout, overpass_maxsize, osm_date)
         if (!osmprocessing) {
-            h2gis_datasource.save(logTableZones,"${file_outputFolder.getAbsolutePath() + File.separator}logzones.geojson", true)
+            h2gis_datasource.save(logTableZones,"${file_outputFolder.getAbsolutePath() + File.separator}logzones.fgb", true)
             return null
         }
         if (delete_h2gis) {

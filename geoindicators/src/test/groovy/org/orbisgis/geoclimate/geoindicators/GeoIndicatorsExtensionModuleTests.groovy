@@ -45,7 +45,7 @@ class GeoIndicatorsExtensionModuleTests {
     @Test
     void saveGeometryToFile() {
         Geometry geom = new GeometryFactory().createPoint(new Coordinate(10, 10))
-        File outputFile = new File(folder, "geometry.geojson")
+        File outputFile = new File(folder, "geometry.fgb")
         geom.save(h2GIS, outputFile.getAbsolutePath())
         h2GIS.load(outputFile.getAbsolutePath(), "mygeom", true)
         ISpatialTable table = h2GIS.getSpatialTable("mygeom")
@@ -58,7 +58,7 @@ class GeoIndicatorsExtensionModuleTests {
     void saveGeometrySridToFile() {
         Geometry geom = new GeometryFactory().createPoint(new Coordinate(10, 10))
         geom.setSRID(4326)
-        File outputFile = new File(folder, "geometry.geojson")
+        File outputFile = new File(folder, "geometry.fgb")
         geom.save(h2GIS, outputFile.getAbsolutePath())
         h2GIS.load(outputFile.getAbsolutePath(), "mygeom", true)
         ISpatialTable table = h2GIS.getSpatialTable("mygeom")

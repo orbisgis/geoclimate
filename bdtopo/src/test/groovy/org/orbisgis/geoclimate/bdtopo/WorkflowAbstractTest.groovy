@@ -66,7 +66,7 @@ abstract class WorkflowAbstractTest {
         if(dataFolder){
             def files = [:]
             new File(dataFolder).eachFileRecurse groovy.io.FileType.FILES, { file ->
-                if (file.name.toLowerCase().endsWith(".geojson")) {
+                if (file.name.toLowerCase().endsWith(".fgb")) {
                     files.put((file.name.take(file.name.lastIndexOf('.'))), file.getAbsolutePath())
                 }
             }
@@ -210,7 +210,7 @@ abstract class WorkflowAbstractTest {
             H2GIS h2gis = H2GIS.open("${folder.absolutePath + File.separator}testFullWorflowSRID;AUTO_SERVER=TRUE")
             assertTrue h2gis.firstRow("select count(*) as count from $grid_table".toString()).count == 100
             assertTrue h2gis.firstRow("select count(*) as count from $grid_table where BUILDING_FRACTION>0".toString()).count > 0
-            File grid_file = new File(folder.absolutePath + File.separator + "bdtopo_" + getVersion() + "_" + location.join("_") + File.separator + "grid_indicators.geojson")
+            File grid_file = new File(folder.absolutePath + File.separator + "bdtopo_" + getVersion() + "_" + location.join("_") + File.separator + "grid_indicators.fgb")
             assertTrue(grid_file.exists())
             h2gis.load(grid_file.absolutePath, "grid_indicators_file", true)
             assertEquals(4326, h2gis.getSpatialTable("grid_indicators_file").srid)

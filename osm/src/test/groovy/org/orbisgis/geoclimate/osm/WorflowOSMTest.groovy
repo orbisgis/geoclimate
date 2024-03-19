@@ -336,7 +336,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def geoFiles = []
         def folder = new File("${directory + File.separator}osm_Pont-de-Veyle")
         folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
-            if (file.name.toLowerCase().endsWith(".geojson")) {
+            if (file.name.toLowerCase().endsWith(".fgb")) {
                 geoFiles << file.getAbsolutePath()
             }
         }
@@ -370,7 +370,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
         def countFiles = 0;
         folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
-            if (file.name.toLowerCase().endsWith(".geojson")) {
+            if (file.name.toLowerCase().endsWith(".fgb")) {
                 countFiles++
             }
         }
@@ -402,12 +402,12 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
         def resultFiles = []
         folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
-            if (file.name.toLowerCase().endsWith(".geojson")) {
+            if (file.name.toLowerCase().endsWith(".fgb")) {
                 resultFiles << file.getAbsolutePath()
             }
         }
         assertTrue(resultFiles.size() == 1)
-        assertTrue(resultFiles.get(0) == folder.absolutePath + File.separator + "zone.geojson")
+        assertTrue(resultFiles.get(0) == folder.absolutePath + File.separator + "zone.fgb")
     }
 
     @Test

@@ -84,7 +84,7 @@ class WorkflowAbstractTest {
         }
         if (saveResults) {
             logger.debug("Saving building indicators")
-            datasource.getSpatialTable(buildingIndicators).save(directory + File.separator + "${buildingIndicators}.geojson", true)
+            datasource.getSpatialTable(buildingIndicators).save(directory + File.separator + "${buildingIndicators}.fgb", true)
         }
 
         //Check we have the same number of buildings
@@ -101,7 +101,7 @@ class WorkflowAbstractTest {
             assertNotNull(blockIndicators)
             if (saveResults) {
                 logger.debug("Saving block indicators")
-                datasource.getSpatialTable(blockIndicators).save(directory + File.separator + "${blockIndicators}.geojson", true)
+                datasource.getSpatialTable(blockIndicators).save(directory + File.separator + "${blockIndicators}.fgb", true)
             }
             //Check if we have the same number of blocks
             def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
@@ -125,7 +125,7 @@ class WorkflowAbstractTest {
         assert rsuIndicators
         if (saveResults) {
             logger.debug("Saving RSU indicators")
-            datasource.getSpatialTable(rsuIndicators).save(directory + File.separator + "${rsuIndicators}.geojson", true)
+            datasource.getSpatialTable(rsuIndicators).save(directory + File.separator + "${rsuIndicators}.fgb", true)
         }
 
         //Check if we have the same number of RSU
