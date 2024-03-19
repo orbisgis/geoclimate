@@ -23,6 +23,8 @@ import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.Polygon
+import org.locationtech.jts.geom.prep.PreparedGeometry
+import org.locationtech.jts.geom.prep.PreparedGeometryFactory
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
@@ -72,44 +74,39 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
         def columnToMap = parametersMap.columns
         def inputSpatialTable = datasource."$building"
         if (inputSpatialTable.rowCount > 0) {
+            def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
             def columnNames = inputSpatialTable.columns
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
+            queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a "
             if (zone) {
-                datasource.createSpatialIndex(building, "the_geom")
-                datasource.createSpatialIndex(zone, "the_geom")
-                queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a,  $zone as b WHERE a.the_geom && b.the_geom and st_intersects( " +
-                        "a.the_geom, b.the_geom) "
-            } else {
-                queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a "
-            }
-
-            def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
-            def id_build = 1;
-            datasource.withBatch(100) { stmt ->
-                datasource.eachRow(queryMapper) { row ->
-                    def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
-                    def use = typeAndUseValues[1]
-                    def type = typeAndUseValues[0]
-                    if (type) {
-                        String height = row.height
-                        String roof_height = row.'roof:height'
-                        String b_lev = row.'building:levels'
-                        String roof_lev = row.'roof:levels'
-                        def heightRoof = getHeightRoof(height, heightPattern)
-                        def heightWall = getHeightWall(heightRoof, roof_height)
-                        def nbLevels = getNbLevels(b_lev, roof_lev)
-                        def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
-                        def zIndex = getZIndex(row.'layer')
-                        String roof_shape = row.'roof:shape'
-
-                        if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                            Geometry geom = row.the_geom
-                            def srid = geom.getSRID()
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                Geometry subGeom = geom.getGeometryN(i)
-                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                    stmt.addBatch """
+                Geometry geomZone = datasource.firstRow("select st_union(st_accum(the_geom)) as the_geom from $zone").the_geom
+                PreparedGeometry pZone = PreparedGeometryFactory.prepare(geomZone)
+                def id_build = 1;
+                datasource.withBatch(200) { stmt ->
+                    datasource.eachRow(queryMapper) { row ->
+                        def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                        def use = typeAndUseValues[1]
+                        def type = typeAndUseValues[0]
+                        if (type) {
+                            String height = row.height
+                            String roof_height = row.'roof:height'
+                            String b_lev = row.'building:levels'
+                            String roof_lev = row.'roof:levels'
+                            def heightRoof = getHeightRoof(height, heightPattern)
+                            def heightWall = getHeightWall(heightRoof, roof_height)
+                            def nbLevels = getNbLevels(b_lev, roof_lev)
+                            def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
+                            def zIndex = getZIndex(row.'layer')
+                            String roof_shape = row.'roof:shape'
+                            if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
+                                Geometry geom = row.the_geom
+                                if(pZone.intersects(geom)){
+                                def srid = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                        stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
@@ -123,31 +120,96 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                                     ${roof_shape ? "'" + roof_shape + "'" : null})
                                             """.toString()
 
-                                    if (formatedHeight.estimated) {
-                                        stmt.addBatch """
+                                        if (formatedHeight.estimated) {
+                                            stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build, 
                                                     '${row.id}')
                                                 """.toString()
+                                        }
+                                        id_build++
                                     }
-                                    id_build++
+                                }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                def id_build = 1;
+                datasource.withBatch(200) { stmt ->
+                    datasource.eachRow(queryMapper) { row ->
+                        def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                        def use = typeAndUseValues[1]
+                        def type = typeAndUseValues[0]
+                        if (type) {
+                            String height = row.height
+                            String roof_height = row.'roof:height'
+                            String b_lev = row.'building:levels'
+                            String roof_lev = row.'roof:levels'
+                            def heightRoof = getHeightRoof(height, heightPattern)
+                            def heightWall = getHeightWall(heightRoof, roof_height)
+                            def nbLevels = getNbLevels(b_lev, roof_lev)
+                            def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
+                            def zIndex = getZIndex(row.'layer')
+                            String roof_shape = row.'roof:shape'
+
+                            if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
+                                Geometry geom = row.the_geom
+                                def srid = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                        stmt.addBatch """
+                                                INSERT INTO ${outputTableName} values(
+                                                    ST_GEOMFROMTEXT('${subGeom}',$srid), 
+                                                    $id_build, 
+                                                    '${row.id}',
+                                                    ${formatedHeight.heightWall},
+                                                    ${formatedHeight.heightRoof},
+                                                    ${formatedHeight.nbLevels},
+                                                    ${singleQuote(type)},
+                                                    ${singleQuote(use)},
+                                                    ${zIndex},
+                                                    ${roof_shape ? "'" + roof_shape + "'" : null})
+                                            """.toString()
+
+                                        if (formatedHeight.estimated) {
+                                            stmt.addBatch """
+                                                INSERT INTO ${outputEstimateTableName} values(
+                                                    $id_build, 
+                                                    '${row.id}')
+                                                """.toString()
+                                        }
+                                        id_build++
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+
+
             //Improve building type using the urban areas table
             if (urban_areas) {
                 datasource.createSpatialIndex(outputTableName, "the_geom")
                 datasource.createIndex(outputTableName, "id_build")
                 datasource.createIndex(outputTableName, "type")
-                datasource.createSpatialIndex(urban_areas, "the_geom")
-                def urbanAreasPart = "urbanAreasPart${UUID.randomUUID().toString().replaceAll("-", "_")}"
-                def buildinType = "BUILDING_TYPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                def urbanAreasPart = postfix("urbanAreasPart")
+                def buildinType = postfix("BUILDING_TYPE")
+                String triangles = postfix("triangles")
+
+                //Tessellate the urban_areas to perform the intersection on large geometry
+                datasource.execute("""DROP TABLE IF EXISTS $triangles;
+                CREATE TABLE $triangles as 
+                SELECT * FROM st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 
+                      THEN ST_Tessellate(st_buffer(the_geom, -0.001)) ELSE THE_GEOM END AS THE_GEOM,
+                      type FROM $urban_areas)')""".toString())
+                datasource.createSpatialIndex(triangles)
 
                 datasource.execute """DROP TABLE IF EXISTS $urbanAreasPart, $buildinType ;
-            CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part FROM $outputTableName a, $urban_areas b 
+            CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part FROM $outputTableName a, $triangles b 
                         WHERE a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND  a.TYPE ='building';   
             CREATE INDEX ON $urbanAreasPart(id_build);                     
             create table $buildinType as select 
@@ -201,7 +263,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                         stmt.addBatch("UPDATE $outputTableName set type = '${new_type}' , main_use = '${new_type}'where id_build=${id_build_}")
                     }
                 }
-                datasource.execute("""DROP TABLE IF EXISTS $urbanAreasPart, $buildinType""".toString())
+                datasource.execute("""DROP TABLE IF EXISTS $urbanAreasPart, $buildinType, $triangles""".toString())
 
             }
         }
@@ -1012,7 +1074,8 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
                     }
                 }
             }
-            //Merging landuse
+            //Merging urban_areas
+
             def mergingUrbanAreas = postfix("merging_urban_areas")
             datasource.execute("""
             CREATE TABLE $mergingUrbanAreas as select CAST((row_number() over()) as Integer) as id_urban,the_geom, type from 

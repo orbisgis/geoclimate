@@ -287,7 +287,7 @@ class InputDataFormattingTest {
         }
 
         def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
-        def zoneToExtract = "Redon"
+        def zoneToExtract = "Marseille"
 
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
@@ -310,27 +310,34 @@ class InputDataFormattingTest {
                     extractData.urban_areas,extractData.zone)
             h2GIS.save(inputUrbanAreas,"${file.absolutePath + File.separator}osm_urban_areas_${formatedPlaceName}.geojson", true)
 
+            println("Urban areas formatted")
+
             //Buildings
             h2GIS.save(extractData.building,"${file.absolutePath + File.separator}building_${formatedPlaceName}.geojson", true)
             def inputBuildings = OSM.InputDataFormatting.formatBuildingLayer(h2GIS,
-                     extractData.building,extractData.zone,inputUrbanAreas)
+                     extractData.building,extractData.zone,null)
             h2GIS.save(inputBuildings.building,"${file.absolutePath + File.separator}osm_building_${formatedPlaceName}.geojson", true)
 
+            println("Building formatted")
 
             //Roads
             def inputRoadTableName = OSM.InputDataFormatting.formatRoadLayer( h2GIS,extractData.road, extractData.zone_envelope)
             h2GIS.save(inputRoadTableName,"${file.absolutePath + File.separator}osm_road_${formatedPlaceName}.geojson", true)
 
+            println("Road formatted")
+
             //Rails
             def inputRailTableName = OSM.InputDataFormatting.formatRailsLayer( h2GIS,extractData.rail, extractData.zone_envelope)
             h2GIS.save(inputRailTableName,"${file.absolutePath + File.separator}osm_rail_${formatedPlaceName}.geojson", true)
 
+            println("Rail formatted")
 
             //Vegetation
             def inputVegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(
                     h2GIS,extractData.vegetation,extractData.zone_envelope)
             h2GIS.save(inputVegetationTableName,"${file.absolutePath + File.separator}osm_vegetation_${formatedPlaceName}.geojson", true)
 
+            println("Vegetation formatted")
 
             //Hydrography
             def inputWaterTableName = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
@@ -340,6 +347,8 @@ class InputDataFormattingTest {
                     extractData.zone_envelope)
             h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}osm_impervious_${formatedPlaceName}.geojson", true)
 
+            println("Impervious formatted")
+
             //Save coastlines to debug
             h2GIS.save(extractData.coastline,"${file.absolutePath + File.separator}osm_coastlines_${formatedPlaceName}.geojson", true)
 
@@ -348,6 +357,8 @@ class InputDataFormattingTest {
             def inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
                     extractData.zone_envelope, inputWaterTableName)
             h2GIS.save(inputSeaLandTableName,"${file.absolutePath + File.separator}osm_sea_land_${formatedPlaceName}.geojson", true)
+
+            println("Sea land mask formatted")
 
             //Save it after sea/land mask because the water table can be modified
             h2GIS.save(inputWaterTableName,"${file.absolutePath + File.separator}osm_water_${formatedPlaceName}.geojson", true)

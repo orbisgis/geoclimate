@@ -123,17 +123,23 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         return null
     }
     if (inputzone) {
-        datasource.createSpatialIndex(inputTableName, "the_geom")
+        String polygons  = postfix("polygons")
+        datasource.execute("""DROP TABLE IF EXISTS $polygons;        
+        CREATE TABLE $polygons as SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(the_geom,0.01), $epsg) AS the_geom FROM 
+        ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
+                                FROM $inputTableName)') 
+        """.toString())
+        datasource.createSpatialIndex(polygons)
+        datasource.createSpatialIndex(inputTableName)
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(a.the_geom,0.01), $epsg) AS the_geom
-                        FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
-                                FROM $inputTableName)') AS a,
+                        SELECT a.*
+                        FROM $polygons AS a,
                             $inputzone AS b
                         WHERE a.the_geom && b.the_geom 
-                        AND ST_INTERSECTS(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom) and st_area(a.the_geom) > $area
+                        AND ST_INTERSECTS(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom) and st_area(a.the_geom) > $area;
+                    DROP TABLE IF EXISTS $polygons;
             """.toString()
     } else {
         datasource """
