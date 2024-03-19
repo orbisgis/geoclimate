@@ -582,6 +582,18 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
     return outputTableName
 }
 
+/**
+ * Create indicator names for building facade and building roof distribution indicators
+ *
+ * @param base_name The base name of the indicator
+ * @param var_type A prefix corresponding to the type of values to come after ("h" for height range and "d" for direction range)
+ * @param lev_bot The bottom limit of the level (for height range or direction range)
+ * @param lev_up The upper limit of the level (for height range or direction range)
+ *
+ * @return Column (indicator) name
+ *
+ * @author Jérémy Bernard
+ */
 String getDistribIndicName(String base_name, String var_type, Integer lev_bot, Integer lev_up){
     String name
     if (lev_up == null){
@@ -1094,6 +1106,17 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
     }
 }
 
+/**
+ * Create indicator names for road distribution indicators
+ *
+ * @param d The upper limit of the angle considered for road direction (°)
+ * @param angleRangeSize the angle range
+ * @param lev The level of the roads
+ *
+ * @return Column (indicator) name
+ *
+ * @author Jérémy Bernard
+ */
 String getRoadDirIndic(int d, Integer angleRangeSize, Integer lev){
     String name
     if(lev == null){
