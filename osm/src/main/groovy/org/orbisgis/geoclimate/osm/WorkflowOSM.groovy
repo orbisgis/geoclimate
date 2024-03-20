@@ -71,7 +71,7 @@ import java.sql.SQLException
  *  *             ,
  *  *  [OPTIONAL ENTRY]  "output" :{ //If not ouput is set the results are keep in the local database
  *  *             "srid" : //optional value to reproject the data
- *  *             "folder" : "/tmp/myResultFolder" //tmp folder to store the computed layers in a geojson format,
+ *  *             "folder" : "/tmp/myResultFolder" //tmp folder to store the computed layers in a fgb format,
  *  *             "database": { //database parameters to store the computed layers.
  *  *                  "user": "-",
  *  *                  "password": "-",
@@ -633,7 +633,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         }
                     }
                     //Default
-                    def outputGrid = "geojson"
+                    def outputGrid = "fgb"
                     if (grid_indicators_params) {
                         if (!geomEnv) {
                             geomEnv = h2gis_datasource.getSpatialTable(utm_zone_table).getExtent()
@@ -916,13 +916,13 @@ def extractProcessingParameters(def processing_parameters) {
                     def grid_indicators_tmp = [
                             "x_size"    : x_size,
                             "y_size"    : y_size,
-                            "output"    : "geojson",
+                            "output"    : "fgb",
                             "rowCol"    : false,
                             "indicators": allowedOutputIndicators
                     ]
                     def grid_output = grid_indicators.output
                     if (grid_output) {
-                        if (grid_output.toLowerCase() in ["asc", "geojson"]) {
+                        if (grid_output.toLowerCase() in ["asc", "fgb"]) {
                             grid_indicators_tmp.output = grid_output.toLowerCase()
                         }
                     }
@@ -967,7 +967,7 @@ def extractProcessingParameters(def processing_parameters) {
 
 
 /**
- * Save the geoclimate tables into geojson files
+ * Save the geoclimate tables into files
  * @param id_zone the id of the zone
  * @param results a list of tables computed by geoclimate
  * @param ouputFolder the ouput folder
@@ -988,15 +988,15 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     }
     outputFiles.each {
         if (it == "grid_indicators") {
-            if (outputGrid == "geojson") {
-                Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            if (outputGrid == "fgb") {
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
             } else if (outputGrid == "asc") {
                 Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder.getAbsolutePath(), it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
             }
         } else if (it == "building_height_missing") {
             Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.csv", h2gis_datasource, deleteOutputData)
         } else {
-            Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
         }
     }
 }

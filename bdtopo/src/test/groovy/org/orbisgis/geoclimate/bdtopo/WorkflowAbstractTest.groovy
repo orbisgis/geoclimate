@@ -30,8 +30,7 @@ import static org.junit.jupiter.api.Assertions.*
 
 abstract class WorkflowAbstractTest {
 
-    @TempDir(cleanup = CleanupMode.ON_SUCCESS)
-    static File folder
+
 
     /**
      * Get the version of the workflow
