@@ -336,7 +336,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def geoFiles = []
         def folder = new File("${directory + File.separator}osm_Pont-de-Veyle")
         folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
-            if (file.name.toLowerCase().endsWith(".geojson")) {
+            if (file.name.toLowerCase().endsWith(".fgb")) {
                 geoFiles << file.getAbsolutePath()
             }
         }
@@ -370,7 +370,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
         def countFiles = 0;
         folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
-            if (file.name.toLowerCase().endsWith(".geojson")) {
+            if (file.name.toLowerCase().endsWith(".fgb")) {
                 countFiles++
             }
         }
@@ -402,12 +402,12 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
         def resultFiles = []
         folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
-            if (file.name.toLowerCase().endsWith(".geojson")) {
+            if (file.name.toLowerCase().endsWith(".fgb")) {
                 resultFiles << file.getAbsolutePath()
             }
         }
         assertTrue(resultFiles.size() == 1)
-        assertTrue(resultFiles.get(0) == folder.absolutePath + File.separator + "zone.geojson")
+        assertTrue(resultFiles.get(0) == folder.absolutePath + File.separator + "zone.fgb")
     }
 
     @Test
@@ -649,11 +649,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Dijon"
+        def location = "Marseille"
         def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
-        location = nominatim.bbox
-        //location=[47.4, -4.8, 47.6, -4.6]
+        //location = nominatim.bbox
+        //location=[43.214935,5.336351,43.244890,5.383558]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -677,7 +677,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
                                  "indicatorUse": ["LCZ", "UTRF", "TEB"]
 
-                         ],"grid_indicators": [
+                         ],/*"grid_indicators": [
                                 "x_size": grid_size,
                                 "y_size": grid_size,
                                 //"rowCol": true,
@@ -702,7 +702,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_test_integration;AUTO_SERVER=TRUE")
             def tableNames = results.values()
             def gridTable = tableNames.grid_indicators[0]
-            String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis, gridTable,grid_size, grid_size*grid_size)
+            String multiscaleGrid = Geoindicators.GridIndicators.multiscaleLCZGrid(h2gis, gridTable, "id_grid", 1)
+            String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis, multiscaleGrid,grid_size)
             def folder_save =location in Collection ? location.join("_") : location
             def path = directory + File.separator + "osm_$folder_save" +  File.separator
             path = "/tmp/"

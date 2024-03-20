@@ -89,14 +89,16 @@ String joinTables(JdbcDataSource datasource, Map inputTableNamesWithId, String o
 /**
  * An utility process to save several tables in a folder
  *
- * @param inputTableNames to be stored in the directory.
- * Note : A spatial table is saved in a geojson file and the other in csv
- * @param directory folder to save the tables
+ *
  * @param datasource connection to the database
+ * @param inputTableNames to be stored in the directory.
+ * Note : A spatial table is saved in a flatgeobuffer file and the other in csv
+ * @param  delete true to delete the file is exist
+ * @param directory folder to save the tables
  *
  * @return the directory where the tables are saved
  */
-String saveTablesAsFiles(JdbcDataSource datasource, List inputTableNames, boolean delete = false, String directory) {
+String saveTablesAsFiles(JdbcDataSource datasource, List inputTableNames, boolean delete = true, String directory) {
     if (directory == null) {
         error "The directory to save the data cannot be null"
         return
@@ -113,7 +115,7 @@ String saveTablesAsFiles(JdbcDataSource datasource, List inputTableNames, boolea
     inputTableNames.each { tableName ->
         if (tableName) {
             def fileToSave = dirFile.absolutePath + File.separator + tableName +
-                    (datasource."$tableName".spatial ? ".geojson" : ".csv")
+                    (datasource."$tableName".spatial ? ".fgb" : ".csv")
             def table = datasource.getTable(tableName)
             if (table) {
                 table.save(fileToSave, delete)
@@ -164,10 +166,10 @@ static String aliasColumns(JdbcDataSource datasource, String tableName, String a
 
 /**
  * Create the select projection and alias all columns
- * @param datasource
- * @param tableName
- * @param alias
- * @param exceptColumns
+ * @param datasource connection to the database
+ * @param tableName table name
+ * @param alias for the columns
+ * @param exceptColumns columns to remove
  * @return
  */
 static String aliasColumns(JdbcDataSource datasource, def tableName, def alias, def exceptColumns){

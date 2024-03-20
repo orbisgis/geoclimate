@@ -71,7 +71,7 @@ import java.sql.SQLException
  *  *             ,
  *  *  [OPTIONAL ENTRY]  "output" :{ //If not ouput is set the results are keep in the local database
  *  *             "srid" : //optional value to reproject the data
- *  *             "folder" : "/tmp/myResultFolder" //tmp folder to store the computed layers in a geojson format,
+ *  *             "folder" : "/tmp/myResultFolder" //tmp folder to store the computed layers in a fgb format,
  *  *             "database": { //database parameters to store the computed layers.
  *  *                  "user": "-",
  *  *                  "password": "-",
@@ -364,7 +364,7 @@ Map workflow(def input) {
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, osm_size_area,
                 overpass_timeout, overpass_maxsize, osm_date)
         if (!osmprocessing) {
-            h2gis_datasource.save(logTableZones,"${file_outputFolder.getAbsolutePath() + File.separator}logzones.geojson", true)
+            h2gis_datasource.save(logTableZones,"${file_outputFolder.getAbsolutePath() + File.separator}logzones.fgb", true)
             return null
         }
         if (delete_h2gis) {
@@ -417,13 +417,13 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
         def zones = extractOSMZone(h2gis_datasource, id_zone, processing_parameters.distance, bbox_size)
         if (zones) {
             id_zone = id_zone in Collection ? id_zone.join('_') : id_zone
-            def zone = zones.zone
-            def zoneEnvelopeTableName = zones.zone_envelope
-            if (h2gis_datasource.getRowCount(zone) == 0) {
+            def utm_zone_table = zones.utm_zone_table
+            def utm_extended_bbox_table = zones.utm_extended_bbox_table
+            if (h2gis_datasource.getRowCount(utm_zone_table) == 0) {
                 error "Cannot find any geometry to define the zone to extract the OSM data"
                 return
             }
-            def srid = h2gis_datasource.getSrid(zone)
+            def srid = zones.utm_srid
             def reproject = false
             if (outputSRID) {
                 if (outputSRID != srid) {
@@ -432,13 +432,13 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
             } else {
                 outputSRID = srid
             }
-            //Prepare OSM extraction
+            //Prepare OSM extraction from the osm_envelope_extented
             //TODO set key values ?
             def osm_date=""
             if(overpass_date){
                osm_date = "[date:\"$overpass_date\"]"
             }
-            def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQuery(zones.envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+            def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQuery(zones.osm_envelope_extented, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
             if (downloadAllOSMData) {
                 //Create a custom OSM query to download all requiered data. It will take more time and resources
@@ -447,14 +447,15 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                                   "leisure", "highway", "natural",
                                   "landuse", "landcover",
                                   "vegetation", "waterway", "area", "aeroway", "area:aeroway", "tourism", "sport"]
-                query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.osm_envelope_extented, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
             }
 
             def extract = OSMTools.Loader.extract(query)
             if (extract) {
-                Geometry geomArea = h2gis_datasource.getExtent(zones.zone)
-                geomArea.setSRID(srid)
-                Map gisLayersResults = OSM.InputDataLoading.createGISLayers(h2gis_datasource, extract, geomArea, srid)
+                //We must build the GIS layers on the extended bbox area
+                Geometry utm_extented_geom = h2gis_datasource.getExtent(utm_extended_bbox_table)
+                utm_extented_geom.setSRID(srid)
+                Map gisLayersResults = OSM.InputDataLoading.createGISLayers(h2gis_datasource, extract, utm_extented_geom, srid)
                 if (gisLayersResults) {
                     if (deleteOSMFile) {
                         if (new File(extract).delete()) {
@@ -466,34 +467,47 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     def road_traffic = processing_parameters.road_traffic
                     def worldpop_indicators = processing_parameters.worldpop_indicators
 
-                    debug "Formating OSM GIS layers"
+                    info "Formating OSM GIS layers"
                     //Format urban areas
-                    String urbanAreasTable = OSM.InputDataFormatting.formatUrbanAreas(h2gis_datasource, gisLayersResults.urban_areas, zoneEnvelopeTableName)
+                    String urbanAreasTable = OSM.InputDataFormatting.formatUrbanAreas(h2gis_datasource, gisLayersResults.urban_areas, utm_extended_bbox_table)
 
+                    info "Urban areas formatted"
+                    /*
+                     * Do not filter the data when formatting becausethe job is already done when extracting osm data                     *
+                     */
                     Map formatBuilding = OSM.InputDataFormatting.formatBuildingLayer(
                             h2gis_datasource, gisLayersResults.building,
-                            zoneEnvelopeTableName, urbanAreasTable,
+                            null, urbanAreasTable,
                             processing_parameters.hLevMin)
 
-
+                    info "Building formatted"
                     def buildingTableName = formatBuilding.building
                     def buildingEstimateTableName = formatBuilding.building_estimated
 
-                    String railTableName = OSM.InputDataFormatting.formatRailsLayer(h2gis_datasource, gisLayersResults.rail, zoneEnvelopeTableName)
+                    String railTableName = OSM.InputDataFormatting.formatRailsLayer(h2gis_datasource, gisLayersResults.rail, null)
 
-                    String vegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(h2gis_datasource, gisLayersResults.vegetation, zoneEnvelopeTableName)
+                    info "Rail formatted"
+
+                    String vegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(h2gis_datasource, gisLayersResults.vegetation, utm_extended_bbox_table)
+
+                    info "Vegetation formatted"
 
                     String hydrographicTableName = OSM.InputDataFormatting.formatWaterLayer(
                             h2gis_datasource, gisLayersResults.water,
-                            zoneEnvelopeTableName)
+                            utm_extended_bbox_table)
+
+                    info "Water formatted"
 
                     String imperviousTableName = OSM.InputDataFormatting.formatImperviousLayer(
-                            h2gis_datasource, gisLayersResults.impervious, zoneEnvelopeTableName)
+                            h2gis_datasource, gisLayersResults.impervious, utm_extended_bbox_table)
+
+                    info "Impervious formatted"
 
                     //Sea/Land mask
                     String seaLandMaskTableName = OSM.InputDataFormatting.formatSeaLandMask(
-                            h2gis_datasource, gisLayersResults.coastline, zoneEnvelopeTableName, hydrographicTableName)
+                            h2gis_datasource, gisLayersResults.coastline, utm_extended_bbox_table, hydrographicTableName)
 
+                    info "Sea/Land formatted"
 
                     if(h2gis_datasource.getRowCount(seaLandMaskTableName)>0){
                     //Select the water and sea features
@@ -504,7 +518,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     //Format road
                     String roadTableName = OSM.InputDataFormatting.formatRoadLayer(
                             h2gis_datasource, gisLayersResults.road,
-                            zoneEnvelopeTableName)
+                            utm_extended_bbox_table)
+
+                    info "Road formatted"
+
+                    info "All layers have been formatted"
 
                     //Drop the intermediate GIS layers
                     h2gis_datasource.dropTable(gisLayersResults.values().toArray(new String[0]))
@@ -512,7 +530,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     debug "OSM GIS layers formated"
                     //Add the GIS layers to the list of results
                     def results = [:]
-                    results.put("zone", zone)
+                    results.put("zone", utm_zone_table)
                     results.put("road", roadTableName)
                     results.put("rail", railTableName)
                     results.put("water", hydrographicTableName)
@@ -535,7 +553,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         rsu_indicators_params.put("utrfModelName", "UTRF_OSM_RF_2_2.model")
                         rsu_indicators_params.put("buildingHeightModelName", estimateHeight)
                         Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(
-                                h2gis_datasource, zone,
+                                h2gis_datasource, utm_zone_table,
                                 buildingTableName, roadTableName,
                                 railTableName, vegetationTableName,
                                 hydrographicTableName, imperviousTableName,
@@ -601,7 +619,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     def geomEnv;
                     if (noise_indicators) {
                         if (noise_indicators.ground_acoustic) {
-                            geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
+                            geomEnv = h2gis_datasource.getSpatialTable(utm_zone_table).getExtent()
                             def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, geomEnv, 200, 200)
                             if (outputTable) {
                                 String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, outputTable, "id_grid",
@@ -615,10 +633,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         }
                     }
                     //Default
-                    def outputGrid = "geojson"
+                    def outputGrid = "fgb"
                     if (grid_indicators_params) {
                         if (!geomEnv) {
-                            geomEnv = h2gis_datasource.getSpatialTable(zone).getExtent()
+                            geomEnv = h2gis_datasource.getSpatialTable(utm_zone_table).getExtent()
                         }
                         outputGrid = grid_indicators_params.output
                         def x_size = grid_indicators_params.x_size
@@ -697,6 +715,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
  * @param zoneToExtract the osm filter : place or bbox
  * @param distance to expand the OSM bbox
  * @return
+ * utm_zone_table the geometries that represents the processed zone in UTM coordinate system
+ * utm_extended_bbox_table the envelope of the zone to be processed extended by a distance in UTM coordinate system
+ * osm_envelope_extented the bbox used to query overpass in lat/lon
+ * osm_geometry the geometry that represents the processed zone in lat/lon
+ * utm_srid the UTM srid code
  */
 def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_size) {
     def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}".toString()
@@ -719,38 +742,40 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
 
         /**
          * Create the OSM BBOX to be extracted
+         * Expand it with a distance in meters
          */
-        def envelope = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
+        def lat_lon_bbox_extended = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
         //Find the best utm zone
         //Reproject the geometry and its envelope to the UTM zone
         def con = datasource.getConnection()
-        def interiorPoint = envelope.centre()
+        def interiorPoint = lat_lon_bbox_extended.centre()
         def epsg = GeographyUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-        def geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
+        def source_geom_utm = ST_Transform.ST_Transform(con, geom, epsg)
 
         //Check the size of the bbox
-        if ((geomUTM.getEnvelopeInternal().getArea() / 1.0E+6) >= bbox_size) {
+        if ((source_geom_utm.getEnvelopeInternal().getArea() / 1.0E+6) >= bbox_size) {
             error("The size of the OSM BBOX is greated than the limit : ${bbox_size} in km².\n" +
                     "Please increase the area parameter if you want to skip this limit.")
             return null
         }
-        def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
-        tmpGeomEnv.setSRID(4326)
+        def lat_lon_bbox_geom_extended = geom.getFactory().toGeometry(lat_lon_bbox_extended)
+        lat_lon_bbox_geom_extended.setSRID(4326)
 
         datasource.execute """drop table if exists ${outputZoneTable}; 
         create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', ${epsg}), '${zoneToExtract.toString()}');""".toString()
+        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${source_geom_utm.toString()}', ${epsg}), '${zoneToExtract.toString()}');""".toString()
 
         datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; 
          create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
+        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, lat_lon_bbox_geom_extended, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
         """.toString()
 
-        return ["zone"         : outputZoneTable,
-                "zone_envelope": outputZoneEnvelopeTable,
-                "envelope"     : envelope,
-                "geometry"     : geom
+        return ["utm_zone_table"         : outputZoneTable,
+                "utm_extended_bbox_table": outputZoneEnvelopeTable,
+                "osm_envelope_extented"     : lat_lon_bbox_extended,
+                "osm_geometry"     : geom,
+                "utm_srid"     : epsg
         ]
     } else {
         error "The zone to extract cannot be null or empty"
@@ -891,13 +916,13 @@ def extractProcessingParameters(def processing_parameters) {
                     def grid_indicators_tmp = [
                             "x_size"    : x_size,
                             "y_size"    : y_size,
-                            "output"    : "geojson",
+                            "output"    : "fgb",
                             "rowCol"    : false,
                             "indicators": allowedOutputIndicators
                     ]
                     def grid_output = grid_indicators.output
                     if (grid_output) {
-                        if (grid_output.toLowerCase() in ["asc", "geojson"]) {
+                        if (grid_output.toLowerCase() in ["asc", "fgb"]) {
                             grid_indicators_tmp.output = grid_output.toLowerCase()
                         }
                     }
@@ -942,7 +967,7 @@ def extractProcessingParameters(def processing_parameters) {
 
 
 /**
- * Save the geoclimate tables into geojson files
+ * Save the geoclimate tables into files
  * @param id_zone the id of the zone
  * @param results a list of tables computed by geoclimate
  * @param ouputFolder the ouput folder
@@ -963,15 +988,15 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     }
     outputFiles.each {
         if (it == "grid_indicators") {
-            if (outputGrid == "geojson") {
-                Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            if (outputGrid == "fgb") {
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
             } else if (outputGrid == "asc") {
                 Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder.getAbsolutePath(), it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
             }
         } else if (it == "building_height_missing") {
             Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.csv", h2gis_datasource, deleteOutputData)
         } else {
-            Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
         }
     }
 }

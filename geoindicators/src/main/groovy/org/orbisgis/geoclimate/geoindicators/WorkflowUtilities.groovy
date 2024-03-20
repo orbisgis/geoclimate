@@ -212,7 +212,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource
 }
 
 /**
- * Method to save a table into a geojson file
+ * Method to save a table into a file
  * @param outputTable name of the table to export
  * @param filePath path to save the table
  * @param h2gis_datasource connection to the database
@@ -220,7 +220,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource
  * @param reproject true if the file must be reprojected
  * @param deleteOutputData true to delete the file if exists
  */
-def saveToGeojson(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject, def deleteOutputData) {
+def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject, def deleteOutputData) {
     if (outputTable && h2gis_datasource.hasTable(outputTable)) {
         if (!reproject) {
             h2gis_datasource.save(outputTable, filePath, deleteOutputData)

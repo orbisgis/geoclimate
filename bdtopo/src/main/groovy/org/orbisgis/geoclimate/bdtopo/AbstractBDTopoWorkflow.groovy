@@ -447,20 +447,20 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         def defaultParameters = [distance       : 1000f,
                                  distance_buffer: 500f, prefixName: "",
                                  hLevMin        : 3]
-        def rsu_indicators_default = [indicatorUse      : [],
-                                      svfSimplified     : true,
-                                      surface_vegetation: 10000f,
-                                      surface_hydro     : 2500f,
+        def rsu_indicators_default = [indicatorUse       : [],
+                                      svfSimplified      : true,
+                                      surface_vegetation : 10000f,
+                                      surface_hydro      : 2500f,
                                       surface_urban_areas: 10000f,
-                                      snappingTolerance : 0.01f,
-                                      mapOfWeights      : ["sky_view_factor"             : 4,
-                                                           "aspect_ratio"                : 3,
-                                                           "building_surface_fraction"   : 8,
-                                                           "impervious_surface_fraction" : 0,
-                                                           "pervious_surface_fraction"   : 0,
-                                                           "height_of_roughness_elements": 6,
-                                                           "terrain_roughness_length"    : 0.5],
-                                      utrfModelName     : "UTRF_BDTOPO_V2_RF_2_2.model"]
+                                      snappingTolerance  : 0.01f,
+                                      mapOfWeights       : ["sky_view_factor"             : 4,
+                                                            "aspect_ratio"                : 3,
+                                                            "building_surface_fraction"   : 8,
+                                                            "impervious_surface_fraction" : 0,
+                                                            "pervious_surface_fraction"   : 0,
+                                                            "height_of_roughness_elements": 6,
+                                                            "terrain_roughness_length"    : 0.5],
+                                      utrfModelName      : "UTRF_BDTOPO_V2_RF_2_2.model"]
         defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
         if (processing_parameters) {
@@ -564,13 +564,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         def grid_indicators_tmp = [
                                 "x_size"    : x_size,
                                 "y_size"    : y_size,
-                                "output"    : "geojson",
+                                "output"    : "fgb",
                                 "rowCol"    : false,
                                 "indicators": allowedOutputIndicators
                         ]
                         def grid_output = grid_indicators.output
                         if (grid_output) {
-                            if (grid_output.toLowerCase() in ["asc", "geojson"]) {
+                            if (grid_output.toLowerCase() in ["asc", "fgb"]) {
                                 grid_indicators_tmp.output = grid_output.toLowerCase()
                             }
                         }
@@ -675,7 +675,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         //Add the GIS layers to the list of results
         def outputTableNamesResult = [:]
         def grid_indicators_params = processing_parameters.grid_indicators
-        def outputGrid = "geojson"
+        def outputGrid = "fgb"
         if (grid_indicators_params) {
             outputGrid = grid_indicators_params.output
         }
@@ -936,7 +936,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(h2gis_datasource, zone,
                         building, road,
                         rail, vegetation,
-                        water, impervious, "", "", urban_areas,"",
+                        water, impervious, "", "", urban_areas, "",
                         rsu_indicators_params, processing_parameters.prefixName)
                 if (!geoIndicators) {
                     error "Cannot build the geoindicators for the zone $id_zone"
@@ -961,7 +961,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         if (!building) {
                             info "Cannot compute any population data at building level"
                         }
-                        tablesToDrop<<results.building
+                        tablesToDrop << results.building
                         //Update the building table with the population data
                         results.put("building", building)
 
@@ -1003,12 +1003,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         if (ground_acoustic) {
                             results.put("ground_acoustic", ground_acoustic)
                         }
-                        tablesToDrop<<gridP
+                        tablesToDrop << gridP
                     }
                 }
             }
             //Clean the database
-            if(tablesToDrop) {
+            if (tablesToDrop) {
                 h2gis_datasource.execute("DROP TABLE IF EXISTS ${tablesToDrop.join(",")}".toString())
             }
             info "${id_zone} has been processed"
@@ -1018,7 +1018,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
     }
 
 /**
- * Save the geoclimate tables into geojson files
+ * Save the geoclimate tables into files
  * @param id_zone the id of the zone
  * @param results a list of tables computed by geoclimate
  * @param outputFolder the output folder
@@ -1029,13 +1029,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
     def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outputFolder, def outputSRID, def reproject, def deleteOutputData, def outputGrid) {
         outputFiles.each {
             if (it == "grid_indicators") {
-                if (outputGrid == "geojson") {
-                    Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+                if (outputGrid == "fgb") {
+                    Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
                 } else if (outputGrid == "asc") {
                     Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", outputFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
                 }
             } else {
-                Geoindicators.WorkflowUtilities.saveToGeojson(results."$it", "${outputFolder + File.separator + it}.geojson", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
             }
         }
     }

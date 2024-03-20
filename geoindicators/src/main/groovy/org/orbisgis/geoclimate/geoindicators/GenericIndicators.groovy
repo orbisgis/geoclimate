@@ -108,7 +108,7 @@ String unweightedOperationFromLowerScale(JdbcDataSource datasource, String input
                 }
             }
         } else {
-            warn """ The column $var doesn't exist or should be numeric"""
+            debug("""The column $var doesn't exist or should be numeric""")
         }
     }
     query += "b.$inputIdUp FROM $inputLowerScaleTableName a RIGHT JOIN $inputUpperScaleTableName b " +
