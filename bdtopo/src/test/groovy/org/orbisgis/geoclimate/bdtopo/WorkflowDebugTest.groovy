@@ -158,7 +158,7 @@ class WorkflowDebugTest {
                 "parameters"  :
                         ["distance"       : 0,
                          rsu_indicators   : [
-                                 "indicatorUse": ["LCZ",  "UTRF",  "URBAN_TYPOLOGY"]
+                                 "indicatorUse": ["LCZ",  "UTRF"]
                          ],
                          "grid_indicators": [
                                  "x_size"    : 1000,
