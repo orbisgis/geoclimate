@@ -530,14 +530,14 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
         def sumNamesDir = []
         def queryColumns = []
         for (int d = 0; d < numberOfDirection / 2; d++) {
-            Integer dirDeg = d * 360 / numberOfDirection
+            int dirDeg = d * 360 / numberOfDirection
             def dirRad = toRadians(dirDeg)
-            Integer rangeDeg = 360 / numberOfDirection
+            int rangeDeg = 360 / numberOfDirection
             def dirRadMid = dirRad + dirMedRad
             def dirDegMid = dirDeg + dirMedDeg
             // Define the field name for each of the directions and vertical layers
             names.each {
-                namesAndTypeDir += " " + "${getDistribIndicName(it, 'D', dirDeg, dirDeg + rangeDeg)} double"
+                namesAndTypeDir += " " + "${getDistribIndicName(it, 'D', dirDeg, dirDeg + rangeDeg)} double precision"
                 queryColumns += """CASE
                             WHEN  a.azimuth-$dirRadMid>PI()/2
                             THEN  a.$it*a.length*COS(a.azimuth-$dirRadMid-PI()/2)/2

@@ -39,50 +39,43 @@ class WorkflowGeoIndicatorsTest {
 
     public static Logger logger = LoggerFactory.getLogger(WorkflowGeoIndicatorsTest.class)
 
-    // Default geoindicator parameters
-    public static parameters = Geoindicators.WorkflowGeoIndicators.getParameters()
 
-    // Indicator list (at RSU scale) for each road direction
-    public static List listRoadDir = []
-    static {
-                for (int d = parameters.angleRangeSizeRoDirection; d <= 180; d += parameters.angleRangeSizeRoDirection) {
-                    listRoadDir.add(Geoindicators.RsuIndicators.getRoadDirIndic(parameters.angleRangeSizeRoDirection, d, 0))
-                }
-            }
-    // Indicator list (at RSU scale) for each facade direction and height (projected facade distrib)
-    // and also for height only (vert and non vert roof density)
-    public static List listFacadeDistrib = []
-    public static List listHeightDistrib = []
+    public static listNames
+    // Basic columns at RSU scale
+    public static listColBasic
+    // Indicators common to each indicator use
+    public static listColCommon
+    // Column names in the LCZ Table
+    public static listColLcz
+    // Indicator lists for urban typology use at building and block scales
+    public static listUrbTyp
 
-    static {
-        int rangeDeg = 360 / parameters.angleRangeSizeRoDirection
-        for (i in 0..parameters.facadeDensListLayersBottom.size()) {
-            Integer h_bot = parameters.facadeDensListLayersBottom[i]
-            Integer h_up
-            if (h_bot == parameters.facadeDensListLayersBottom[-1]){
-                h_up = null
-            }
-            else{
-                h_up = parameters.facadeDensListLayersBottom[i+1]
-            }
-            // Create names for vert and non vert roof density
-            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("vert_roof_area", 'h', h_bot, h_up))
-            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("non_vert_roof_area", 'h', h_bot, h_up))
+    public static H2GIS datasource
+    public static def inputTableNames
 
-            // Create names for facade density
-            String name_h = Geoindicators.RsuIndicators.getDistribIndicName("projected_facade_area_distribution", 'h', h_bot, h_up)
-            for (Integer d = 0; d < parameters.facadeDensNumberOfDirection / 2; d++){
-                Integer d_bot = d * 360 / parameters.facadeDensNumberOfDirection
-                Integer d_up = d_bot + rangeDeg
-                listFacadeDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName(name_h, 'd', d_bot, d_up))
-            }
-        }
+    public
+    @BeforeAll
+    static void beforeAll() {
+        initParameters()
+        datasource = open(folder.getAbsolutePath() + File.separator + "workflowGeoIndicatorsTest;AUTO_SERVER=TRUE")
+        assertNotNull(datasource)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("ROAD.geojson"), "ROAD", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("RAIL.geojson"), "RAIL", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("VEGET.geojson"), "VEGET", true)
+        datasource.load(WorkflowGeoIndicatorsTest.getResource("HYDRO.geojson"), "HYDRO", true)
+        inputTableNames = [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
+                           railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
     }
 
-    // Indicator list (at RSU scale) for each type of use
-    public static List listBuildTypTeb = []
-    public static List listBuildTypLcz = []
-    static {
+    /**
+     * Init some parameters to run the tests
+     */
+    static void initParameters() {
+        Map parameters = Geoindicators.WorkflowGeoIndicators.getParameters()
+        // Indicator list (at RSU scale) for each type of use
+        List listBuildTypTeb = []
+        List listBuildTypLcz = []
         for (type in parameters.buildingAreaTypeAndCompositionTeb.keySet()) {
             listBuildTypTeb.add("AREA_FRACTION_${type}")
         }
@@ -95,65 +88,80 @@ class WorkflowGeoIndicatorsTest {
         for (type in parameters.floorAreaTypeAndCompositionLcz.keySet()) {
             listBuildTypLcz.add("FLOOR_AREA_FRACTION_${type}")
         }
+
+        // Indicator list (at RSU scale) for each road direction
+        List listRoadDir = []
+        for (int d = parameters.angleRangeSizeRoDirection; d <= 180; d += parameters.angleRangeSizeRoDirection) {
+            listRoadDir.add(Geoindicators.RsuIndicators.getRoadDirIndic(parameters.angleRangeSizeRoDirection, d, 0))
+        }
+
+        // Indicator list (at RSU scale) for each facade direction and height (projected facade distrib)
+        // and also for height only (vert and non vert roof density)
+        List listFacadeDistrib = []
+        List listHeightDistrib = []
+        int rangeDeg = 360 / parameters.angleRangeSizeRoDirection
+        for (int i in 0..parameters.facadeDensListLayersBottom.size()) {
+            Integer h_bot = parameters.facadeDensListLayersBottom[i]
+            Integer h_up
+            if (h_bot == parameters.facadeDensListLayersBottom[-1]) {
+                h_up = null
+            } else {
+                h_up = parameters.facadeDensListLayersBottom[i + 1]
+            }
+            // Create names for vert and non vert roof density
+            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("vert_roof_area", 'h', h_bot, h_up))
+            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("non_vert_roof_area", 'h', h_bot, h_up))
+
+            // Create names for facade density
+            String name_h = Geoindicators.RsuIndicators.getDistribIndicName("projected_facade_area_distribution", 'h', h_bot, h_up)
+            for (int d = 0; d < parameters.facadeDensNumberOfDirection / 2; d++) {
+                int d_bot = d * 360 / parameters.facadeDensNumberOfDirection
+                int d_up = d_bot + rangeDeg
+                listFacadeDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName(name_h, 'd', d_bot, d_up))
+            }
+        }
+        listNames = [
+                "TEB" : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY"] +
+                        listRoadDir + listFacadeDistrib + listHeightDistrib + listBuildTypTeb +
+                        ["EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
+                "UTRF": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+                         "VEGETATION_FRACTION_UTRF", "LOW_VEGETATION_FRACTION_UTRF", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_UTRF",
+                         "HIGH_VEGETATION_PERVIOUS_FRACTION_UTRF", "ROAD_FRACTION_UTRF", "IMPERVIOUS_FRACTION_UTRF",
+                         "AVG_NUMBER_BUILDING_NEIGHBOR", "AVG_HEIGHT_ROOF_AREA_WEIGHTED",
+                         "STD_HEIGHT_ROOF_AREA_WEIGHTED", "BUILDING_NUMBER_DENSITY", "BUILDING_VOLUME_DENSITY",
+                         "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_LINEAR_ROAD_DENSITY",
+                         "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
+                         "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
+                         "BUILDING_DIRECTION_EQUALITY"],
+                "LCZ" : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
+                         "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
+                         "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ"] + listBuildTypLcz]
+
+
+        // Basic columns at RSU scale
+        listColBasic = ["ID_RSU", "THE_GEOM"]
+
+        // Indicators common to each indicator use
+        listColCommon = ["LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION",
+                                       "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                                       "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
+                                       "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
+                                       "HIGH_VEGETATION_BUILDING_FRACTION", "UNDEFINED_FRACTION"]
+
+        // Column names in the LCZ Table
+        listColLcz = ["LCZ_PRIMARY", "LCZ_SECONDARY", "LCZ_EQUALITY_VALUE", "LCZ_UNIQUENESS_VALUE", "MIN_DISTANCE"]
+
+        // Indicator lists for urban typology use at building and block scales
+        listUrbTyp =
+                ["Bu": ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE",
+                        "HEIGHT_ROOF", "HEIGHT_WALL", "PERIMETER", "AREA", "VOLUME", "FLOOR_AREA", "TOTAL_FACADE_LENGTH", "COMMON_WALL_FRACTION",
+                        "CONTIGUITY", "AREA_CONCAVITY", "FORM_FACTOR", "RAW_COMPACTNESS", "PERIMETER_CONVEXITY",
+                        "MINIMUM_BUILDING_SPACING", "NUMBER_BUILDING_NEIGHBOR", "ROAD_DISTANCE", "LIKELIHOOD_LARGE_BUILDING"],
+                 "Bl": ["THE_GEOM", "ID_RSU", "ID_BLOCK", "AREA", "FLOOR_AREA", "VOLUME", "HOLE_AREA_DENSITY", "MAIN_BUILDING_DIRECTION",
+                        "BUILDING_DIRECTION_UNIQUENESS", "BUILDING_DIRECTION_EQUALITY", "CLOSINGNESS", "NET_COMPACTNESS",
+                        "AVG_HEIGHT_ROOF_AREA_WEIGHTED", "STD_HEIGHT_ROOF_AREA_WEIGHTED"]]
+
     }
-
-    public static listNames = [
-            "TEB" : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY"] +
-                    listRoadDir + listFacadeDistrib + listHeightDistrib + listBuildTypTeb +
-                    ["EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
-            "UTRF": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
-                     "VEGETATION_FRACTION_UTRF", "LOW_VEGETATION_FRACTION_UTRF", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_UTRF",
-                     "HIGH_VEGETATION_PERVIOUS_FRACTION_UTRF", "ROAD_FRACTION_UTRF", "IMPERVIOUS_FRACTION_UTRF",
-                     "AVG_NUMBER_BUILDING_NEIGHBOR", "AVG_HEIGHT_ROOF_AREA_WEIGHTED",
-                     "STD_HEIGHT_ROOF_AREA_WEIGHTED", "BUILDING_NUMBER_DENSITY", "BUILDING_VOLUME_DENSITY",
-                     "BUILDING_VOLUME_DENSITY", "AVG_VOLUME", "GROUND_LINEAR_ROAD_DENSITY",
-                     "GEOM_AVG_HEIGHT_ROOF", "BUILDING_FLOOR_AREA_DENSITY",
-                     "AVG_MINIMUM_BUILDING_SPACING", "MAIN_BUILDING_DIRECTION", "BUILDING_DIRECTION_UNIQUENESS",
-                     "BUILDING_DIRECTION_EQUALITY"],
-            "LCZ" : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
-                     "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
-                     "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ"] + listBuildTypLcz]
-
-    // Basic columns at RSU scale
-    public static listColBasic = ["ID_RSU", "THE_GEOM"]
-
-    // Indicators common to each indicator use
-    public static listColCommon = ["LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION",
-                                   "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                                   "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
-                                   "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
-                                   "HIGH_VEGETATION_BUILDING_FRACTION", "UNDEFINED_FRACTION"]
-
-    // Column names in the LCZ Table
-    public static listColLcz = ["LCZ_PRIMARY", "LCZ_SECONDARY", "LCZ_EQUALITY_VALUE", "LCZ_UNIQUENESS_VALUE", "MIN_DISTANCE"]
-
-    // Indicator lists for urban typology use at building and block scales
-    public static listUrbTyp =
-            ["Bu": ["THE_GEOM", "ID_RSU", "ID_BUILD", "ID_BLOCK", "NB_LEV", "ZINDEX", "MAIN_USE", "TYPE", "ID_SOURCE",
-                    "HEIGHT_ROOF", "HEIGHT_WALL", "PERIMETER", "AREA", "VOLUME", "FLOOR_AREA", "TOTAL_FACADE_LENGTH", "COMMON_WALL_FRACTION",
-                    "CONTIGUITY", "AREA_CONCAVITY", "FORM_FACTOR", "RAW_COMPACTNESS", "PERIMETER_CONVEXITY",
-                    "MINIMUM_BUILDING_SPACING", "NUMBER_BUILDING_NEIGHBOR", "ROAD_DISTANCE", "LIKELIHOOD_LARGE_BUILDING"],
-             "Bl": ["THE_GEOM", "ID_RSU", "ID_BLOCK", "AREA", "FLOOR_AREA", "VOLUME", "HOLE_AREA_DENSITY", "MAIN_BUILDING_DIRECTION",
-                    "BUILDING_DIRECTION_UNIQUENESS", "BUILDING_DIRECTION_EQUALITY", "CLOSINGNESS", "NET_COMPACTNESS",
-                    "AVG_HEIGHT_ROOF_AREA_WEIGHTED", "STD_HEIGHT_ROOF_AREA_WEIGHTED"]]
-
-    public static H2GIS datasource
-    public static def inputTableNames
-
-    @BeforeAll
-    static void beforeAll() {
-        // folder = new File("/tmp")
-        datasource = open(folder.getAbsolutePath() + File.separator + "workflowGeoIndicatorsTest;AUTO_SERVER=TRUE")
-        assertNotNull(datasource)
-        datasource.load(WorkflowGeoIndicatorsTest.getResource("BUILDING.geojson"), "BUILDING", true)
-        datasource.load(WorkflowGeoIndicatorsTest.getResource("ROAD.geojson"), "ROAD", true)
-        datasource.load(WorkflowGeoIndicatorsTest.getResource("RAIL.geojson"), "RAIL", true)
-        datasource.load(WorkflowGeoIndicatorsTest.getResource("VEGET.geojson"), "VEGET", true)
-        datasource.load(WorkflowGeoIndicatorsTest.getResource("HYDRO.geojson"), "HYDRO", true)
-        inputTableNames = [zoneTable: "ZONE", buildingTable: "BUILDING", roadTable: "ROAD",
-                           railTable: "RAIL", vegetationTable: "VEGET", hydrographicTable: "HYDRO"]
-    }
-
 
     @Test
     void GeoIndicatorsTest1() {
@@ -165,7 +173,7 @@ class WorkflowGeoIndicatorsTest {
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
-                inputTableNames.hydrographicTable, "", "", "", "","",
+                inputTableNames.hydrographicTable, "", "", "", "", "",
                 ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
@@ -208,7 +216,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
-                "", "", "","",
+                "", "", "", "",
                 ["indicatorUse": indicatorUse, svfSimplified: false, "utrfModelName": "UTRF_BDTOPO_V2_RF_2_2.model"], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
@@ -284,7 +292,7 @@ class WorkflowGeoIndicatorsTest {
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
-                inputTableNames.hydrographicTable, "","",
+                inputTableNames.hydrographicTable, "", "",
                 "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
@@ -326,7 +334,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
-                "", "", "","", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
+                "", "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
@@ -366,7 +374,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
-                "", "", "", "",["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
+                "", "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
@@ -408,7 +416,7 @@ class WorkflowGeoIndicatorsTest {
                         inputTableNames.buildingTable, inputTableNames.roadTable,
                         inputTableNames.railTable, inputTableNames.vegetationTable,
                         inputTableNames.hydrographicTable, "", "", "",
-                        "","",
+                        "", "",
                         ["indicatorUse": indicatorUse, "svfSimplified": false],
                         prefixName)
         assertNotNull(geoIndicatorsCompute_i)
@@ -450,7 +458,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
-                "", "", "", "",["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
+                "", "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
         def expectListRsuTempo = listColBasic + listColCommon
@@ -503,15 +511,15 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(100d, rows.SUM_POP)
         assertEquals(10d, rows.AVG_HEIGHT_ROOF)
         assertEquals(0d, rows.STD_HEIGHT_ROOF)
-        assertTrue(10d-rows.GEOM_AVG_HEIGHT_ROOF< 0.0001)
+        assertTrue(10d - rows.GEOM_AVG_HEIGHT_ROOF < 0.0001)
         assertEquals(10d, rows.AVG_HEIGHT_ROOF_AREA_WEIGHTED)
         assertEquals(0d, rows.STD_HEIGHT_ROOF_AREA_WEIGHTED)
         assertEquals(2d, rows.FREE_EXTERNAL_FACADE_DENSITY)
         assertEquals(3d, rows.BUILDING_SURFACE_DENSITY)
-        assertTrue(1.5 -rows.EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH<0.001)
+        assertTrue(1.5 - rows.EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH < 0.001)
         assertEquals(8, rows.EFFECTIVE_TERRAIN_ROUGHNESS_CLASS)
         assertNull(rows.ASPECT_RATIO)
-        assertTrue(0.5 -rows.SVF<0.1)
+        assertTrue(0.5 - rows.SVF < 0.1)
         assertEquals(1d, rows.TYPE_OFFICE)
 
     }
