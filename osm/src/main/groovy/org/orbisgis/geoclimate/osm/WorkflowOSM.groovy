@@ -656,6 +656,9 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             if (rasterizedIndicators) {
                                 h2gis_datasource.dropTable(grid)
                                 results.put("grid_indicators", rasterizedIndicators)
+                                if(grid_indicators_params.lzc_lod && grid_indicators_params.indicators.contains("LCZ_PRIMARY")){
+
+                                }
                             }
                         } else {
                             info "Cannot create a grid to aggregate the indicators"
@@ -929,6 +932,12 @@ def extractProcessingParameters(def processing_parameters) {
                     def grid_rowCol = grid_indicators.rowCol
                     if (grid_rowCol && grid_rowCol in Boolean) {
                         grid_indicators_tmp.rowCol = grid_rowCol
+                    }
+
+                    def lcz_lod = grid_indicators.lcz_lod
+
+                    if (lcz_lod && lcz_lod in Integer) {
+                        grid_indicators_tmp.put("lcz_lod", lcz_lod)
                     }
 
                     defaultParameters.put("grid_indicators", grid_indicators_tmp)

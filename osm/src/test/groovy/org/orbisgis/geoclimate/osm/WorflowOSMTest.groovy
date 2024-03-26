@@ -728,7 +728,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                               "FREE_EXTullERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
                               "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
-        def databasePath = '/home/decide/Data/WRF/Data/output/geoclimate_chain_dbtest;AUTO_SERVER=TRUE'
+        def databasePath = '/tmp/geoclimate_chain_dbtest;AUTO_SERVER=TRUE'
         def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
         def datasource = H2GIS.open(h2gis_properties)
         def srid_calc = 3007
@@ -758,33 +758,33 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def rasterizedIndicators
         def rsuLczUpdated = "UPDATED_HEIGHTTEST_RSU_LCZ"
         println(""" Grid indicators are calculated """)
-        def gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
-        if (gridProcess.execute(datasource: datasource, envelope: geomEnv,
-                x_size: x_size, y_size: y_size,
-                srid: srid_calc, rowCol: false)) {
-            def gridTableName = gridProcess.results.outputTableName
-            def computeRasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
-            if (!computeRasterizedIndicators.execute(datasource: datasource,
-                    grid: gridTableName,
-                    list_indicators: wrf_indicators,
-                    building: buildingUpdated,
-                    rsu_lcz: rsuLczUpdated,
-                    sea_land_mask: sea_land_maskFile + test,
-                    vegetation: vegetationFile + test,
-                    water: waterFile + test,
-                    impervious: imperviousFile + test,
-                    road: roadFile + test,
-                    prefixName: prefixName)) {
+        def gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, geomEnv,
+                x_size,  y_size,srid_calc, false)
+        if (gridProcess) {
+            def computeRasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource,
+                    gridProcess,
+                    wrf_indicators,
+                    buildingUpdated,
+                    roadFile + test,
+                    vegetationFile + test,
+                    waterFile + test,
+                    imperviousFile + test,
+                    rsuLczUpdated,
+                    null,
+                    null,
+                    sea_land_maskFile + test,
+                    prefixName)
+            if (!computeRasterizedIndicators) {
                 println("Could not rasterized indicators")
             }
-            rasterizedIndicators = computeRasterizedIndicators.results.outputTableName
+            def reproject = false
+            def deleteOutputData = true
+            def outputFolder = new File('/home/decide/Data/WRF/Data/output/updated')
+            def subFolder = new File(outputFolder.getAbsolutePath() + File.separator + "osm_" + id_zone)
+            Geoindicators.WorkflowUtilities.saveToAscGrid(computeRasterizedIndicators, subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
+
         }
-        def reproject = false
-        def deleteOutputData = true
-        def outputFolder = new File('/home/decide/Data/WRF/Data/output/updated')
-        def subFolder = new File(outputFolder.getAbsolutePath() + File.separator + "osm_" + id_zone)
-        Geoindicators.WorkflowUtilities.saveToAscGrid("grid_indicators", subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
-    }
+            }
 
     @Test
     //Integration tests
