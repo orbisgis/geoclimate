@@ -81,26 +81,28 @@ class WorkflowGeoIndicatorsTest {
 
     // Indicator list (at RSU scale) for each type of use
     public static List listBuildTypTeb = []
+    public static List listFloorBuildTypTeb = []
     public static List listBuildTypLcz = []
+    public static List listFloorBuildTypLcz = []
     static {
         for (type in parameters.buildingAreaTypeAndCompositionTeb.keySet()) {
             listBuildTypTeb.add("AREA_FRACTION_${type}")
         }
         for (type in parameters.floorAreaTypeAndCompositionTeb.keySet()) {
-            listBuildTypTeb.add("FLOOR_AREA_FRACTION_${type}")
+            listFloorBuildTypTeb.add("FLOOR_AREA_FRACTION_${type}")
         }
         for (type in parameters.buildingAreaTypeAndCompositionLcz.keySet()) {
             listBuildTypLcz.add("AREA_FRACTION_${type}")
         }
         for (type in parameters.floorAreaTypeAndCompositionLcz.keySet()) {
-            listBuildTypLcz.add("FLOOR_AREA_FRACTION_${type}")
+            listFloorBuildTypLcz.add("FLOOR_AREA_FRACTION_${type}")
         }
     }
 
     public static listNames = [
             "TEB" : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY"] +
-                    listRoadDir + listFacadeDistrib + listHeightDistrib + listBuildTypTeb +
-                    ["EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
+                    listRoadDir + listFacadeDistrib + listHeightDistrib + listBuildTypTeb + listFloorBuildTypTeb +
+                    listFloorBuildTypLcz + ["EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
             "UTRF": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                      "VEGETATION_FRACTION_UTRF", "LOW_VEGETATION_FRACTION_UTRF", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_UTRF",
                      "HIGH_VEGETATION_PERVIOUS_FRACTION_UTRF", "ROAD_FRACTION_UTRF", "IMPERVIOUS_FRACTION_UTRF",
@@ -194,6 +196,13 @@ class WorkflowGeoIndicatorsTest {
         def dfBlock = DataFrame.of(datasource."$geoIndicatorsCompute_i.block_indicators")
         dfBlock = dfBlock.drop("ID_RSU")
         assertEquals dfBlock.nrows(), dfBlock.omitNullRows().nrows()
+
+        // Test that the sum of all building fractions is 100% for both LCZ and TEB building types
+        datasource """DROP TABLE IF EXISTS TEST; CREATE TABLE TEST AS SELECT *, ${listBuildTypTeb.join("+")} AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"}"""
+
+        datasource.save("TEST", "/tmp/test.geojson", true)
+        def sum_frac = datasource.firstRow("SELECT AVG(${listBuildTypTeb.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
+        assertEquals sum_frac.SUM_FRAC, 1.0, 0.001
 
     }
 
