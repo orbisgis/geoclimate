@@ -1608,6 +1608,7 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String b
  * @param h2gis_datasource the local H2GIS database
  * @param gridTableName the name of the grid table to aggregate the data
  * @param list_indicators indicators names to compute
+ * @param lcz_lod level to aggregate the LCZ on the grid. Set by default to -1
  * @param buildingTable name
  * @param roadTable name
  * @param vegetationTable name
@@ -1621,7 +1622,7 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String b
  * @return
  */
 String rasterizeIndicators(JdbcDataSource datasource,
-                           String grid, List list_indicators,
+                           String grid, List list_indicators, Integer lcz_lod,
                            String building, String road, String vegetation,
                            String water, String impervious, String rsu_lcz,
                            String rsu_utrf_area, String rsu_utrf_floor_area, String sea_land_mask,

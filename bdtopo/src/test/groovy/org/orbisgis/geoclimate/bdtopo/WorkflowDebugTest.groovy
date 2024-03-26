@@ -171,6 +171,8 @@ class WorkflowDebugTest {
                                  "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
                                  "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                  "LCZ_PRIMARY"]
+                                 ,
+                                 "lcz_lod":2
                          ]
                         ]
         ]

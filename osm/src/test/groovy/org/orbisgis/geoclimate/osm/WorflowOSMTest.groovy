@@ -649,7 +649,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Marseille"
+        def location = "Redon"
         def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
         //location = nominatim.bbox
@@ -677,7 +677,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
                                  "indicatorUse": ["LCZ", "UTRF", "TEB"]
 
-                         ],/*"grid_indicators": [
+                         ],"grid_indicators": [
                                 "x_size": grid_size,
                                 "y_size": grid_size,
                                 //"rowCol": true,
@@ -688,7 +688,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "LCZ_PRIMARY",
                                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
                                                 "ASPECT_RATIO","SVF",
-                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
+                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"],
+                                "lcz_lod":2
                         ]/*,    "worldpop_indicators": true,
 
                          "road_traffic"                                         : true,

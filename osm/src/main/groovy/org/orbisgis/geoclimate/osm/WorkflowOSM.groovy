@@ -646,6 +646,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         if (grid) {
                             String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                                     grid_indicators_params.indicators,
+                                    grid_indicators_params.lzc_lod,
                                     results.building, roadTableName, vegetationTableName,
                                     hydrographicTableName, imperviousTableName,
                                     results.rsu_lcz,
@@ -933,13 +934,10 @@ def extractProcessingParameters(def processing_parameters) {
                     if (grid_rowCol && grid_rowCol in Boolean) {
                         grid_indicators_tmp.rowCol = grid_rowCol
                     }
-
                     def lcz_lod = grid_indicators.lcz_lod
-
                     if (lcz_lod && lcz_lod in Integer) {
                         grid_indicators_tmp.put("lcz_lod", lcz_lod)
                     }
-
                     defaultParameters.put("grid_indicators", grid_indicators_tmp)
                 } else {
                     error "Please set a valid list of indicator names in ${allowed_grid_indicators}"
