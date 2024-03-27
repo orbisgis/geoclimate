@@ -85,22 +85,22 @@ class WorkflowGeoIndicatorsTest {
         listFloorBuildTypLcz = []
         listFloorBuildTypTeb = []
         for (type in parameters.buildingAreaTypeAndCompositionTeb.keySet()) {
-            listBuildTypTeb.add("AREA_FRACTION_${type}".toString())
+            listBuildTypTeb.add("AREA_FRACTION_${type}".toString().toUpperCase())
         }
         for (type in parameters.floorAreaTypeAndCompositionTeb.keySet()) {
-            listFloorBuildTypTeb.add("FLOOR_AREA_FRACTION_${type}".toString())
+            listFloorBuildTypTeb.add("FLOOR_AREA_FRACTION_${type}".toString().toUpperCase())
         }
         for (type in parameters.buildingAreaTypeAndCompositionLcz.keySet()) {
-            listBuildTypLcz.add("AREA_FRACTION_${type}".toString())
+            listBuildTypLcz.add("AREA_FRACTION_${type}".toString().toUpperCase())
         }
         for (type in parameters.floorAreaTypeAndCompositionLcz.keySet()) {
-            listFloorBuildTypLcz.add("FLOOR_AREA_FRACTION_${type}".toString())
+            listFloorBuildTypLcz.add("FLOOR_AREA_FRACTION_${type}".toString().toUpperCase())
         }
 
         // Indicator list (at RSU scale) for each road direction
         List listRoadDir = []
         for (int d = parameters.angleRangeSizeRoDirection; d <= 180; d += parameters.angleRangeSizeRoDirection) {
-            listRoadDir.add(Geoindicators.RsuIndicators.getRoadDirIndic(d, parameters.angleRangeSizeRoDirection, 0))
+            listRoadDir.add(Geoindicators.RsuIndicators.getRoadDirIndic(d, parameters.angleRangeSizeRoDirection, 0).toString().toUpperCase())
         }
 
         // Indicator list (at RSU scale) for each facade direction and height (projected facade distrib)
@@ -117,15 +117,15 @@ class WorkflowGeoIndicatorsTest {
                 h_up = parameters.facadeDensListLayersBottom[i + 1]
             }
             // Create names for vert and non vert roof density
-            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("vert_roof_area", 'h', h_bot, h_up))
-            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("non_vert_roof_area", 'h', h_bot, h_up))
+            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("vert_roof_area", 'h', h_bot, h_up).toString().toUpperCase())
+            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("non_vert_roof_area", 'h', h_bot, h_up).toString().toUpperCase())
 
             // Create names for facade density
-            String name_h = Geoindicators.RsuIndicators.getDistribIndicName("projected_facade_area_distribution", 'h', h_bot, h_up)
+            String name_h = Geoindicators.RsuIndicators.getDistribIndicName("projected_facade_area_distribution", 'h', h_bot, h_up).toString().toUpperCase()
             for (int d = 0; d < parameters.facadeDensNumberOfDirection / 2; d++) {
                 int d_bot = d * 360 / parameters.facadeDensNumberOfDirection
                 int d_up = d_bot + rangeDeg
-                listFacadeDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName(name_h, 'd', d_bot, d_up))
+                listFacadeDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName(name_h, 'd', d_bot, d_up).toString().toUpperCase())
             }
         }
         listNames = [
@@ -195,7 +195,7 @@ class WorkflowGeoIndicatorsTest {
         List realListRsu = datasource.getTable(geoIndicatorsCompute_i.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
-            assertTrue realListRsu.contains(i.toUpperCase())
+            assertTrue realListRsu.contains(i)
         }
         def expectListLczTempo = listColLcz
         expectListLczTempo = expectListLczTempo + listColBasic
@@ -334,6 +334,7 @@ class WorkflowGeoIndicatorsTest {
         def realListRsu = datasource.getTable(geoIndicatorsCompute_i.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
+            println(i)
             assertTrue realListRsu.contains(i)
         }
         if (indicatorUse.contains("LCZ")) {
