@@ -214,15 +214,20 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             create table $buildinType as select 
             MAX(part) FILTER (WHERE type = 'residential') as "residential",
             MAX(part) FILTER (WHERE  type = 'education')  as "education",
-            MAX(part) FILTER (WHERE  type = 'commercial')  as "commercial",
-            MAX(part) FILTER (WHERE  type = 'heavy_industry')  as "heavy_industry",
-            MAX(part) FILTER (WHERE  type = 'light_industry')  as "light_industry",
-            MAX(part) FILTER (WHERE  type = 'government')  as "government",
-            MAX(part) FILTER (WHERE  type = 'military')  as "military",
-            MAX(part) FILTER (WHERE  type = 'transport')  as "transport",
+            MAX(part) FILTER (WHERE  type = 'school')  as "school",
+            MAX(part) FILTER (WHERE  type = 'university')  as "university",
+            MAX(part) FILTER (WHERE  type = 'research_institute')  as "research_institute",
             MAX(part) FILTER (WHERE  type = 'construction')  as "construction",
-            MAX(part) FILTER (WHERE  type = 'agricultural')  as "agricultural",
-            MAX(part) FILTER (WHERE  type = 'social_building')  as "social_building",
+            MAX(part) FILTER (WHERE  type = 'commercial')  as "commercial",
+            MAX(part) FILTER (WHERE  type = 'retail')  as "retail",
+            MAX(part) FILTER (WHERE  type = 'industrial')  as "industrial",
+            MAX(part) FILTER (WHERE  type = 'port')  as "port",
+            MAX(part) FILTER (WHERE  type = 'refinery')  as "refinery",
+            MAX(part) FILTER (WHERE  type = 'government')  as "government",
+            MAX(part) FILTER (WHERE  type = 'community_centre')  as "community_centre",
+            MAX(part) FILTER (WHERE  type = 'military')  as "military",
+            MAX(part) FILTER (WHERE  type = 'railway')  as "railway",
+            MAX(part) FILTER (WHERE  type = 'farmyard')  as "farmyard",
             id_build FROM $urbanAreasPart where part > 0.9 group by id_build """.toString()
 
                 datasource.withBatch(100) { stmt ->
