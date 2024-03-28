@@ -234,7 +234,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         datasource """DROP TABLE IF EXISTS $urbanLCZ;
                                 CREATE TABLE $urbanLCZ
                                         AS SELECT   a.*, 
-                                                    a.AREA_FRACTION_COMMERCIAL + a.AREA_FRACTION_LIGHT_INDUSTRY AS AREA_FRACTION_LOWRISE_TYPO
+                                                    a.AREA_FRACTION_COMMERCIAL_LCZ + a.AREA_FRACTION_LIGHT_INDUSTRY_LCZ AS AREA_FRACTION_LOWRISE_TYPO
                                         FROM $rsuAllIndicators a
                                         LEFT JOIN $ruralLCZ b
                                         ON a.$ID_FIELD_RSU = b.$ID_FIELD_RSU
@@ -242,11 +242,11 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
 
         // 0. Set as industrial areas or large low-rise (commercial) having more of industrial or commercial than residential
         // and at least 1/3 of fraction
-        if (datasource.getColumnNames(urbanLCZ).contains("AREA_FRACTION_HEAVY_INDUSTRY")) {
+        if (datasource.getColumnNames(urbanLCZ).contains("AREA_FRACTION_HEAVY_INDUSTRY_LCZ")) {
             datasource """DROP TABLE IF EXISTS $classifiedIndustrialCommercialLcz;
                                 CREATE TABLE $classifiedIndustrialCommercialLcz
                                         AS SELECT   $ID_FIELD_RSU,
-                                                    CASE WHEN AREA_FRACTION_HEAVY_INDUSTRY > AREA_FRACTION_LOWRISE_TYPO
+                                                    CASE WHEN AREA_FRACTION_HEAVY_INDUSTRY_LCZ > AREA_FRACTION_LOWRISE_TYPO
                                                         THEN 10 
                                                         ELSE 8  END AS LCZ1,
                                                     null        AS LCZ2, 
@@ -254,8 +254,8 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                                     null        AS LCZ_UNIQUENESS_VALUE,
                                                     null        AS LCZ_EQUALITY_VALUE
                                         FROM $urbanLCZ 
-                                        WHERE   AREA_FRACTION_HEAVY_INDUSTRY > AREA_FRACTION_LOWRISE_TYPO AND AREA_FRACTION_HEAVY_INDUSTRY>0.33
-                                                OR AREA_FRACTION_LOWRISE_TYPO > AREA_FRACTION_RESIDENTIAL AND AREA_FRACTION_LOWRISE_TYPO>0.33
+                                        WHERE   AREA_FRACTION_HEAVY_INDUSTRY_LCZ > AREA_FRACTION_LOWRISE_TYPO AND AREA_FRACTION_HEAVY_INDUSTRY_LCZ>0.33
+                                                OR AREA_FRACTION_LOWRISE_TYPO > AREA_FRACTION_RESIDENTIAL_LCZ AND AREA_FRACTION_LOWRISE_TYPO>0.33
                                                     AND AVG_NB_LEV_AREA_WEIGHTED < 3
                                                     AND LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ<0.2
                                                     AND GROUND_SKY_VIEW_FACTOR > 0.7;
