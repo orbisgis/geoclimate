@@ -1216,6 +1216,7 @@ Map getParameters() {
             "nbEstimatedBuildHeight"        : 0,
             "svfSimplified"                 : true,
             "facadeDensListLayersBottom"    : [0, 10, 20, 30, 40, 50],
+            "buildHeightListLayersBottom"   : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
             "facadeDensNumberOfDirection"   : 12,
             "svfPointDensity"               : 0.008,
             "svfRayLength"                  : 100,

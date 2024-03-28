@@ -1766,7 +1766,7 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
     def HEIGHT_ROOF = "height_roof"
     def BUILDING_AREA = "building_area"
     def BUILD_HEIGHT = "BUILD_HEIGHT"
-    def BASE_NAME = "roof_fraction_distribution_h"
+    def BASE_NAME = "roof_fraction_distribution"
 
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, BASE_NAME
@@ -1812,7 +1812,7 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
     for (i in 1..(listLayersBottom.size() - 1)) {
         def layer_top = listLayersBottom[i]
         def layer_bottom = listLayersBottom[i - 1]
-        def indicNameH = "${BASE_NAME}${layer_bottom}_$layer_top".toString()
+        def indicNameH = getDistribIndicName(BASE_NAME, 'H', layer_bottom, layer_top).toString()
         tab_H[i - 1] = "${buildFracH}_$layer_bottom".toString()
         datasource """
                 DROP TABLE IF EXISTS $bufferTable;
@@ -1841,7 +1841,7 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
 
     // 4. Calculate the fraction of roof for the last level of the canopy
     def layer_bottom = listLayersBottom[listLayersBottom.size() - 1]
-    def indicNameH = "${BASE_NAME}${layer_bottom}_inf".toString()
+    def indicNameH = getDistribIndicName(BASE_NAME, 'H', layer_bottom, null).toString()
     tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom".toString()
     datasource """
             DROP TABLE IF EXISTS $bufferTable;
