@@ -444,7 +444,7 @@ class WorkflowGeoIndicatorsTest {
         String grid = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, datasource.getExtent("building"), 10, 10, 0)
         assertNotNull(grid)
         String grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, [],
-                "building", null, null, null, null, null,
+                null, "building", null, null, null, null, null,
                 null, null, null)
         assertNull(grid_indicators)
         def list_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
@@ -453,7 +453,7 @@ class WorkflowGeoIndicatorsTest {
                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
-        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators,
+        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators, null,
                 "building", null, null, null, null, null, null,
                 null, null, null)
         assertNotNull(grid_indicators)

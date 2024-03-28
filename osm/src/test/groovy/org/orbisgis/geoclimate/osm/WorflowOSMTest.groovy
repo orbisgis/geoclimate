@@ -766,6 +766,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def computeRasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource,
                     gridProcess,
                     wrf_indicators,
+                    null,
                     buildingUpdated,
                     roadFile + test,
                     vegetationFile + test,
