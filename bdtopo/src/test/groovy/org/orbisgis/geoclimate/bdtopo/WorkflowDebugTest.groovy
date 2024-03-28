@@ -137,7 +137,7 @@ class WorkflowDebugTest {
     @Test
     void testIntegrationFolderInput() {
         def input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo2/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D035_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D035-ED182"
-        def locations = [ "Redon"]
+        def locations = [ "Bordeaux"]
         String directory = "/tmp/bdtopo2"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -146,7 +146,7 @@ class WorkflowDebugTest {
                 "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb": [
                         "folder": dirFile.absolutePath,
-                        "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
+                        "name"  : "bdtopo_workflow_db",
                         "delete": true
                 ],
                 "input"       : [
@@ -158,25 +158,31 @@ class WorkflowDebugTest {
                 "parameters"  :
                         ["distance"       : 0,
                          rsu_indicators   : [
-                                 "indicatorUse": ["LCZ",  "UTRF"]
+                                 "indicatorUse": ["LCZ",  "UTRF",  "TEB"]
+
                          ],
                          "grid_indicators": [
-                                 "x_size"    : 1000,
-                                 "y_size"    : 1000,
+                                 "x_size"    : 100,
+                                 "y_size"    : 100,
                                  "indicators" :["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
                                  "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                                                //"FREE_EXTERNAL_FACADE_DENSITY",
                                  "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                 "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
+                                 "SEA_LAND_FRACTION", "ASPECT_RATIO",
+                                                //"SVF",
                                  "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
                                  "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                  "LCZ_PRIMARY"]
+                                 ,
+                                 "lcz_lod":2,
+                                 "sprawl_areas":true
                          ]
                         ]
         ]
         //BDTopo.v2(bdTopoParameters)
 
-        input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo3/BDTOPO_3-0_TOUSTHEMES_SHP_LAMB93_D035_2022-09-15/BDTOPO"
+        input_data = "/home/ebocher/Téléchargements/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D033_2023-12-15/BDTOPO/1_DONNEES_LIVRAISON_2023-12-00099"
 
         directory = "/tmp/bdtopo3"
         dirFile = new File(directory)
@@ -188,5 +194,6 @@ class WorkflowDebugTest {
         BDTopo.v3(bdTopoParameters)
 
     }
+
 
 }
