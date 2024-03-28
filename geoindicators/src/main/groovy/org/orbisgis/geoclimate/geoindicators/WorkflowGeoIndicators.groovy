@@ -621,16 +621,9 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // Calculate building height distribution
     String buildingCutted
     if (indicatorUse*.toUpperCase().contains("TEB")) {
-        if (!buildingCutted) {
-            buildingCutted = cutBuilding(datasource, rsu, buildingTable)
-            if (!buildingCutted) {
-                info "Cannot split the building with the grid to compute the building height distribution"
-                return
-            }
-        }
         def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact(datasource,
-                rsu, buildingCutted, columnIdRsu,
-                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], false, prefixName)
+                rsu, buildingTable, columnIdRsu,
+                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], true, prefixName)
         if (roofFractionDistributionExact) {
             finalTablesToJoin.put(roofFractionDistributionExact, columnIdRsu)
         } else {
