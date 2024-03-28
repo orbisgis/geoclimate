@@ -649,10 +649,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Marseille"
+        def location = "Redon"
         def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
-        //location = nominatim.bbox
+        location = nominatim.bbox
         //location=[43.214935,5.336351,43.244890,5.383558]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -677,7 +677,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
                                  "indicatorUse": ["LCZ", "UTRF", "TEB"]
 
-                         ],/*"grid_indicators": [
+                         ],"grid_indicators": [
                                 "x_size": grid_size,
                                 "y_size": grid_size,
                                 //"rowCol": true,
@@ -686,9 +686,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                                                 "LCZ_PRIMARY",
-                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
-                                                "ASPECT_RATIO","SVF",
-                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
+                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
+                                                "SEA_LAND_FRACTION",
+                                                "ASPECT_RATIO",
+                                                //"SVF",
+                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"],
+                                "lcz_lod":2,
+                                "sprawl_areas":true
                         ]/*,    "worldpop_indicators": true,
 
                          "road_traffic"                                         : true,
@@ -698,19 +702,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         Map results = OSM.workflow(osm_parmeters)
-        if(results) {
+        /*if(results) {
             H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_test_integration;AUTO_SERVER=TRUE")
             def tableNames = results.values()
             def gridTable = tableNames.grid_indicators[0]
-            String multiscaleGrid = Geoindicators.GridIndicators.multiscaleLCZGrid(h2gis, gridTable, "id_grid", 1)
-            String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis, multiscaleGrid,grid_size)
+            String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis, gridTable,grid_size)
             def folder_save =location in Collection ? location.join("_") : location
             def path = directory + File.separator + "osm_$folder_save" +  File.separator
             path = "/tmp/"
             h2gis.save(sprawl_areas, path + "sprawl_areas.fgb", true)
-
             h2gis.save(tableNames.rsu_lcz[0], path + "rsu_lcz.fgb", true)
-        }
+        }*/
     }
 
     @Disabled
@@ -728,7 +730,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                               "FREE_EXTullERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
                               "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
-        def databasePath = '/home/decide/Data/WRF/Data/output/geoclimate_chain_dbtest;AUTO_SERVER=TRUE'
+        def databasePath = '/tmp/geoclimate_chain_dbtest;AUTO_SERVER=TRUE'
         def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
         def datasource = H2GIS.open(h2gis_properties)
         def srid_calc = 3007
@@ -758,33 +760,34 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def rasterizedIndicators
         def rsuLczUpdated = "UPDATED_HEIGHTTEST_RSU_LCZ"
         println(""" Grid indicators are calculated """)
-        def gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid()
-        if (gridProcess.execute(datasource: datasource, envelope: geomEnv,
-                x_size: x_size, y_size: y_size,
-                srid: srid_calc, rowCol: false)) {
-            def gridTableName = gridProcess.results.outputTableName
-            def computeRasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators()
-            if (!computeRasterizedIndicators.execute(datasource: datasource,
-                    grid: gridTableName,
-                    list_indicators: wrf_indicators,
-                    building: buildingUpdated,
-                    rsu_lcz: rsuLczUpdated,
-                    sea_land_mask: sea_land_maskFile + test,
-                    vegetation: vegetationFile + test,
-                    water: waterFile + test,
-                    impervious: imperviousFile + test,
-                    road: roadFile + test,
-                    prefixName: prefixName)) {
+        def gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, geomEnv,
+                x_size,  y_size,srid_calc, false)
+        if (gridProcess) {
+            def computeRasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource,
+                    gridProcess,
+                    wrf_indicators,
+                    null,
+                    buildingUpdated,
+                    roadFile + test,
+                    vegetationFile + test,
+                    waterFile + test,
+                    imperviousFile + test,
+                    rsuLczUpdated,
+                    null,
+                    null,
+                    sea_land_maskFile + test,
+                    prefixName)
+            if (!computeRasterizedIndicators) {
                 println("Could not rasterized indicators")
             }
-            rasterizedIndicators = computeRasterizedIndicators.results.outputTableName
+            def reproject = false
+            def deleteOutputData = true
+            def outputFolder = new File('/home/decide/Data/WRF/Data/output/updated')
+            def subFolder = new File(outputFolder.getAbsolutePath() + File.separator + "osm_" + id_zone)
+            Geoindicators.WorkflowUtilities.saveToAscGrid(computeRasterizedIndicators, subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
+
         }
-        def reproject = false
-        def deleteOutputData = true
-        def outputFolder = new File('/home/decide/Data/WRF/Data/output/updated')
-        def subFolder = new File(outputFolder.getAbsolutePath() + File.separator + "osm_" + id_zone)
-        Geoindicators.WorkflowUtilities.saveToAscGrid("grid_indicators", subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
-    }
+            }
 
     @Test
     //Integration tests

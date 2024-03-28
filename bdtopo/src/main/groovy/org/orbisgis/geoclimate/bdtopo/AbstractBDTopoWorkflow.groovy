@@ -578,6 +578,18 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         if (grid_rowCol && grid_rowCol in Boolean) {
                             grid_indicators_tmp.rowCol = grid_rowCol
                         }
+                        def lcz_lod = grid_indicators.lcz_lod
+                        if (lcz_lod && lcz_lod in Integer) {
+                            if (lcz_lod < 0 && lcz_lod >10) {
+                                error "The number of level of details to aggregate the LCZ must be between 0 and 10"
+                                return
+                            }
+                            grid_indicators_tmp.put("lcz_lod", lcz_lod)
+                        }
+                        def sprawl_areas = grid_indicators.sprawl_areas
+                        if (sprawl_areas && sprawl_areas in Boolean) {
+                            grid_indicators_tmp.put("sprawl_areas", sprawl_areas)
+                        }
 
                         defaultParameters.put("grid_indicators", grid_indicators_tmp)
                     } else {
@@ -634,7 +646,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 "grid_indicators",
                 "road_traffic",
                 "population",
-                "ground_acoustic"]
+                "ground_acoustic",
+                "sprawl_areas"]
     }
 
 
@@ -681,8 +694,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         }
 
         def tmp_results = [:]
+        def rows =  h2gis_datasource.rows("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE")
         //We process each zones because the input zone can overlap several communes
-        h2gis_datasource.eachRow("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE") { row ->
+        rows.each { row ->
             Geometry geom = row.the_geom
             def code_insee = row.code_insee
             info "Processing the commune with the code insee :  ${code_insee}"
@@ -835,6 +849,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         def grid_indicators_params = processing_parameters.grid_indicators
         //Compute the grid indicators
         if (grid_indicators_params) {
+            info("Start computing grid_indicators")
             def x_size = grid_indicators_params.x_size
             def y_size = grid_indicators_params.y_size
             Geometry geomEnv = h2gis_datasource.getSpatialTable(results.zone).getExtent()
@@ -842,13 +857,20 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     x_size, y_size, srid, grid_indicators_params.rowCol)
             if (gridTableName) {
                 String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, gridTableName,
-                        grid_indicators_params.indicators,
+                        grid_indicators_params.indicators,grid_indicators_params.lcz_lod,
                         results.building, results.road, results.vegetation,
                         results.water, results.impervious,
                         results.rsu_lcz, results.rsu_utrf_area, "", "",
                         processing_parameters.prefixName)
                 if (rasterizedIndicators) {
                     results.put("grid_indicators", rasterizedIndicators)
+                    if(grid_indicators_params.sprawl_areas){
+                       String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis_datasource, rasterizedIndicators, Math.max(x_size,y_size))
+                        if(sprawl_areas){
+                            results.put("sprawl_areas", sprawl_areas)
+                        }
+                    }
+                    info("End computing grid_indicators")
                 }
             } else {
                 info "Cannot create a grid to aggregate the indicators"

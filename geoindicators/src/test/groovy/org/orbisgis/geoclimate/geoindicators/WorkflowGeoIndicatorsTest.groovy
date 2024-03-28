@@ -183,8 +183,6 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "", "", "", "", "",
                 ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
-        datasource.save(inputTableNames.vegetationTable, "/tmp/vegetation.fgb", true)
-        datasource.save(inputTableNames.roadTable, "/tmp/road.fgb", true)
         assertNotNull(geoIndicatorsCompute_i)
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
         assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
@@ -515,7 +513,7 @@ class WorkflowGeoIndicatorsTest {
         String grid = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, datasource.getExtent("building"), 10, 10, 0)
         assertNotNull(grid)
         String grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, [],
-                "building", null, null, null, null, null,
+                null, "building", null, null, null, null, null,
                 null, null, null)
         assertNull(grid_indicators)
         def list_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
@@ -524,8 +522,8 @@ class WorkflowGeoIndicatorsTest {
                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
-        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators,
-                "building", null, null, null, null, null,
+        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators, null,
+                "building", null, null, null, null, null, null,
                 null, null, null)
         assertNotNull(grid_indicators)
         assertEquals(1, datasource.getRowCount(grid_indicators))
@@ -608,5 +606,20 @@ class WorkflowGeoIndicatorsTest {
         assertNotNull Geoindicators.version()
         assertNotNull Geoindicators.buildNumber()
     }
+
+    @Disabled
+    @Test
+     void test(){
+        datasource.load("/tmp/road_inter.geojson", "road", true)
+        datasource.load("/tmp/rsu_table.geojson", "rsu", true)
+
+        datasource.createSpatialIndex("road")
+        datasource.createSpatialIndex("rsu")
+        datasource.execute("""
+        select st_intersection(a.the_geom, b.the_geom) as the_geom from road as a, rsu as b where a.the_geom && b.the_geom 
+        and st_intersects(a.the_geom, b.the_geom);
+        """.toString())
+    }
+
 
 }

@@ -447,6 +447,8 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
         error "The database to store the BD Topo data doesn't exist"
         return
     }
+    info "Formating BDTopo GIS layers"
+
     //Prepare the existing bdtopo data in the local database
     def importPreprocess = BDTopo.InputDataLoading.loadV3(datasource, layers, distance)
 
@@ -487,7 +489,7 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
             importPreprocess.water,
             zoneTable)
 
-    debug "End of the BDTopo extract transform process."
+    info "All layers have been formatted"
 
     return ["building"  : finalBuildings, "road": finalRoads, "rail": finalRails, "water": finalHydro,
             "vegetation": finalVeget, "impervious": finalImpervious, "urban_areas": urbanAreas, "zone": zoneTable]

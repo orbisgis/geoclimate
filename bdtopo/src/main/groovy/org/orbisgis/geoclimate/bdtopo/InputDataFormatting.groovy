@@ -333,7 +333,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
             }
         }
     }
-    debug 'Buildings transformation finishes'
+    info "Building formatted"
     return outputTableName
 }
 
@@ -567,7 +567,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
             }
         }
     }
-    debug('Roads transformation finishes')
+    info "Road formatted"
     return outputTableName
 }
 
@@ -648,7 +648,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
             }
         }
     }
-    debug('Hydro transformation finishes')
+    info "Water formatted"
     return outputTableName
 }
 
@@ -744,7 +744,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
             }
         }
     }
-    debug('Rails transformation finishes')
+    info "Rail formatted"
     return outputTableName
 }
 
@@ -851,7 +851,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
             }
         }
     }
-    debug('Vegetation transformation finishes')
+    info "Vegetation formatted"
     return outputTableName
 }
 
@@ -908,7 +908,7 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
         }
     }
     datasource.execute("DROP TABLE IF EXISTS $polygonizedTable".toString())
-    debug('Impervious areas transformation finishes')
+    info "Impervious areas formatted"
     return outputTableName
 }
 
