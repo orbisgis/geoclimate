@@ -684,19 +684,19 @@ class RsuIndicatorsTests {
                 [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], "test")
 
         assertNotNull(p)
-        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
-        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_15_20, 0.00001
-        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
-        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
-        assertEquals 1.0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
-        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
-        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
-        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
-        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
-        assertEquals 1.0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
-        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_20_25, 0.00001
-        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_0_5, 0.00001
-        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_50_INF, 0.00001
+        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_H0_5, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_H15_20, 0.00001
+        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_H20_25, 0.00001
+        assertEquals 1.0 / 3, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").ROOF_FRACTION_DISTRIBUTION_H50, 0.00001
+        assertEquals 1.0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_H20_25, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_H0_5, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 2").ROOF_FRACTION_DISTRIBUTION_H50, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_H20_25, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_H0_5, 0.00001
+        assertEquals 1.0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 3").ROOF_FRACTION_DISTRIBUTION_H50, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_H20_25, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_H0_5, 0.00001
+        assertEquals 0, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 4").ROOF_FRACTION_DISTRIBUTION_H50, 0.00001
     }
 
     @Test

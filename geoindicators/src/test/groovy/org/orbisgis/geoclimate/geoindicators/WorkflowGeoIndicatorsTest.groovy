@@ -106,7 +106,7 @@ class WorkflowGeoIndicatorsTest {
         // Indicator list (at RSU scale) for each facade direction and height (projected facade distrib)
         // and also for height only (vert and non vert roof density)
         List listFacadeDistrib = []
-        List listHeightDistrib = []
+        List listRoofDensDistrib = []
         int rangeDeg = 360 / parameters.facadeDensNumberOfDirection
         for (int i in 0..parameters.facadeDensListLayersBottom.size()-1) {
             Integer h_bot = parameters.facadeDensListLayersBottom[i]
@@ -117,8 +117,8 @@ class WorkflowGeoIndicatorsTest {
                 h_up = parameters.facadeDensListLayersBottom[i + 1]
             }
             // Create names for vert and non vert roof density
-            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("vert_roof_area", 'h', h_bot, h_up).toString().toUpperCase())
-            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("non_vert_roof_area", 'h', h_bot, h_up).toString().toUpperCase())
+            listRoofDensDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("vert_roof_area", 'h', h_bot, h_up).toString().toUpperCase())
+            listRoofDensDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("non_vert_roof_area", 'h', h_bot, h_up).toString().toUpperCase())
 
             // Create names for facade density
             String name_h = Geoindicators.RsuIndicators.getDistribIndicName("projected_facade_area_distribution", 'h', h_bot, h_up).toString().toUpperCase()
@@ -128,10 +128,22 @@ class WorkflowGeoIndicatorsTest {
                 listFacadeDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName(name_h, 'd', d_bot, d_up).toString().toUpperCase())
             }
         }
+        // Indicator list (at RSU scale) for each building height level
+        List listHeightDistrib = []
+        for (int i in 0..parameters.buildHeightListLayersBottom.size()-1) {
+            Integer h_bot = parameters.buildHeightListLayersBottom[i]
+            Integer h_up
+            if (h_bot == parameters.buildHeightListLayersBottom[-1]) {
+                h_up = null
+            } else {
+                h_up = parameters.buildHeightListLayersBottom[i + 1]
+            }
+            listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("roof_fraction_distribution", 'h', h_bot, h_up).toString().toUpperCase())
+        }
         listNames = [
                 "TEB" : ["VERT_ROOF_DENSITY", "NON_VERT_ROOF_DENSITY"] +
-                        listRoadDir + listFacadeDistrib + listHeightDistrib + listBuildTypTeb +
-                        ["EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
+                        listRoadDir + listFacadeDistrib + listRoofDensDistrib + listBuildTypTeb + listHeightDistrib +
+                        ["AVG_HEIGHT_ROOF", "STD_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH"],
                 "UTRF": ["AREA", "ASPECT_RATIO", "BUILDING_TOTAL_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                          "VEGETATION_FRACTION_UTRF", "LOW_VEGETATION_FRACTION_UTRF", "HIGH_VEGETATION_IMPERVIOUS_FRACTION_UTRF",
                          "HIGH_VEGETATION_PERVIOUS_FRACTION_UTRF", "ROAD_FRACTION_UTRF", "IMPERVIOUS_FRACTION_UTRF",
@@ -144,7 +156,6 @@ class WorkflowGeoIndicatorsTest {
                 "LCZ" : ["BUILDING_FRACTION_LCZ", "ASPECT_RATIO", "GROUND_SKY_VIEW_FACTOR", "PERVIOUS_FRACTION_LCZ",
                          "IMPERVIOUS_FRACTION_LCZ", "GEOM_AVG_HEIGHT_ROOF", "EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH", "EFFECTIVE_TERRAIN_ROUGHNESS_CLASS",
                          "HIGH_VEGETATION_FRACTION_LCZ", "LOW_VEGETATION_FRACTION_LCZ", "WATER_FRACTION_LCZ"] + listBuildTypLcz]
-
 
         // Basic columns at RSU scale
         listColBasic = ["ID_RSU", "THE_GEOM"]

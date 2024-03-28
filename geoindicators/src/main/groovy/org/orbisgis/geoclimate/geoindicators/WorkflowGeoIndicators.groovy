@@ -618,6 +618,18 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         finalTablesToJoin.put(computeGeometryProperties, columnIdRsu)
     }
 
+    // Calculate building height distribution
+    String buildingCutted
+    if (indicatorUse*.toUpperCase().contains("TEB")) {
+        def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact(datasource,
+                rsu, buildingTable, columnIdRsu,
+                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], true, prefixName)
+        if (roofFractionDistributionExact) {
+            finalTablesToJoin.put(roofFractionDistributionExact, columnIdRsu)
+        } else {
+            info "Cannot compute the roof fraction distribution."
+        }
+    }
 
     // Building free external facade density
     if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
@@ -637,7 +649,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     def inputVarAndOperations = [:]
     def heightColumnName = parameters.heightColumnName
 
-    if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("TEB")) {
+    if (indicatorUse*.toUpperCase().contains("LCZ")) {
         inputVarAndOperations = inputVarAndOperations << [(heightColumnName): ["GEOM_AVG"]]
     }
     if (indicatorUse*.toUpperCase().contains("UTRF")) {
@@ -649,12 +661,14 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                           "building"                : ["NB_DENS"],
                                                           "pop"                     : ["SUM", "DENS"]]
     }
+    if (indicatorUse*.toUpperCase().contains("TEB")) {
+        inputVarAndOperations = inputVarAndOperations << [(heightColumnName): ["GEOM_AVG", "AVG", "STD"]]
+    }
     def rsuStatisticsUnweighted = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource, buildingTable,
             rsu, columnIdRsu, columnIdBuild,
             inputVarAndOperations, temporaryPrefName)
     if (!rsuStatisticsUnweighted) {
-        info "Cannot compute the statistics : building, building volume densities, building number density" +
-                " and mean building neighbor number for the RSU"
+        info "Cannot compute the building unweighted statistics at RSU scale"
         return
     }
     // Join in an intermediate table (for perviousness fraction)
@@ -1195,6 +1209,7 @@ Map getParameters() {
             "nbEstimatedBuildHeight"        : 0,
             "svfSimplified"                 : true,
             "facadeDensListLayersBottom"    : [0, 10, 20, 30, 40, 50],
+            "buildHeightListLayersBottom"   : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
             "facadeDensNumberOfDirection"   : 12,
             "svfPointDensity"               : 0.008,
             "svfRayLength"                  : 100,
@@ -2033,7 +2048,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (!buildingCutted) {
             buildingCutted = cutBuilding(datasource, grid, building)
             if (!buildingCutted) {
-                info "Cannot split the building with the grid to compute the building height distance"
+                info "Cannot split the building with the grid to compute the building height distribution"
                 return
             }
         }
