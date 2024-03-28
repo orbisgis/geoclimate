@@ -837,7 +837,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
     def utrfFloorArea = "UTRF_RSU_FLOOR_AREA" + baseNameUtrfRsu
 
     if (indicatorUse.contains("LCZ")) {
-        info """ The LCZ classification will be performed """
+        info """The LCZ classification will be performed """
         def lczIndicNames = ["GEOM_AVG_HEIGHT_ROOF"              : "HEIGHT_OF_ROUGHNESS_ELEMENTS",
                              "BUILDING_FRACTION_LCZ"             : "BUILDING_SURFACE_FRACTION",
                              "ASPECT_RATIO"                      : "ASPECT_RATIO",
@@ -875,7 +875,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
     // If the UTRF indicators should be calculated, we only affect a URBAN typo class
     // to each building and then to each RSU
     if (indicatorUse.contains("UTRF") && runUTRFTypology) {
-        info """ The URBAN TYPOLOGY classification is performed """
+        info """The URBAN TYPOLOGY classification is performed """
         def gatheredScales = Geoindicators.GenericIndicators.gatherScales(datasource,
                 building_indicators, block_indicators,
                 rsu_indicators, "BUILDING",
@@ -1031,7 +1031,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
                           String rsu, double surface_vegetation,
                           double surface_hydro, double surface_urban_areas,
                           double snappingTolerance, List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") {
-    info "Create the units of analysis..."
+    info "Create the spatial units..."
     def idRsu = "id_rsu"
     def tablesToDrop = []
     if (!rsu) {
@@ -1660,7 +1660,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 false, "lcz")
         if (upperScaleAreaStatistics) {
             indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
-
             if (list_indicators_upper.contains("LCZ_PRIMARY")) {
                 def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
                         upperScaleAreaStatistics, upperScaleAreaStatistics, grid_column_identifier,
@@ -2092,6 +2091,10 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     // Remove temporary tables
     datasource.dropTable(tablesToDrop)
+
+    if(lcz_lod){
+        return Geoindicators.GridIndicators.multiscaleLCZGrid(datasource, grid_indicators_table,grid_column_identifier,lcz_lod)
+    }
     return grid_indicators_table
 }
 

@@ -980,12 +980,11 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                     levelConsiderated.each { filtering += "$baseFiltering AND b.$Z_INDEX=$it OR " }
                     filtering = filtering[0..-4]
                 }
-                def selectionQuery = "DROP TABLE IF EXISTS $roadInter; " +
-                        "CREATE TABLE $roadInter AS SELECT a.$ID_COLUMN_RSU AS id_rsu, " +
-                        "ST_AREA(a.$GEOMETRIC_COLUMN_RSU) AS rsu_area, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, " +
-                        "b.$GEOMETRIC_COLUMN_ROAD) AS the_geom $ifZindex FROM $rsuTable a, $roadTable b " +
-                        "WHERE $filtering;"
-                datasource selectionQuery.toString()
+                datasource.execute("""DROP TABLE IF EXISTS $roadInter; 
+                        CREATE TABLE $roadInter AS SELECT a.$ID_COLUMN_RSU AS id_rsu, 
+                        ST_AREA(a.$GEOMETRIC_COLUMN_RSU) AS rsu_area, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, 
+                        b.$GEOMETRIC_COLUMN_ROAD) AS the_geom $ifZindex FROM $rsuTable a, $roadTable b 
+                        WHERE $filtering;""".toString())
 
                 // If all roads are considered at the same level...
                 if (!levelConsiderated) {

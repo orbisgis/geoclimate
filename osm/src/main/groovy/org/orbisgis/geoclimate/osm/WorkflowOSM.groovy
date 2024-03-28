@@ -297,7 +297,8 @@ Map workflow(def input) {
                                     "building_height_missing",
                                     "road_traffic",
                                     "population",
-                                    "ground_acoustic"]
+                                    "ground_acoustic",
+                                    "sprawl_areas"]
 
     //Get processing parameters
     def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
@@ -527,7 +528,6 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     //Drop the intermediate GIS layers
                     h2gis_datasource.dropTable(gisLayersResults.values().toArray(new String[0]))
 
-                    debug "OSM GIS layers formated"
                     //Add the GIS layers to the list of results
                     def results = [:]
                     results.put("zone", utm_zone_table)
@@ -635,6 +635,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     //Default
                     def outputGrid = "fgb"
                     if (grid_indicators_params) {
+                        info("Start computing grid_indicators")
                         if (!geomEnv) {
                             geomEnv = h2gis_datasource.getSpatialTable(utm_zone_table).getExtent()
                         }
@@ -646,7 +647,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         if (grid) {
                             String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                                     grid_indicators_params.indicators,
-                                    grid_indicators_params.lzc_lod,
+                                    grid_indicators_params.lcz_lod,
                                     results.building, roadTableName, vegetationTableName,
                                     hydrographicTableName, imperviousTableName,
                                     results.rsu_lcz,
@@ -657,9 +658,13 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             if (rasterizedIndicators) {
                                 h2gis_datasource.dropTable(grid)
                                 results.put("grid_indicators", rasterizedIndicators)
-                                if(grid_indicators_params.lzc_lod && grid_indicators_params.indicators.contains("LCZ_PRIMARY")){
-
+                                if(grid_indicators_params.sprawl_areas){
+                                    String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis_datasource, rasterizedIndicators, Math.max(x_size,y_size))
+                                    if(sprawl_areas){
+                                        results.put("sprawl_areas", sprawl_areas)
+                                    }
                                 }
+                                info("End computing grid_indicators")
                             }
                         } else {
                             info "Cannot create a grid to aggregate the indicators"
@@ -936,7 +941,15 @@ def extractProcessingParameters(def processing_parameters) {
                     }
                     def lcz_lod = grid_indicators.lcz_lod
                     if (lcz_lod && lcz_lod in Integer) {
+                        if (lcz_lod < 0 && lcz_lod >10) {
+                            error "The number of level of details to aggregate the LCZ must be between 0 and 10"
+                            return
+                        }
                         grid_indicators_tmp.put("lcz_lod", lcz_lod)
+                    }
+                    def sprawl_areas = grid_indicators.sprawl_areas
+                    if (sprawl_areas && sprawl_areas in Boolean) {
+                        grid_indicators_tmp.put("sprawl_areas", sprawl_areas)
                     }
                     defaultParameters.put("grid_indicators", grid_indicators_tmp)
                 } else {

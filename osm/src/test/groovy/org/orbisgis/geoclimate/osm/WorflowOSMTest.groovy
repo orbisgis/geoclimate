@@ -652,7 +652,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def location = "Redon"
         def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
-        //location = nominatim.bbox
+        location = nominatim.bbox
         //location=[43.214935,5.336351,43.244890,5.383558]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -686,10 +686,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "WATER_FRACTION","VEGETATION_FRACTION",
                                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                                                 "LCZ_PRIMARY",
-                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",  "SEA_LAND_FRACTION",
-                                                "ASPECT_RATIO","SVF",
+                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
+                                                "SEA_LAND_FRACTION",
+                                                "ASPECT_RATIO",
+                                                //"SVF",
                                                 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"],
-                                "lcz_lod":2
+                                "lcz_lod":2,
+                                "sprawl_areas":true
                         ]/*,    "worldpop_indicators": true,
 
                          "road_traffic"                                         : true,
@@ -699,19 +702,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         Map results = OSM.workflow(osm_parmeters)
-        if(results) {
+        /*if(results) {
             H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_test_integration;AUTO_SERVER=TRUE")
             def tableNames = results.values()
             def gridTable = tableNames.grid_indicators[0]
-            String multiscaleGrid = Geoindicators.GridIndicators.multiscaleLCZGrid(h2gis, gridTable, "id_grid", 1)
-            String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis, multiscaleGrid,grid_size)
+            String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis, gridTable,grid_size)
             def folder_save =location in Collection ? location.join("_") : location
             def path = directory + File.separator + "osm_$folder_save" +  File.separator
             path = "/tmp/"
             h2gis.save(sprawl_areas, path + "sprawl_areas.fgb", true)
-
             h2gis.save(tableNames.rsu_lcz[0], path + "rsu_lcz.fgb", true)
-        }
+        }*/
     }
 
     @Disabled
