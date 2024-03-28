@@ -29,9 +29,9 @@ CREATE TABLE rsu_test_all_indics_for_lcz(id_rsu int, sky_view_factor float, aspe
                                         IMPERVIOUS_FRACTION_LCZ float, PERVIOUS_FRACTION_LCZ float, GEOM_AVG_HEIGHT_ROOF float,
                                         EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH float, HIGH_VEGETATION_FRACTION_LCZ float,
                                         LOW_VEGETATION_FRACTION_LCZ float, WATER_FRACTION_LCZ float, IMPERVIOUS_FRACTION float,
-                                        AREA_FRACTION_HEAVY_INDUSTRY float, AREA_FRACTION_COMMERCIAL float,
-                                        AREA_FRACTION_RESIDENTIAL float, AVG_NB_LEV_AREA_WEIGHTED float,
-                                        GROUND_SKY_VIEW_FACTOR float, AREA_FRACTION_LIGHT_INDUSTRY float);
+                                        AREA_FRACTION_HEAVY_INDUSTRY_LCZ float, AREA_FRACTION_COMMERCIAL_LCZ float,
+                                        AREA_FRACTION_RESIDENTIAL_LCZ float, AVG_NB_LEV_AREA_WEIGHTED float,
+                                        GROUND_SKY_VIEW_FACTOR float, AREA_FRACTION_LIGHT_INDUSTRY_LCZ float);
 
 INSERT INTO building_test VALUES (1, 1, 1, 0, 'POLYGON((4 4, 10 4, 10 30, 4 30, 4 4))'::GEOMETRY, 8, 8, 156, 64, 2, 64, 0, 0, 'industrial'),
  (2, 2, 1, 0, 'POLYGON((12 4, 20 4, 20 9, 12 9, 12 4))'::GEOMETRY, 10, 13, 40, 26, 3, 26, 0, 0, 'detached'),

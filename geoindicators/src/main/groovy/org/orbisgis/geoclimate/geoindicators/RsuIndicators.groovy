@@ -482,8 +482,7 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
         def layerQuery = "DROP TABLE IF EXISTS $buildingLayer; " +
                 "CREATE TABLE $buildingLayer AS SELECT the_geom, "
         for (i in 1..(listLayersBottom.size() - 1)) {
-            names[i - 1] = "${BASE_NAME}_H${listLayersBottom[i - 1]}" +
-                    "_${listLayersBottom[i]}"
+            names.add(getDistribIndicName(BASE_NAME, 'H', listLayersBottom[i - 1], listLayersBottom[i]))
             layerQuery += "CASEWHEN(z_max <= ${listLayersBottom[i - 1]}, 0, " +
                     "CASEWHEN(z_min >= ${listLayersBottom[i]}, " +
                     "0, ${listLayersBottom[i] - listLayersBottom[i - 1]}-" +
@@ -492,8 +491,7 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
         }
 
         // ...and for the final level
-        names[listLayersBottom.size() - 1] = "$BASE_NAME" +
-                "_H${listLayersBottom[listLayersBottom.size() - 1]}"
+        names.add(getDistribIndicName(BASE_NAME, 'H', listLayersBottom[listLayersBottom.size() - 1], null))
         layerQuery += "CASEWHEN(z_max >= ${listLayersBottom[listLayersBottom.size() - 1]}, " +
                 "z_max-GREATEST(z_min,${listLayersBottom[listLayersBottom.size() - 1]}), 0) " +
                 "AS ${names[listLayersBottom.size() - 1]} FROM $buildingFree"
@@ -532,24 +530,24 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
         def sumNamesDir = []
         def queryColumns = []
         for (int d = 0; d < numberOfDirection / 2; d++) {
-            def dirDeg = d * 360 / numberOfDirection
+            int dirDeg = d * 360 / numberOfDirection
             def dirRad = toRadians(dirDeg)
-            def rangeDeg = 360 / numberOfDirection
+            int rangeDeg = 360 / numberOfDirection
             def dirRadMid = dirRad + dirMedRad
             def dirDegMid = dirDeg + dirMedDeg
             // Define the field name for each of the directions and vertical layers
             names.each {
-                namesAndTypeDir += " " + it + "_D${dirDeg}_${dirDeg + rangeDeg} double"
+                namesAndTypeDir += " " + "${getDistribIndicName(it, 'D', dirDeg, dirDeg + rangeDeg)} double precision"
                 queryColumns += """CASE
                             WHEN  a.azimuth-$dirRadMid>PI()/2
                             THEN  a.$it*a.length*COS(a.azimuth-$dirRadMid-PI()/2)/2
                             WHEN  a.azimuth-$dirRadMid<-PI()/2
                             THEN  a.$it*a.length*COS(a.azimuth-$dirRadMid+PI()/2)/2
                             ELSE  a.$it*a.length*ABS(SIN(a.azimuth-$dirRadMid))/2 
-                            END AS ${it}_D${dirDeg}_${dirDeg + rangeDeg}"""
+                            END AS ${getDistribIndicName(it, 'D', dirDeg, dirDeg + rangeDeg)}"""
                 onlyNamesDir += "${it}_D${dirDeg}_${dirDeg + rangeDeg}"
                 sumNamesDir += "COALESCE(SUM(b.${it}_D${dirDeg}_${dirDeg + rangeDeg}), 0) " +
-                        "AS ${it}_D${dirDeg}_${dirDeg + rangeDeg} "
+                        "AS ${getDistribIndicName(it, 'D', dirDeg, dirDeg + rangeDeg)}"
             }
         }
         namesAndTypeDir = namesAndTypeDir.join(",")
@@ -582,6 +580,30 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
                         $buildingFree, $buildingFreeExpl, $buildingLayer, $rsuInter, $finalIndicator;""".toString()
     }
     return outputTableName
+}
+
+/**
+ * Create indicator names for building facade and building roof distribution indicators
+ *
+ * @param base_name The base name of the indicator
+ * @param var_type A prefix corresponding to the type of values to come after ("h" for height range and "d" for direction range)
+ * @param lev_bot The bottom limit of the level (for height range or direction range)
+ * @param lev_up The upper limit of the level (for height range or direction range)
+ *
+ * @return Column (indicator) name
+ *
+ * @author Jérémy Bernard
+ */
+String getDistribIndicName(String base_name, String var_type, Integer lev_bot, Integer lev_up){
+    String name
+    if (lev_up == null){
+        name = "${base_name}_${var_type}${lev_bot}"
+    }
+    else{
+        name = "${base_name}_${var_type}${lev_bot}_${lev_up}"
+    }
+
+    return name
 }
 
 /**
@@ -755,8 +777,8 @@ String roofAreaDistribution(JdbcDataSource datasource, String rsu, String buildi
                 "a.z_max <= ${listLayersBottom[i]}, CASEWHEN(a.delta_h=0, a.non_vertical_roof_area, " +
                 "a.non_vertical_roof_area*(a.z_max-GREATEST(${listLayersBottom[i - 1]},a.z_min))/a.delta_h), " +
                 "CASEWHEN(a.z_min < ${listLayersBottom[i]}, a.non_vertical_roof_area*(${listLayersBottom[i]}-" +
-                "GREATEST(${listLayersBottom[i - 1]},a.z_min))/a.delta_h, 0)))),0) AS non_vert_roof_area_H" +
-                "${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
+                "GREATEST(${listLayersBottom[i - 1]},a.z_min))/a.delta_h, 0)))),0) AS " +
+                "${getDistribIndicName('non_vert_roof_area', 'H', listLayersBottom[i - 1], listLayersBottom[i])},"
         vertQuery += " COALESCE(SUM(CASEWHEN(a.z_max <= ${listLayersBottom[i - 1]}, 0, CASEWHEN(" +
                 "a.z_max <= ${listLayersBottom[i]}, CASEWHEN(a.delta_h=0, 0, " +
                 "a.vertical_roof_area*POWER((a.z_max-GREATEST(${listLayersBottom[i - 1]}," +
@@ -764,16 +786,16 @@ String roofAreaDistribution(JdbcDataSource datasource, String rsu, String buildi
                 "CASEWHEN(a.z_min>${listLayersBottom[i - 1]}, a.vertical_roof_area*(1-" +
                 "POWER((a.z_max-${listLayersBottom[i]})/a.delta_h,2)),a.vertical_roof_area*(" +
                 "POWER((a.z_max-${listLayersBottom[i - 1]})/a.delta_h,2)-POWER((a.z_max-${listLayersBottom[i]})/" +
-                "a.delta_h,2))), 0)))),0) AS vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]},"
+                "a.delta_h,2))), 0)))),0) AS ${getDistribIndicName('vert_roof_area', 'H', listLayersBottom[i - 1], listLayersBottom[i])},"
     }
     // The roof area is calculated for the last level (> 50 m in the default case)
     def valueLastLevel = listLayersBottom[listLayersBottom.size() - 1]
     nonVertQuery += " COALESCE(SUM(CASEWHEN(a.z_max <= $valueLastLevel, 0, CASEWHEN(a.delta_h=0, a.non_vertical_roof_area, " +
-            "a.non_vertical_roof_area*(a.z_max-GREATEST($valueLastLevel,a.z_min))/a.delta_h))),0) AS non_vert_roof_area_H" +
-            "${valueLastLevel},"
+            "a.non_vertical_roof_area*(a.z_max-GREATEST($valueLastLevel,a.z_min))/a.delta_h))),0) AS " +
+            "${getDistribIndicName('non_vert_roof_area', 'H', valueLastLevel, null)},"
     vertQuery += " COALESCE(SUM(CASEWHEN(a.z_max <= $valueLastLevel, 0, CASEWHEN(a.delta_h=0, a.vertical_roof_area, " +
-            "a.vertical_roof_area*(a.z_max-GREATEST($valueLastLevel,a.z_min))/a.delta_h))),0) AS vert_roof_area_H" +
-            "${valueLastLevel},"
+            "a.vertical_roof_area*(a.z_max-GREATEST($valueLastLevel,a.z_min))/a.delta_h))),0) " +
+            "${getDistribIndicName('vert_roof_area', 'H', valueLastLevel, null)},"
 
     def endQuery = """ FROM $buildRoofSurfTot a RIGHT JOIN $rsu b 
                                     ON a.id_rsu = b.id_rsu GROUP BY b.id_rsu;"""
@@ -790,11 +812,11 @@ String roofAreaDistribution(JdbcDataSource datasource, String rsu, String buildi
         def optionalVert = "("
 
         for (i in 1..(listLayersBottom.size() - 1)) {
-            optionalNonVert += " a.non_vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]} + "
-            optionalVert += "a.vert_roof_area_H${listLayersBottom[i - 1]}_${listLayersBottom[i]} + "
+            optionalNonVert += " a.${getDistribIndicName('non_vert_roof_area', 'H', listLayersBottom[i - 1], listLayersBottom[i])} + "
+            optionalVert += "a.${getDistribIndicName('vert_roof_area', 'H', listLayersBottom[i - 1], listLayersBottom[i])} + "
         }
-        optionalNonVert += "a.non_vert_roof_area_H$valueLastLevel) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
-        optionalVert += "a.vert_roof_area_H${valueLastLevel}) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
+        optionalNonVert += "a.${getDistribIndicName('non_vert_roof_area', 'H', valueLastLevel, null)}) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
+        optionalVert += "a.${getDistribIndicName('vert_roof_area', 'H', valueLastLevel, null)}) / ST_AREA(b.$GEOMETRIC_COLUMN_RSU)"
         optionalQuery += "$optionalNonVert AS VERT_ROOF_DENSITY, $optionalVert AS NON_VERT_ROOF_DENSITY" +
                 " FROM $optionalTempo a RIGHT JOIN $rsu b ON a.$ID_COLUMN_RSU = b.$ID_COLUMN_RSU;"
 
@@ -993,8 +1015,8 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                     caseQueryDens = "SUM(ST_LENGTH(the_geom))/rsu_area AS linear_road_density "
                     for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
                         caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d, length, 0)) AS " +
-                                "road_direction_distribution_d${d - angleRangeSize}_$d,"
-                        nameDistrib.add("road_direction_distribution_d${d - angleRangeSize}_$d")
+                                "${getRoadDirIndic(d, angleRangeSize, null)},"
+                        nameDistrib.add(getRoadDirIndic(d, angleRangeSize, null))
                     }
                 }
                 // If only certain levels are considered independently
@@ -1007,10 +1029,8 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                         for (int d = angleRangeSize; d <= 180; d += angleRangeSize) {
                             caseQueryDistrib += "SUM(CASEWHEN(azimuth>=${d - angleRangeSize} AND azimuth<$d AND " +
                                     "zindex = $lev, length, 0)) AS " +
-                                    "road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
-                                    "_d${d - angleRangeSize}_$d,"
-                            nameDistrib.add("road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
-                                    "_d${d - angleRangeSize}_$d")
+                                    "${getRoadDirIndic(d, angleRangeSize, lev)},"
+                            nameDistrib.add(getRoadDirIndic(d, angleRangeSize, lev))
                         }
                     }
                 }
@@ -1084,6 +1104,30 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
     } else {
         error "Cannot compute the indicator. The range size (angleRangeSize) should be a divisor of 180°"
     }
+}
+
+/**
+ * Create indicator names for road distribution indicators
+ *
+ * @param d The upper limit of the angle considered for road direction (°)
+ * @param angleRangeSize the angle range
+ * @param lev The level of the roads
+ *
+ * @return Column (indicator) name
+ *
+ * @author Jérémy Bernard
+ */
+String getRoadDirIndic(int d, Integer angleRangeSize, Integer lev){
+    String name
+    if(lev == null){
+        name = "road_direction_distribution_d${d - angleRangeSize}_$d"
+    }
+    else{
+        name = "road_direction_distribution_h${lev.toString().replaceAll("-", "minus")}" +
+                        "_d${d - angleRangeSize}_$d"
+    }
+
+    return name
 }
 
 /**
