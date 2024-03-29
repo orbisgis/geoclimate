@@ -278,7 +278,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, Stri
  * @author Erwan Bocher (CNRS)
  * TODO : convert this method as a function table in H2GIS
  */
-String gridDistances(JdbcDataSource datasource, String input_polygons, String grid, String id_grid) {
+String gridDistances(JdbcDataSource datasource, String input_polygons, String grid, String id_grid, boolean keep_geometry=true) {
     if (!input_polygons) {
         error("The input polygons cannot be null or empty")
         return
@@ -294,24 +294,49 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
     int epsg = datasource.getSrid(grid)
     def outputTableName = postfix("grid_distances")
 
-    datasource.execute(""" DROP TABLE IF EXISTS $outputTableName;
-        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY,ID INT, DISTANCE FLOAT);
+    if(keep_geometry) {
+        datasource.execute(""" DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY,$id_grid INT, DISTANCE FLOAT);
         """.toString())
 
-    datasource.createSpatialIndex(input_polygons)
-    datasource.createSpatialIndex(grid)
+        datasource.createSpatialIndex(input_polygons)
+        datasource.createSpatialIndex(grid)
 
-    datasource.withBatch(100) { stmt ->
-        datasource.eachRow("SELECT the_geom from $input_polygons".toString()) { row ->
-            Geometry geom = row.the_geom
-            if (geom) {
-                IndexedFacetDistance indexedFacetDistance = new IndexedFacetDistance(geom)
-                datasource.eachRow("""SELECT the_geom, ${id_grid} as id from $grid 
+        datasource.withBatch(100) { stmt ->
+            datasource.eachRow("SELECT the_geom from $input_polygons".toString()) { row ->
+                Geometry geom = row.the_geom
+                if (geom) {
+                    IndexedFacetDistance indexedFacetDistance = new IndexedFacetDistance(geom)
+                    datasource.eachRow("""SELECT the_geom, ${id_grid} as id from $grid 
                 where ST_GEOMFROMTEXT('${geom}',$epsg)  && the_geom and 
             st_intersects(ST_GEOMFROMTEXT('${geom}',$epsg) , ST_POINTONSURFACE(the_geom))""".toString()) { cell ->
-                    Geometry cell_geom = cell.the_geom
-                    double distance = indexedFacetDistance.distance(cell_geom.getCentroid())
-                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${cell_geom}',$epsg), ${cell.id},${distance})".toString()
+                        Geometry cell_geom = cell.the_geom
+                        double distance = indexedFacetDistance.distance(cell_geom.getCentroid())
+                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${cell_geom}',$epsg), ${cell.id},${distance})".toString()
+                    }
+                }
+            }
+        }
+    }else{
+        datasource.execute(""" DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName ($id_grid INT, DISTANCE FLOAT);
+        """.toString())
+
+        datasource.createSpatialIndex(input_polygons)
+        datasource.createSpatialIndex(grid)
+
+        datasource.withBatch(100) { stmt ->
+            datasource.eachRow("SELECT the_geom from $input_polygons".toString()) { row ->
+                Geometry geom = row.the_geom
+                if (geom) {
+                    IndexedFacetDistance indexedFacetDistance = new IndexedFacetDistance(geom)
+                    datasource.eachRow("""SELECT the_geom, ${id_grid} as id from $grid 
+                where ST_GEOMFROMTEXT('${geom}',$epsg)  && the_geom and 
+            st_intersects(ST_GEOMFROMTEXT('${geom}',$epsg) , ST_POINTONSURFACE(the_geom))""".toString()) { cell ->
+                        Geometry cell_geom = cell.the_geom
+                        double distance = indexedFacetDistance.distance(cell_geom.getCentroid())
+                        stmt.addBatch "insert into $outputTableName values(${cell.id},${distance})".toString()
+                    }
                 }
             }
         }

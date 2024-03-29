@@ -2485,35 +2485,35 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
     }
     if (sprawl_areas) {
         //Compute the distances
-        if (list_indicators.contains(["SPRAWL_DISTANCES"])) {
-            String inside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, sprawl_areas, grid_indicators, id_grid)
+        if (list_indicators.contains("SPRAWL_DISTANCES")) {
+            String inside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, sprawl_areas, grid_indicators, id_grid, false)
             if (inside_sprawl_areas) {
-                datasource.execute("""ALTER TABLE $inside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_INDIST""")
+                datasource.execute("""ALTER TABLE $inside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_INDIST""".toString())
                 tablesToDrop << inside_sprawl_areas
                 String inverse_sprawl_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, sprawl_areas)
                 if (inverse_sprawl_areas) {
-                    datasource.execute("""ALTER TABLE $inside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_OUTDIST""")
                     tablesToDrop << inverse_sprawl_areas
                     tablesToJoin.put(inside_sprawl_areas, id_grid)
-                    String outside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, inverse_sprawl_areas, grid_indicators, id_grid)
+                    String outside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, inverse_sprawl_areas, grid_indicators, id_grid, false)
                     if (outside_sprawl_areas) {
+                        datasource.execute("""ALTER TABLE $outside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_OUTDIST""".toString())
                         tablesToDrop << outside_sprawl_areas
                         tablesToJoin.put(outside_sprawl_areas, id_grid)
                     }
                 }
             }
         }
-        if (list_indicators.contains(["SPRAWL_COOL_DISTANCE"])) {
+        if (list_indicators.contains("SPRAWL_COOL_DISTANCE")) {
             String cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, distance)
             if (cool_areas) {
                 tablesToDrop << cool_areas
                 String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, cool_areas)
                 if (inverse_cool_areas) {
                     tablesToDrop << inverse_cool_areas
-                    String cool_distances = Geoindicators.GridIndicators.gridDistances(datasource, inverse_cool_areas, grid_indicators, id_grid)
+                    String cool_distances = Geoindicators.GridIndicators.gridDistances(datasource, inverse_cool_areas, grid_indicators, id_grid, false)
                     if (cool_distances) {
                         tablesToDrop << cool_distances
-                        datasource.execute("""ALTER TABLE $cool_distances RENAME COLUMN DISTANCE TO SPRAWL_COOL_INDIST""")
+                        datasource.execute("""ALTER TABLE $cool_distances RENAME COLUMN DISTANCE TO SPRAWL_COOL_INDIST""".toString())
                         tablesToJoin.put(cool_distances, id_grid)
                     }
                 }
@@ -2521,6 +2521,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
         }
     }
     if (tablesToJoin.size() > 0) {
+        tablesToJoin.put(grid_indicators, id_grid)
         tablesToDrop<<grid_indicators
         grid_indicators = Geoindicators.DataUtils.joinTables(datasource, tablesToJoin, postfix("grid_indicators"))
     }

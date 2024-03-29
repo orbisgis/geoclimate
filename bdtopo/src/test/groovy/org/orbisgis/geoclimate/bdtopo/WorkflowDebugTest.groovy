@@ -173,10 +173,9 @@ class WorkflowDebugTest {
                                                 //"SVF",
                                  "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
                                  "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
-                                 "LCZ_PRIMARY"]
-                                 ,
-                                 "lcz_lod":2,
-                                 "sprawl_areas":true
+                                 "LCZ_PRIMARY", "SPRAWL_AREAS",
+                                                "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+                                 //, "lcz_lod":2
                          ]
                         ]
         ]
