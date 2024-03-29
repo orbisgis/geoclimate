@@ -690,9 +690,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "SEA_LAND_FRACTION",
                                                 "ASPECT_RATIO",
                                                 //"SVF",
-                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"],
-                                "lcz_lod":2,
-                                "sprawl_areas":true
+                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
+                                                "SPRAWL_AREAS",
+                                                "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"],
+                                //"lcz_lod":2
                         ]/*,    "worldpop_indicators": true,
 
                          "road_traffic"                                         : true,

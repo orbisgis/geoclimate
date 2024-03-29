@@ -550,7 +550,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                    "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                    "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                    "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO",
-                                                   "SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
+                                                   "SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS","SPRAWL_AREAS",
+                                                    "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
                     def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                     if (allowedOutputIndicators) {
                         //Update the RSU indicators list according the grid indicators
@@ -586,11 +587,6 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             }
                             grid_indicators_tmp.put("lcz_lod", lcz_lod)
                         }
-                        def sprawl_areas = grid_indicators.sprawl_areas
-                        if (sprawl_areas && sprawl_areas in Boolean) {
-                            grid_indicators_tmp.put("sprawl_areas", sprawl_areas)
-                        }
-
                         defaultParameters.put("grid_indicators", grid_indicators_tmp)
                     } else {
                         error "Please set a valid list of indicator names in ${allowed_grid_indicators}"
@@ -863,12 +859,19 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         results.rsu_lcz, results.rsu_utrf_area, "", "",
                         processing_parameters.prefixName)
                 if (rasterizedIndicators) {
+                    h2gis_datasource.dropTable(gridTableName)
                     results.put("grid_indicators", rasterizedIndicators)
-                    if(grid_indicators_params.sprawl_areas){
-                       String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis_datasource, rasterizedIndicators, Math.max(x_size,y_size))
-                        if(sprawl_areas){
-                            results.put("sprawl_areas", sprawl_areas)
-                        }
+                    if(!grid_indicators_params.lcz_lod){
+                        //We must compute the multiscale grid
+                        String grid_tmp  = Geoindicators.GridIndicators.multiscaleLCZGrid(h2gis_datasource, rasterizedIndicators, "id_grid", 1)
+                        h2gis_datasource.execute("DROP TABLE IF EXISTS $rasterizedIndicators;".toString())
+                        rasterizedIndicators=grid_tmp
+                    }
+                    Map sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource,rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
+                    Math.max(x_size,y_size).floatValue())
+                    if(sprawl_indic){
+                        results.put("sprawl_areas", sprawl_indic.sprawl_areas)
+                        results.put("grid_indicators", sprawl_indic.grid_indicators)
                     }
                     info("End computing grid_indicators")
                 }

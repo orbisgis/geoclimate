@@ -2453,3 +2453,78 @@ static boolean modelCheck(String modelName) {
     }
     return true
 }
+
+/***
+ * This method is used to compute a set of sprawl_areas indicators as
+ * - the sprawl_areas layer
+ * - the distances inside and outside the sprawl_areas
+ * - the distance to cool areas (LCZ 101, 102, 103, 104,106,107) inside the sprawl_areas
+ *
+ * @param datasource
+ * @param  grid_indicators
+ * @param  list_indicators the indicators to compute : ["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+ * @param  distance the erode and dilate the geometries
+ * @return the sprawl_areas layer plus new distance columns on the input grid_indicators
+ */
+Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String id_grid, List list_indicators, float  distance) {
+    if (!list_indicators) {
+        info "The list of indicator names cannot be null or empty"
+        return
+    }
+
+    //Concert the list of indicators to upper case
+
+    allowed_indicators = ["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+    def list_indicators_upper = list_indicators.collect { it.toUpperCase() }
+
+    def tablesToDrop = []
+    def tablesToJoin = [:]
+    String sprawl_areas
+    if (list_indicators_upper.intersect(["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]) && grid_indicators) {
+        sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(datasource, grid_indicators, distance)
+    }
+    if (sprawl_areas) {
+        //Compute the distances
+        if (list_indicators.contains(["SPRAWL_DISTANCES"])) {
+            String inside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, sprawl_areas, grid_indicators, id_grid)
+            if (inside_sprawl_areas) {
+                datasource.execute("""ALTER TABLE $inside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_INDIST""")
+                tablesToDrop << inside_sprawl_areas
+                String inverse_sprawl_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, sprawl_areas)
+                if (inverse_sprawl_areas) {
+                    datasource.execute("""ALTER TABLE $inside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_OUTDIST""")
+                    tablesToDrop << inverse_sprawl_areas
+                    tablesToJoin.put(inside_sprawl_areas, id_grid)
+                    String outside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, inverse_sprawl_areas, grid_indicators, id_grid)
+                    if (outside_sprawl_areas) {
+                        tablesToDrop << outside_sprawl_areas
+                        tablesToJoin.put(outside_sprawl_areas, id_grid)
+                    }
+                }
+            }
+        }
+        if (list_indicators.contains(["SPRAWL_COOL_DISTANCE"])) {
+            String cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, distance)
+            if (cool_areas) {
+                tablesToDrop << cool_areas
+                String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, cool_areas)
+                if (inverse_cool_areas) {
+                    tablesToDrop << inverse_cool_areas
+                    String cool_distances = Geoindicators.GridIndicators.gridDistances(datasource, inverse_cool_areas, grid_indicators, id_grid)
+                    if (cool_distances) {
+                        tablesToDrop << cool_distances
+                        datasource.execute("""ALTER TABLE $cool_distances RENAME COLUMN DISTANCE TO SPRAWL_COOL_INSDIST""")
+                        tablesToJoin.put(cool_distances, id_grid)
+                    }
+                }
+            }
+        }
+    }
+    if (tablesToJoin.size() > 0) {
+        tablesToDrop<<grid_indicators
+        grid_indicators = Geoindicators.DataUtils.joinTables(datasource, tablesToJoin, postfix("grid_indicators"))
+    }
+    datasource.dropTable(tablesToDrop)
+
+    return ["sprawl_areas":sprawl_areas, "grid_indicators": grid_indicators]
+}
