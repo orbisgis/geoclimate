@@ -2513,7 +2513,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
                     String cool_distances = Geoindicators.GridIndicators.gridDistances(datasource, inverse_cool_areas, grid_indicators, id_grid)
                     if (cool_distances) {
                         tablesToDrop << cool_distances
-                        datasource.execute("""ALTER TABLE $cool_distances RENAME COLUMN DISTANCE TO SPRAWL_COOL_INSDIST""")
+                        datasource.execute("""ALTER TABLE $cool_distances RENAME COLUMN DISTANCE TO SPRAWL_COOL_INDIST""")
                         tablesToJoin.put(cool_distances, id_grid)
                     }
                 }
