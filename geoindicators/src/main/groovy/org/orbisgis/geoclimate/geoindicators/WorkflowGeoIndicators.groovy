@@ -1803,7 +1803,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     /*
     * Make aggregation process with previous grid and current rsu lcz
     */
-    if (list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY"]) && rsu_lcz) {
+    if (list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY", "SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]) && rsu_lcz) {
         def indicatorName = "LCZ_PRIMARY"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(
                 datasource, grid, grid_column_identifier,
@@ -2243,7 +2243,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
     // Remove temporary tables
     datasource.dropTable(tablesToDrop)
 
-    if(lcz_lod){
+    //We must compute the LOC indicators if the user also wants sprawl indicators
+    if(lcz_lod || list_indicators_upper.intersect(["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"])){
         return Geoindicators.GridIndicators.multiscaleLCZGrid(datasource, grid_indicators_table,grid_column_identifier,lcz_lod)
     }
     return grid_indicators_table
@@ -2462,7 +2463,7 @@ static boolean modelCheck(String modelName) {
  *
  * @param datasource
  * @param  grid_indicators
- * @param  list_indicators the indicators to compute : ["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+ * @param  list_indicators
  * @param  distance the erode and dilate the geometries
  * @return the sprawl_areas layer plus new distance columns on the input grid_indicators
  */
@@ -2473,19 +2474,19 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
     }
 
     //Concert the list of indicators to upper case
-
     allowed_indicators = ["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
     def list_indicators_upper = list_indicators.collect { it.toUpperCase() }
 
     def tablesToDrop = []
     def tablesToJoin = [:]
+    tablesToJoin.put(grid_indicators,id_grid)
     String sprawl_areas
     if (list_indicators_upper.intersect(["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]) && grid_indicators) {
         sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(datasource, grid_indicators, distance)
     }
     if (sprawl_areas) {
         //Compute the distances
-        if (list_indicators.contains("SPRAWL_DISTANCES")) {
+        if (list_indicators_upper.contains("SPRAWL_DISTANCES")) {
             String inside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, sprawl_areas, grid_indicators, id_grid, false)
             if (inside_sprawl_areas) {
                 datasource.execute("""ALTER TABLE $inside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_INDIST""".toString())
@@ -2503,7 +2504,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
                 }
             }
         }
-        if (list_indicators.contains("SPRAWL_COOL_DISTANCE")) {
+        if (list_indicators_upper.contains("SPRAWL_COOL_DISTANCE")) {
             String cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, distance)
             if (cool_areas) {
                 tablesToDrop << cool_areas
@@ -2520,8 +2521,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
             }
         }
     }
-    if (tablesToJoin.size() > 0) {
-        tablesToJoin.put(grid_indicators, id_grid)
+    if (tablesToJoin.size() > 1) {
         tablesToDrop<<grid_indicators
         grid_indicators = Geoindicators.DataUtils.joinTables(datasource, tablesToJoin, postfix("grid_indicators"))
     }

@@ -658,12 +658,6 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             if (rasterizedIndicators) {
                                 h2gis_datasource.dropTable(grid)
                                 results.put("grid_indicators", rasterizedIndicators)
-                                if(!grid_indicators_params.lcz_lod){
-                                    //We must compute the multiscale grid
-                                    String grid_tmp = Geoindicators.GridIndicators.multiscaleLCZGrid(h2gis_datasource, rasterizedIndicators, "id_grid", 1)
-                                    h2gis_datasource.execute("DROP TABLE IF EXISTS $rasterizedIndicators;".toString())
-                                    rasterizedIndicators=grid_tmp
-                                }
                                 def  sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource,rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
                                         Math.max(x_size,y_size).floatValue())
                                 if(sprawl_indic){
