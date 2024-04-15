@@ -646,7 +646,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // rsu_building_density + rsu_building_volume_density + rsu_mean_building_volume
     // + rsu_mean_building_neighbor_number + rsu_building_floor_density + rsu_roughness_length
     // + rsu_building_number_density (RSU number of buildings divided RSU area)
-    def inputVarAndOperations = [:]
+    def inputVarAndOperations = ["floor_area"      : ["DENS"]]
     def heightColumnName = parameters.heightColumnName
 
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
@@ -656,7 +656,6 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         inputVarAndOperations = inputVarAndOperations << ["volume"                  : ["DENS", "AVG"],
                                                           (heightColumnName)        : ["GEOM_AVG"],
                                                           "number_building_neighbor": ["AVG"],
-                                                          "floor_area"              : ["DENS"],
                                                           "minimum_building_spacing": ["AVG"],
                                                           "building"                : ["NB_DENS"],
                                                           "pop"                     : ["SUM", "DENS"]]

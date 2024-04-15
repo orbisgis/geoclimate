@@ -162,10 +162,10 @@ class WorkflowGeoIndicatorsTest {
 
         // Indicators common to each indicator use
         listColCommon = ["LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION",
-                                       "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                                       "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
-                                       "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
-                                       "HIGH_VEGETATION_BUILDING_FRACTION", "UNDEFINED_FRACTION"]
+                           "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                           "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
+                           "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
+                           "HIGH_VEGETATION_BUILDING_FRACTION", "UNDEFINED_FRACTION", "BUILDING_FLOOR_AREA_DENSITY"]
 
         // Column names in the LCZ Table
         listColLcz = ["LCZ_PRIMARY", "LCZ_SECONDARY", "LCZ_EQUALITY_VALUE", "LCZ_UNIQUENESS_VALUE", "MIN_DISTANCE"]
