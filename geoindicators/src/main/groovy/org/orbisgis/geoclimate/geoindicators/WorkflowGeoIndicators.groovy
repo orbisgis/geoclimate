@@ -766,7 +766,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         }
         finalTablesToJoin.put(aspectRatio, columnIdRsu)
     }
-    intermediateJoinTable
+
     // rsu_ground_sky_view_factor
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
         // If the fast version is chosen (SVF derived from extended RSU free facade fraction
