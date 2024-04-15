@@ -653,7 +653,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
         location = nominatim.bbox
-        location=[63.4, 13.6, 63.6, 13.8]
+        location=[63.4, 12.8, 63.6, 13]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -677,7 +677,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
                                  "indicatorUse": ["LCZ", "UTRF", "TEB"]
 
-                         ],"grid_indicators": [
+                         ]/*,"grid_indicators": [
                                 "x_size": grid_size,
                                 "y_size": grid_size,
                                 //"rowCol": true,
@@ -694,7 +694,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 "SPRAWL_AREAS",
                                                 "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"],
                                 //"lcz_lod":2
-                        ]/*,    "worldpop_indicators": true,
+                        ]*/ /*,    "worldpop_indicators": true,
 
                          "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
