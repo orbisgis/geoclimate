@@ -69,6 +69,8 @@ String sizeProperties(JdbcDataSource datasource, String building, List operation
 
     // The operation names are transformed into lower case
     operations.replaceAll { it.toLowerCase() }
+    // Remove duplicated names
+    operations.unique()
     operations.each {
         switch (it) {
             case OP_VOLUME:

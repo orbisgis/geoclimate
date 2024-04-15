@@ -73,10 +73,10 @@ String computeBuildingsIndicators(JdbcDataSource datasource, String building, St
     // building_volume + building_floor_area + building_total_facade_length
     def sizeOperations = ["floor_area"]
     if (indicatorUse*.toUpperCase().contains("UTRF")) {
-        sizeOperations = sizeOperations <- ["volume", "total_facade_length"]
+        sizeOperations = sizeOperations + ["volume", "total_facade_length"]
     }
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
-        sizeOperations = sizeOperations <- ["total_facade_length"]
+        sizeOperations = sizeOperations + ["total_facade_length"]
     }
     def buildTableSizeProperties = Geoindicators.BuildingIndicators.sizeProperties(datasource, building,
             sizeOperations, buildingPrefixName)
