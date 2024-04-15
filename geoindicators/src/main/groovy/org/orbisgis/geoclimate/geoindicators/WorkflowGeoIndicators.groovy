@@ -71,15 +71,16 @@ String computeBuildingsIndicators(JdbcDataSource datasource, String building, St
     finalTablesToJoin.put(buildTableGeometryProperties, idColumnBu)
 
     // building_volume + building_floor_area + building_total_facade_length
-    def sizeOperations = ["floor_area"]
+    HashSet sizeOperations = new HashSet()
+    sizeOperations.addAll(["floor_area"])
     if (indicatorUse*.toUpperCase().contains("UTRF")) {
-        sizeOperations = sizeOperations + ["volume", "total_facade_length"]
+        sizeOperations.addAll(["volume", "total_facade_length"])
     }
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
-        sizeOperations = sizeOperations + ["total_facade_length"]
+        sizeOperations.addAll(["total_facade_length"])
     }
     def buildTableSizeProperties = Geoindicators.BuildingIndicators.sizeProperties(datasource, building,
-            sizeOperations, buildingPrefixName)
+            sizeOperations as List, buildingPrefixName)
     if (!buildTableSizeProperties) {
         info "Cannot compute the building_volume, building_floor_area, building_total_facade_length " +
                 "indicators for the buildings"
@@ -388,7 +389,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                                            "collective_housing": [ "apartments","barracks","abbey", "dormitory",
                                                                                                    "sheltered_housing", "workers_dormitory",
                                                                                                    "condominium"],
-                                                                           "other_residential": ["residential"],
+                                                                           "undefined_residential": ["residential"],
                                                                            "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
                                                                                               "post_office","cinema","arts_centre", "brothel", "casino",
                                                                                               "sustenance","hotel","restaurant","bar","cafe","fast_food",
@@ -416,7 +417,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                                            "collective_housing": [ "apartments","barracks","abbey", "dormitory",
                                                                                                    "sheltered_housing", "workers_dormitory",
                                                                                                    "condominium"],
-                                                                           "other_residential": ["residential"],
+                                                                           "undefined_residential": ["residential"],
                                                                            "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
                                                                                               "post_office","cinema","arts_centre", "brothel", "casino",
                                                                                               "sustenance","hotel","restaurant","bar","cafe","fast_food",
@@ -1236,7 +1237,7 @@ Map getParameters() {
                                                   "collective_housing": [ "apartments","barracks","abbey", "dormitory",
                                                                           "sheltered_housing", "workers_dormitory",
                                                                           "condominium", "residential"],
-                                                  "other_residential": ["residential"],
+                                                  "undefined_residential": ["residential"],
                                                   "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
                                                                      "post_office","cinema","arts_centre", "brothel", "casino",
                                                                      "sustenance","hotel","restaurant","bar","cafe","fast_food",
@@ -1265,7 +1266,7 @@ Map getParameters() {
                                                   "collective_housing": [ "apartments","barracks","abbey", "dormitory",
                                                                           "sheltered_housing", "workers_dormitory",
                                                                           "condominium", "residential"],
-                                                  "other_residential": ["residential"],
+                                                  "undefined_residential": ["residential"],
                                                   "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
                                                                      "post_office","cinema","arts_centre", "brothel", "casino",
                                                                      "sustenance","hotel","restaurant","bar","cafe","fast_food",

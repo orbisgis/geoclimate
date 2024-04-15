@@ -345,7 +345,6 @@ class WorkflowGeoIndicatorsTest {
         def realListRsu = datasource.getTable(geoIndicatorsCompute_i.rsu_indicators).columns
         // We test that there is no missing indicators in the RSU table
         for (i in expectListRsu) {
-            println(i)
             assertTrue realListRsu.contains(i)
         }
         if (indicatorUse.contains("LCZ")) {
