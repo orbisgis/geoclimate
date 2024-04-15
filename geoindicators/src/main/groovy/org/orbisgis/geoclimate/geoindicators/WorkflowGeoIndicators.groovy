@@ -70,22 +70,25 @@ String computeBuildingsIndicators(JdbcDataSource datasource, String building, St
     }
     finalTablesToJoin.put(buildTableGeometryProperties, idColumnBu)
 
+    // building_volume + building_floor_area + building_total_facade_length
+    def sizeOperations = ["floor_area"]
+    if (indicatorUse*.toUpperCase().contains("UTRF")) {
+        sizeOperations = sizeOperations <- ["volume", "total_facade_length"]
+    }
+    if (indicatorUse*.toUpperCase().contains("LCZ")) {
+        sizeOperations = sizeOperations <- ["total_facade_length"]
+    }
+    def buildTableSizeProperties = Geoindicators.BuildingIndicators.sizeProperties(datasource, building,
+            sizeOperations, buildingPrefixName)
+    if (!buildTableSizeProperties) {
+        info "Cannot compute the building_volume, building_floor_area, building_total_facade_length " +
+                "indicators for the buildings"
+        return
+    }
+    finalTablesToJoin.put(buildTableSizeProperties, idColumnBu)
+
     // For indicators that are useful for UTRF OR for LCZ classification
     if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("UTRF")) {
-        // building_volume + building_floor_area + building_total_facade_length
-        def sizeOperations = ["volume", "floor_area", "total_facade_length"]
-        if (!indicatorUse*.toUpperCase().contains("UTRF")) {
-            sizeOperations = ["total_facade_length"]
-        }
-        def buildTableSizeProperties = Geoindicators.BuildingIndicators.sizeProperties(datasource, building,
-                sizeOperations, buildingPrefixName)
-        if (!buildTableSizeProperties) {
-            info "Cannot compute the building_volume, building_floor_area, building_total_facade_length " +
-                    "indicators for the buildings"
-            return
-        }
-        finalTablesToJoin.put(buildTableSizeProperties, idColumnBu)
-
         // building_contiguity + building_common_wall_fraction + building_number_building_neighbor
         def neighborOperations = ["contiguity", "common_wall_fraction", "number_building_neighbor"]
         if (indicatorUse*.toUpperCase().contains("LCZ") && !indicatorUse*.toUpperCase().contains("UTRF")) {
@@ -673,7 +676,6 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // Join in an intermediate table (for perviousness fraction)
     intermediateJoin.put(rsuStatisticsUnweighted, columnIdRsu)
 
-
     // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
     if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
         def rsuStatisticsWeighted = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, buildingTable,
@@ -764,7 +766,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         }
         finalTablesToJoin.put(aspectRatio, columnIdRsu)
     }
-
+    intermediateJoinTable
     // rsu_ground_sky_view_factor
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
         // If the fast version is chosen (SVF derived from extended RSU free facade fraction
