@@ -2245,7 +2245,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     //We must compute the LOC indicators if the user also wants sprawl indicators
     if(lcz_lod || list_indicators_upper.intersect(["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"])){
-        return Geoindicators.GridIndicators.multiscaleLCZGrid(datasource, grid_indicators_table,grid_column_identifier,lcz_lod)
+        return Geoindicators.GridIndicators.multiscaleLCZGrid(datasource, grid_indicators_table,grid_column_identifier,lcz_lod==null?1:lcz_lod)
     }
     return grid_indicators_table
 }
