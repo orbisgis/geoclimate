@@ -70,22 +70,26 @@ String computeBuildingsIndicators(JdbcDataSource datasource, String building, St
     }
     finalTablesToJoin.put(buildTableGeometryProperties, idColumnBu)
 
+    // building_volume + building_floor_area + building_total_facade_length
+    HashSet sizeOperations = new HashSet()
+    sizeOperations.addAll(["floor_area"])
+    if (indicatorUse*.toUpperCase().contains("UTRF")) {
+        sizeOperations.addAll(["volume", "total_facade_length"])
+    }
+    if (indicatorUse*.toUpperCase().contains("LCZ")) {
+        sizeOperations.addAll(["total_facade_length"])
+    }
+    def buildTableSizeProperties = Geoindicators.BuildingIndicators.sizeProperties(datasource, building,
+            sizeOperations as List, buildingPrefixName)
+    if (!buildTableSizeProperties) {
+        info "Cannot compute the building_volume, building_floor_area, building_total_facade_length " +
+                "indicators for the buildings"
+        return
+    }
+    finalTablesToJoin.put(buildTableSizeProperties, idColumnBu)
+
     // For indicators that are useful for UTRF OR for LCZ classification
     if (indicatorUse*.toUpperCase().contains("LCZ") || indicatorUse*.toUpperCase().contains("UTRF")) {
-        // building_volume + building_floor_area + building_total_facade_length
-        def sizeOperations = ["volume", "floor_area", "total_facade_length"]
-        if (!indicatorUse*.toUpperCase().contains("UTRF")) {
-            sizeOperations = ["total_facade_length"]
-        }
-        def buildTableSizeProperties = Geoindicators.BuildingIndicators.sizeProperties(datasource, building,
-                sizeOperations, buildingPrefixName)
-        if (!buildTableSizeProperties) {
-            info "Cannot compute the building_volume, building_floor_area, building_total_facade_length " +
-                    "indicators for the buildings"
-            return
-        }
-        finalTablesToJoin.put(buildTableSizeProperties, idColumnBu)
-
         // building_contiguity + building_common_wall_fraction + building_number_building_neighbor
         def neighborOperations = ["contiguity", "common_wall_fraction", "number_building_neighbor"]
         if (indicatorUse*.toUpperCase().contains("LCZ") && !indicatorUse*.toUpperCase().contains("UTRF")) {
@@ -385,7 +389,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                                            "collective_housing": [ "apartments","barracks","abbey", "dormitory",
                                                                                                    "sheltered_housing", "workers_dormitory",
                                                                                                    "condominium"],
-                                                                           "other_residential": ["residential"],
+                                                                           "undefined_residential": ["residential"],
                                                                            "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
                                                                                               "post_office","cinema","arts_centre", "brothel", "casino",
                                                                                               "sustenance","hotel","restaurant","bar","cafe","fast_food",
@@ -412,8 +416,8 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                      floorAreaTypeAndCompositionTeb     : ["individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace"],
                                                                            "collective_housing": [ "apartments","barracks","abbey", "dormitory",
                                                                                                    "sheltered_housing", "workers_dormitory",
-                                                                                                   "condominium", "residential"],
-                                                                           "other_residential": ["residential"],
+                                                                                                   "condominium"],
+                                                                           "undefined_residential": ["residential"],
                                                                            "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
                                                                                               "post_office","cinema","arts_centre", "brothel", "casino",
                                                                                               "sustenance","hotel","restaurant","bar","cafe","fast_food",
@@ -646,7 +650,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // rsu_building_density + rsu_building_volume_density + rsu_mean_building_volume
     // + rsu_mean_building_neighbor_number + rsu_building_floor_density + rsu_roughness_length
     // + rsu_building_number_density (RSU number of buildings divided RSU area)
-    def inputVarAndOperations = [:]
+    def inputVarAndOperations = ["floor_area"      : ["DENS"]]
     def heightColumnName = parameters.heightColumnName
 
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
@@ -656,7 +660,6 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         inputVarAndOperations = inputVarAndOperations << ["volume"                  : ["DENS", "AVG"],
                                                           (heightColumnName)        : ["GEOM_AVG"],
                                                           "number_building_neighbor": ["AVG"],
-                                                          "floor_area"              : ["DENS"],
                                                           "minimum_building_spacing": ["AVG"],
                                                           "building"                : ["NB_DENS"],
                                                           "pop"                     : ["SUM", "DENS"]]
@@ -673,7 +676,6 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     }
     // Join in an intermediate table (for perviousness fraction)
     intermediateJoin.put(rsuStatisticsUnweighted, columnIdRsu)
-
 
     // rsu_mean_building_height weighted by their area + rsu_std_building_height weighted by their area.
     if (indicatorUse*.toUpperCase().contains("UTRF") || indicatorUse*.toUpperCase().contains("LCZ")) {
@@ -1235,7 +1237,7 @@ Map getParameters() {
                                                   "collective_housing": [ "apartments","barracks","abbey", "dormitory",
                                                                           "sheltered_housing", "workers_dormitory",
                                                                           "condominium", "residential"],
-                                                  "other_residential": ["residential"],
+                                                  "undefined_residential": ["residential"],
                                                   "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
                                                                      "post_office","cinema","arts_centre", "brothel", "casino",
                                                                      "sustenance","hotel","restaurant","bar","cafe","fast_food",
@@ -1264,7 +1266,7 @@ Map getParameters() {
                                                   "collective_housing": [ "apartments","barracks","abbey", "dormitory",
                                                                           "sheltered_housing", "workers_dormitory",
                                                                           "condominium", "residential"],
-                                                  "other_residential": ["residential"],
+                                                  "undefined_residential": ["residential"],
                                                   "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
                                                                      "post_office","cinema","arts_centre", "brothel", "casino",
                                                                      "sustenance","hotel","restaurant","bar","cafe","fast_food",
