@@ -124,8 +124,9 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
     }
     if (inputzone) {
         String polygons  = postfix("polygons")
+        // todo: put 'mitre' instead of 'round' whenever JTS has been updated to version 1.20
         datasource.execute("""DROP TABLE IF EXISTS $polygons;        
-        CREATE TABLE $polygons as SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 'join=mitre'), 0.01, 'join=mitre'), $epsg) AS the_geom FROM 
+        CREATE TABLE $polygons as SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2), $epsg) AS the_geom FROM 
         ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
                                 FROM $inputTableName)') 
         """.toString())
