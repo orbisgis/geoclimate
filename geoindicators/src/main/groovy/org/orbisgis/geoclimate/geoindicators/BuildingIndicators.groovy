@@ -361,14 +361,14 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
     // The buffer is created
     datasource """DROP TABLE IF EXISTS $build_buffer;
                 CREATE TABLE $build_buffer AS
-                    SELECT $ID_FIELD_BU,  ST_BUFFER($GEOMETRIC_FIELD, $bufferDist) AS $GEOMETRIC_FIELD 
+                    SELECT $ID_FIELD_BU,  ST_BUFFER($GEOMETRIC_FIELD, $bufferDist, 2) AS $GEOMETRIC_FIELD 
                     FROM $building;
                 CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $build_buffer ($GEOMETRIC_FIELD)""".toString()
     // The road surfaces are created
     datasource """
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
-                    SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'endcap=flat') AS $GEOMETRIC_FIELD 
+                    SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'quad_segs=2 endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
                 CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $road_surf ($GEOMETRIC_FIELD)""".toString()
     // The roads located within the buffer are identified

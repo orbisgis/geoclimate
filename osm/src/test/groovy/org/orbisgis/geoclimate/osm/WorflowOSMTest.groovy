@@ -653,7 +653,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
         location = nominatim.bbox
-        location=[63.4, 12.8, 63.6, 13]
+        location=[44.795480,12.323227,45.004622,12.627411]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [

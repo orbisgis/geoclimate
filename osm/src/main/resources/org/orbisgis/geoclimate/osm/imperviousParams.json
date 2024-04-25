@@ -29,6 +29,8 @@
     ],
     "aeroway": [
       "apron"
+    ],"power": [
+      "plant", "substation"
     ]
   },
   "columns": [
@@ -41,7 +43,8 @@
     "landuse",
     "area:aeroway",
     "aeroway",
-    "building"
+    "building",
+    "power"
   ],
   "type": {
     "parking": {
@@ -69,6 +72,9 @@
       ],
       "railway": [
         "platform"
+      ],
+      "power": [
+        "plant", "substation"
       ]
     },
     "commercial": {

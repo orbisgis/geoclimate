@@ -99,7 +99,7 @@ Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, f
             def keysValues = ["building", "railway", "amenity",
                               "leisure", "highway", "natural",
                               "landuse", "landcover",
-                              "vegetation", "waterway", "area", "aeroway", "area:aeroway", "tourism", "sport"]
+                              "vegetation", "waterway", "area", "aeroway", "area:aeroway", "tourism", "sport", "power"]
             query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQueryWithAllData(envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         }
 
