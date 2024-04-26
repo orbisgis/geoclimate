@@ -124,7 +124,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         return null
     }
     if (inputzone) {
-        String polygons  = postfix("polygons")
+
 
         //Clip the geometry
         datasource.createSpatialIndex(inputTableName)
@@ -136,32 +136,21 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
            $inputTableName as a, $inputzone as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom); 
         """.toString())
 
+        //Create the polygons from the TSU lines
+        String polygons  = postfix("polygons")
+        datasource.execute(""" DROP TABLE IF EXISTS $polygons;
+        CREATE TABLE $polygons as 
+        SELECT
+        ST_SETSRID(st_makevalid(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2)), $epsg) AS the_geom FROM 
+        ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
+                                FROM $cut_lines)')
+        """.toString())
+
         datasource.execute("""DROP TABLE IF EXISTS $outputTableName;        
         CREATE TABLE $outputTableName as 
-        select * from (
-        SELECT CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME, 
-        ST_SETSRID(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2), $epsg) AS the_geom FROM 
-        ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
-                                FROM $cut_lines)') ) as foo where st_area(the_geom) > $area;""".toString())
-
-        // todo: put 'mitre' instead of 'round' whenever JTS has been updated to version 1.20
-        /*datasource.execute("""DROP TABLE IF EXISTS $polygons;
-        CREATE TABLE $polygons as SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2), $epsg) AS the_geom FROM 
-        ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
-                                FROM $inputTableName)') 
-        """.toString())
-        datasource.createSpatialIndex(polygons)
-        datasource.createSpatialIndex(inputzone)
-        datasource """
-                    DROP TABLE IF EXISTS $outputTableName;
-                    CREATE TABLE $outputTableName AS 
-                        SELECT a.*
-                        FROM $polygons AS a,
-                            $inputzone AS b
-                        WHERE a.the_geom && b.the_geom 
-                        AND ST_INTERSECTS(ST_POINTONSURFACE(a.THE_GEOM), b.the_geom) and st_area(a.the_geom) > $area;
-                    DROP TABLE IF EXISTS $polygons;
-            """.toString()*/
+        select   CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME,  the_geom from 
+        st_explode('$polygons') where st_area(the_geom) > $area;
+        DROP TABLE IF EXISTS $cut_lines, $polygons""".toString())
     } else {
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
@@ -466,16 +455,22 @@ String createBlocks(JdbcDataSource datasource, String inputTableName, double sna
     //Create the blocks
     debug "Creating the block table..."
 
-    datasource """DROP TABLE IF EXISTS $outputTableName; 
+    def blocks =  postfix("blocks")
+    datasource.execute("""DROP TABLE IF EXISTS $blocks;
+        CREATE TABLE $blocks as         
+        SELECT st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks
+        UNION ALL (SELECT st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
+        LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL);""".toString())
+
+    //Don't forget to explode the blocks
+    datasource.execute("""DROP TABLE IF EXISTS $outputTableName; 
         CREATE TABLE $outputTableName ($columnIdName SERIAL, THE_GEOM GEOMETRY) 
-        AS SELECT CAST((row_number() over()) as Integer), the_geom FROM 
-        ((SELECT st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks) 
-        UNION ALL (SELECT  st_force2d(ST_MAKEVALID(a.the_geom)) as the_geom FROM $inputTableName a 
-        LEFT JOIN $subGraphTableNodes b ON a.id_build = b.NODE_ID WHERE b.NODE_ID IS NULL));""".toString()
+        AS SELECT CAST((row_number() over()) as Integer), the_geom FROM st_explode('$blocks')
+        where st_area(the_geom) > 0 ;""".toString())
 
     // Temporary tables are deleted
     datasource """DROP TABLE IF EXISTS  $graphTable, 
-                    $subGraphBlocks, $subGraphTableNodes, $subGraphTableEdges;""".toString()
+                    $subGraphBlocks, $subGraphTableNodes, $subGraphTableEdges,$blocks;""".toString()
 
     debug "The blocks have been created"
     return outputTableName

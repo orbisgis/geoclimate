@@ -691,6 +691,8 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                     CREATE TABLE $polygonizedExploded as select * from st_explode('$polygonizedTable');
                     """.toString())
 
+            datasource.createSpatialIndex(impervious)
+            datasource.createSpatialIndex(polygonizedExploded)
             def filtered_area = postfix("filtered_area")
             datasource.execute("""DROP TABLE IF EXISTS $filtered_area;
                     CREATE TABLE  $filtered_area AS 
