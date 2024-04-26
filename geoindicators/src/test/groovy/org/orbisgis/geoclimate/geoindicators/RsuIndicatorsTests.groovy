@@ -402,7 +402,6 @@ class RsuIndicatorsTests {
         assertEquals(0.177, concat)
     }
 
-
     @Test
     void smallestCommunGeometryTest() {
         h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
