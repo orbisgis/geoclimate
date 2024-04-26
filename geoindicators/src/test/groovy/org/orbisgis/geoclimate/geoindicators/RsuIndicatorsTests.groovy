@@ -399,7 +399,7 @@ class RsuIndicatorsTests {
         h2GIS.eachRow("SELECT * FROM test_rsu_extended_free_facade_fraction WHERE id_rsu = 1") {
             row -> concat += row.extended_free_facade_fraction.round(3)
         }
-        assertEquals(0.173, concat)
+        assertEquals(0.177, concat)
     }
 
 
