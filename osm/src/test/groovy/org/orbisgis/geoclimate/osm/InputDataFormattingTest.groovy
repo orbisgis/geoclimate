@@ -290,6 +290,7 @@ class InputDataFormattingTest {
         def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
         def zoneToExtract = "Marseille"
 
+        zoneToExtract =[44.795480,12.323227,45.004622,12.627411]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
@@ -301,42 +302,41 @@ class InputDataFormattingTest {
         if (extractData.zone != null) {
             //Zone
             def epsg = h2GIS.getSpatialTable(extractData.zone).srid
-            h2GIS.getTable(extractData.zone).save("${file.absolutePath + File.separator}osm_zone_${formatedPlaceName}.fgb", true)
+            h2GIS.getTable(extractData.zone).save("${file.absolutePath + File.separator}zone.fgb", true)
 
             //Zone envelope
-            h2GIS.getTable(extractData.zone_envelope).save("${file.absolutePath + File.separator}osm_zone_envelope_${formatedPlaceName}.fgb", true)
+            h2GIS.getTable(extractData.zone_envelope).save("${file.absolutePath + File.separator}zone_envelope.fgb", true)
 
             //Urban Areas
             def inputUrbanAreas = OSM.InputDataFormatting.formatUrbanAreas(h2GIS,
                     extractData.urban_areas,extractData.zone)
-            h2GIS.save(inputUrbanAreas,"${file.absolutePath + File.separator}osm_urban_areas_${formatedPlaceName}.fgb", true)
+            h2GIS.save(inputUrbanAreas,"${file.absolutePath + File.separator}urban_areas.fgb", true)
 
             println("Urban areas formatted")
 
             //Buildings
-            h2GIS.save(extractData.building,"${file.absolutePath + File.separator}building_${formatedPlaceName}.fgb", true)
             def inputBuildings = OSM.InputDataFormatting.formatBuildingLayer(h2GIS,
                      extractData.building,extractData.zone,null)
-            h2GIS.save(inputBuildings.building,"${file.absolutePath + File.separator}osm_building_${formatedPlaceName}.fgb", true)
+            h2GIS.save(inputBuildings.building,"${file.absolutePath + File.separator}building.fgb", true)
 
             println("Building formatted")
 
             //Roads
             def inputRoadTableName = OSM.InputDataFormatting.formatRoadLayer( h2GIS,extractData.road, extractData.zone_envelope)
-            h2GIS.save(inputRoadTableName,"${file.absolutePath + File.separator}osm_road_${formatedPlaceName}.fgb", true)
+            h2GIS.save(inputRoadTableName,"${file.absolutePath + File.separator}road.fgb", true)
 
             println("Road formatted")
 
             //Rails
             def inputRailTableName = OSM.InputDataFormatting.formatRailsLayer( h2GIS,extractData.rail, extractData.zone_envelope)
-            h2GIS.save(inputRailTableName,"${file.absolutePath + File.separator}osm_rail_${formatedPlaceName}.fgb", true)
+            h2GIS.save(inputRailTableName,"${file.absolutePath + File.separator}rail.fgb", true)
 
             println("Rail formatted")
 
             //Vegetation
             def inputVegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(
                     h2GIS,extractData.vegetation,extractData.zone_envelope)
-            h2GIS.save(inputVegetationTableName,"${file.absolutePath + File.separator}osm_vegetation_${formatedPlaceName}.fgb", true)
+            h2GIS.save(inputVegetationTableName,"${file.absolutePath + File.separator}vegetation.fgb", true)
 
             println("Vegetation formatted")
 
@@ -346,23 +346,23 @@ class InputDataFormattingTest {
             //Impervious
             String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
                     extractData.zone_envelope)
-            h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}osm_impervious_${formatedPlaceName}.fgb", true)
+            h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}impervious.fgb", true)
 
             println("Impervious formatted")
 
             //Save coastlines to debug
-            h2GIS.save(extractData.coastline,"${file.absolutePath + File.separator}osm_coastlines_${formatedPlaceName}.fgb", true)
+            h2GIS.save(extractData.coastline,"${file.absolutePath + File.separator}coastlines.fgb", true)
 
 
             //Sea/Land mask
             def inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
                     extractData.zone_envelope, inputWaterTableName)
-            h2GIS.save(inputSeaLandTableName,"${file.absolutePath + File.separator}osm_sea_land_${formatedPlaceName}.fgb", true)
+            h2GIS.save(inputSeaLandTableName,"${file.absolutePath + File.separator}sea_land_mask.fgb", true)
 
             println("Sea land mask formatted")
 
             //Save it after sea/land mask because the water table can be modified
-            h2GIS.save(inputWaterTableName,"${file.absolutePath + File.separator}osm_water_${formatedPlaceName}.fgb", true)
+            h2GIS.save(inputWaterTableName,"${file.absolutePath + File.separator}water.fgb", true)
 
         } else {
             assertTrue(false)

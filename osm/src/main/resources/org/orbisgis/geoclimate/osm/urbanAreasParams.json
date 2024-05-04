@@ -9,14 +9,16 @@
     "construction":[],
     "amenity": ["school",
       "university",
-      "research_institute", "community_centre"]
+      "research_institute", "community_centre"],
+    "power": ["plant", "substation"]
   },
   "columns": [
     "landuse",
     "industrial",
     "construction",
     "amenity",
-    "building"
+    "building",
+    "power"
   ],
   "type": {
     "education": {
@@ -62,6 +64,9 @@
     "industrial": {
       "landuse": [
         "industrial"
+      ],
+      "power": [
+        "plant", "substation"
       ]
     },
     "port": {

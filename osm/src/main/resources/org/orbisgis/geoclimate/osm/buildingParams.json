@@ -38,7 +38,10 @@
     "office",
     "tourism",
     "roof:shape",
-    "wall"
+    "wall",
+    "hut",
+    "shed",
+    "cabin"
   ],
   "level": {
     "building": 1,
@@ -182,7 +185,10 @@
     "ice_cream": 0,
     "pub": 0,
     "attraction": 0,
-    "refinery": 0
+    "refinery": 0,
+    "hut": 0,
+    "cabin": 0,
+    "shed": 0
   },
   "type": {
     "terminal:transport": {
@@ -1332,6 +1338,21 @@
     "building": {
       "building": [
         "yes"
+      ]
+    },
+    "hut:building": {
+      "building": [
+        "hut"
+      ]
+    },
+    "cabin:residential": {
+      "building": [
+        "cabin"
+      ]
+    },
+    "shed:building": {
+      "building": [
+        "shed"
       ]
     }
   }

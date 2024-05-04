@@ -194,6 +194,8 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "", "", "", "", "",
                 ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
+
+        datasource.save(geoIndicatorsCompute_i.rsu_indicators, "/tmp/rsu.geojson" , true)
         assertNotNull(geoIndicatorsCompute_i)
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
         assertEquals(listUrbTyp.Bu.sort(), datasource.getTable(geoIndicatorsCompute_i.building_indicators).columns.sort())
@@ -568,7 +570,7 @@ class WorkflowGeoIndicatorsTest {
     def checkRSUIndicators(def datasource, def rsuIndicatorsTableName) {
         //Check road_fraction > 0
         def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
-        assertEquals(184, countResult.count)
+        assertEquals(176, countResult.count)
 
         //Check building_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE BUILDING_FRACTION>0".toString())
@@ -576,7 +578,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_fraction>0".toString())
-        assertEquals(22, countResult.count)
+        assertEquals(25, countResult.count)
 
         //Check high_vegetation_water_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
@@ -592,7 +594,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_road_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_road_fraction>0".toString())
-        assertEquals(21, countResult.count)
+        assertEquals(20, countResult.count)
 
         //Check high_vegetation_impervious_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_impervious_fraction>0".toString())
@@ -604,7 +606,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0".toString())
-        assertEquals(55, countResult.count)
+        assertEquals(53, countResult.count)
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())
@@ -622,7 +624,6 @@ class WorkflowGeoIndicatorsTest {
      void test(){
         datasource.load("/tmp/road_inter.geojson", "road", true)
         datasource.load("/tmp/rsu_table.geojson", "rsu", true)
-
         datasource.createSpatialIndex("road")
         datasource.createSpatialIndex("rsu")
         datasource.execute("""

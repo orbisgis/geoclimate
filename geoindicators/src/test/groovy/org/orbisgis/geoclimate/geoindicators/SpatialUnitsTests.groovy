@@ -377,4 +377,31 @@ class SpatialUnitsTests {
         distances = Geoindicators.GridIndicators.gridDistances(h2GIS, inverse_cool_areas, data, "id_grid")
         h2GIS.save(distances, "/tmp/cool_inverse_distances.fgb", true)
     }
+
+    /**
+     * A test to debug test creation with some inputs data
+     */
+    @Disabled
+    @Test
+    void debugTSUTest() {
+        String path = "/tmp/geoclimate"
+        String zone = h2GIS.load(path+File.separator+"zone.fgb")
+        String road = h2GIS.load(path+File.separator+"road.fgb")
+        String rail = h2GIS.load(path+File.separator+"rail.fgb")
+        String vegetation= h2GIS.load(path+File.separator+"vegetation.fgb")
+        String water= h2GIS.load(path+File.separator+"water.fgb")
+        String sea_land_mask= h2GIS.load(path+File.separator+"sea_land_mask.fgb")
+        String urban_areas= h2GIS.load(path+File.separator+"urban_areas.fgb")
+        double surface_vegetation =10000
+        double surface_hydro=2500
+        double surface_urban_areas=10000
+        double area = 1
+        String rsu = Geoindicators.SpatialUnits.createTSU(h2GIS, zone,
+                 area,  road,  rail,  vegetation,
+                 water,  sea_land_mask,  urban_areas,
+                 surface_vegetation,  surface_hydro,  surface_urban_areas, "rsu")
+        if(rsu){
+            h2GIS.save(rsu, "/tmp/rsu.fgb", true)
+        }
+    }
 }

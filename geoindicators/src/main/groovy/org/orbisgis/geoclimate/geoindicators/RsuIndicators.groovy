@@ -1233,7 +1233,7 @@ String extendedFreeFacadeFraction(JdbcDataSource datasource, String building, St
     def notIncBu = postfix "notIncBu"
 
     datasource """DROP TABLE IF EXISTS $extRsuTable; CREATE TABLE $extRsuTable AS SELECT  
-                    ST_BUFFER($GEOMETRIC_FIELD, $buffDist) AS $GEOMETRIC_FIELD,
+                    ST_BUFFER($GEOMETRIC_FIELD, $buffDist, 2) AS $GEOMETRIC_FIELD,
                     $ID_FIELD_RSU FROM $rsu;""".toString()
 
     // The facade area of buildings being entirely included in the RSU buffer is calculated
@@ -1337,13 +1337,15 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             //Separate road features according the zindex
             def roadTable_zindex0_buffer = postfix "road_zindex0_buffer"
             def road_tmp = postfix "road_zindex0"
+
             datasource """DROP TABLE IF EXISTS $roadTable_zindex0_buffer, $road_tmp;
-            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE PRECISION/2)
-            AS the_geom
-            FROM $road  where ZINDEX=0 ;
+            CREATE TABLE $roadTable_zindex0_buffer as SELECT ST_CollectionExtract(st_intersection(a.the_geom,b.the_geom),2) AS the_geom, 
+            a.WIDTH, b.${id_zone}
+            FROM $road as a, $zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) and a.ZINDEX=0 ;
             CREATE SPATIAL INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer(the_geom);
-            CREATE TABLE $road_tmp AS SELECT ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.${id_zone} FROM
-            $roadTable_zindex0_buffer AS a, $zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.${id_zone};
+            CREATE TABLE $road_tmp AS SELECT st_union(st_accum(st_buffer(a.the_geom, WIDTH::DOUBLE PRECISION/2,2)))AS the_geom,
+            ${id_zone} FROM
+            $roadTable_zindex0_buffer AS a group by ${id_zone} ;
             DROP TABLE IF EXISTS $roadTable_zindex0_buffer;
             """.toString()
             tablesToMerge += ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1356,12 +1358,13 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             def railTable_zindex0_buffer = postfix "rail_zindex0_buffer"
             def rail_tmp = postfix "rail_zindex0"
             datasource """DROP TABLE IF EXISTS $railTable_zindex0_buffer, $rail_tmp;
-            CREATE TABLE $railTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE PRECISION/2)
-            AS the_geom
-            FROM $rail  where ZINDEX=0 ;
+            CREATE TABLE $railTable_zindex0_buffer as SELECT ST_CollectionExtract(st_intersection(a.the_geom,b.the_geom),3) AS the_geom, 
+            a.WIDTH, b.${id_zone}
+            FROM $rail as a ,$zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) and a.ZINDEX=0 ;
             CREATE SPATIAL INDEX IF NOT EXISTS ids_$railTable_zindex0_buffer ON $railTable_zindex0_buffer(the_geom);
-            CREATE TABLE $rail_tmp AS SELECT ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.${id_zone} FROM
-            $railTable_zindex0_buffer AS a, $zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.${id_zone};
+            CREATE TABLE $rail_tmp AS SELECT st_union(st_accum(st_buffer(a.the_geom, WIDTH::DOUBLE PRECISION/2,2))) AS the_geom,
+            ${id_zone} FROM
+            $railTable_zindex0_buffer AS a GROUP BY ${id_zone};
             DROP TABLE IF EXISTS $railTable_zindex0_buffer;
             """.toString()
             tablesToMerge += ["$rail_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $rail_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1435,7 +1438,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
         def tmp_point_polygonize = postfix "tmp_point_polygonize_zindex0"
         datasource """DROP TABLE IF EXISTS $tmp_point_polygonize;
                 CREATE INDEX ON $tmp_tables($id_zone);
-                CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as ${ID_COLUMN_NAME}, st_pointonsurface(st_force2D(the_geom)) as the_geom ,
+                CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as ${ID_COLUMN_NAME}, st_pointonsurface(the_geom) as the_geom ,
                 st_area(the_geom) as area , ${id_zone}
                  from st_explode ('(select st_polygonize(st_union(st_force2d(
                 st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom, ${id_zone} from $tmp_tables as a group by ${id_zone})')""".toString()
@@ -2254,7 +2257,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             def roadTable_zindex0_buffer = postfix "road_zindex0_buffer"
             def road_tmp = postfix "road_zindex0"
             datasource """DROP TABLE IF EXISTS $roadTable_zindex0_buffer, $road_tmp;
-            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE PRECISION/2)
+            CREATE TABLE $roadTable_zindex0_buffer as SELECT st_buffer(the_geom, WIDTH::DOUBLE PRECISION/2, 2)
             AS the_geom, surface as type
             FROM $road  where ZINDEX=0 ;
             CREATE SPATIAL INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer(the_geom);

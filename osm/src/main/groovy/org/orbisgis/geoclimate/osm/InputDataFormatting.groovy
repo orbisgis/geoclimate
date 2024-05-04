@@ -203,7 +203,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.execute("""DROP TABLE IF EXISTS $triangles;
                 CREATE TABLE $triangles as 
                 SELECT * FROM st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 
-                      THEN ST_Tessellate(st_buffer(the_geom, -0.001)) ELSE THE_GEOM END AS THE_GEOM,
+                      THEN ST_Tessellate(st_buffer(the_geom, -0.001,2)) ELSE THE_GEOM END AS THE_GEOM,
                       type FROM $urban_areas)')""".toString())
                 datasource.createSpatialIndex(triangles)
 
@@ -691,11 +691,13 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                     CREATE TABLE $polygonizedExploded as select * from st_explode('$polygonizedTable');
                     """.toString())
 
+            datasource.createSpatialIndex(impervious)
+            datasource.createSpatialIndex(polygonizedExploded)
             def filtered_area = postfix("filtered_area")
             datasource.execute("""DROP TABLE IF EXISTS $filtered_area;
                     CREATE TABLE  $filtered_area AS 
-                    SELECT a.EXPLOD_ID , a.the_geom, st_area(b.the_geom) as area_imp, b.* EXCEPT(the_geom) from $polygonizedExploded as a , $impervious as b where
-                    a.the_geom && b.the_geom AND st_intersects(st_pointonsurface(a.the_geom), b.the_geom) ;
+                    SELECT a.EXPLOD_ID , a.the_geom, st_area(b.the_geom) as area_imp, b.* EXCEPT(the_geom) from $polygonizedExploded as a , 
+                    $impervious as b where a.the_geom && b.the_geom AND st_intersects(st_pointonsurface(a.the_geom), b.the_geom) ;
                     CREATE INDEX ON $filtered_area(EXPLOD_ID);""".toString())
 
             def impervious_prepared = postfix("impervious_prepared")
@@ -1149,7 +1151,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
-                        SELECT st_tomultiline(st_buffer(the_geom, -0.01))
+                        SELECT st_tomultiline(st_buffer(the_geom, -0.01,2))
                         from $zone 
                         UNION ALL
                         SELECT st_tomultiline(the_geom)
@@ -1233,7 +1235,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
-                        SELECT st_tomultiline(st_buffer(the_geom, -0.01))
+                        SELECT st_tomultiline(st_buffer(the_geom, -0.01,2))
                         from $zone ;
 
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
