@@ -578,8 +578,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     //Extract and compute population indicators for the specified year
                     //This data can be used by the grid_indicators process
                     if (worldpop_indicators) {
-                        def bbox = [zones.envelope.getMinY() as Float, zones.envelope.getMinX() as Float,
-                                    zones.envelope.getMaxY() as Float, zones.envelope.getMaxX() as Float]
+                        def bbox = [zones.osm_envelope_extented.getMinY() as Float, zones.osm_envelope_extented.getMinX() as Float,
+                                    zones.osm_envelope_extented.getMaxY() as Float, zones.osm_envelope_extented.getMaxX() as Float]
                         String coverageId = "wpGlobal:ppp_2020"
                         String worldPopFile = WorldPopTools.Extract.extractWorldPopLayer(coverageId, bbox)
                         if (worldPopFile) {
@@ -669,7 +669,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         } else {
                             info "Cannot create a grid to aggregate the indicators"
                             h2gis_datasource.execute("""INSERT INTO $logTableZones 
-                            VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error computing the grid indicators'
+                            VALUES(st_geomfromtext('${zones.osm_geometry}',4326) ,'$id_zone', 'Error computing the grid indicators'
                             '${Geoindicators.version()}',
                             '${Geoindicators.buildNumber()}')""".toString())
                         }
@@ -689,7 +689,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                 } else {
                     h2gis_datasource.execute("""INSERT INTO $logTableZones 
-                    VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error loading the OSM file', 
+                    VALUES(st_geomfromtext('${zones.osm_geometry}',4326) ,'$id_zone', 'Error loading the OSM file', 
                             '${Geoindicators.version()}',
                             '${Geoindicators.buildNumber()}')""".toString())
                     error "Cannot load the OSM file ${extract}"
@@ -698,7 +698,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
             } else {
                 //Log in table
                 h2gis_datasource.execute("""INSERT INTO $logTableZones 
-                VALUES(st_geomfromtext('${zones.geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass'
+                VALUES(st_geomfromtext('${zones.osm_geometry}',4326) ,'$id_zone', 'Error to extract the data with OverPass'
                 ,'${Geoindicators.version()}', '${Geoindicators.buildNumber()}')""".toString())
                 error "Cannot execute the overpass query $query"
                 return
