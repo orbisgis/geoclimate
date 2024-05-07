@@ -1483,7 +1483,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         Map spatialUnits = createUnitsOfAnalysis(datasource, zone,
                 building, road,
                 rail, vegetation,
-                water, sea_land_mask, "", "",
+                water, sea_land_mask, "", rsuTable,
                 surface_vegetation,
                 surface_hydro, surface_urban_areas, snappingTolerance, indicatorUse,
                 prefixName)
