@@ -372,6 +372,27 @@ class GenericIndicatorsTests {
     }
 
     @Test
+    void typeProportionTest3() {
+        //
+        h2GIS.load('/tmp/inputTableName.fgb', 'inputTableName')
+        h2GIS.load('/tmp/inputUpperTableName.fgb', 'inputUpperTableName')
+
+        // Test 1
+        def p = Geoindicators.GenericIndicators.typeProportion(h2GIS,
+                "inputTableName", "id_rsu", "type",
+                "inputUpperTableName",
+                ["undefined_lcz": ["building"],
+                 "light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
+                 "commercial_lcz": ["commercial", "shop", "retail", "port",
+                                    "exhibition_centre", "cinema"],
+                 "heavy_industry_lcz": ["refinery"],
+                 "residential_lcz"   : ["house", "detached", "bungalow", "farm", "apartments", "barracks",
+                                        "abbey", "condominium", "villa", "dormitory", "sheltered_housing",
+                                        "workers_dormitory", "terrace", "residential", "cabin"]], [:], "rsu_indicator_LCZ")
+
+    }
+
+    @Test
     void gatherScalesTest() {
         h2GIS """
                 DROP TABLE IF EXISTS tempo_block, tempo_build, tempo_rsu; 
