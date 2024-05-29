@@ -858,6 +858,60 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
     }
 
+
+    @Test
+    void testCreateGISLayers() {
+        String directory = folder.absolutePath + File.separator + "test_creategislayers"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [[43.726898,7.298452,100]]],
+                "output"      : [
+                        "folder": ["path"  : directory,
+                                   "tables": ["building", "zone"]]]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        def building = tableNames.building[0]
+        def zone = tableNames.zone[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+        assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
+        assertEquals(1, h2gis.firstRow("select count(*) as count from $zone").count)
+    }
+
+    @Test
+    void testCreateGISLayersNoOutput() {
+        String directory = folder.absolutePath + File.separator + "test_no_output"
+        directory = "/tmp/db"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [[43.726898,7.298452,100]]]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db")
+        //All tables must exist in the database
+        tableNames.each {it->
+            assertTrue(h2gis.hasTable(it.value))
+        }
+    }
+
+
     @Disabled //Because it takes some time to build the OSM query
     @Test
     void testEstimateBuildingWithAllInputHeightDate() {

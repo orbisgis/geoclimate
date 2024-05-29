@@ -132,7 +132,5 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM urban_areas where type is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM urban_areas where ST_ISEMPTY(THE_GEOM)=false OR THE_GEOM IS NOT NULL").count)
 
-
-
     }
 }
