@@ -441,7 +441,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @return a filled map of parameters
      */
     def extractProcessingParameters(def processing_parameters) {
-        def defaultParameters = [distance       : 1000f, prefixName: "",
+        def defaultParameters = [distance       : 500f, prefixName: "",
                                  hLevMin        : 3]
         def rsu_indicators_default = [indicatorUse       : [],
                                       svfSimplified      : true,
