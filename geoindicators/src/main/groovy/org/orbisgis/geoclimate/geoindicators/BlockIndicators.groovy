@@ -22,6 +22,9 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
+import org.orbisgis.geoclimate.utils.GeoClimateException
+
+import java.sql.SQLException
 
 @BaseScript Geoindicators geoindicators
 
@@ -38,7 +41,7 @@ import org.orbisgis.geoclimate.Geoindicators
  *
  * @author Jérémy Bernard 
  */
-String holeAreaDensity(JdbcDataSource datasource, String blockTable, String prefixName) {
+String holeAreaDensity(JdbcDataSource datasource, String blockTable, String prefixName) throws GeoClimateException {
     def GEOMETRIC_FIELD = "the_geom"
     def ID_COLUMN_BL = "id_block"
     def BASE_NAME = "hole_area_density"
@@ -54,9 +57,12 @@ String holeAreaDensity(JdbcDataSource datasource, String blockTable, String pref
                 SELECT $ID_COLUMN_BL, ST_AREA(ST_HOLES($GEOMETRIC_FIELD))/ST_AREA($GEOMETRIC_FIELD) AS $BASE_NAME 
                 FROM $blockTable
         """
-
-    datasource query.toString()
-    return outputTableName
+    try {
+        datasource.execute(query)
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    }
 }
 
 /**
@@ -77,7 +83,7 @@ String holeAreaDensity(JdbcDataSource datasource, String blockTable, String pref
  *
  * @author Jérémy Bernard
  */
-String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField, String buildingContiguityField, String prefixName) {
+String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField, String buildingContiguityField, String prefixName) throws GeoClimateException{
     def GEOMETRY_FIELD_BU = "the_geom"
     def ID_COLUMN_BL = "id_block"
     def HEIGHT_WALL = "height_wall"
@@ -88,7 +94,7 @@ String netCompactness(JdbcDataSource datasource, String building, String buildin
     // The name of the outputTableName is constructed
     def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-    datasource.createIndex(building,"id_block")
+    datasource.createIndex(building, "id_block")
 
     def query = """
             DROP TABLE IF EXISTS $outputTableName; 
@@ -106,9 +112,12 @@ String netCompactness(JdbcDataSource datasource, String building, String buildin
                 FROM $building 
                 GROUP BY $ID_COLUMN_BL
         """
-
-    datasource query.toString()
-    return outputTableName
+    try {
+        datasource.execute(query)
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    }
 }
 
 
@@ -136,7 +145,7 @@ String netCompactness(JdbcDataSource datasource, String building, String buildin
  * @return Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
  */
-String closingness(JdbcDataSource datasource, String correlationTableName, String blockTable, String prefixName) {
+String closingness(JdbcDataSource datasource, String correlationTableName, String blockTable, String prefixName) throws GeoClimateException {
 
     def GEOMETRY_FIELD_BU = "the_geom"
     def GEOMETRY_FIELD_BL = "the_geom"
@@ -148,8 +157,8 @@ String closingness(JdbcDataSource datasource, String correlationTableName, Strin
     // The name of the outputTableName is constructed
     def outputTableName = prefix(prefixName, "block_" + BASE_NAME)
 
-    datasource.createIndex(blockTable,"id_block")
-    datasource.createIndex(correlationTableName,"id_block")
+    datasource.createIndex(blockTable, "id_block")
+    datasource.createIndex(correlationTableName, "id_block")
 
     def query = """
             DROP TABLE IF EXISTS $outputTableName; 
@@ -162,7 +171,10 @@ String closingness(JdbcDataSource datasource, String correlationTableName, Strin
                     $blockTable b 
                 WHERE a.$ID_COLUMN_BL = b.$ID_COLUMN_BL 
                 GROUP BY b.$ID_COLUMN_BL"""
-
-    datasource query.toString()
-    return outputTableName
+    try {
+        datasource.execute(query)
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    }
 }

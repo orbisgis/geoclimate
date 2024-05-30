@@ -161,7 +161,7 @@ class WorkflowDebugTest {
                                  "indicatorUse": ["LCZ",  "UTRF",  "TEB"]
 
                          ],
-                         "grid_indicators": [
+                         /*"grid_indicators": [
                                  "x_size"    : 100,
                                  "y_size"    : 100,
                                  "indicators" :["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
@@ -176,7 +176,7 @@ class WorkflowDebugTest {
                                  "LCZ_PRIMARY", "SPRAWL_AREAS",
                                                 "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
                                  //, "lcz_lod":2
-                         ]
+                         ]*/
                         ]
         ]
         //BDTopo.v2(bdTopoParameters)

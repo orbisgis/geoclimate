@@ -42,7 +42,7 @@
         <h2gis-version>2.2.1</h2gis-version>
         <h2-version>2.2.224</h2-version>
         <cts-version>1.7.1</cts-version>
-        <orbisdata-version>2.1.0</orbisdata-version>
+        <orbisdata-version>2.1.1-SNAPSHOT</orbisdata-version>
         <slf4j-version>2.0.10</slf4j-version>
         <groovy-version>4.0.17</groovy-version>
         <picocli-version>4.6.3</picocli-version>

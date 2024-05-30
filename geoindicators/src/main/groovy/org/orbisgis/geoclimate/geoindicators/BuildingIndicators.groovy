@@ -22,6 +22,9 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
+import org.orbisgis.geoclimate.utils.GeoClimateException
+
+import java.sql.SQLException
 
 @BaseScript Geoindicators geoindicators
 
@@ -48,7 +51,7 @@ import org.orbisgis.geoclimate.Geoindicators
  *
  * @author Jérémy Bernard
  */
-String sizeProperties(JdbcDataSource datasource, String building, List operations, String prefixName) {
+String sizeProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws GeoClimateException {
     def OP_VOLUME = "volume"
     def OP_FLOOR_AREA = "floor_area"
     def OP_FACADE_LENGTH = "total_facade_length"
@@ -89,8 +92,12 @@ String sizeProperties(JdbcDataSource datasource, String building, List operation
     }
     query += "$COLUMN_ID_BU FROM $building"
 
-    datasource query.toString()
-    return outputTableName
+    try {
+        datasource.execute(query)
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    }
 }
 
 
@@ -118,7 +125,7 @@ String sizeProperties(JdbcDataSource datasource, String building, List operation
  *
  * @author Jérémy Bernard
  */
-String neighborsProperties(JdbcDataSource datasource, String building, List operations, String prefixName) {
+String neighborsProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws GeoClimateException {
     def GEOMETRIC_FIELD = "the_geom"
     def ID_FIELD = "id_build"
     def HEIGHT_WALL = "height_wall"
@@ -136,8 +143,8 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, BASE_NAME
 
-    datasource.createSpatialIndex(building,"the_geom")
-    datasource.createIndex(building,"id_build")
+    datasource.createSpatialIndex(building, "the_geom")
+    datasource.createIndex(building, "id_build")
 
     def query = " CREATE TABLE $build_intersec AS SELECT "
 
@@ -184,8 +191,12 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
                     ON a.$ID_FIELD = b.$ID_FIELD;
                 DROP TABLE IF EXISTS $build_intersec"""
 
-    datasource query.toString()
-    return outputTableName
+    try {
+        datasource.execute(query)
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    }
 }
 
 /**
@@ -214,7 +225,7 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
  *
  * @author Jérémy Bernard
  */
-String formProperties(JdbcDataSource datasource, String building, List operations, String prefixName) {
+String formProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws GeoClimateException {
     def GEOMETRIC_FIELD = "the_geom"
     def ID_FIELD = "id_build"
     def HEIGHT_WALL = "height_wall"
@@ -258,8 +269,12 @@ String formProperties(JdbcDataSource datasource, String building, List operation
     }
     query += "$ID_FIELD FROM $building"
 
-    datasource query.toString()
-    return outputTableName
+    try {
+        datasource.execute(query)
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    }
 }
 
 /**
@@ -279,24 +294,24 @@ String formProperties(JdbcDataSource datasource, String building, List operation
  * @author Jérémy Bernard
  * @author Erwan Bocher
  */
-String minimumBuildingSpacing(JdbcDataSource datasource, String building, float bufferDist = 100f, String prefixName) {
-    def GEOMETRIC_FIELD = "the_geom"
-    def ID_FIELD = "id_build"
-    def BASE_NAME = "minimum_building_spacing"
-
-    debug "Executing Building minimum building spacing"
-
+String minimumBuildingSpacing(JdbcDataSource datasource, String building, float bufferDist = 100f, String prefixName) throws GeoClimateException {
     // To avoid overwriting the output files of this step, a unique identifier is created
     // Temporary table names
     def build_min_distance = postfix "build_min_distance"
+    try {
+        def GEOMETRIC_FIELD = "the_geom"
+        def ID_FIELD = "id_build"
+        def BASE_NAME = "minimum_building_spacing"
 
-    // The name of the outputTableName is constructed
-    def outputTableName = prefix prefixName, "building_" + BASE_NAME
+        debug "Executing Building minimum building spacing"
 
-    datasource.createSpatialIndex(building,"the_geom")
-    datasource.createIndex(building,"id_build")
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-    datasource """
+        datasource.createSpatialIndex(building, "the_geom")
+        datasource.createIndex(building, "id_build")
+
+        datasource.execute( """
                 DROP TABLE IF EXISTS $build_min_distance; 
                 CREATE TABLE $build_min_distance AS 
                     SELECT b.$ID_FIELD, 
@@ -305,22 +320,27 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
                     WHERE st_expand(a.$GEOMETRIC_FIELD, $bufferDist) && b.$GEOMETRIC_FIELD 
                     AND a.$ID_FIELD <> b.$ID_FIELD 
                     GROUP BY b.$ID_FIELD;
-                 CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance ($ID_FIELD); """.toString()
+                 CREATE INDEX IF NOT EXISTS with_buff_id ON $build_min_distance ($ID_FIELD); """)
 
-    // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
-    // having no building neighbors in a envelope meters distance
-    datasource """DROP TABLE IF EXISTS $outputTableName; 
+        // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
+        // having no building neighbors in a envelope meters distance
+        datasource.execute( """DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName($ID_FIELD INTEGER, $BASE_NAME FLOAT) AS 
                     SELECT a.$ID_FIELD, 
                         CASE WHEN b.min_distance IS NOT NULL 
                             THEN b.min_distance 
                             ELSE 100 END 
                     FROM $building a LEFT JOIN $build_min_distance b 
-                    ON a.$ID_FIELD = b.$ID_FIELD """.toString()
-    // The temporary tables are deleted
-    datasource "DROP TABLE IF EXISTS $build_min_distance".toString()
-
-    return outputTableName
+                    ON a.$ID_FIELD = b.$ID_FIELD """)
+        // The temporary tables are deleted
+        datasource.execute( "DROP TABLE IF EXISTS $build_min_distance")
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    } finally {
+        // The temporary tables are deleted
+        datasource.execute( "DROP TABLE IF EXISTS $build_min_distance")
+    }
 }
 
 /**
@@ -339,64 +359,69 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
  *
  * @author Jérémy Bernard
  */
-String roadDistance(JdbcDataSource datasource, String building, String inputRoadTableName, float bufferDist = 100f, String prefixName) {
-    def GEOMETRIC_FIELD = "the_geom"
-    def ID_FIELD_BU = "id_build"
-    def ROAD_WIDTH = "width"
-    def BASE_NAME = "road_distance"
-
-    debug "Executing Building road distance"
-
+String roadDistance(JdbcDataSource datasource, String building, String inputRoadTableName, float bufferDist = 100f, String prefixName) throws GeoClimateException {
     // To avoid overwriting the output files of this step, a unique identifier is created
     // Temporary table names
     def build_buffer = postfix "build_buffer"
     def road_surf = postfix "road_surf"
     def road_within_buffer = postfix "road_within_buffer"
+    try {
+        def GEOMETRIC_FIELD = "the_geom"
+        def ID_FIELD_BU = "id_build"
+        def ROAD_WIDTH = "width"
+        def BASE_NAME = "road_distance"
 
-    // The name of the outputTableName is constructed
-    def outputTableName = prefix prefixName, "building_" + BASE_NAME
+        debug "Executing Building road distance"
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-    datasource.createIndex(building,"id_build")
+        datasource.createIndex(building, "id_build")
 
-    // The buffer is created
-    datasource """DROP TABLE IF EXISTS $build_buffer;
+        // The buffer is created
+        datasource.execute( """DROP TABLE IF EXISTS $build_buffer;
                 CREATE TABLE $build_buffer AS
                     SELECT $ID_FIELD_BU,  ST_BUFFER($GEOMETRIC_FIELD, $bufferDist, 2) AS $GEOMETRIC_FIELD 
                     FROM $building;
-                CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $build_buffer ($GEOMETRIC_FIELD)""".toString()
-    // The road surfaces are created
-    datasource """
+                CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $build_buffer ($GEOMETRIC_FIELD)""")
+        // The road surfaces are created
+        datasource.execute( """
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
                     SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'quad_segs=2 endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
-                CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $road_surf ($GEOMETRIC_FIELD)""".toString()
-    // The roads located within the buffer are identified
-    datasource """
+                CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $road_surf ($GEOMETRIC_FIELD)""")
+        // The roads located within the buffer are identified
+        datasource.execute( """
                 DROP TABLE IF EXISTS $road_within_buffer; 
                 CREATE TABLE $road_within_buffer AS 
                     SELECT a.$ID_FIELD_BU, b.$GEOMETRIC_FIELD 
                     FROM $build_buffer a, $road_surf b 
                     WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD 
                     AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD); 
-                CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer ($ID_FIELD_BU); """.toString()
+                CREATE INDEX IF NOT EXISTS with_buff_id ON $road_within_buffer ($ID_FIELD_BU); """)
 
-    // The minimum distance is calculated between each building and the surrounding roads (the minimum
-    // distance is set to the bufferDist value for buildings having no road within a bufferDist meters
-    // distance)
-    datasource """
+        // The minimum distance is calculated between each building and the surrounding roads (the minimum
+        // distance is set to the bufferDist value for buildings having no road within a bufferDist meters
+        // distance)
+        datasource.execute( """
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName($BASE_NAME DOUBLE PRECISION, $ID_FIELD_BU INTEGER) AS (
                     SELECT COALESCE(MIN(st_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)), $bufferDist), a.$ID_FIELD_BU 
                     FROM $road_within_buffer b 
                     RIGHT JOIN $building a 
                     ON a.$ID_FIELD_BU = b.$ID_FIELD_BU 
-                    GROUP BY a.$ID_FIELD_BU)""".toString()
+                    GROUP BY a.$ID_FIELD_BU)""")
 
-    // The temporary tables are deleted
-    datasource "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf".toString()
+        // The temporary tables are deleted
+        datasource.execute( "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf")
 
-    return outputTableName
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    } finally {
+        // The temporary tables are delete
+        datasource.execute( "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf")
+    }
 }
 
 /**
@@ -425,7 +450,8 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
  * @author Jérémy Bernard
  *
  */
-String likelihoodLargeBuilding(JdbcDataSource datasource, String building, String nbOfBuildNeighbors, String prefixName) {
+String likelihoodLargeBuilding(JdbcDataSource datasource, String building, String nbOfBuildNeighbors, String prefixName) throws GeoClimateException{
+    try{
     def GEOMETRIC_FIELD = "the_geom"
     def ID_FIELD_BU = "id_build"
     def BASE_NAME = "likelihood_large_building"
@@ -441,10 +467,10 @@ String likelihoodLargeBuilding(JdbcDataSource datasource, String building, Strin
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-    datasource.createIndex(building,"id_build")
+    datasource.createIndex(building, "id_build")
 
     // The calculation of the logistic function is performed only for buildings having no neighbors
-    datasource """DROP TABLE IF EXISTS $outputTableName; 
+    datasource.execute( """DROP TABLE IF EXISTS $outputTableName; 
                  CREATE TABLE $outputTableName AS 
                     SELECT a.$ID_FIELD_BU, 
                         CASEWHEN(
@@ -454,9 +480,11 @@ String likelihoodLargeBuilding(JdbcDataSource datasource, String building, Strin
                         AS $BASE_NAME 
                  FROM $building a 
                  LEFT JOIN $building b 
-                 ON a.$ID_FIELD_BU = b.$ID_FIELD_BU""".toString()
-
-    return outputTableName
+                 ON a.$ID_FIELD_BU = b.$ID_FIELD_BU""")
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    }
 }
 
 /**
@@ -469,7 +497,12 @@ String likelihoodLargeBuilding(JdbcDataSource datasource, String building, Strin
  *
  * @author Erwan Bocher, CNRS
  */
-String buildingPopulation(JdbcDataSource datasource, String inputBuilding, String inputPopulation, List inputPopulationColumns = []) {
+String buildingPopulation(JdbcDataSource datasource, String inputBuilding, String inputPopulation, List inputPopulationColumns = []) throws GeoClimateException {
+    //Temporary tables
+    def inputBuildingTableName_pop = postfix inputBuilding
+    def inputBuildingTableName_pop_sum = postfix "building_pop_sum"
+    def inputBuildingTableName_area_sum = postfix "building_area_sum"
+    try{
     def BASE_NAME = "building_with_population"
     def ID_BUILDING = "id_build"
     def ID_POP = "id_pop"
@@ -480,8 +513,8 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
     def outputTableName = postfix BASE_NAME
 
     //Indexing table
-    datasource.createSpatialIndex(inputBuilding,"the_geom")
-    datasource.createSpatialIndex(inputPopulation,"the_geom")
+    datasource.createSpatialIndex(inputBuilding, "the_geom")
+    datasource.createSpatialIndex(inputPopulation, "the_geom")
     def popColumns = []
     def sum_popColumns = []
     if (inputPopulationColumns) {
@@ -498,8 +531,8 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
         return
     }
 
-    //Filtering the building to get only residential and intersect it with the population table
-    def inputBuildingTableName_pop = postfix inputBuilding
+    //Filtering the building to get only residential and intersect it with the population tabl
+
     datasource.execute("""
                 drop table if exists $inputBuildingTableName_pop;
                 CREATE TABLE $inputBuildingTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)))*a.NB_LEV)  as area_building, a.$ID_BUILDING, 
@@ -509,10 +542,7 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
                 or a.type in ('apartments', 'building', 'detached', 'farm', 'house','residential'));
                 create index on $inputBuildingTableName_pop ($ID_BUILDING);
                 create index on $inputBuildingTableName_pop ($ID_POP);
-            """.toString())
-
-    def inputBuildingTableName_pop_sum = postfix "building_pop_sum"
-    def inputBuildingTableName_area_sum = postfix "building_area_sum"
+            """)
     //Aggregate population values
     datasource.execute("""drop table if exists $inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum;
             create table $inputBuildingTableName_area_sum as select id_pop, sum(area_building) as sum_area_building
@@ -527,7 +557,13 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName AS SELECT a.*, ${popColumns.join(",")} from $inputBuilding a  
             LEFT JOIN $inputBuildingTableName_pop_sum  b on a.$ID_BUILDING=b.$ID_BUILDING;
-            drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum ;""".toString())
+            drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum ;""")
 
-    return outputTableName
+        return outputTableName
+    } catch (SQLException e) {
+        throw new GeoClimateException(e)
+    } finally {
+        // The temporary tables are delete
+        datasource.execute( "drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum")
+    }
 }
