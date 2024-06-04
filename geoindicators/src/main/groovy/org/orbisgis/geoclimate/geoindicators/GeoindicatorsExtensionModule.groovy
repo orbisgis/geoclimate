@@ -33,6 +33,6 @@ import org.orbisgis.data.H2GIS
  * @param filePath path for the file
  * @return
  */
-static String save(Geometry geometry, H2GIS h2GIS, String filePath) {
+static String save(Geometry geometry, H2GIS h2GIS, String filePath) throws Exception{
     return h2GIS.save("(SELECT ST_GEOMFROMTEXT('${geometry}',${geometry.getSRID()}) as the_geom, CAST(1 as integer) as id)", filePath, true)
 }

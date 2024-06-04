@@ -313,7 +313,7 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
         datasource.createSpatialIndex(building, "the_geom")
         datasource.createIndex(building, "id_build")
 
-        datasource.execute( """
+        datasource.execute("""
                 DROP TABLE IF EXISTS $build_min_distance; 
                 CREATE TABLE $build_min_distance AS 
                     SELECT b.$ID_FIELD, 
@@ -326,7 +326,7 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
 
         // The minimum distance is calculated (The minimum distance is set to the $inputE value for buildings
         // having no building neighbors in a envelope meters distance
-        datasource.execute( """DROP TABLE IF EXISTS $outputTableName; 
+        datasource.execute("""DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName($ID_FIELD INTEGER, $BASE_NAME FLOAT) AS 
                     SELECT a.$ID_FIELD, 
                         CASE WHEN b.min_distance IS NOT NULL 
@@ -335,13 +335,13 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
                     FROM $building a LEFT JOIN $build_min_distance b 
                     ON a.$ID_FIELD = b.$ID_FIELD """)
         // The temporary tables are deleted
-        datasource.execute( "DROP TABLE IF EXISTS $build_min_distance")
+        datasource.execute("DROP TABLE IF EXISTS $build_min_distance")
         return outputTableName
     } catch (SQLException e) {
         throw new SQLException("Cannot compute the minimum building spacing for the buildings", e)
     } finally {
         // The temporary tables are deleted
-        datasource.execute( "DROP TABLE IF EXISTS $build_min_distance")
+        datasource.execute("DROP TABLE IF EXISTS $build_min_distance")
     }
 }
 
@@ -380,20 +380,20 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
         datasource.createIndex(building, "id_build")
 
         // The buffer is created
-        datasource.execute( """DROP TABLE IF EXISTS $build_buffer;
+        datasource.execute("""DROP TABLE IF EXISTS $build_buffer;
                 CREATE TABLE $build_buffer AS
                     SELECT $ID_FIELD_BU,  ST_BUFFER($GEOMETRIC_FIELD, $bufferDist, 2) AS $GEOMETRIC_FIELD 
                     FROM $building;
                 CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $build_buffer ($GEOMETRIC_FIELD)""")
         // The road surfaces are created
-        datasource.execute( """
+        datasource.execute("""
                 DROP TABLE IF EXISTS $road_surf;
                 CREATE TABLE $road_surf AS 
                     SELECT ST_BUFFER($GEOMETRIC_FIELD, $ROAD_WIDTH::DOUBLE PRECISION/2,'quad_segs=2 endcap=flat') AS $GEOMETRIC_FIELD 
                     FROM $inputRoadTableName; 
                 CREATE SPATIAL INDEX IF NOT EXISTS buff_ids ON $road_surf ($GEOMETRIC_FIELD)""")
         // The roads located within the buffer are identified
-        datasource.execute( """
+        datasource.execute("""
                 DROP TABLE IF EXISTS $road_within_buffer; 
                 CREATE TABLE $road_within_buffer AS 
                     SELECT a.$ID_FIELD_BU, b.$GEOMETRIC_FIELD 
@@ -405,7 +405,7 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
         // The minimum distance is calculated between each building and the surrounding roads (the minimum
         // distance is set to the bufferDist value for buildings having no road within a bufferDist meters
         // distance)
-        datasource.execute( """
+        datasource.execute("""
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName($BASE_NAME DOUBLE PRECISION, $ID_FIELD_BU INTEGER) AS (
                     SELECT COALESCE(MIN(st_distance(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD)), $bufferDist), a.$ID_FIELD_BU 
@@ -415,14 +415,14 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
                     GROUP BY a.$ID_FIELD_BU)""")
 
         // The temporary tables are deleted
-        datasource.execute( "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf")
+        datasource.execute("DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf")
 
         return outputTableName
     } catch (SQLException e) {
         throw new SQLException("Cannot compute the road distance for the buildings", e)
     } finally {
         // The temporary tables are delete
-        datasource.execute( "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf")
+        datasource.execute("DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf")
     }
 }
 
@@ -452,27 +452,27 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
  * @author Jérémy Bernard
  *
  */
-String likelihoodLargeBuilding(JdbcDataSource datasource, String building, String nbOfBuildNeighbors, String prefixName) throws Exception{
-    try{
-    def GEOMETRIC_FIELD = "the_geom"
-    def ID_FIELD_BU = "id_build"
-    def BASE_NAME = "likelihood_large_building"
+String likelihoodLargeBuilding(JdbcDataSource datasource, String building, String nbOfBuildNeighbors, String prefixName) throws Exception {
+    try {
+        def GEOMETRIC_FIELD = "the_geom"
+        def ID_FIELD_BU = "id_build"
+        def BASE_NAME = "likelihood_large_building"
 
-    debug "Executing Building closeness to a 50 m wide building"
+        debug "Executing Building closeness to a 50 m wide building"
 
-    // Processes used for the indicator calculation
-    // a and r are the two parameters necessary for the logistic regression calculation (their value is
-    // set according to the training sample of the MaPuce dataset)
-    def a = Math.exp(6.5)
-    def r = 0.25
+        // Processes used for the indicator calculation
+        // a and r are the two parameters necessary for the logistic regression calculation (their value is
+        // set according to the training sample of the MaPuce dataset)
+        def a = Math.exp(6.5)
+        def r = 0.25
 
-    // The name of the outputTableName is constructed
-    def outputTableName = prefix prefixName, "building_" + BASE_NAME
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-    datasource.createIndex(building, "id_build")
+        datasource.createIndex(building, "id_build")
 
-    // The calculation of the logistic function is performed only for buildings having no neighbors
-    datasource.execute( """DROP TABLE IF EXISTS $outputTableName; 
+        // The calculation of the logistic function is performed only for buildings having no neighbors
+        datasource.execute("""DROP TABLE IF EXISTS $outputTableName; 
                  CREATE TABLE $outputTableName AS 
                     SELECT a.$ID_FIELD_BU, 
                         CASEWHEN(
@@ -504,38 +504,37 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
     def inputBuildingTableName_pop = postfix inputBuilding
     def inputBuildingTableName_pop_sum = postfix "building_pop_sum"
     def inputBuildingTableName_area_sum = postfix "building_area_sum"
-    try{
-    def BASE_NAME = "building_with_population"
-    def ID_BUILDING = "id_build"
-    def ID_POP = "id_pop"
+    try {
+        def BASE_NAME = "building_with_population"
+        def ID_BUILDING = "id_build"
+        def ID_POP = "id_pop"
 
-    debug "Computing building population"
+        debug "Computing building population"
 
-    // The name of the outputTableName is constructed
-    def outputTableName = postfix BASE_NAME
+        // The name of the outputTableName is constructed
+        def outputTableName = postfix BASE_NAME
 
-    //Indexing table
-    datasource.createSpatialIndex(inputBuilding, "the_geom")
-    datasource.createSpatialIndex(inputPopulation, "the_geom")
-    def popColumns = []
-    def sum_popColumns = []
-    if (inputPopulationColumns) {
-        def lowerCasePopCols = inputPopulationColumns.collect { it.toLowerCase() }
-        datasource."$inputPopulation".getColumns().each { col ->
-            if (!["the_geom", "id_pop"].contains(col.toLowerCase()
-            ) && lowerCasePopCols.contains(col.toLowerCase())) {
-                popColumns << "b.$col"
-                sum_popColumns << "sum((a.area_building * $col)/b.sum_area_building) as $col"
+        //Indexing table
+        datasource.createSpatialIndex(inputBuilding, "the_geom")
+        datasource.createSpatialIndex(inputPopulation, "the_geom")
+        def popColumns = []
+        def sum_popColumns = []
+        if (inputPopulationColumns) {
+            def lowerCasePopCols = inputPopulationColumns.collect { it.toLowerCase() }
+            datasource.getColumnNames(inputPopulation).each { col ->
+                if (!["the_geom", "id_pop"].contains(col.toLowerCase()
+                ) && lowerCasePopCols.contains(col.toLowerCase())) {
+                    popColumns << "b.$col"
+                    sum_popColumns << "sum((a.area_building * $col)/b.sum_area_building) as $col"
+                }
             }
+        } else {
+            warn "Please set a list one column that contain population data to be disaggregated"
+            return
         }
-    } else {
-        warn "Please set a list one column that contain population data to be disaggregated"
-        return
-    }
 
-    //Filtering the building to get only residential and intersect it with the population table
-
-    datasource.execute("""
+        //Filtering the building to get only residential and intersect it with the population table
+        datasource.execute("""
                 drop table if exists $inputBuildingTableName_pop;
                 CREATE TABLE $inputBuildingTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)))*a.NB_LEV)  as area_building, a.$ID_BUILDING, 
                 b.id_pop, ${popColumns.join(",")} from
@@ -545,8 +544,8 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
                 create index on $inputBuildingTableName_pop ($ID_BUILDING);
                 create index on $inputBuildingTableName_pop ($ID_POP);
             """)
-    //Aggregate population values
-    datasource.execute("""drop table if exists $inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum;
+        //Aggregate population values
+        datasource.execute("""drop table if exists $inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum;
             create table $inputBuildingTableName_area_sum as select id_pop, sum(area_building) as sum_area_building
             from $inputBuildingTableName_pop group by $ID_POP;
             create index on $inputBuildingTableName_area_sum($ID_POP);
@@ -566,6 +565,6 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
         throw new SQLException("Cannot compute the population distribution for the buildings", e)
     } finally {
         // The temporary tables are delete
-        datasource.execute( "drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum")
+        datasource.execute("drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum")
     }
 }

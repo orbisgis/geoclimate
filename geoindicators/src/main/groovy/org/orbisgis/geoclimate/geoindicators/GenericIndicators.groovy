@@ -78,8 +78,8 @@ String unweightedOperationFromLowerScale(JdbcDataSource datasource, String input
 
         def query = "DROP TABLE IF EXISTS $outputTableName; CREATE TABLE $outputTableName AS SELECT "
 
-        def columnNamesTypes = datasource."$inputLowerScaleTableName".getColumnsTypes()
-        def filteredColumns = columnNamesTypes.findAll { !COLUMN_TYPE_TO_AVOID.contains(it.value) }
+        def columnNamesTypes = datasource.getColumnNamesTypes(inputLowerScaleTableName)
+        def filteredColumns = columnNamesTypes.findAll { !COLUMN_TYPE_TO_AVOID.contains(it.value.toUpperCase()) }
         inputVarAndOperations.each { var, operations ->
             // Some operations may not need to use an existing variable thus not concerned by the column filtering
             def filteredOperations = operations - SPECIFIC_OPERATIONS
@@ -200,7 +200,8 @@ String weightedAggregatedStatistics(JdbcDataSource datasource, String inputLower
                 "ON a.$inputIdUp = b.$inputIdUp GROUP BY b.$inputIdUp"
 
         datasource.execute(weightedStdQuery)
-
+        // The temporary tables are deleted
+        datasource "DROP TABLE IF EXISTS $weighted_mean".toString()
         return outputTableName
     } catch (SQLException e) {
         throw new SQLException("Cannot execute the weighted aggregated statistics operation", e)
@@ -359,7 +360,9 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
                                     ALTER TABLE $outputTableName RENAME COLUMN EXTREMUM_COL TO $BASENAME;
                                     ALTER TABLE $outputTableName RENAME COLUMN UNIQUENESS_VALUE TO $UNIQUENESS;
                                     ALTER TABLE $outputTableName RENAME COLUMN EQUALITY_VALUE TO $INEQUALITY;""".toString()
-
+            // The temporary tables are deleted
+            datasource """DROP TABLE IF EXISTS $build_min_rec, $build_dir360, $build_dir180, 
+                        $build_dir_dist;""".toString()
             /*
             if (distribIndicator.contains("uniqueness")){
             // Reorganise the distribution Table (having the same number of column than the number
@@ -474,8 +477,7 @@ String distributionCharacterization(JdbcDataSource datasource, String distribTab
             def nbDistCol = distribColumns.size()
 
             if (distribColumns.size() == 0) {
-                error("Any columns to compute the distribution from the table $distribTableName".toString())
-                return
+                throw new IllegalArgumentException("Any columns to compute the distribution from the table $distribTableName".toString())
             }
 
             def idxExtrem = nbDistCol - 1
@@ -630,7 +632,7 @@ String distributionCharacterization(JdbcDataSource datasource, String distribTab
                                         FROM $outputTableMissingSomeObjects a RIGHT JOIN $initialTable b
                                         ON a.$inputId = b.$inputId;
                                         """)
-
+            datasource.execute("""DROP TABLE IF EXISTS $outputTableMissingSomeObjects, $distribTableNameNoNull""")
 
             return outputTableName
         } else {
@@ -762,7 +764,7 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
                                         FROM $outputTableWithNull a RIGHT JOIN $inputUpperTableName b
                                         ON a.$idField = b.$idField;
                                         """.toString()
-
+            datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull, $caseWhenTab""".toString()
             return outputTableName
         } else {
             throw new SQLException("'floorAreaTypeAndComposition' or 'areaTypeAndComposition' arguments should be a Map " +
@@ -944,6 +946,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
                                 AS SELECT a.*, ${listblockFinalRename.join(', ')}
                                 FROM $scale1ScaleFin a LEFT JOIN $blockIndicFinalScale b
                                 ON a.$idBlockForMerge = b.$idBlockForMerge;""".toString()
+            datasource.dropTable(finalScaleTableName, scale1ScaleFin, buildIndicRsuScale)
             return outputTableName
         } else {
             throw new SQLException(""" The 'targetedScale' parameter should either be 'RSU' or 'BUILDING' """)
@@ -980,13 +983,11 @@ String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName
     try {
         def upperGeometryColumn = datasource.getGeometryColumn(upperTableName)
         if (!upperGeometryColumn) {
-            error "The upper scale table must contain a geometry column"
-            return
+            throw new IllegalArgumentException("The upper scale table must contain a geometry column")
         }
         def lowerGeometryColumn = datasource.getGeometryColumn(lowerTableName)
         if (!lowerGeometryColumn) {
-            error "The lower scale table must contain a geometry column"
-            return
+            throw new IllegalArgumentException("The lower scale table must contain a geometry column")
         }
         datasource.createSpatialIndex(upperTableName, upperGeometryColumn)
         datasource.createIndex(upperTableName, upperColumnId)
@@ -1088,6 +1089,8 @@ String upperScaleAreaStatistics(JdbcDataSource datasource, String upperTableName
                      ON (a.$upperColumnId = b.$upperColumnId);
                      """
         datasource.execute(qjoin.toString())
+        // Drop intermediate tables created during process
+        datasource.execute("DROP TABLE IF EXISTS $spatialJoinTable, $pivotTable;".toString())
         debug "The zonal area table have been created"
         return outputTableName
     } catch (SQLException e) {

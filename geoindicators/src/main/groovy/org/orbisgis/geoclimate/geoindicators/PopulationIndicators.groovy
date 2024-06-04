@@ -23,6 +23,8 @@ import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
+import java.sql.SQLException
+
 @BaseScript Geoindicators geoindicators
 
 
@@ -36,10 +38,11 @@ import org.orbisgis.geoclimate.Geoindicators
  * @return the name of the population table
  */
 String formatPopulationTable(JdbcDataSource datasource, String populationTable, List populationColumns = [],
-                             String zoneTable = "") {
-    def tablePopulation_tmp = postfix(populationTable)
-    if (zoneTable) {
-        datasource.execute("""
+                             String zoneTable = "") throws Exception {
+    try {
+        def tablePopulation_tmp = postfix(populationTable)
+        if (zoneTable) {
+            datasource.execute("""
                 CREATE SPATIAL INDEX ON $populationTable(the_geom);
                 CREATE SPATIAL INDEX ON $zoneTable(the_geom);
                 DROP TABLE IF EXISTS $tablePopulation_tmp ;
@@ -49,16 +52,19 @@ String formatPopulationTable(JdbcDataSource datasource, String populationTable, 
                 DROP TABLE IF EXISTS $populationTable;
                 ALTER TABLE $tablePopulation_tmp rename to $populationTable;
                 """.toString())
-    } else {
-        datasource.execute("""
+        } else {
+            datasource.execute("""
                 DROP TABLE IF EXISTS $tablePopulation_tmp ;
                 CREATE TABLE $tablePopulation_tmp AS SELECT rownum() as id_pop, ST_MAKEVALID(the_geom) as the_geom , 
                 ${populationColumns.join(",")} from $populationTable ;
                 DROP TABLE IF EXISTS $populationTable;
                 ALTER TABLE $tablePopulation_tmp rename to $populationTable;
                 """.toString())
+        }
+        return populationTable
+    } catch (SQLException e) {
+        throw new SQLException("Cannot format the population table", e)
     }
-    return populationTable
 }
 
 /**
@@ -74,15 +80,17 @@ String formatPopulationTable(JdbcDataSource datasource, String populationTable, 
  * @return a map with the population distributed on building, rsu or grid
  */
 Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List populationColumns = [],
-                         String buildingTable, String rsuTable, String gridTable) {
+                         String buildingTable, String rsuTable, String gridTable) throws Exception {
     if (populationTable && populationColumns) {
-        def prefixName = "pop"
-        if (buildingTable) {
-            String buildingPop = Geoindicators.BuildingIndicators.buildingPopulation(datasource, buildingTable,
-                    populationTable, populationColumns)
-            if (buildingPop) {
+        def tablesToDrop=[]
+        try {
+            def prefixName = "pop"
+            if (buildingTable) {
+                String buildingPop = Geoindicators.BuildingIndicators.buildingPopulation(datasource, buildingTable,
+                        populationTable, populationColumns)
                 datasource.execute("""DROP TABLE IF EXISTS $buildingTable;
                                 ALTER TABLE ${buildingPop} RENAME TO $buildingTable""".toString())
+                tablesToDrop<<buildingPop
                 if (rsuTable) {
                     def unweightedBuildingIndicators = [:]
                     populationColumns.each { col ->
@@ -91,21 +99,18 @@ Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List
                     def rsu_pop_tmp = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,
                             buildingTable, rsuTable,
                             "id_rsu", "id_rsu",
-                            unweightedBuildingIndicators, prefixName,)
-                    if (rsu_pop_tmp) {
-                        def rsu_pop_geom = postfix(rsuTable)
-                        def tablesToJoin = [:]
-                        tablesToJoin.put(rsuTable, "id_rsu")
-                        tablesToJoin.put(rsu_pop_tmp, "id_rsu")
-                        def p = Geoindicators.DataUtils.joinTables(datasource,
-                                tablesToJoin, rsu_pop_geom)
-                        if (p) {
-                            datasource.execute("""DROP TABLE IF EXISTS $rsuTable, $rsu_pop_tmp;
+                            unweightedBuildingIndicators, prefixName)
+                    tablesToDrop<<rsu_pop_tmp
+                    def rsu_pop_geom = postfix(rsuTable)
+                    tablesToDrop<<rsu_pop_geom
+                    def tablesToJoin = [:]
+                    tablesToJoin.put(rsuTable, "id_rsu")
+                    tablesToJoin.put(rsu_pop_tmp, "id_rsu")
+                    Geoindicators.DataUtils.joinTables(datasource, tablesToJoin, rsu_pop_geom)
+                    datasource.execute("""DROP TABLE IF EXISTS $rsuTable, $rsu_pop_tmp;
                                     ALTER TABLE $rsu_pop_geom RENAME TO $rsuTable;
-                                    DROP TABLE IF EXISTS $rsu_pop_geom;""".toString())
-                        }
+                                    DROP TABLE IF EXISTS $rsu_pop_geom;""")
 
-                    }
                 }
                 if (gridTable) {
                     def sum_popColumns = []
@@ -116,9 +121,10 @@ Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List
                     }
                     //Here the population from the building to a grid
                     // Create the relations between grid cells and buildings
-                    datasource.createSpatialIndex(buildingTable,"the_geom")
-                    datasource.createSpatialIndex(gridTable,"the_geom")
+                    datasource.createSpatialIndex(buildingTable, "the_geom")
+                    datasource.createSpatialIndex(gridTable, "the_geom")
                     def buildingGrid_inter = postfix("building_grid_inter")
+                    tablesToDrop<<buildingGrid_inter
                     datasource.execute("""
                                 DROP TABLE IF EXISTS $buildingGrid_inter;
                                 CREATE TABLE $buildingGrid_inter AS SELECT ST_AREA(ST_INTERSECTION(a.the_geom, b.the_geom)) 
@@ -129,6 +135,8 @@ Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List
                     //Compute the population by cells
                     def buildingPopGrid_tmp = postfix("building_grid_pop_tmp")
                     def buildingPopGrid = postfix("building_grid_pop")
+                    tablesToDrop<<buildingPopGrid_tmp
+                    tablesToDrop<<buildingPopGrid
                     datasource.execute("""DROP TABLE IF EXISTS $buildingPopGrid_tmp, $buildingPopGrid;
                                 CREATE INDEX ON $buildingGrid_inter (ID_GRID);
                                 CREATE TABLE $buildingPopGrid_tmp AS SELECT ${sum_popColumns.join(",")}, ID_GRID FROM ${buildingGrid_inter} GROUP BY ID_GRID;
@@ -140,12 +148,13 @@ Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List
                                 DROP TABLE IF EXISTS $buildingPopGrid;
                                 """.toString())
                 }
-
             }
+            return ["buildingTable": buildingTable, "rsuTable": rsuTable, "gridTable": gridTable]
+        } catch (SQLException e) {
+            throw new SQLException("Cannot aggregate population data at multiscales", e)
+        }finally {
+            datasource.dropTable(tablesToDrop)
         }
-        return ["buildingTable": buildingTable, "rsuTable": rsuTable, "gridTable": gridTable]
-
     }
-    warn "Please set a valid population table name and a list of population columns"
-    return
+    throw new IllegalArgumentException("Please set a valid population table name and a list of population columns")
 }
