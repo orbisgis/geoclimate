@@ -29,6 +29,7 @@ import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
+
 import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 
 import java.sql.Connection
@@ -339,7 +340,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @return a list of id_zones
      */
     def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames,
-                           H2GIS h2gis_datasource, def inputSRID) {
+                           H2GIS h2gis_datasource, def inputSRID)  throws Exception{
         def folder = new File(inputFolder)
         if (folder.isDirectory()) {
             def geoFiles = []

@@ -22,7 +22,6 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.geoclimate.utils.GeoClimateException
 
 import java.sql.SQLException
 
@@ -39,9 +38,10 @@ import java.sql.SQLException
  *
  * @return Table name in which the block id and their corresponding indicator value are stored
  *
- * @author Jérémy Bernard 
+ * @author Jérémy Bernard
+ * @author Erwan Bocher
  */
-String holeAreaDensity(JdbcDataSource datasource, String blockTable, String prefixName) throws GeoClimateException {
+String holeAreaDensity(JdbcDataSource datasource, String blockTable, String prefixName) throws Exception {
     def GEOMETRIC_FIELD = "the_geom"
     def ID_COLUMN_BL = "id_block"
     def BASE_NAME = "hole_area_density"
@@ -61,7 +61,7 @@ String holeAreaDensity(JdbcDataSource datasource, String blockTable, String pref
         datasource.execute(query)
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the hole area density for the building blocks", e)
     }
 }
 
@@ -82,8 +82,9 @@ String holeAreaDensity(JdbcDataSource datasource, String blockTable, String pref
  * @return Table name in which the block id and their corresponding indicator value are stored
  *
  * @author Jérémy Bernard
+ * @author Erwan Bocher
  */
-String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField, String buildingContiguityField, String prefixName) throws GeoClimateException{
+String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField, String buildingContiguityField, String prefixName) throws Exception{
     def GEOMETRY_FIELD_BU = "the_geom"
     def ID_COLUMN_BL = "id_block"
     def HEIGHT_WALL = "height_wall"
@@ -116,7 +117,7 @@ String netCompactness(JdbcDataSource datasource, String building, String buildin
         datasource.execute(query)
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new Exception("Cannot compute the net compactness for the building blocks", e)
     }
 }
 
@@ -144,8 +145,9 @@ String netCompactness(JdbcDataSource datasource, String building, String buildin
  *
  * @return Table name in which the block id and their corresponding indicator value are stored
  * @author Jérémy Bernard
+ * @author Erwan Bocher
  */
-String closingness(JdbcDataSource datasource, String correlationTableName, String blockTable, String prefixName) throws GeoClimateException {
+String closingness(JdbcDataSource datasource, String correlationTableName, String blockTable, String prefixName) throws Exception {
 
     def GEOMETRY_FIELD_BU = "the_geom"
     def GEOMETRY_FIELD_BL = "the_geom"
@@ -175,6 +177,6 @@ String closingness(JdbcDataSource datasource, String correlationTableName, Strin
         datasource.execute(query)
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the closingness for the building blocks",e)
     }
 }

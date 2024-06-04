@@ -22,7 +22,6 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.geoclimate.utils.GeoClimateException
 
 import java.sql.SQLException
 
@@ -50,8 +49,9 @@ import java.sql.SQLException
  * @return A database table name.
  *
  * @author Jérémy Bernard
+ * @author Erwan Bocher, CNRS
  */
-String sizeProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws GeoClimateException {
+String sizeProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws Exception {
     def OP_VOLUME = "volume"
     def OP_FLOOR_AREA = "floor_area"
     def OP_FACADE_LENGTH = "total_facade_length"
@@ -96,7 +96,7 @@ String sizeProperties(JdbcDataSource datasource, String building, List operation
         datasource.execute(query)
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the size properties for the buildings", e)
     }
 }
 
@@ -124,8 +124,9 @@ String sizeProperties(JdbcDataSource datasource, String building, List operation
  * @return A database table name.
  *
  * @author Jérémy Bernard
+ * @author Erwan Bocher, CNRS
  */
-String neighborsProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws GeoClimateException {
+String neighborsProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws Exception {
     def GEOMETRIC_FIELD = "the_geom"
     def ID_FIELD = "id_build"
     def HEIGHT_WALL = "height_wall"
@@ -195,7 +196,7 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
         datasource.execute(query)
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the neighbors properties for the buildings", e)
     }
 }
 
@@ -224,8 +225,9 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
  * @return A database table name.
  *
  * @author Jérémy Bernard
+ * @author Erwan Bocher, CNRS
  */
-String formProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws GeoClimateException {
+String formProperties(JdbcDataSource datasource, String building, List operations, String prefixName) throws Exception {
     def GEOMETRIC_FIELD = "the_geom"
     def ID_FIELD = "id_build"
     def HEIGHT_WALL = "height_wall"
@@ -273,7 +275,7 @@ String formProperties(JdbcDataSource datasource, String building, List operation
         datasource.execute(query)
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the form properties for the buildings", e)
     }
 }
 
@@ -292,9 +294,9 @@ String formProperties(JdbcDataSource datasource, String building, List operation
  * @return A database table name.
  *
  * @author Jérémy Bernard
- * @author Erwan Bocher
+ * @author Erwan Bocher, CNRS
  */
-String minimumBuildingSpacing(JdbcDataSource datasource, String building, float bufferDist = 100f, String prefixName) throws GeoClimateException {
+String minimumBuildingSpacing(JdbcDataSource datasource, String building, float bufferDist = 100f, String prefixName) throws Exception {
     // To avoid overwriting the output files of this step, a unique identifier is created
     // Temporary table names
     def build_min_distance = postfix "build_min_distance"
@@ -336,7 +338,7 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
         datasource.execute( "DROP TABLE IF EXISTS $build_min_distance")
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the minimum building spacing for the buildings", e)
     } finally {
         // The temporary tables are deleted
         datasource.execute( "DROP TABLE IF EXISTS $build_min_distance")
@@ -359,7 +361,7 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
  *
  * @author Jérémy Bernard
  */
-String roadDistance(JdbcDataSource datasource, String building, String inputRoadTableName, float bufferDist = 100f, String prefixName) throws GeoClimateException {
+String roadDistance(JdbcDataSource datasource, String building, String inputRoadTableName, float bufferDist = 100f, String prefixName) throws Exception {
     // To avoid overwriting the output files of this step, a unique identifier is created
     // Temporary table names
     def build_buffer = postfix "build_buffer"
@@ -417,7 +419,7 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
 
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the road distance for the buildings", e)
     } finally {
         // The temporary tables are delete
         datasource.execute( "DROP TABLE IF EXISTS $build_buffer, $road_within_buffer, $road_surf")
@@ -450,7 +452,7 @@ String roadDistance(JdbcDataSource datasource, String building, String inputRoad
  * @author Jérémy Bernard
  *
  */
-String likelihoodLargeBuilding(JdbcDataSource datasource, String building, String nbOfBuildNeighbors, String prefixName) throws GeoClimateException{
+String likelihoodLargeBuilding(JdbcDataSource datasource, String building, String nbOfBuildNeighbors, String prefixName) throws Exception{
     try{
     def GEOMETRIC_FIELD = "the_geom"
     def ID_FIELD_BU = "id_build"
@@ -483,7 +485,7 @@ String likelihoodLargeBuilding(JdbcDataSource datasource, String building, Strin
                  ON a.$ID_FIELD_BU = b.$ID_FIELD_BU""")
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the likelihood large building for the buildings", e)
     }
 }
 
@@ -497,7 +499,7 @@ String likelihoodLargeBuilding(JdbcDataSource datasource, String building, Strin
  *
  * @author Erwan Bocher, CNRS
  */
-String buildingPopulation(JdbcDataSource datasource, String inputBuilding, String inputPopulation, List inputPopulationColumns = []) throws GeoClimateException {
+String buildingPopulation(JdbcDataSource datasource, String inputBuilding, String inputPopulation, List inputPopulationColumns = []) throws Exception {
     //Temporary tables
     def inputBuildingTableName_pop = postfix inputBuilding
     def inputBuildingTableName_pop_sum = postfix "building_pop_sum"
@@ -531,7 +533,7 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
         return
     }
 
-    //Filtering the building to get only residential and intersect it with the population tabl
+    //Filtering the building to get only residential and intersect it with the population table
 
     datasource.execute("""
                 drop table if exists $inputBuildingTableName_pop;
@@ -561,7 +563,7 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
 
         return outputTableName
     } catch (SQLException e) {
-        throw new GeoClimateException(e)
+        throw new SQLException("Cannot compute the population distribution for the buildings", e)
     } finally {
         // The temporary tables are delete
         datasource.execute( "drop table if exists $inputBuildingTableName_pop,$inputBuildingTableName_pop_sum, $inputBuildingTableName_area_sum")

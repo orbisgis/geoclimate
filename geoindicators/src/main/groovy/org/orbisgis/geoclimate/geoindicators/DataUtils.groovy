@@ -24,6 +24,8 @@ import groovy.transform.BaseScript
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
+import java.sql.SQLException
+
 @BaseScript Geoindicators geoindicators
 
 /**
@@ -35,9 +37,9 @@ import org.orbisgis.geoclimate.Geoindicators
  *
  * @return
  */
-String joinTables(JdbcDataSource datasource, Map inputTableNamesWithId, String outputTableName, boolean prefixWithTabName = false) {
+String joinTables(JdbcDataSource datasource, Map inputTableNamesWithId, String outputTableName, boolean prefixWithTabName = false) throws Exception{
+    try {
     debug "Executing Utility process to join tables in one"
-
     def columnKey
     def alias = "a"
     def leftQuery = ""
@@ -46,23 +48,21 @@ String joinTables(JdbcDataSource datasource, Map inputTableNamesWithId, String o
     def columns = []
 
     inputTableNamesWithId.each { key, value ->
-        //Reload cache to be sure that the table is up to date
-        datasource."$key".reload()
         if (alias == "a") {
             columnKey = "$alias.$value"
             // Whether or not the table name is add as prefix of the indicator in the new table
             if (prefixWithTabName) {
-                columns = datasource."$key".columns.collect {
+                columns = datasource.getColumnNames(key).collect {
                     alias + ".$it AS ${key}_$it"
                 }
             } else {
-                columns = datasource."$key".columns.collect {
+                columns = datasource.getColumnNames(key).collect {
                     alias + ".$it"
                 }
             }
             leftQuery += " FROM $key as $alias "
         } else {
-            datasource."$key".columns.forEach() { item ->
+            datasource.getColumnNames(key).forEach() { item ->
                 if (!item.equalsIgnoreCase(value)) {
                     if (prefixWithTabName) {
                         columns.add(alias + ".$item AS ${key}_$item")
@@ -77,13 +77,15 @@ String joinTables(JdbcDataSource datasource, Map inputTableNamesWithId, String o
         alias++
     }
 
-    def columnsAsString = columns.join(",")
+        def columnsAsString = columns.join(",")
 
-    datasource "DROP TABLE IF EXISTS $outputTableName".toString()
-    datasource indexes.toString()
-    datasource "CREATE TABLE $outputTableName AS SELECT $columnsAsString $leftQuery".toString()
-
-    return outputTableName
+        datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+        ${indexes.toString()}
+        CREATE TABLE $outputTableName AS SELECT $columnsAsString $leftQuery""")
+        return outputTableName
+    } catch (java.sql.SQLException e) {
+        throw new SQLException("Cannot join the tables", e)
+    }
 }
 
 /**
@@ -98,7 +100,8 @@ String joinTables(JdbcDataSource datasource, Map inputTableNamesWithId, String o
  *
  * @return the directory where the tables are saved
  */
-String saveTablesAsFiles(JdbcDataSource datasource, List inputTableNames, boolean delete = true, String directory) {
+String saveTablesAsFiles(JdbcDataSource datasource, List inputTableNames, boolean delete = true, String directory) throws Exception{
+    try {
     if (directory == null) {
         error "The directory to save the data cannot be null"
         return
@@ -124,6 +127,9 @@ String saveTablesAsFiles(JdbcDataSource datasource, List inputTableNames, boolea
         }
     }
     return directory
+    } catch (java.sql.SQLException e) {
+        throw new SQLException("Cannot save the tables", e)
+    }
 }
 
 

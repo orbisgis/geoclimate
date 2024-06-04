@@ -364,11 +364,10 @@ class GenericIndicatorsTests {
                         FROM building_test a, rsu_test b
                         WHERE id_build < 4;"""
         // Test 1
-        def p = Geoindicators.GenericIndicators.typeProportion(h2GIS,
+        assertThrows(Exception.class, ()-> Geoindicators.GenericIndicators.typeProportion(h2GIS,
                 "tempo_build", "id_rsu", "type",
                 "rsu_test",
-                null, null, "")
-        assertNull(p)
+                null, null, ""))
     }
 
     @Test
