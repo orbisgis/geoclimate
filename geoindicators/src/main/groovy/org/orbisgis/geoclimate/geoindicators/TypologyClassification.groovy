@@ -87,7 +87,8 @@ import java.util.zip.GZIPOutputStream
 String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, String rsuAllIndicators, String normalisationType = "AVG",
                        Map mapOfWeights = ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                            "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1], String prefixName) {
+                                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+                       String prefixName) throws Exception{
     def OPS = ["AVG", "MEDIAN"]
     def ID_FIELD_RSU = "id_rsu"
     def CENTER_NAME = "center"
@@ -512,12 +513,11 @@ def createRandomForestModel(JdbcDataSource datasource, String trainingTableName,
     }
     debug "Create a Random Forest model"
 
-    def trainingTable = datasource."$trainingTableName"
+    def  trainingTableColumns = datasource.getTable(trainingTableName).columns
 
     //Check if the column names exists
-    if (!trainingTable.hasColumn(varToModel)) {
-        error "The training table should have a column named $varToModel"
-        return
+    if (!trainingTableColumns.contains(varToModel)) {
+        throw new IllegalArgumentException("The training table should have a column named $varToModel".toString())
     }
     // If needed, select only some specific columns for the training in the dataframe
     def df
@@ -592,7 +592,7 @@ def createRandomForestModel(JdbcDataSource datasource, String trainingTableName,
  * @author Jérémy Bernard
  */
 String applyRandomForestModel(JdbcDataSource datasource, String explicativeVariablesTableName, String pathAndFileName, String idName,
-                              String prefixName) {
+                              String prefixName) throws Exception{
     debug "Apply a Random Forest model"
     File inputModelFile = new File(pathAndFileName)
     def modelName = FilenameUtils.getBaseName(pathAndFileName)
@@ -606,8 +606,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
             if (!localInputModelFile.exists()) {
                 FileUtils.copyURLToFile(new URL(modelURL), localInputModelFile)
                 if (!localInputModelFile.exists()) {
-                    error "Cannot find any model file to apply the classification tree"
-                    return null
+                    throw new IllegalArgumentException("Cannot find any model file to apply the classification tree")
                 }
             }
             inputModelFile = localInputModelFile;
@@ -615,8 +614,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
             if (FilenameUtils.isExtension(pathAndFileName, "model")) {
                 modelName = FilenameUtils.getBaseName(pathAndFileName)
             } else {
-                error "The extension of the model file must be .model"
-                return null
+                throw new IllegalArgumentException( "The extension of the model file must be .model")
             }
         }
         def fileInputStream = new FileInputStream(inputModelFile)
@@ -640,8 +638,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
         putModel(modelName, model)
     }
     if (!model) {
-        error "Cannot find the requiered columns to apply the model"
-        return
+        throw new IllegalArgumentException( "Cannot find the requiered columns to apply the model")
     }
 
     // The name of the outputTableName is constructed
@@ -667,7 +664,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
         }
     }
     //Check the column names before building the dataframe and apply the model
-    def inputColumns = datasource."$explicativeVariablesTableName".getColumnsTypes()
+    def inputColumns = datasource.getColumnNamesTypes(explicativeVariablesTableName)
 
     def allowedColumnNames = modelColumnNames.intersect(inputColumns.keySet())
     def notSameColumnNames = allowedColumnNames.size() != modelColumnNames.size()
@@ -734,8 +731,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
                 preparedStatement.executeBatch();
             }
         } catch (SQLException e) {
-            error("Cannot save the dataframe.\n", e);
-            return null;
+            throw new SQLException("Cannot save the dataframe.", e)
         } finally {
             outputconnection.setAutoCommit(true);
             if (preparedStatement != null) {
@@ -743,8 +739,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
             }
         }
     } catch (SQLException e) {
-        error("Cannot save the dataframe.\n", e);
-        return null;
+        throw new SQLException("Cannot save the dataframe.", e)
     }
     return tableName
 }

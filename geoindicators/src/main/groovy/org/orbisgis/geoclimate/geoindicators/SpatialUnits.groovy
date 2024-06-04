@@ -63,35 +63,36 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
 String createTSU(JdbcDataSource datasource, String zone,
                  double area = 1f, String road, String rail, String vegetation,
                  String water, String sea_land_mask, String urban_areas,
-                 double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) {
-    def BASE_NAME = "rsu"
+                 double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) throws Exception {
 
-    debug "Creating the reference spatial units"
-    // The name of the outputTableName is constructed
-    def outputTableName = prefix prefixName, BASE_NAME
-    datasource """DROP TABLE IF EXISTS $outputTableName;""".toString()
+    def tablesToDrop = []
+    try {
+        def BASE_NAME = "rsu"
 
-    def tsuDataPrepared = prepareTSUData(datasource,
-            zone, road, rail,
-            vegetation, water, sea_land_mask, urban_areas, surface_vegetation, surface_hydro, surface_urban_areas, prefixName)
+        debug "Creating the reference spatial units"
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, BASE_NAME
+        datasource.execute("""DROP TABLE IF EXISTS $outputTableName;""")
 
-    if (!tsuDataPrepared) {
-        info "Cannot prepare the data for RSU calculation."
-        return
+        def tsuDataPrepared = prepareTSUData(datasource,
+                zone, road, rail,
+                vegetation, water, sea_land_mask, urban_areas, surface_vegetation, surface_hydro, surface_urban_areas, prefixName)
+
+        tablesToDrop << tsuDataPrepared
+        def outputTsuTableName = Geoindicators.SpatialUnits.createTSU(datasource, tsuDataPrepared, zone,
+                area, prefixName)
+        datasource.dropTable(tsuDataPrepared)
+
+        datasource.execute("""ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;""")
+
+        debug "Reference spatial units table created"
+
+        return outputTableName
+    } catch (SQLException e) {
+        throw new SQLException("Cannot compute the TSU", e)
+    } finally {
+        datasource.dropTable(tablesToDrop)
     }
-    def outputTsuTableName = Geoindicators.SpatialUnits.createTSU(datasource, tsuDataPrepared, zone,
-            area, prefixName)
-    if (!outputTsuTableName) {
-        info "Cannot compute the RSU."
-        return
-    }
-    datasource.dropTable(tsuDataPrepared)
-
-    datasource """ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;""".toString()
-
-    debug "Reference spatial units table created"
-
-    return outputTableName
 }
 
 /**
@@ -105,7 +106,8 @@ String createTSU(JdbcDataSource datasource, String zone,
  * @param area TSU less or equals than area are removed
  * @return A database table name and the name of the column ID
  */
-String createTSU(JdbcDataSource datasource, String inputTableName, String inputzone, double area = 1d, String prefixName) {
+String createTSU(JdbcDataSource datasource, String inputTableName, String inputzone,
+                 double area = 1d, String prefixName) throws Exception{
     def COLUMN_ID_NAME = "id_rsu"
     def BASE_NAME = "tsu"
 
@@ -114,18 +116,14 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
     def outputTableName = prefix prefixName, BASE_NAME
 
     if (!inputTableName) {
-        error "The input data to compute the TSU cannot be null or empty"
-        return null
+        throw new IllegalArgumentException("The input data to compute the TSU cannot be null or empty")
     }
     def epsg = datasource.getSrid(inputTableName)
 
     if (area <= 0) {
-        error "The area value to filter the TSU must be greater to 0"
-        return null
+        throw new IllegalArgumentException( "The area value to filter the TSU must be greater to 0")
     }
     if (inputzone) {
-
-
         //Clip the geometry
         datasource.createSpatialIndex(inputTableName)
         datasource.createSpatialIndex(inputzone)
@@ -137,7 +135,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
         """.toString())
 
         //Create the polygons from the TSU lines
-        String polygons  = postfix("polygons")
+        String polygons = postfix("polygons")
         datasource.execute(""" DROP TABLE IF EXISTS $polygons;
         CREATE TABLE $polygons as 
         SELECT
@@ -162,7 +160,6 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
     }
 
     debug "Reference spatial units table created"
-
     return outputTableName
 }
 
@@ -189,90 +186,89 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
  */
 String prepareTSUData(JdbcDataSource datasource, String zone, String road, String rail,
                       String vegetation, String water, String sea_land_mask, String urban_areas,
-                      double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName = "unified_abstract_model") {
+                      double surface_vegetation, double surface_hydro,
+                      double surface_urban_areas, String prefixName = "unified_abstract_model")
+        throws Exception {
 
     if (surface_vegetation <= 100) {
-        error("The surface of vegetation must be greater or equal than 100 m²")
-        return
+        throw new IllegalArgumentException("The surface of vegetation must be greater or equal than 100 m²")
     }
     if (surface_hydro <= 100) {
-        error("The surface of water must be greater or equal than 100 m²")
-        return
+        throw new IllegalArgumentException("The surface of water must be greater or equal than 100 m²")
     }
 
     if (surface_urban_areas <= 100) {
-        error("The surface of urban areas must be greater or equal than 100 m²")
-        return
+        throw new IllegalArgumentException("The surface of urban areas must be greater or equal than 100 m²")
     }
 
-    def BASE_NAME = "prepared_tsu_data"
+    try {
+        def BASE_NAME = "prepared_tsu_data"
+        debug "Preparing the abstract model to build the TSU"
 
-    debug "Preparing the abstract model to build the TSU"
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, BASE_NAME
 
-    // The name of the outputTableName is constructed
-    def outputTableName = prefix prefixName, BASE_NAME
+        // Create temporary table names (for tables that will be removed at the end of the method)
+        def vegetation_tmp
+        def hydrographic_tmp
 
-    // Create temporary table names (for tables that will be removed at the end of the method)
-    def vegetation_tmp
-    def hydrographic_tmp
+        def queryCreateOutputTable = [:]
+        def dropTableList = []
 
-    def queryCreateOutputTable = [:]
-    def dropTableList = []
+        def numberZone = datasource.firstRow("SELECT COUNT(*) AS nb FROM $zone".toString()).nb
 
-    def numberZone = datasource.firstRow("SELECT COUNT(*) AS nb FROM $zone".toString()).nb
+        if (numberZone == 1) {
+            def epsg = datasource.getSrid(zone)
+            //Add the land mask
+            if (sea_land_mask && datasource.hasTable(sea_land_mask)) {
+                debug "Preparing land mask..."
+                queryCreateOutputTable += [land_mask_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $sea_land_mask where type ='land')"]
+            }
+            if (vegetation && datasource.hasTable(vegetation)) {
+                debug "Preparing vegetation..."
+                if (datasource.getColumnNames(vegetation)) {
+                    vegetation_tmp = postfix "vegetation_tmp"
+                    def vegetation_graph = postfix "vegetation_graph"
+                    def subGraphTableNodes = postfix vegetation_graph, "NODE_CC"
+                    def subGraphTableEdges = postfix vegetation_graph, "EDGE_CC"
+                    def subGraphBlocksLow = postfix "subgraphblocks_low"
+                    def subGraphBlocksHigh = postfix "subgraphblocks_high"
 
-    if (numberZone == 1) {
-        def epsg = datasource."$zone".srid
-        //Add the land mask
-        if (sea_land_mask && datasource.hasTable(sea_land_mask)) {
-            debug "Preparing land mask..."
-            queryCreateOutputTable += [land_mask_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $sea_land_mask where type ='land')"]
-        }
-        if (vegetation && datasource.hasTable(vegetation)) {
-            debug "Preparing vegetation..."
-            if (datasource.getColumnNames(vegetation)) {
-                vegetation_tmp = postfix "vegetation_tmp"
-                def vegetation_graph = postfix "vegetation_graph"
-                def subGraphTableNodes = postfix vegetation_graph, "NODE_CC"
-                def subGraphTableEdges = postfix vegetation_graph, "EDGE_CC"
-                def subGraphBlocksLow = postfix "subgraphblocks_low"
-                def subGraphBlocksHigh = postfix "subgraphblocks_high"
+                    datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocksLow, $subGraphBlocksHigh".toString()
 
-                datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocksLow, $subGraphBlocksHigh".toString()
-
-                datasource.createIndex(vegetation, "ID_VEGET")
-                datasource.createSpatialIndex(vegetation, "THE_GEOM")
-                datasource.execute """          
+                    datasource.createIndex(vegetation, "ID_VEGET")
+                    datasource.createSpatialIndex(vegetation, "THE_GEOM")
+                    datasource.execute("""          
                    CREATE TABLE $vegetation_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
                    SELECT CAST((row_number() over()) as Integer), a.ID_VEGET as START_NODE, b.ID_VEGET AS END_NODE 
                    FROM $vegetation  AS a, $vegetation AS b 
                    WHERE a.ID_VEGET <>b.ID_VEGET AND a.the_geom && b.the_geom 
                    AND ST_INTERSECTS(b.the_geom,a.the_geom);
-                   """.toString()
+                   """)
 
-                //Recherche des clusters
-                getConnectedComponents(datasource.getConnection(), vegetation_graph, "undirected")
+                    //Recherche des clusters
+                    getConnectedComponents(datasource.getConnection(), vegetation_graph, "undirected")
 
-                //Unify water geometries that share a boundary
-                debug "Merging spatial clusters..."
-                //Processing low vegetation
-                datasource """
+                    //Unify water geometries that share a boundary
+                    debug "Merging spatial clusters..."
+                    //Processing low vegetation
+                    datasource """
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                 CREATE TABLE $subGraphBlocksLow AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $vegetation A, $subGraphTableNodes B
                 WHERE a.ID_VEGET=b.NODE_ID AND a.HEIGHT_CLASS= 'low' GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
 
-                //Processing high vegetation
-                datasource """
+                    //Processing high vegetation
+                    datasource """
                 CREATE TABLE $subGraphBlocksHigh AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $vegetation A, $subGraphTableNodes B
                 WHERE a.ID_VEGET=b.NODE_ID AND a.HEIGHT_CLASS= 'high' GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
 
-                debug "Creating the vegetation block table..."
+                    debug "Creating the vegetation block table..."
 
-                datasource """DROP TABLE IF EXISTS $vegetation_tmp; 
+                    datasource """DROP TABLE IF EXISTS $vegetation_tmp; 
                 CREATE TABLE $vegetation_tmp (THE_GEOM GEOMETRY) 
                 AS SELECT the_geom FROM $subGraphBlocksLow
                 UNION ALL SELECT the_geom FROM $subGraphBlocksHigh
@@ -280,26 +276,26 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 LEFT JOIN $subGraphTableNodes b ON a.ID_VEGET = b.NODE_ID WHERE b.NODE_ID IS NULL 
                 AND st_area(a.the_geom)>=$surface_vegetation;
                 DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocksLow, $subGraphBlocksHigh;""".toString()
-                queryCreateOutputTable += [vegetation_tmp: "(SELECT the_geom FROM $vegetation_tmp)"]
-                dropTableList.addAll([vegetation_tmp])
+                    queryCreateOutputTable += [vegetation_tmp: "(SELECT the_geom FROM $vegetation_tmp)"]
+                    dropTableList.addAll([vegetation_tmp])
+                }
             }
-        }
 
-        if (water && datasource.hasTable(water)) {
-            if (datasource.getColumnNames(water).size() > 0) {
-                //Extract water
-                debug "Preparing hydrographic..."
-                hydrographic_tmp = postfix "hydrographic_tmp"
-                def water_graph = postfix "water_graphes"
-                def subGraphTableNodes = postfix water_graph, "NODE_CC"
-                def subGraphTableEdges = postfix water_graph, "EDGE_CC"
-                def subGraphBlocks = postfix "subgraphblocks"
+            if (water && datasource.hasTable(water)) {
+                if (datasource.getColumnNames(water).size() > 0) {
+                    //Extract water
+                    debug "Preparing hydrographic..."
+                    hydrographic_tmp = postfix "hydrographic_tmp"
+                    def water_graph = postfix "water_graphes"
+                    def subGraphTableNodes = postfix water_graph, "NODE_CC"
+                    def subGraphTableEdges = postfix water_graph, "EDGE_CC"
+                    def subGraphBlocks = postfix "subgraphblocks"
 
-                datasource "DROP TABLE IF EXISTS  $hydrographic_tmp, $water_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
+                    datasource "DROP TABLE IF EXISTS  $hydrographic_tmp, $water_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocks".toString()
 
-                datasource.createIndex(water, "ID_WATER")
-                datasource.createSpatialIndex(water, "THE_GEOM")
-                datasource.execute """          
+                    datasource.createIndex(water, "ID_WATER")
+                    datasource.createSpatialIndex(water, "THE_GEOM")
+                    datasource.execute """          
                    CREATE TABLE $water_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
                    SELECT CAST((row_number() over()) as Integer), a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
                    FROM $water  AS a, $water AS b 
@@ -307,20 +303,20 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                    AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0;
                    """.toString()
 
-                //Recherche des clusters
-                getConnectedComponents(datasource.getConnection(), water_graph, "undirected")
+                    //Recherche des clusters
+                    getConnectedComponents(datasource.getConnection(), water_graph, "undirected")
 
-                //Unify water geometries that share a boundary
-                debug "Merging spatial clusters..."
+                    //Unify water geometries that share a boundary
+                    debug "Merging spatial clusters..."
 
-                datasource """
+                    datasource """
                 CREATE INDEX ON $subGraphTableNodes (NODE_ID);
                 CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $water A, $subGraphTableNodes B
                 WHERE a.ID_WATER=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;""".toString()
-                debug "Creating the water block table..."
-                datasource """DROP TABLE IF EXISTS $hydrographic_tmp; 
+                    debug "Creating the water block table..."
+                    datasource """DROP TABLE IF EXISTS $hydrographic_tmp; 
                 CREATE TABLE $hydrographic_tmp (THE_GEOM GEOMETRY) 
                 AS SELECT the_geom FROM $subGraphBlocks
                 UNION ALL SELECT ST_ToMultiLine(a.the_geom) as the_geom  FROM $water a 
@@ -328,37 +324,35 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 st_area(a.the_geom)>=$surface_hydro;
                 DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph, $subGraphBlocks ;""".toString()
 
-                queryCreateOutputTable += [hydrographic_tmp: "(SELECT the_geom FROM $hydrographic_tmp)"]
-                dropTableList.addAll([hydrographic_tmp])
+                    queryCreateOutputTable += [hydrographic_tmp: "(SELECT the_geom FROM $hydrographic_tmp)"]
+                    dropTableList.addAll([hydrographic_tmp])
+                }
             }
-        }
 
-        if (road && datasource.hasTable(road)) {
-            debug "Preparing road..."
-            if (datasource.getColumnNames(road).size() > 0) {
-                queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing in ('bridge', 'crossing')) " +
-                        "and type not in ('track','service', 'path', 'cycleway', 'steps'))"]
+            if (road && datasource.hasTable(road)) {
+                debug "Preparing road..."
+                if (datasource.getColumnNames(road).size() > 0) {
+                    queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing in ('bridge', 'crossing')) " +
+                            "and type not in ('track','service', 'path', 'cycleway', 'steps'))"]
+                }
             }
-        }
 
-        if (rail && datasource.hasTable(rail)) {
-            debug "Preparing rail..."
-            if (datasource.getColumnNames(rail).size() > 0) {
-                queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
+            if (rail && datasource.hasTable(rail)) {
+                debug "Preparing rail..."
+                if (datasource.getColumnNames(rail).size() > 0) {
+                    queryCreateOutputTable += [rail_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $rail where (zindex=0 and usage='main') or (crossing = 'bridge' and usage='main'))"]
+                }
             }
-        }
-
-        if (urban_areas && datasource.hasTable(urban_areas)) {
-            if (datasource.getColumnNames(urban_areas).size() > 0) {
-                debug "Preparing urban areas..."
-                queryCreateOutputTable += [urban_areas_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $urban_areas WHERE st_area(the_geom)>=$surface_urban_areas and type not in ('social_building'))"]
+            if (urban_areas && datasource.hasTable(urban_areas)) {
+                if (datasource.getColumnNames(urban_areas).size() > 0) {
+                    debug "Preparing urban areas..."
+                    queryCreateOutputTable += [urban_areas_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $urban_areas WHERE st_area(the_geom)>=$surface_urban_areas and type not in ('social_building'))"]
+                }
             }
-        }
-
-        // The input table that contains the geometries to be transformed as TSU
-        debug "Grouping all tables..."
-        if (queryCreateOutputTable) {
-            datasource """
+            // The input table that contains the geometries to be transformed as TSU
+            debug "Grouping all tables..."
+            if (queryCreateOutputTable) {
+                datasource """
                         DROP TABLE if exists $outputTableName;
                         CREATE TABLE $outputTableName(the_geom GEOMETRY) AS 
                             (
@@ -367,21 +361,24 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                             UNION ${queryCreateOutputTable.values().join(' union ')};
                         DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}
                 """.toString()
-        } else {
-            datasource """DROP TABLE if exists $outputTableName;
+            } else {
+                datasource.execute("""DROP TABLE if exists $outputTableName;
             CREATE TABLE $outputTableName(the_geom GEOMETRY) AS (SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) 
-            FROM $zone);""".toString()
-        }
-        if (dropTableList) {
-            datasource "DROP TABLE IF EXISTS ${dropTableList.join(',')};".toString()
-        }
-        debug "TSU created..."
+            FROM $zone);""")
+            }
+            if (dropTableList) {
+                datasource "DROP TABLE IF EXISTS ${dropTableList.join(',')};".toString()
+            }
+            debug "TSU created..."
 
-    } else {
-        error "Cannot compute the TSU. The input zone table must have one row."
-        outputTableName = null
+        } else {
+            error "Cannot compute the TSU. The input zone table must have one row."
+            outputTableName = null
+        }
+        return outputTableName
+    } catch (SQLException e) {
+        throw new SQLException("Cannot prepare the TSU data", e)
     }
-    return outputTableName
 }
 
 /**
@@ -395,7 +392,8 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
  * @param outputTableName The name of the output table
  * @return A database table name and the name of the column ID
  */
-String createBlocks(JdbcDataSource datasource, String inputTableName, double snappingTolerance = 0.0d, String prefixName = "block") {
+String createBlocks(JdbcDataSource datasource, String inputTableName,
+                    double snappingTolerance = 0.0d, String prefixName = "block") throws Exception{
 
     def BASE_NAME = "blocks"
 
@@ -455,7 +453,7 @@ String createBlocks(JdbcDataSource datasource, String inputTableName, double sna
     //Create the blocks
     debug "Creating the block table..."
 
-    def blocks =  postfix("blocks")
+    def blocks = postfix("blocks")
     datasource.execute("""DROP TABLE IF EXISTS $blocks;
         CREATE TABLE $blocks as         
         SELECT st_force2d(ST_MAKEVALID(THE_GEOM)) as the_geom FROM $subGraphBlocks
@@ -497,7 +495,7 @@ String createBlocks(JdbcDataSource datasource, String inputTableName, double sna
  * @return outputTableName A table name containing ID from table 1, ID from table 2 and AREA shared by the two objects (if pointOnSurface = false)
  */
 String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetTable,
-                   String idColumnTarget, boolean pointOnSurface = false, Integer nbRelations, String prefixName) {
+                   String idColumnTarget, boolean pointOnSurface = false, Integer nbRelations, String prefixName) throws Exception{
     def GEOMETRIC_COLUMN_SOURCE = "the_geom"
     def GEOMETRIC_COLUMN_TARGET = "the_geom"
 
@@ -560,21 +558,19 @@ String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetT
  *
  * @author Emmanuel Renault, CNRS, 2020
  * */
-String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX, double deltaY, boolean rowCol = false, String prefixName = "") {
+String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
+                  double deltaY, boolean rowCol = false, String prefixName = "") throws Exception{
     if (rowCol) {
         if (!deltaX || !deltaY || deltaX < 1 || deltaY < 1) {
-            debug "Invalid grid size padding. Must be greater or equal than 1"
-            return
+            throw new IllegalArgumentException("Invalid grid size padding. Must be greater or equal than 1")
         }
     } else {
         if (!deltaX || !deltaY || deltaX <= 0 || deltaY <= 0) {
-            error "Invalid grid size padding. Must be greater than 0"
-            return
+            throw new IllegalArgumentException("Invalid grid size padding. Must be greater than 0")
         }
     }
     if (!geometry) {
-        error "The envelope is null or empty. Cannot compute the grid"
-        return
+        throw new IllegalArgumentException( "The envelope is null or empty. Cannot compute the grid")
     }
 
     def BASENAME = "grid"
@@ -617,8 +613,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX, d
                 preparedStatement.executeBatch()
             }
         } catch (SQLException e) {
-            error("Cannot create the grid with the parameters.\n", e)
-            return null
+            throw new SQLException("Cannot create the grid with the parameters.", e)
         } finally {
             if (preparedStatement != null) {
                 preparedStatement.close()
@@ -641,24 +636,22 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX, d
  * @param distance value to erode (delete) small sprawl areas
  * @author Erwan Bocher (CNRS)
  */
-String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, float distance = 100) {
+String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
+                          float distance = 100) throws Exception{
     //We must compute the grid
     if (!grid_indicators) {
-        error("No grid_indicators table to compute the sprawl areas layer")
-        return
+        throw new IllegalArgumentException("No grid_indicators table to compute the sprawl areas layer")
     }
     if (distance < 0) {
-        error("Please set a distance greater or equal than 0")
-        return
+        throw new IllegalArgumentException("Please set a distance greater or equal than 0")
     }
     if (datasource.getRowCount(grid_indicators) == 0) {
-        error("No grid cells to compute the sprawl areas layer")
-        return
+        throw new IllegalArgumentException("No grid cells to compute the sprawl areas layer")
     }
     def gridCols = datasource.getColumnNames(grid_indicators)
     def lcz_columns_urban = ["LCZ_PRIMARY", "LCZ_WARM"]
     def lcz_columns = gridCols.intersect(lcz_columns_urban)
-    if (lcz_columns.size()>0) {
+    if (lcz_columns.size() > 0) {
         def outputTableName = postfix("sprawl_areas")
         if (distance == 0) {
             datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
@@ -678,7 +671,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
         $grid_indicators where lcz_warm>=2 
         and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
         where st_isempty(st_buffer(the_geom, -100,2)) =false""".toString())
-        datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
+            datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
          the_geom
         FROM
         ST_EXPLODE('(
@@ -692,8 +685,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
             return outputTableName
         }
     }
-    error("No LCZ_PRIMARY column to compute the sprawl areas layer")
-    return
+    throw new IllegalArgumentException("No LCZ_PRIMARY column to compute the sprawl areas layer")
 }
 
 /**
@@ -702,7 +694,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators, flo
  * @param input_polygons a layer that contains polygons
  * @author Erwan Bocher (CNRS)
  */
-String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) {
+String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) throws Exception{
     def outputTableName = postfix("inverse_geometries")
     def tmp_extent = postfix("tmp_extent")
     datasource.execute("""DROP TABLE IF EXISTS $tmp_extent, $outputTableName;
@@ -719,33 +711,31 @@ String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) {
 }
 
 
-
 /**
  * This methods allows to extract the cool area geometries inside polygons
  * A cool area is continous geometry defined by vegetation and water fractions.
  *
  * @author Erwan Bocher (CNRS)
  */
-String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,float distance = 100) {
+String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,
+                        float distance = 100) throws Exception{
     if (!grid_indicators) {
-        error("No grid_indicators table to extract the cool areas layer")
-        return
+        throw new IllegalArgumentException("No grid_indicators table to extract the cool areas layer")
     }
     def gridCols = datasource.getColumnNames(grid_indicators)
     def lcz_columns_urban = ["LCZ_PRIMARY"]
     def lcz_columns = gridCols.intersect(lcz_columns_urban)
 
-    if (lcz_columns.size()>0) {
+    if (lcz_columns.size() > 0) {
         def outputTableName = postfix("cool_areas")
         datasource.execute("""
         DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id,  the_geom FROM ST_EXPLODE('(
         SELECT ST_UNION(ST_ACCUM(a.THE_GEOM)) AS THE_GEOM FROM $grid_indicators as a
         where 
-         a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107))') ${distance>0?" where st_isempty(st_buffer(the_geom, -$distance,2)) =false":""};
+         a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107))') ${distance > 0 ? " where st_isempty(st_buffer(the_geom, -$distance,2)) =false" : ""};
         """.toString())
         return outputTableName
     }
-    error("No LCZ_PRIMARY column to extract the cool areas")
-    return
+    throw new IllegalArgumentException("No LCZ_PRIMARY column to extract the cool areas")
 }

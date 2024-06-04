@@ -58,7 +58,7 @@ class TypologyClassificationTests {
                 "AVG", "test")
         assertNotNull(pavg)
         def results = [:]
-        h2GIS."$pavg".eachRow { row ->
+        h2GIS.getTable(pavg).eachRow { row ->
             def id = row.id_rsu
             results[id] = [:]
             results[id]["LCZ_PRIMARY"] = row.LCZ_PRIMARY
@@ -101,9 +101,9 @@ class TypologyClassificationTests {
                 "buff_rsu_test_all_indics_for_lcz",
                 "MEDIAN", "test")
         assertNotNull(pmed)
-        assert h2GIS."$pmed".columns.contains("THE_GEOM")
+        assert h2GIS.getColumnNames(pmed).contains("THE_GEOM")
 
-        h2GIS."$pmed".eachRow {
+        h2GIS.getTable(pmed).eachRow {
             row ->
                 if (row.id_rsu == 1) {
                     assert 1 == row.LCZ_PRIMARY
@@ -165,7 +165,7 @@ class TypologyClassificationTests {
         def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
         String savePath = new File(folder, "geoclimate_rf_${uuid}.model").getAbsolutePath()
 
-        def trainingTable = h2GIS.table(h2GIS.load(trainingURL, trainingTableName, true))
+        def trainingTable = h2GIS.getTable(h2GIS.load(trainingURL, trainingTableName, true))
         assert trainingTable
 
         // Variable to model

@@ -749,7 +749,7 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
                                             FROM $caseWhenTab GROUP BY $idField""".toString()
 
             // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
-            def allFinalCol = datasource."$outputTableWithNull".getColumns()
+            def allFinalCol = datasource.getColumnNames(outputTableWithNull)
             allFinalCol = allFinalCol.minus([idField.toUpperCase()])
             datasource.createIndex(inputUpperTableName, idField)
             datasource.createIndex(outputTableWithNull, idField)
