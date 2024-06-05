@@ -500,7 +500,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertEquals 1, wayTable.rowCount
         def arrayWay = ["ID_WAY", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
                         "LAST_UPDATE", "NAME"] as String[]
-        assertArrayEquals(arrayWay, wayTable.columns as String[])
+        assertArrayEquals(arrayWay, wayTable.getColumnNames() as String[])
         wayTable.eachRow { row ->
             switch (row.row) {
                 case 1:
@@ -523,7 +523,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertNotNull wayMemberTable
         assertEquals 1, wayMemberTable.rowCount
         def arrayWayMember = ["ID_RELATION", "ID_WAY", "ROLE", "WAY_ORDER"] as String[]
-        assertArrayEquals(arrayWayMember, wayMemberTable.columns as String[])
+        assertArrayEquals(arrayWayMember, wayMemberTable.getColumnNames() as String[])
         wayMemberTable.eachRow { row ->
             switch (row.row) {
                 case 1:
@@ -542,7 +542,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertNotNull wayTagTable
         assertEquals 1, wayTagTable.rowCount
         def arrayWayTag = ["ID_WAY", "TAG_KEY", "TAG_VALUE"] as String[]
-        assertArrayEquals(arrayWayTag, wayTagTable.columns as String[])
+        assertArrayEquals(arrayWayTag, wayTagTable.getColumnNames() as String[])
         wayTagTable.eachRow { row ->
             switch (row.row) {
                 case 1:
@@ -560,7 +560,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertNotNull wayNodeTable
         assertEquals 3, wayNodeTable.rowCount
         def arrayWayNode = ["ID_WAY", "ID_NODE", "NODE_ORDER"] as String[]
-        assertArrayEquals(arrayWayNode, wayNodeTable.columns as String[])
+        assertArrayEquals(arrayWayNode, wayNodeTable.getColumnNames() as String[])
         wayNodeTable.eachRow { row ->
             switch (row.row) {
                 case 1:
@@ -590,7 +590,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertEquals 1, relationTable.rowCount
         def arrayRelation = ["ID_RELATION", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
                              "LAST_UPDATE"] as String[]
-        assertArrayEquals(arrayRelation, relationTable.columns as String[])
+        assertArrayEquals(arrayRelation, relationTable.getColumnNames() as String[])
         relationTable.eachRow { row ->
             switch (row.row) {
                 case 1:
@@ -612,14 +612,14 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertNotNull relationMemberTable
         assertEquals 0, relationMemberTable.rowCount
         def arrayRelationMember = ["ID_RELATION", "ID_SUB_RELATION", "ROLE", "RELATION_ORDER"] as String[]
-        assertArrayEquals(arrayRelationMember, relationMemberTable.columns as String[])
+        assertArrayEquals(arrayRelationMember, relationMemberTable.getColumnNames() as String[])
 
         //Test on RELATION_TAG table
         def relationTagTable = ds.getTable(tableArray[9])
         assertNotNull relationTagTable
         assertEquals 2, relationTagTable.rowCount
         def arrayRelationTag = ["ID_RELATION", "TAG_KEY", "TAG_VALUE"] as String[]
-        assertArrayEquals(arrayRelationTag, relationTagTable.columns as String[])
+        assertArrayEquals(arrayRelationTag, relationTagTable.getColumnNames() as String[])
         relationTagTable.eachRow { row ->
             switch (row.row) {
                 case 1:
