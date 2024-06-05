@@ -334,7 +334,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = [building: "house"]
         //Test column to keep absent
         def result = OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, tags, ["landscape"])
-        assertFalse ds.getTable(result).columns.contains("landscape")
+        assertFalse ds.getColumnNames(result).contains("landscape")
     }
 
     /**
