@@ -506,7 +506,7 @@ class WorkflowGeoIndicatorsTest {
             assertTrue realListRsu.contains(i)
         }
         if (indicatorUse.contains("LCZ")) {
-            assertEquals("ID_RSU,LCZ_EQUALITY_VALUE,LCZ_PRIMARY,LCZ_SECONDARY,LCZ_UNIQUENESS_VALUE,MIN_DISTANCE,THE_GEOM", datasource.getTable(geoIndicatorsCompute_i.rsu_lcz).columns.sort().join(","))
+            assertEquals("ID_RSU,LCZ_EQUALITY_VALUE,LCZ_PRIMARY,LCZ_SECONDARY,LCZ_UNIQUENESS_VALUE,MIN_DISTANCE,THE_GEOM", datasource.getColumnNames(geoIndicatorsCompute_i.rsu_lcz).sort().join(","))
         } else {
             assertEquals(null, geoIndicatorsCompute_i.rsu_lcz)
         }
