@@ -124,8 +124,8 @@ String toPolygonOrLine(GeometryTypes type, JdbcDataSource datasource, String osm
 
     if (outputWay && outputRelation) {
         //Merge ways and relations
-        def columnsWays = datasource.getTable(outputWay).columns
-        def columnsRelations = datasource.getTable(outputRelation).columns
+        def columnsWays = datasource.getColumnNames(outputWay)
+        def columnsRelations = datasource.getColumnNames(outputRelation)
         def allColumns = arrayUnion(true, columnsWays, columnsRelations)
         def leftSelect = ""
         def rightSelect = ""

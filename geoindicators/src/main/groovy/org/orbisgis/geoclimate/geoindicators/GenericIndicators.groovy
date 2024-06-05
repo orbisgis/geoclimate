@@ -201,13 +201,13 @@ String weightedAggregatedStatistics(JdbcDataSource datasource, String inputLower
 
         datasource.execute(weightedStdQuery)
         // The temporary tables are deleted
-        datasource "DROP TABLE IF EXISTS $weighted_mean".toString()
+        datasource.dropTable(weighted_mean)
         return outputTableName
     } catch (SQLException e) {
         throw new SQLException("Cannot execute the weighted aggregated statistics operation", e)
     } finally {
         // The temporary tables are deleted
-        datasource "DROP TABLE IF EXISTS $weighted_mean".toString()
+        datasource.dropTable(weighted_mean)
     }
 }
 
@@ -315,28 +315,28 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
             def med_angle = angleRangeSize / 2
 
             // The minimum diameter of the minimum rectangle is created for each building
-            datasource """DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS 
+            datasource.execute("""DROP TABLE IF EXISTS $build_min_rec; CREATE TABLE $build_min_rec AS 
                         SELECT $ID_FIELD_BU, $inputIdUp, ST_MINIMUMDIAMETER(ST_MINIMUMRECTANGLE($GEOMETRIC_FIELD)) 
-                        AS the_geom FROM $buildingTableName;""".toString()
+                        AS the_geom FROM $buildingTableName;""")
 
             datasource.createIndex(buildingTableName, "id_build")
 
             // The length and direction of the smallest and the longest sides of the Minimum rectangle are calculated
-            datasource """CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec ($ID_FIELD_BU);
+            datasource.execute("""CREATE INDEX IF NOT EXISTS id_bua ON $build_min_rec ($ID_FIELD_BU);
                         DROP TABLE IF EXISTS $build_dir360; CREATE TABLE $build_dir360 AS 
                         SELECT a.$inputIdUp, ST_LENGTH(a.the_geom) AS LEN_L, 
                         ST_AREA(b.the_geom)/ST_LENGTH(a.the_geom) AS LEN_H, 
                         ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(a.the_geom), ST_ENDPOINT(a.the_geom)))) AS ANG_L, 
                         ROUND(DEGREES(ST_AZIMUTH(ST_STARTPOINT(ST_ROTATE(a.the_geom, pi()/2)), 
                         ST_ENDPOINT(ST_ROTATE(a.the_geom, pi()/2))))) AS ANG_H FROM $build_min_rec a  
-                        LEFT JOIN $buildingTableName b ON a.$ID_FIELD_BU=b.$ID_FIELD_BU""".toString()
+                        LEFT JOIN $buildingTableName b ON a.$ID_FIELD_BU=b.$ID_FIELD_BU""")
 
             // The angles are transformed in the [0, 180]° interval
-            datasource """DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS 
+            datasource.execute("""DROP TABLE IF EXISTS $build_dir180; CREATE TABLE $build_dir180 AS 
                         SELECT $inputIdUp, LEN_L, LEN_H, CASEWHEN(ANG_L>=180, ANG_L-180, ANG_L) AS ANG_L, 
-                        CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360""".toString()
+                        CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360""")
 
-            datasource "CREATE INDEX ON $build_dir180 ($inputIdUp)".toString()
+            datasource.execute( "CREATE INDEX ON $build_dir180 ($inputIdUp)")
 
             // The query aiming to create the building direction distribution is created
             def sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "
@@ -829,7 +829,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
 
             // Add operations to compute at RSU scale to each indicator of the building scale
             def inputVarAndOperationsBuild = [:]
-            def buildIndicatorsColumns = datasource.getTable(buildingTable).getColumns()
+            def buildIndicatorsColumns = datasource.getColumnNames(buildingTable)
             for (col in buildIndicatorsColumns) {
                 if (!BUILD_COL_TO_REMOVE.contains(col)) {
                     inputVarAndOperationsBuild[col] = operationsToApply
@@ -853,7 +853,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
             if (targetedScale.toUpperCase() == "RSU") {
                 // Calculate building average and variance at RSU scale from each indicator of the block scale
                 def inputVarAndOperationsBlock = [:]
-                def blockIndicators = datasource.getTable(blockTable).getColumns()
+                def blockIndicators = datasource.getColumnNames(blockTable)
                 for (col in blockIndicators) {
                     if (!BLOCK_COL_TO_REMOVE.contains(col)) {
                         inputVarAndOperationsBlock[col] = operationsToApply
@@ -884,7 +884,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
             // Special processes if the scale of analysis is building
             else if (targetedScale.toUpperCase() == "BUILDING") {
                 // Need to join RSU and building tables
-                def listRsuCol = datasource.getTable(rsuTable).getColumns()
+                def listRsuCol = datasource.getColumnNames(rsuTable)
                 def listRsuRename = []
                 for (col in listRsuCol) {
                     if (col != "ID_RSU" && col != "THE_GEOM") {
@@ -911,7 +911,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
                                     ON a.id_rsu = b.id_rsu;""".toString()
 
                 // To avoid crashes of the join due to column duplicate, need to prefix some names
-                def blockCol2Rename = datasource.getTable(blockTable).getColumns()
+                def blockCol2Rename = datasource.getColumnNames(blockTable)
                 for (col in blockCol2Rename) {
                     if (col != "ID_BLOCK" && col != "ID_RSU" && col != "THE_GEOM") {
                         listblockFinalRename.add("b.$col AS block_$col")

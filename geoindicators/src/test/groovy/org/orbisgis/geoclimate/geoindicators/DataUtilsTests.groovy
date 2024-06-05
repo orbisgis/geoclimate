@@ -62,7 +62,7 @@ class DataUtilsTests {
         assert "IDA,NAME,LAB,LOCATION" == h2GIS.getColumnNames(p).join(",")
         assert 1 == h2GIS.getRowCount(p)
 
-        h2GIS.getTable(p).eachRow { assert it.lab.equals('CNRS') && it.location.equals('Vannes') }
+        h2GIS.getTable(p).eachRow { assert it.get("LAB").equals('CNRS') && it.get("LOCATION").equals('Vannes') }
     }
 
     @Test
@@ -72,8 +72,8 @@ class DataUtilsTests {
                 "test", true)
         assert p
         def table = h2GIS.getTable(p)
-        assert "TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION" == table.columns.join(",")
-        assert 1 == table.rowCount
+        assert "TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION" == table.getColumnNames().join(",")
+        assert 1 == table.getRowCount()
 
         table.eachRow { assert it.tableb_lab.equals('CNRS') && it.tablec_location.equals('Vannes') }
     }

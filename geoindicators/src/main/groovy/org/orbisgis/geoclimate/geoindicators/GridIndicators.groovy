@@ -61,7 +61,7 @@ String gridPopulation(JdbcDataSource datasource, String gridTable, String popula
         def popColumns = []
         def sum_popColumns = []
         if (populationColumns) {
-            datasource."$populationTable".getColumns().each { col ->
+            datasource.getColumnNames(populationTable).each { col ->
                 if (!["the_geom", "id_pop"].contains(col.toLowerCase()
                 ) && populationColumns.contains(col.toLowerCase())) {
                     popColumns << "b.$col"

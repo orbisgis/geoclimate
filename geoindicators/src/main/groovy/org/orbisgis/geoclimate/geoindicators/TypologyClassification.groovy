@@ -529,7 +529,7 @@ def createRandomForestModel(JdbcDataSource datasource, String trainingTableName,
         df = DataFrame.of(tabFin)
     }
     def formula = Formula.lhs(varToModel)
-    def columnTypes = df.getColumnsTypes()
+    def columnTypes = df.getColumnNamesTypes()
     def dfFactorized = df.omitNullRows()
 
     // Identify columns being string (thus needed to be factorized)

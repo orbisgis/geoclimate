@@ -108,14 +108,14 @@ class LoaderTest extends AbstractOSMToolsTest {
         def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
-        assertTrue zone.columns.contains("THE_GEOM")
+        assertTrue zone.getColumnNames().contains("THE_GEOM")
         zone.next()
         assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zone.getGeometry(1).toText()
 
         def zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columns.contains("THE_GEOM")
+        assertTrue zoneEnv.getColumnNames().contains("THE_GEOM")
         zoneEnv.next()
         assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zoneEnv.getGeometry(1).toText()
 
@@ -136,14 +136,14 @@ class LoaderTest extends AbstractOSMToolsTest {
         zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
-        assertTrue zone.columns.contains("THE_GEOM")
+        assertTrue zone.getColumnNames().contains("THE_GEOM")
         zone.next()
         assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zone.getGeometry(1).toText()
 
         zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columns.contains("THE_GEOM")
+        assertTrue zoneEnv.getColumnNames().contains("THE_GEOM")
         zoneEnv.next()
         assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zoneEnv.getGeometry(1).toText()
 
@@ -175,14 +175,14 @@ class LoaderTest extends AbstractOSMToolsTest {
         def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
-        assertTrue zone.columns.contains("THE_GEOM")
+        assertTrue zone.getColumnNames().contains("THE_GEOM")
         zone.next()
         assertEquals wktReader.read("POLYGON ((-3.084508 48.790598, -3.084508 48.7918, -3.082228 48.7918, -3.082228 48.790598, -3.084508 48.790598))"), zone.getGeometry(1)
 
         def zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columns.contains("THE_GEOM")
+        assertTrue zoneEnv.getColumnNames().contains("THE_GEOM")
         zoneEnv.next()
         assertEquals wktReader.read("POLYGON ((-3.0981436889553313 48.78161484715881, -3.0981436889553313 48.8007831528412, -3.068592311044669 48.8007831528412, -3.068592311044669 48.78161484715881, -3.0981436889553313 48.78161484715881))"), zoneEnv.getGeometry(1)
 
@@ -201,14 +201,14 @@ class LoaderTest extends AbstractOSMToolsTest {
         zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
-        assertTrue zone.columns.contains("THE_GEOM")
+        assertTrue zone.getColumnNames().contains("THE_GEOM")
         zone.next()
         assertEquals wktReader.read("POLYGON ((-3.084508 48.790598, -3.084508 48.7918, -3.082228 48.7918, -3.082228 48.790598, -3.084508 48.790598))"), zone.getGeometry(1)
 
         zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columns.contains("THE_GEOM")
+        assertTrue zoneEnv.getColumnNames().contains("THE_GEOM")
         zoneEnv.next()
         assertEquals wktReader.read("POLYGON ((-3.0981436889553313 48.78161484715881, -3.0981436889553313 48.8007831528412, -3.068592311044669 48.8007831528412, -3.068592311044669 48.78161484715881, -3.0981436889553313 48.78161484715881))"), zoneEnv.getGeometry(1)
     }
@@ -231,16 +231,18 @@ class LoaderTest extends AbstractOSMToolsTest {
             def zone = ds.getSpatialTable(r.zone)
             assertEquals 1, zone.rowCount
             assertEquals 2, zone.getColumnCount()
-            assertTrue zone.columns.contains("THE_GEOM")
-            assertTrue zone.columns.contains("ID_ZONE")
+            def columns = zone.getColumnNames()
+            assertTrue columns.contains("THE_GEOM")
+            assertTrue columns.contains("ID_ZONE")
             zone.next()
             assertNotNull zone.getGeometry(1)
 
             def zoneEnv = ds.getSpatialTable(r.envelope)
             assertEquals 1, zoneEnv.rowCount
             assertEquals 2, zoneEnv.getColumnCount()
-            assertTrue zoneEnv.columns.contains("THE_GEOM")
-            assertTrue zoneEnv.columns.contains("ID_ZONE")
+            columns = zone.getColumnNames()
+            assertTrue columns.contains("THE_GEOM")
+            assertTrue columns.contains("ID_ZONE")
             zoneEnv.next()
             assertEquals "POLYGON ((-3.0790622 48.7298266, -3.0790622 48.7367393, -3.0739517 48.7367393, -3.0739517 48.7298266, -3.0790622 48.7298266))", zoneEnv.getGeometry(1).toText()
             assertEquals "Lezoen, Plourivo", zoneEnv.getString(2)
@@ -263,15 +265,17 @@ class LoaderTest extends AbstractOSMToolsTest {
         def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
         assertEquals 2, zone.getColumnCount()
-        assertTrue zone.columns.contains("THE_GEOM")
-        assertTrue zone.columns.contains("ID_ZONE")
+        def columns = zone.getColumnNames()
+        assertTrue columns.contains("THE_GEOM")
+        assertTrue columns.contains("ID_ZONE")
         zone.next()
         assertNotNull zone.getGeometry(1)
         def zoneEnv = ds.getSpatialTable(r.envelope)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 2, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columns.contains("THE_GEOM")
-        assertTrue zoneEnv.columns.contains("ID_ZONE")
+        columns = zone.getColumnNames()
+        assertTrue columns.contains("THE_GEOM")
+        assertTrue columns.contains("ID_ZONE")
         zoneEnv.next()
         assertEquals "POLYGON ((-3.079130303738262 48.729781684235796, -3.079130303738262 48.73678421576421, -3.073883596261738 48.73678421576421, -3.073883596261738 48.729781684235796, -3.079130303738262 48.729781684235796))", zoneEnv.getGeometry(1).toText()
         assertEquals "Lezoen, Plourivo", zoneEnv.getString(2)
@@ -368,7 +372,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertEquals 5, nodeTable.rowCount
         def arrayNode = ["ID_NODE", "THE_GEOM", "ELE", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
                          "LAST_UPDATE", "NAME"] as String[]
-        assertArrayEquals(arrayNode, nodeTable.columns as String[])
+        assertArrayEquals(arrayNode, nodeTable.getColumnNames() as String[])
         nodeTable.eachRow { row ->
             switch (row.row) {
                 case 1:
@@ -446,7 +450,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertNotNull nodeMemberTable
         assertEquals 2, nodeMemberTable.rowCount
         def arrayNodeMember = ["ID_RELATION", "ID_NODE", "ROLE", "NODE_ORDER"] as String[]
-        assertArrayEquals(arrayNodeMember, nodeMemberTable.columns as String[])
+        assertArrayEquals(arrayNodeMember, nodeMemberTable.getColumnNames() as String[])
         nodeMemberTable.eachRow { row ->
             switch (row.row) {
                 case 1:
@@ -471,7 +475,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         assertNotNull nodeTagTable
         assertEquals 2, nodeTagTable.rowCount
         def arrayNodeTag = ["ID_NODE", "TAG_KEY", "TAG_VALUE"] as String[]
-        assertArrayEquals(arrayNodeTag, nodeTagTable.columns as String[])
+        assertArrayEquals(arrayNodeTag, nodeTagTable.getColumnNames() as String[])
         nodeTagTable.eachRow { row ->
             switch (row.row) {
                 case 1:

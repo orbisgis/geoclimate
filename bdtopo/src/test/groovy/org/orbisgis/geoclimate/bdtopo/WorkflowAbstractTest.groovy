@@ -328,10 +328,9 @@ abstract class WorkflowAbstractTest {
             assertNotNull(process)
             //Check if the tables exist and contains at least one row
             outputTables.values().each { it ->
-                def spatialTable = externalDB.getSpatialTable(it)
-                assertNotNull(spatialTable)
-                assertEquals(2154, spatialTable.srid)
-                assertTrue(spatialTable.getRowCount() > 0)
+                assertTrue(externalDB.hasTable(it))
+                assertEquals(2154, externalDB.getSrid(it))
+                assertTrue(externalDB.getRowCount(it) > 0)
             }
             externalDB.close()
         }

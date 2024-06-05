@@ -116,7 +116,7 @@ String saveTablesAsFiles(JdbcDataSource datasource, List inputTableNames, boolea
         inputTableNames.each { tableName ->
             if (tableName) {
                 def fileToSave = dirFile.absolutePath + File.separator + tableName +
-                        (datasource."$tableName".spatial ? ".fgb" : ".csv")
+                        (datasource.hasGeometryColumn(tableName) ? ".fgb" : ".csv")
                 def table = datasource.getTable(tableName)
                 if (table) {
                     table.save(fileToSave, delete)

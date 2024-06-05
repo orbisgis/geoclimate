@@ -79,10 +79,10 @@ Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) {
     def env = org.h2gis.utilities.GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
     //Create table to store the geometry and the envelope of the extracted area
-    datasource """
+    datasource.execute("""
                 CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg));
                 INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg));
-        """.toString()
+        """)
 
     def geometryFactory = new GeometryFactory()
     def geomEnv = geometryFactory.toGeometry(env)
@@ -156,17 +156,17 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) {
     def env = org.h2gis.utilities.GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
     //Create table to store the geometry and the envelope of the extracted area
-    datasource """
+    datasource.execute("""
                 CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
                 INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg), '$placeName');
-        """
+        """)
 
     def geometryFactory = new GeometryFactory()
     def geomEnv = geometryFactory.toGeometry(env)
-    datasource """
+    datasource.execute("""
                 CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
                 INSERT INTO $outputZoneEnvelopeTable VALUES (ST_GEOMFROMTEXT('$geomEnv',$epsg), '$placeName');
-        """
+        """)
 
     def query = OSMTools.Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
     String extract = extract(query)

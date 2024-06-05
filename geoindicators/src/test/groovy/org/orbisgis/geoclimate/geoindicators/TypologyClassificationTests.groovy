@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.orbisgis.data.H2GIS
 import org.orbisgis.data.dataframe.DataFrame
 import org.orbisgis.geoclimate.Geoindicators
 import smile.classification.DataFrameClassifier
@@ -43,11 +44,11 @@ class TypologyClassificationTests {
 
     @TempDir
     static File folder
-    private static def h2GIS
+    private static H2GIS h2GIS
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open(folder.getAbsolutePath() + File.separator + "typologyClassificationTests;AUTO_SERVER=TRUE")
+        h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "typologyClassificationTests;AUTO_SERVER=TRUE")
     }
 
     @Test
@@ -175,7 +176,7 @@ class TypologyClassificationTests {
         def colsToRemove = ["PK2", "THE_GEOM", "PK"]
 
         // Remove unnecessary column
-        h2GIS "ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};"
+        h2GIS.execute("ALTER TABLE $trainingTableName DROP COLUMN ${colsToRemove.join(",")};")
 
         //Reload the table due to the schema modification
         trainingTable.reload()
@@ -244,7 +245,7 @@ class TypologyClassificationTests {
         def namesStr = names.join(",")
         assert namesStr
 
-        def columns = trainingTable.columns
+        def columns = trainingTable.getColumnNames()
         assert columns
         columns = columns.minus(var2model)
         assert columns
@@ -284,7 +285,7 @@ class TypologyClassificationTests {
         h2GIS.load(indicatorsPath, indicatorsTable)
 
         // Replace the id_rsu (coming from a specific city) by the id (coming from the true values of LCZ)
-        def allColumns = h2GIS.getTable(indicatorsTable).columns
+        def allColumns = h2GIS.getColumnNames(indicatorsTable)
         allColumns.remove("ID_RSU")
         allColumns.remove("ID")
 
@@ -418,7 +419,7 @@ class TypologyClassificationTests {
             //Reload the table due to the schema modification
             h2GIS.getTable("tempo").reload()
 
-            def columns = h2GIS.getTable("tempo").getColumns()
+            def columns = h2GIS.getColumnNames("tempo")
             columns = columns.minus(var2model)
 
             h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
@@ -485,7 +486,7 @@ class TypologyClassificationTests {
             //Reload the table due to the schema modification
             h2GIS.getTable("tempo").reload()
 
-            def columns = h2GIS.getTable("tempo").getColumns()
+            def columns = h2GIS.getColumnNames("tempo")
             columns = columns.minus(var2model)
 
             h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
@@ -560,7 +561,7 @@ class TypologyClassificationTests {
             //Reload the table due to the schema modification
             h2GIS.getTable("tempo").reload()
 
-            def columns = h2GIS.getTable("tempo").getColumns()
+            def columns = h2GIS.getColumnNames("tempo")
             columns = columns.minus(var2model)
 
             h2GIS """   DROP TABLE IF EXISTS $trainingTableName;
@@ -637,7 +638,7 @@ class TypologyClassificationTests {
             //Reload the table due to the schema modification
             h2GIS.getTable("tempo").reload()
 
-            def columns = h2GIS.getTable("tempo").getColumns()
+            def columns = h2GIS.getColumnNames("tempo")
             columns = columns.minus(var2model)
 
             h2GIS """   DROP TABLE IF EXISTS $trainingTableName;

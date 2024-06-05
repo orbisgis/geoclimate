@@ -1726,7 +1726,7 @@ String surfaceFractions(JdbcDataSource datasource,
 
         }
         // Calculates the fraction of land without defined surface
-        def allCols = datasource.getTable(withoutUndefined).getColumns()
+        def allCols = datasource.getColumnNames(withoutUndefined)
         def allFractionCols = allCols.minus(id_rsu.toUpperCase())
         datasource.execute( """ DROP TABLE IF EXISTS $outputTableName;
                            CREATE TABLE $outputTableName

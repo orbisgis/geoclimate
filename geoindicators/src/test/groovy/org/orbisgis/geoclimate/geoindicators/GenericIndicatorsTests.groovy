@@ -168,7 +168,7 @@ class GenericIndicatorsTests {
                 "test")
         assert p
         assert p == "test_geometry_properties"
-        h2GIS.test_geometry_properties.eachRow {
+        h2GIS.getTable(p).eachRow {
             row ->
                 assert row.the_geom
                 assert row.issimple
@@ -431,7 +431,7 @@ class GenericIndicatorsTests {
                 "tempo_rsu", "BUILDING",
                 ["AVG", "STD"], "test")
         assert gatheredScales2
-        def finalColBuild = h2GIS."$gatheredScales2".columns.collect { it.toLowerCase() }
+        def finalColBuild = h2GIS.getColumnNames(gatheredScales2).collect { it.toLowerCase() }
         assertEquals colBuild.sort(), finalColBuild.sort()
 
     }
@@ -489,7 +489,7 @@ class GenericIndicatorsTests {
         assertNotNull(upperStats)
 
         def nb_indicators = h2GIS.rows "SELECT distinct ${indicatorName} AS nb FROM $indicatorTableName"
-        def columns = upperStats.getColumns()
+        def columns = upperStats.getColumnNames()
         columns.remove("ID_GRID")
         columns.remove("THE_GEOM")
         assertEquals(nb_indicators.size(), columns.size())
