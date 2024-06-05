@@ -24,6 +24,7 @@ import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
 
 import static org.junit.jupiter.api.Assertions.assertNull
+import static org.junit.jupiter.api.Assertions.assertThrows
 
 class WorkflowParametersTest {
 
@@ -68,7 +69,7 @@ class WorkflowParametersTest {
                                           "terrain_roughness_class"     : 1]]
                         ]
         ]
-        assertNull BDTopo.v2(bdTopoParameters)
-        assertNull BDTopo.v3(bdTopoParameters)
+        assertThrows(Exception.class, ()->BDTopo.v2(bdTopoParameters) )
+        assertThrows(Exception.class, ()-> BDTopo.v3(bdTopoParameters))
     }
 }

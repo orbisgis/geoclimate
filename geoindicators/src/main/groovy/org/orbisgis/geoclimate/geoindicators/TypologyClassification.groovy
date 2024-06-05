@@ -513,7 +513,7 @@ def createRandomForestModel(JdbcDataSource datasource, String trainingTableName,
     }
     debug "Create a Random Forest model"
 
-    def  trainingTableColumns = datasource.getTable(trainingTableName).columns
+    def  trainingTableColumns = datasource.getColumnNames(trainingTableName)
 
     //Check if the column names exists
     if (!trainingTableColumns.contains(varToModel)) {

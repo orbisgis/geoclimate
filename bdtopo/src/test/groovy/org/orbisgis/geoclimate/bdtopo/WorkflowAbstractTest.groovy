@@ -348,8 +348,8 @@ abstract class WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "folder": ["path"     : dataFolder,
-                                   "locations": [2000, 2001, 2002]]],
+                        "folder": dataFolder,
+                        "locations": [2000, 2001, 2002]],
                 "output"      : [
                         "folder": ["path"  : folder.absolutePath,
                                    "tables": ["grid_indicators"]]],
@@ -362,7 +362,7 @@ abstract class WorkflowAbstractTest {
                          ]
                         ]
         ]
-        assertNull(BDTopo.workflow(bdTopoParameters, getVersion()))
+        assertThrows(Exception.class, ()->BDTopo.workflow(bdTopoParameters, getVersion()))
     }
 
     @Test
@@ -388,5 +388,4 @@ abstract class WorkflowAbstractTest {
         assertNotNull(process)
         checkFormatData()
     }
-
 }

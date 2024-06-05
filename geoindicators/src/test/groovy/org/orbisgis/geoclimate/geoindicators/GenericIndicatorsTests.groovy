@@ -397,7 +397,7 @@ class GenericIndicatorsTests {
                 "RSU", ["AVG", "STD"],
                 "test")
         assert gatheredScales1
-        def finalColRsu = h2GIS."$gatheredScales1".columns.collect { it.toLowerCase() }
+        def finalColRsu = h2GIS.getColumnNames(gatheredScales1).collect { it.toLowerCase() }
         assertEquals colRsu.sort(), finalColRsu.sort()
     }
 

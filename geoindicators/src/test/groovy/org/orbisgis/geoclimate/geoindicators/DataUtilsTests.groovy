@@ -59,13 +59,10 @@ class DataUtilsTests {
         def p = Geoindicators.DataUtils.joinTables(h2GIS,
                 [tablea: "ida", tableb: "idb", tablec: "idc"],
                 "test")
-        assert p
+        assert "IDA,NAME,LAB,LOCATION" == h2GIS.getColumnNames(p).join(",")
+        assert 1 == h2GIS.getRowCount(p)
 
-        def table = h2GIS."${p}"
-        assert "IDA,NAME,LAB,LOCATION" == table.columns.join(",")
-        assert 1 == table.rowCount
-
-        table.eachRow { assert it.lab.equals('CNRS') && it.location.equals('Vannes') }
+        h2GIS.getTable(p).eachRow { assert it.lab.equals('CNRS') && it.location.equals('Vannes') }
     }
 
     @Test
@@ -74,7 +71,7 @@ class DataUtilsTests {
                 [tablea: "ida", tableb: "idb", tablec: "idc"],
                 "test", true)
         assert p
-        def table = h2GIS."${p}"
+        def table = h2GIS.getTable(p)
         assert "TABLEA_IDA,TABLEA_NAME,TABLEB_LAB,TABLEC_LOCATION" == table.columns.join(",")
         assert 1 == table.rowCount
 
@@ -89,7 +86,7 @@ class DataUtilsTests {
                 directory)
         assert p
 
-        assert 1 == h2GIS.table(h2GIS.load(directory + File.separator + "tablegeom.fgb", true)).rowCount
-        assert 1 == h2GIS.table(h2GIS.load(directory + File.separator + "tablea.csv", true)).rowCount
+        assert 1 == h2GIS.getRowCount(h2GIS.load(directory + File.separator + "tablegeom.fgb", true))
+        assert 1 == h2GIS.getRowCount(h2GIS.load(directory + File.separator + "tablea.csv", true))
     }
 }

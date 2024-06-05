@@ -485,7 +485,7 @@ ${osmTablesPrefix}_way_member, ${osmTablesPrefix}_way_not_taken_into_account, ${
         assertTrue OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, outTable, tags, columnsToKeep)
         def table = h2gis.getTable(outTable)
         assertNotNull table
-        def columns = table.columns
+        def columns = table.getColumns()
         assertEquals 3, columns.size()
         assertEquals 3, columns.intersect(["ID_NODE", "THE_GEOM", "key1"]).size()
         assertFalse columns.contains("WATER")

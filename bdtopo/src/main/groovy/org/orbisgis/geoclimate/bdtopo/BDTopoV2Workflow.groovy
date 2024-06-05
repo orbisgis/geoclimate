@@ -38,11 +38,11 @@ import java.sql.SQLException
 
 
 @Override
-Integer loadDataFromPostGIS(Object input_database_properties, Object code, Object distance, Object inputTables, Object inputSRID, H2GIS h2gis_datasource) {
+Integer loadDataFromPostGIS(Object input_database_properties, Object code, Object distance, Object inputTables,
+                            Object inputSRID, H2GIS h2gis_datasource) throws Exception{
     def commune_location = inputTables.commune
     if (!commune_location) {
-        error "The commune table must be specified to run Geoclimate"
-        return
+        throw new Exception("The commune table must be specified to run Geoclimate")
     }
     PostGISDBFactory dataSourceFactory = new PostGISDBFactory()
     Connection sourceConnection = null
@@ -52,25 +52,21 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
         DataSource ds = dataSourceFactory.createDataSource(props)
         sourceConnection = ds.getConnection()
     } catch (SQLException e) {
-        error("Cannot connect to the database to import the data ")
+        throw new SQLException("Cannot connect to the database to import the data ")
     }
-
     if (sourceConnection == null) {
-        error("Cannot connect to the database to import the data ")
-        return
+        throw new Exception("Cannot connect to the database to import the data ")
     }
 
     //Check if the commune table exists
     if (!JDBCUtilities.tableExists(sourceConnection, commune_location)) {
-        error("The commune table doesn't exist")
-        return
+        throw new Exception("The commune table doesn't exist")
     }
 
     //Find the SRID of the commune table
     def commune_srid = GeometryTableUtilities.getSRID(sourceConnection, commune_location)
     if (commune_srid <= 0) {
-        error("The commune table doesn't have any SRID")
-        return
+        throw new Exception("The commune table doesn't have any SRID")
     }
     if (commune_srid == 0 && inputSRID) {
         commune_srid = inputSRID
@@ -87,8 +83,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     if (code in Collection) {
         if(code.size()==3){
             if(code[2]<100){
-                error("The distance to create a bbox from a point must be greater than 100 meters")
-                return
+                throw new Exception("The distance to create a bbox from a point must be greater than 100 meters")
             }
             code = BDTopoUtils.bbox(code[0], code[1],code[2])
         }
@@ -104,7 +99,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
         debug "Loading in the H2GIS database $outputTableName"
         IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
     }
-    def count = h2gis_datasource."$outputTableName".rowCount
+    def count = h2gis_datasource.getRowCount(outputTableName)
     if (count > 0) {
         //Compute the envelope of the extracted area to extract the thematic tables
         def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}) AS THE_GEOM FROM $outputTableName".toString()).THE_GEOM
@@ -140,8 +135,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
             debug "Loading in the H2GIS database $outputTableNameRoad"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableNameRoad, -1, 1000)
         } else {
-            error "The route table must be provided"
-            return
+            throw new Exception("The route table must be provided")
         }
 
         if (inputTables.troncon_voie_ferree) {
@@ -221,8 +215,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
         return commune_srid
 
     } else {
-        error "Cannot find any commune with the insee code : $code"
-        return
+        throw new Exception("Cannot find any commune with the insee code : $code".toString())
     }
 }
 
@@ -243,21 +236,19 @@ int getVersion() {
 }
 
 @Override
-Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin) {
+Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin) throws Exception{
     if (!hLevMin) {
         hLevMin = 3
     }
     if (!datasource) {
-        error "The database to store the BDTopo data doesn't exist"
-        return
+        throw new Exception("The database to store the BDTopo data doesn't exist")
     }
     info "Formating BDTopo GIS layers"
     //Prepare the existing bdtopo data in the local database
     def importPreprocess = BDTopo.InputDataLoading.loadV2(datasource, layers, distance)
 
     if (!importPreprocess) {
-        error "Cannot prepare the BDTopo data."
-        return
+        throw new Exception("Cannot prepare the BDTopo data.")
     }
     def zoneTable = importPreprocess.zone
     def urbanAreas = importPreprocess.urban_areas
@@ -302,7 +293,7 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
 
 @Override
 def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTables,
-                           int sourceSRID, int inputSRID, H2GIS h2gis_datasource) {
+                           int sourceSRID, int inputSRID, H2GIS h2gis_datasource) throws Exception{
     def formatting_geom = "the_geom"
     if (sourceSRID == 0 && sourceSRID != inputSRID) {
         formatting_geom = "st_setsrid(the_geom, $inputSRID) as the_geom"
@@ -317,8 +308,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
     if (location in Collection) {
         if(location.size()==3){
             if(location[2]<100){
-                error("The distance to create a bbox from a point must be greater than 100 meters")
-                return
+                throw new Exception("The distance to create a bbox from a point must be greater than 100 meters")
             }
             location = BDTopoUtils.bbox(location[0], location[1],location[2])
         }
@@ -331,9 +321,9 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 
             CODE_INSEE FROM ${inputTables.commune} WHERE CODE_INSEE='$location' or lower(nom)='${location.toLowerCase()}'""".toString())
     }else{
-        return
+        throw new Exception("Invalid location data type. Please set a text value or a collection of coordinates to specify a bbox")
     }
-    def count = h2gis_datasource."$outputTableName".rowCount
+    def count = h2gis_datasource.getRowCount(outputTableName)
     if (count > 0) {
         //Compute the envelope of the extracted area to extract the thematic tables
         def geomToExtract = h2gis_datasource.firstRow("SELECT ST_EXPAND(ST_UNION(ST_ACCUM(the_geom)), ${distance}) AS THE_GEOM FROM $outputTableName".toString()).THE_GEOM
@@ -370,8 +360,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
             AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)
             AND NATURE NOT IN ('Bac auto', 'Bac piéton', 'Escalier')""".toString())
         } else {
-            error "The route table must be provided"
-            return
+            throw new Exception("The route table must be provided")
         }
 
         if (inputTables.troncon_voie_ferree) {
@@ -442,8 +431,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         return true
 
     } else {
-        error "Cannot find any commune with the insee code : $location"
-        return
+        throw new Exception("Cannot find any commune with the insee code : $location".toString())
     }
 }
 

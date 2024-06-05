@@ -143,7 +143,7 @@ abstract class BDTopo extends BDTopoUtils {
      * Meteorological Society 93, no. 12 (2012): 1879-1900.
      *
      */
-    static Map workflow(def input, int version) {
+    static Map workflow(def input, int version) throws Exception{
         if (version == 2) {
             BDTopoV2Workflow bdtopo_v2_workflow = new BDTopoV2Workflow()
             return bdtopo_v2_workflow.execute(input)
@@ -151,10 +151,8 @@ abstract class BDTopo extends BDTopoUtils {
             BDTopoV3Workflow bdTopoV3Workflow = new BDTopoV3Workflow()
             return bdTopoV3Workflow.execute(input)
         } else {
-            LoggerUtils.error "Unsupported version. Set number 2 or 3"
-            return null
+            throw new Exception("Unsupported version. Set number 2 or 3")
         }
-        return null
     }
 
     static Map v2(def input) {

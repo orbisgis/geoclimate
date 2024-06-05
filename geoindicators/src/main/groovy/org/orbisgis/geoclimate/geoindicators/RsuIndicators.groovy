@@ -1090,7 +1090,7 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                                 "${nameDistrib.join(" double precision,")} double precision) AS (SELECT a.$ID_COLUMN_RSU," +
                                 "COALESCE(b.${nameDistrib.join(",0),COALESCE(b.")},0)  " +
                                 "FROM $rsuTable a LEFT JOIN $roadDistrib b ON a.$ID_COLUMN_RSU=b.id_rsu);"
-                        datasource queryDistrib.toString()
+                        datasource.execute(queryDistrib)
 
                         if (!operations.contains("linear_road_density")) {
                             datasource.execute( """DROP TABLE IF EXISTS $outputTableName;
@@ -1108,7 +1108,7 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                                 "${nameDens.join(" double,")} double) AS (SELECT a.$ID_COLUMN_RSU," +
                                 "COALESCE(b.${nameDens.join(",0),COALESCE(b.")},0) " +
                                 "FROM $rsuTable a LEFT JOIN $roadDens b ON a.$ID_COLUMN_RSU=b.id_rsu)"
-                        datasource queryDensity
+                        datasource.execute(queryDensity)
                         if (!operations.contains("road_direction_distribution")) {
                             datasource.execute( """DROP TABLE IF EXISTS $outputTableName;
                                         ALTER TABLE $roadDensTot RENAME TO $outputTableName""")
@@ -1581,8 +1581,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                                                 ROAD INTEGER,
                                                 BUILDING INTEGER,
                                                 RAIL INTEGER,
-                                                ${id_zone} INTEGER);
-                DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${tmpTablesToDrop.join(",")}""")
+                                                ${id_zone} INTEGER);""")
             }
         } else {
             throw new SQLException("""Cannot compute the smallest geometries""")

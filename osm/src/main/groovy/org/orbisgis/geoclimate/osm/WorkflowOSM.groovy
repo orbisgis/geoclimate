@@ -1384,7 +1384,7 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID, H2GIS
     if (filter) {
         if (outputSRID == 0) {
             if (inputSRID == targetTableSrid) {
-                inputRes = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
+                return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
             } else {
                 if (targetTableSrid == 0 && inputSRID == 0) {
                     return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()

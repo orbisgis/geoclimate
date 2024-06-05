@@ -97,7 +97,7 @@ class WorldPopExtractTest {
                 String outputTableWorldPopName = WorldPopTools.Extract.importAscGrid(h2GIS, outputFilePath)
                 assertNotNull outputTableWorldPopName
                 assertEquals(720, h2GIS.getSpatialTable(outputTableWorldPopName).rowCount)
-                assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getTable(outputTableWorldPopName).columns)
+                assertEquals(["ID_POP", "THE_GEOM", "POP"], h2GIS.getColumnNames(outputTableWorldPopName))
             }
         }
     }

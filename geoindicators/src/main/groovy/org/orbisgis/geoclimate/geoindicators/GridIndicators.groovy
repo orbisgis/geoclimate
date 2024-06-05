@@ -135,7 +135,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, Stri
             throw new IllegalArgumentException("The grid indicators table must contain the columns LCZ_PRIMARY, ID_ROW, $id_grid")
         }
 
-        datasource.execute("""create index on $grid_indicators(id_row,id_col)""".toString())
+        datasource.execute("""create index on $grid_indicators(id_row,id_col)""")
         ///First build the index levels for each cell of the input grid
         def grid_scaling_indices = postfix("grid_scaling_indices")
         def grid_levels_query = []
@@ -268,7 +268,6 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, Stri
         """.toString())
             tableLevelToJoin = grid_level_join
         }
-
         return tableLevelToJoin
     } catch (SQLException e) {
         throw new SQLException("", e)

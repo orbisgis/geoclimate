@@ -71,10 +71,9 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
         def typeAndLevel = parametersMap.level
         def queryMapper = "SELECT "
         def columnToMap = parametersMap.columns
-        def inputSpatialTable = datasource."$building"
-        if (inputSpatialTable.rowCount > 0) {
+        if (datasource.getRowCount(building)> 0) {
             def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
-            def columnNames = inputSpatialTable.columns
+            def columnNames = datasource.getColumnNames(building)
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             queryMapper += " , st_force2D(a.the_geom) as the_geom FROM $building as a "

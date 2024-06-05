@@ -217,7 +217,7 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
                     ALTER TABLE ${blockTableJoin} RENAME TO $outputTableName""".toString()
 
     // Modify all indicators which do not have the expected name
-    def listColumnNames = datasource.getTable(outputTableName).columns
+    def listColumnNames = datasource.getColumnNames(outputTableName)
     def mapIndic2Change = ["SUM_AREA"  : "AREA", "SUM_FLOOR_AREA": "FLOOR_AREA",
                            "SUM_VOLUME": "VOLUME"]
     def query2ModifyNames = ""
@@ -1020,7 +1020,6 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
             ALTER TABLE $createScalesRelationsRsuBlBu RENAME TO $building; """.toString())
     tablesToDrop << createScalesRelationsRsuBlBu
     datasource.dropTable(tablesToDrop)
-
     return ["building": building,
             "block"   : tableRsuBlocks,
             "rsu"     : rsu]
@@ -1614,11 +1613,11 @@ String rasterizeIndicators(JdbcDataSource datasource,
                         "GREATEST", true, true,
                         "lcz")
                 // Rename the standard indicators into names consistent with the current method (LCZ type...)
-                datasource """  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
+                datasource.execute("""  ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL TO LCZ_PRIMARY;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN UNIQUENESS_VALUE TO LCZ_UNIQUENESS_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EQUALITY_VALUE TO LCZ_EQUALITY_VALUE;
                                 ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_COL2 TO LCZ_SECONDARY;
-                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;""".toString()
+                                ALTER TABLE $resultsDistrib RENAME COLUMN EXTREMUM_VAL TO MIN_DISTANCE;""")
 
                 // Need to replace the string LCZ values by an integer
                 datasource.createIndex(resultsDistrib, "lcz_primary")
@@ -2032,16 +2031,15 @@ String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName,
     def outputTableName = postfix "INPUT_BUILDING_REFORMATED_"
     info 'Re-formating building layer'
     def outputEstimateTableName = ""
-    datasource """ 
+    datasource.execute(""" 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build INTEGER, ID_SOURCE VARCHAR, 
                     HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER, ID_BLOCK INTEGER, ID_RSU INTEGER);
-            """
+            """)
     if (inputTableName) {
         def queryMapper = "SELECT "
-        def inputSpatialTable = datasource."$inputTableName"
-        if (inputSpatialTable.rowCount > 0) {
-            def columnNames = inputSpatialTable.columns
+        if (datasource.getRowCount(inputTableName) > 0) {
+            def columnNames = datasource.getColumnNames(inputTableName)
             queryMapper += " ${columnNames.join(",")} FROM $inputTableName"
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
