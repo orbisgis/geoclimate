@@ -248,26 +248,21 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
 boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode,
-                             String outputNodesPoints, def tags, def columnsToKeep, Geometry geometry) {
+                             String outputNodesPoints, def tags, def columnsToKeep, Geometry geometry) throws Exception{
     if (!datasource) {
-        error("The datasource should not be null")
-        return false
+        throw new Exception("The datasource should not be null")
     }
     if (osmTablesPrefix == null) {
-        error "Invalid null OSM table prefix"
-        return false
+        throw new Exception("Invalid null OSM table prefix")
     }
     if (epsgCode == -1) {
-        error "Invalid EPSG code"
-        return false
+        throw new Exception("Invalid EPSG code")
     }
     if (tags == null) {
-        error "The tag list cannot be null"
-        return
+        throw new Exception("The tag list cannot be null")
     }
     if (outputNodesPoints == null) {
-        error "Invalid null output node points table name"
-        return false
+        throw new Exception("Invalid null output node points table name")
     }
     def tableNode = "${osmTablesPrefix}_node"
     def tableNodeTag = "${osmTablesPrefix}_node_tag"
@@ -516,14 +511,12 @@ def createTagList(JdbcDataSource datasource, def selectTableQuery, List columnsT
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-def buildIndexes(JdbcDataSource datasource, String osmTablesPrefix) {
+def buildIndexes(JdbcDataSource datasource, String osmTablesPrefix) throws Exception{
     if (!datasource) {
-        error "The datasource should not be null."
-        return false
+        throw new Exception("The datasource should not be null.")
     }
     if (!osmTablesPrefix) {
-        error "The osmTablesPrefix should not be null or empty."
-        return false
+        throw new Exception("The osmTablesPrefix should not be null or empty.")
     }
     datasource.execute """
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_node_index                     ON ${osmTablesPrefix}_node(id_node);

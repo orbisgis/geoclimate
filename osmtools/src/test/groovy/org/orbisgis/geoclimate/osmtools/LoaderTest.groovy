@@ -83,8 +83,8 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void badFromAreaTest() {
-        assertNull OSMTools.Loader.fromArea(ds, null)
-        assertNull OSMTools.Loader.fromArea(ds, "A string")
+        assertThrows(Exception.class, ()-> OSMTools.Loader.fromArea(ds, null))
+        assertThrows(Exception.class, ()-> OSMTools.Loader.fromArea(ds, "A string"))
     }
 
     /**
@@ -257,10 +257,9 @@ class LoaderTest extends AbstractOSMToolsTest {
         def placeName = "  The place Name -toFind  "
         def dist = 5
         def formattedPlaceName = "The_place_Name_toFind_"
-        Map r = OSMTools.Loader.fromPlace(ds, placeName, dist)
-        assertNull(r)
+        assertThrows(Exception.class, ()->OSMTools.Loader.fromPlace(ds, placeName, dist))
 
-        r = OSMTools.Loader.fromPlace(ds, "Lezoen, Plourivo", dist)
+        def r = OSMTools.Loader.fromPlace(ds, "Lezoen, Plourivo", dist)
 
         def zone = ds.getSpatialTable(r.zone)
         assertEquals 1, zone.rowCount
@@ -288,10 +287,10 @@ class LoaderTest extends AbstractOSMToolsTest {
     void badFromPlaceTest() {
         def placeName = "  The place Name -toFind  "
         def dist = -5
-        assertNull OSMTools.Loader.fromPlace(ds, placeName, dist)
-        assertNull OSMTools.Loader.fromPlace(ds, placeName, -1)
-        assertNull OSMTools.Loader.fromPlace(ds, null)
-        assertNull OSMTools.Loader.fromPlace(null, placeName)
+        assertThrows(Exception.class, ()-> OSMTools.Loader.fromPlace(ds, placeName, dist))
+        assertThrows(Exception.class, ()-> OSMTools.Loader.fromPlace(ds, placeName, -1))
+        assertThrows(Exception.class, ()-> OSMTools.Loader.fromPlace(ds, null))
+        assertThrows(Exception.class, ()-> OSMTools.Loader.fromPlace(null, placeName))
     }
 
     /**
@@ -312,9 +311,9 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void badExtractTest() {
-        assertNull OSMTools.Loader.extract(null)
+        assertThrows(Exception.class, ()-> OSMTools.Loader.extract(null))
         badOverpassQueryOverride()
-        assertNull OSMTools.Loader.extract("toto")
+        assertThrows(Exception.class, ()-> OSMTools.Loader.extract("toto"))
     }
 
     /**
@@ -330,17 +329,17 @@ class LoaderTest extends AbstractOSMToolsTest {
         def prefix = uuid().toUpperCase()
 
         //Null dataSource
-        assertFalse OSMTools.Loader.load(null, prefix, osmFile.absolutePath)
+        assertThrows(Exception.class, ()-> OSMTools.Loader.load(null, prefix, osmFile.absolutePath))
 
         //Null prefix
-        assertFalse OSMTools.Loader.load(ds, null, osmFile.absolutePath)
+        assertThrows(Exception.class, ()-> OSMTools.Loader.load(ds, null, osmFile.absolutePath))
         //Bad prefix
-        assertFalse OSMTools.Loader.load(ds, "(╯°□°）╯︵ ┻━┻", osmFile.absolutePath)
+        assertThrows(Exception.class, ()-> OSMTools.Loader.load(ds, "(╯°□°）╯︵ ┻━┻", osmFile.absolutePath))
 
         //Null path
-        assertFalse OSMTools.Loader.load(ds, prefix, null)
+        assertThrows(Exception.class, ()-> OSMTools.Loader.load(ds, prefix, null))
         //Unexisting path
-        assertFalse OSMTools.Loader.load(ds, prefix, "ᕕ(ᐛ)ᕗ")
+        assertThrows(Exception.class, ()-> OSMTools.Loader.load(ds, prefix, "ᕕ(ᐛ)ᕗ"))
     }
 
     /**
