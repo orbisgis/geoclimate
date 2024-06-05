@@ -1146,10 +1146,10 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
                 int BATCH_MAX_SIZE = 100
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                 if (inputRes) {
-                    def outputColumns = output_datasource.getTable(output_table).getColumnsTypes()
+                    def outputColumns = output_datasource.getColumnNamesTypes(output_table)
                     def outputconnection = output_datasource.getConnection()
                     try {
-                        def inputColumns = inputRes.getColumnsTypes();
+                        def inputColumns = inputRes.getColumnNamesTypes();
                         //We check if the number of columns is not the same
                         //If there is more columns in the input table we alter the output table
                         def outPutColumnsNames = outputColumns.keySet()
@@ -1255,7 +1255,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def out
  * @param outputSRID srid code used to reproject the output table
  * @return
  */
-def indicatorTableBatchExportTable(def output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject) {
+def indicatorTableBatchExportTable(JdbcDataSource output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject) {
     if (output_table) {
         if (h2gis_table_to_save) {
             if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
@@ -1266,11 +1266,11 @@ def indicatorTableBatchExportTable(def output_datasource, def output_table, def 
                     int BATCH_MAX_SIZE = 100;
                     ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
                     if (inputRes) {
-                        def outputColumns = output_datasource.getTable(output_table).getColumnsTypes();
+                        def outputColumns = output_datasource.getColumnNamesTypes(output_table)
                         outputColumns.remove("gid")
                         def outputconnection = output_datasource.getConnection()
                         try {
-                            def inputColumns = inputRes.getColumnsTypes();
+                            def inputColumns = inputRes.getColumnNamesTypes()
                             //We check if the number of columns is not the same
                             //If there is more columns in the input table we alter the output table
                             def outPutColumnsNames = outputColumns.keySet()

@@ -891,7 +891,6 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
                         listRsuRename.add("a.$col AS rsu_$col")
                     }
                 }
-                //def listBuildCol = datasource.getTable(buildingTable).getColumns()
                 def listBuildRename = []
                 for (col in buildIndicatorsColumns) {
                     if (col != "ID_RSU" && col != "ID_BLOCK" && col != "ID_BUILD" && col != "THE_GEOM") {
