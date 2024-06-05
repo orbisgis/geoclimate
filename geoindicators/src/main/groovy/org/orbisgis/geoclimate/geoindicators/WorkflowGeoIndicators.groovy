@@ -1685,7 +1685,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     list_indicators_upper.each {
         if (it == "BUILDING_FRACTION"
                 || it == "BUILDING_SURFACE_DENSITY" ||
-                it == "ASPECT_RATIO") {
+                it == "ASPECT_RATIO" || it == "FREE_EXTERNAL_FACADE_DENSITY") {
             columnFractionsList.put(priorities.indexOf("building"), "building")
         } else if (it == "WATER_FRACTION") {
             columnFractionsList.put(priorities.indexOf("water"), "water")

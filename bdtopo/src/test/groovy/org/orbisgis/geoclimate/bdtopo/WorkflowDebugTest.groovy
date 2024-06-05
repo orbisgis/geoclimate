@@ -136,9 +136,9 @@ class WorkflowDebugTest {
     @Disabled
     @Test
     void testIntegrationFolderInput() {
-        def input_data = "/media/ebocher/Extreme SSD/bdtopo/bdtopo2/BDTOPO_2-2_TOUSTHEMES_SHP_LAMB93_D035_2018-09-25/BDTOPO/1_DONNEES_LIVRAISON_2018-11-00144/BDT_2-2_SHP_LAMB93_D035-ED182"
-        def locations = [ "Bordeaux"]
-        String directory = "/tmp/bdtopo2"
+        def input_data = "/home/decide/Data/URBIO/Donnees_brutes/BD_TOPO/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D076_2024-03-15"
+        def locations = ["76005","76020"]
+        String directory = "/tmp/bdtopo3"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -164,23 +164,13 @@ class WorkflowDebugTest {
                          /*"grid_indicators": [
                                  "x_size"    : 100,
                                  "y_size"    : 100,
-                                 "indicators" :["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
-                                 "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                                 "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                                                //"FREE_EXTERNAL_FACADE_DENSITY",
-                                 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                 "SEA_LAND_FRACTION", "ASPECT_RATIO",
-                                                //"SVF",
-                                 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
-                                 "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
-                                 "LCZ_PRIMARY", "SPRAWL_AREAS",
-                                                "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+                                 "indicators" :["FREE_EXTERNAL_FACADE_DENSITY", "BUILDING_FRACTION"]
                                  //, "lcz_lod":2
                          ]*/
                         ]
         ]
         //BDTopo.v2(bdTopoParameters)
-
+        /*
         input_data = "/home/ebocher/Téléchargements/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D033_2023-12-15/BDTOPO/1_DONNEES_LIVRAISON_2023-12-00099"
 
         directory = "/tmp/bdtopo3"
@@ -189,7 +179,7 @@ class WorkflowDebugTest {
         dirFile.mkdir()
 
         bdTopoParameters.input.folder=input_data
-        bdTopoParameters.output.folder.path=directory
+        bdTopoParameters.output.folder.path=directory*/
         BDTopo.v3(bdTopoParameters)
 
     }

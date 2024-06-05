@@ -423,8 +423,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @return a filled map of parameters
      */
     def extractProcessingParameters(def processing_parameters) {
-        def defaultParameters = [distance       : 1000f,
-                                 distance_buffer: 500f, prefixName: "",
+        def defaultParameters = [distance       : 500f, prefixName: "",
                                  hLevMin        : 3]
         def rsu_indicators_default = [indicatorUse       : [],
                                       svfSimplified      : true,
@@ -440,7 +439,6 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                             "height_of_roughness_elements": 6,
                                                             "terrain_roughness_length"    : 0.5],
                                       utrfModelName      : "UTRF_BDTOPO_V2_RF_2_2.model"]
-        defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
         if (processing_parameters) {
             def distanceP = processing_parameters.distance
@@ -505,10 +503,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         rsu_indicators_default.mapOfWeights = mapOfWeightsP
                     }
                 }
-            } else {
-                rsu_indicators = rsu_indicators_default
-            }
+                defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
+            }
 
             //Check for grid indicators
             def grid_indicators = processing_parameters.grid_indicators
@@ -929,7 +926,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             results.put("building", building)
 
             //Compute the RSU indicators
-            if (rsu_indicators_params.indicatorUse) {
+            if (rsu_indicators_params && rsu_indicators_params.indicatorUse) {
                 //Build the indicators
                 rsu_indicators_params.put("utrfModelName", "UTRF_BDTOPO_V2_RF_2_2.model")
                 Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(h2gis_datasource, zone,

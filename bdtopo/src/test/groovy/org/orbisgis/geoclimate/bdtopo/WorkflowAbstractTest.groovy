@@ -387,4 +387,51 @@ abstract class WorkflowAbstractTest {
         assertNotNull(process)
         checkFormatData()
     }
+
+    @Test
+    void testOnlyFormatData() {
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" : "Workflow format data",
+                "geoclimatedb": [
+                        "folder": folder.absolutePath,
+                        "name"  : "testFormat;AUTO_SERVER=TRUE",
+                        "delete": false
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": folder.absolutePath]]
+        ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+
+        def tableNames = process[getInseeCode()]
+        assertTrue(tableNames.size() > 0)
+        H2GIS h2gis = H2GIS.open(folder.absolutePath + File.separator + "testFormat;AUTO_SERVER=TRUE")
+
+        //Test zone
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.zone} where the_geom is not null").count > 0
+
+        //Test building
+        String building_table = tableNames.building
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where TYPE is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where MAIN_USE is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where NB_LEV is not null or NB_LEV>0 ;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where HEIGHT_WALL is not null or HEIGHT_WALL>0 ;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from $building_table where HEIGHT_ROOF is not null or HEIGHT_ROOF>0 ;""".toString()).count > 0)
+
+        //Test water
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.water} where TYPE is not null;""".toString()).count > 0)
+
+        //Test vegetation
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.vegetation} where TYPE is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.vegetation} where HEIGHT_CLASS is not null;""".toString()).count > 0)
+
+        //Test road
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""".toString()).count > 0)
+     }
 }
