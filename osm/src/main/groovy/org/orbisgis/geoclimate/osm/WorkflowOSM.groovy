@@ -636,15 +636,13 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 }
 
                 if (outputFolder && ouputTableFiles) {
-                    saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_", outputSRID, reproject, deleteOutputData, outputGrid)
-
+                    saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_",
+                            outputSRID, reproject, deleteOutputData, outputGrid)
                 }
                 if (output_datasource) {
                     saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
                 }
-
                 outputTableNamesResult.put(id_zone in Collection ? id_zone.join("_") : id_zone, results.findAll { it.value != null })
-
                 h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
             }
         } catch (Exception e) {

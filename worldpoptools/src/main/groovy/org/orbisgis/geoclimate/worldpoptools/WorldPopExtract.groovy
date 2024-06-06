@@ -106,10 +106,9 @@ String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int eps
                 PK AS ID_POP, Z as POP from $importTable;
                 drop table if exists $importTable""".toString())
         } catch (Exception ex) {
-            throw new Exception("Cannot find any worldpop data on the requested area")
-        }finally {
             datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
+            throw new Exception("Cannot find any worldpop data on the requested area")
         }
     } else {
         try {
@@ -117,10 +116,9 @@ String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int eps
             datasource.execute("""ALTER TABLE $outputTableWorldPopName RENAME COLUMN PK TO ID_POP;
                                 ALTER TABLE $outputTableWorldPopName RENAME COLUMN Z TO POP;""".toString())
         } catch (Exception ex) {
-            throw new Exception( "Cannot find any worldpop data on the requested area")
-        }finally {
             datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
+            throw new Exception( "Cannot find any worldpop data on the requested area")
         }
     }
     return outputTableWorldPopName
