@@ -71,9 +71,8 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     if (commune_srid == 0 && inputSRID) {
         commune_srid = inputSRID
     } else if (commune_srid <= 0) {
-        warn "Cannot find a SRID value for the layer commune.\n" +
-                "Please set a valid OGC prj or use the parameter srid to force it."
-        return null
+        throw new Exception( "Cannot find a SRID value for the layer commune.\n" +
+                "Please set a valid OGC prj or use the parameter srid to force it.")
     }
 
     String outputTableName = "COMMUNE"
@@ -209,9 +208,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
         }
-
         sourceConnection.close()
-
         return commune_srid
 
     } else {

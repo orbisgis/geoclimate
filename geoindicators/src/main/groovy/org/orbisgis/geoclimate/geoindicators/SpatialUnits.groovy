@@ -107,7 +107,7 @@ String createTSU(JdbcDataSource datasource, String zone,
  * @return A database table name and the name of the column ID
  */
 String createTSU(JdbcDataSource datasource, String inputTableName, String inputzone,
-                 double area = 1d, String prefixName) throws Exception{
+                 double area = 1d, String prefixName) throws Exception {
     def COLUMN_ID_NAME = "id_rsu"
     def BASE_NAME = "tsu"
 
@@ -121,7 +121,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
     def epsg = datasource.getSrid(inputTableName)
 
     if (area <= 0) {
-        throw new IllegalArgumentException( "The area value to filter the TSU must be greater to 0")
+        throw new IllegalArgumentException("The area value to filter the TSU must be greater to 0")
     }
     if (inputzone) {
         //Clip the geometry
@@ -393,7 +393,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
  * @return A database table name and the name of the column ID
  */
 String createBlocks(JdbcDataSource datasource, String inputTableName,
-                    double snappingTolerance = 0.0d, String prefixName = "block") throws Exception{
+                    double snappingTolerance = 0.0d, String prefixName = "block") throws Exception {
 
     def BASE_NAME = "blocks"
 
@@ -495,7 +495,7 @@ String createBlocks(JdbcDataSource datasource, String inputTableName,
  * @return outputTableName A table name containing ID from table 1, ID from table 2 and AREA shared by the two objects (if pointOnSurface = false)
  */
 String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetTable,
-                   String idColumnTarget, boolean pointOnSurface = false, Integer nbRelations, String prefixName) throws Exception{
+                   String idColumnTarget, boolean pointOnSurface = false, Integer nbRelations, String prefixName) throws Exception {
     def GEOMETRIC_COLUMN_SOURCE = "the_geom"
     def GEOMETRIC_COLUMN_TARGET = "the_geom"
 
@@ -559,7 +559,7 @@ String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetT
  * @author Emmanuel Renault, CNRS, 2020
  * */
 String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
-                  double deltaY, boolean rowCol = false, String prefixName = "") throws Exception{
+                  double deltaY, boolean rowCol = false, String prefixName = "") throws Exception {
     if (rowCol) {
         if (!deltaX || !deltaY || deltaX < 1 || deltaY < 1) {
             throw new IllegalArgumentException("Invalid grid size padding. Must be greater or equal than 1")
@@ -570,7 +570,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
         }
     }
     if (!geometry) {
-        throw new IllegalArgumentException( "The envelope is null or empty. Cannot compute the grid")
+        throw new IllegalArgumentException("The envelope is null or empty. Cannot compute the grid")
     }
 
     def BASENAME = "grid"
@@ -637,7 +637,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
  * @author Erwan Bocher (CNRS)
  */
 String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
-                          float distance = 100) throws Exception{
+                          float distance = 100) throws Exception {
     //We must compute the grid
     if (!grid_indicators) {
         throw new IllegalArgumentException("No grid_indicators table to compute the sprawl areas layer")
@@ -671,6 +671,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
         $grid_indicators where lcz_warm>=2 
         and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
         where st_isempty(st_buffer(the_geom, -100,2)) =false""".toString())
+
             datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
          the_geom
         FROM
@@ -694,7 +695,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
  * @param input_polygons a layer that contains polygons
  * @author Erwan Bocher (CNRS)
  */
-String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) throws Exception{
+String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) throws Exception {
     def outputTableName = postfix("inverse_geometries")
     def tmp_extent = postfix("tmp_extent")
     datasource.execute("""DROP TABLE IF EXISTS $tmp_extent, $outputTableName;
@@ -718,7 +719,7 @@ String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) th
  * @author Erwan Bocher (CNRS)
  */
 String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,
-                        float distance = 100) throws Exception{
+                        float distance = 100) throws Exception {
     if (!grid_indicators) {
         throw new IllegalArgumentException("No grid_indicators table to extract the cool areas layer")
     }

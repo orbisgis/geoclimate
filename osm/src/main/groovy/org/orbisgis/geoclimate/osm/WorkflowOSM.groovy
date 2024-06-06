@@ -346,10 +346,9 @@ Map workflow(def input) throws Exception {
         Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters, locations.findAll { it }, file_outputFolder, outputFileTables,
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, osm_size_area,
                 overpass_timeout, overpass_maxsize, osm_date)
-        if (!osmprocessing) {
-            h2gis_datasource.save(logTableZones, "${file_outputFolder.getAbsolutePath() + File.separator}logzones.fgb", true)
-            return null
-        }
+
+        h2gis_datasource.save(logTableZones, "${file_outputFolder.getAbsolutePath() + File.separator}logzones.fgb", true)
+
         if (delete_h2gis) {
             def localCon = h2gis_datasource.getConnection()
             if (localCon) {
