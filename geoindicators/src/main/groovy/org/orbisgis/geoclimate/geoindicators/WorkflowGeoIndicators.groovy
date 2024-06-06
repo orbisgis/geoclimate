@@ -1200,7 +1200,6 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
     if (parameters) {
         inputParameters = getParameters(parameters)
     }
-
     def surface_vegetation = inputParameters.surface_vegetation
     def surface_hydro = inputParameters.surface_hydro
     def surface_urban_areas = inputParameters.surface_urban_areas

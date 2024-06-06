@@ -422,7 +422,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @param processing_parameters the file parameters
      * @return a filled map of parameters
      */
-    def extractProcessingParameters(def processing_parameters) {
+    def extractProcessingParameters(def processing_parameters) throws Exception{
         def defaultParameters = [distance       : 500f, prefixName: "",
                                  hLevMin        : 3]
         def rsu_indicators_default = [indicatorUse       : [],
@@ -464,12 +464,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     if (allowedOutputRSUIndicators) {
                         rsu_indicators_default.indicatorUse = indicatorUseP
                     } else {
-                        error "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}"
-                        return
+                        throw new Exception( "Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}".toString())
                     }
                 } else {
-                    error "The list of RSU indicator names cannot be null or empty"
-                    return
+                    throw new Exception( "The list of RSU indicator names cannot be null or empty")
                 }
                 def snappingToleranceP = rsu_indicators.snappingTolerance
                 if (snappingToleranceP && snappingToleranceP in Number) {
@@ -497,8 +495,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 if (mapOfWeightsP && mapOfWeightsP in Map) {
                     def defaultmapOfWeights = rsu_indicators_default.mapOfWeights
                     if ((defaultmapOfWeights + mapOfWeightsP).size() != defaultmapOfWeights.size()) {
-                        error "The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}"
-                        return
+                        throw new Exception("The number of mapOfWeights parameters must contain exactly the parameters ${defaultmapOfWeights.keySet().join(",")}".toString())
                     } else {
                         rsu_indicators_default.mapOfWeights = mapOfWeightsP
                     }
@@ -519,8 +516,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         return
                     }
                     if (!list_indicators) {
-                        error "The list of indicator names cannot be null or empty"
-                        return
+                        throw new Exception( "The list of indicator names cannot be null or empty")
                     }
                     def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                                                    "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
@@ -565,8 +561,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         }
                         defaultParameters.put("grid_indicators", grid_indicators_tmp)
                     } else {
-                        error "Please set a valid list of indicator names in ${allowed_grid_indicators}"
-                        return
+                        throw new Exception( "Please set a valid list of indicator names in ${allowed_grid_indicators}".toString())
                     }
                 }
             }

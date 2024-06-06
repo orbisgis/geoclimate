@@ -45,7 +45,8 @@ import java.util.regex.Pattern
  * @return outputTableName The name of the final buildings table
  * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
  */
-Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "", String urban_areas = "", int h_lev_min = 3, String jsonFilename = "") {
+Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
+                        String urban_areas = "", int h_lev_min = 3, String jsonFilename = "") throws Exception{
     if (!h_lev_min) {
         h_lev_min = 3
     }
@@ -187,8 +188,6 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                     }
                 }
             }
-
-
             //Improve building type using the urban areas table
             if (urban_areas) {
                 datasource.createSpatialIndex(outputTableName, "the_geom")
@@ -285,7 +284,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
  * @return outputTableName The name of the final roads table
  */
 String formatRoadLayer(
-        JdbcDataSource datasource, String road, String zone = "", String jsonFilename = "") {
+        JdbcDataSource datasource, String road, String zone = "", String jsonFilename = "") throws Exception{
     debug('Formating road layer')
     def outputTableName = postfix "INPUT_ROAD"
     datasource """
@@ -436,7 +435,7 @@ String formatRoadLayer(
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final rails table
  */
-String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "", String jsonFilename = "") {
+String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "", String jsonFilename = "") throws Exception{
     debug('Rails transformation starts')
     def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """ drop table if exists $outputTableName;
@@ -524,7 +523,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
  * @param jsonFilename name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final vegetation table
  */
-String formatVegetationLayer(JdbcDataSource datasource, String vegetation, String zone = "", String jsonFilename = "") {
+String formatVegetationLayer(JdbcDataSource datasource, String vegetation, String zone = "", String jsonFilename = "") throws Exception{
     debug('Vegetation transformation starts')
     def outputTableName = postfix "INPUT_VEGET"
     datasource """ 
@@ -599,7 +598,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
  * @param zone an envelope to reduce the study area
  * @return outputTableName The name of the final hydro table
  */
-String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "") {
+String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "") throws Exception{
     debug('Hydro transformation starts')
     def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """Drop table if exists $outputTableName;
@@ -655,7 +654,7 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
  * @param zone an envelope to reduce the study area
  * @return outputTableName The name of the final impervious table
  */
-String formatImperviousLayer(JdbcDataSource datasource, String impervious, String zone = "", String jsonFilename = "") {
+String formatImperviousLayer(JdbcDataSource datasource, String impervious, String zone = "", String jsonFilename = "") throws Exception{
     debug('Impervious transformation starts')
     def outputTableName = "INPUT_IMPERVIOUS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     debug(impervious)
@@ -1026,7 +1025,7 @@ static Map parametersMapping(def file, def altResourceStream) {
  * @param zone an envelope to reduce the study area
  * @return outputTableName The name of the final urban areas table
  */
-String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zone = "", String jsonFilename = "") {
+String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zone = "", String jsonFilename = "") throws Exception{
     debug('Urban areas transformation starts')
     def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """Drop table if exists $outputTableName;
@@ -1104,7 +1103,7 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
  * @param water The name of the input water table to improve sea extraction
  * @return outputTableName The name of the final buildings table
  */
-String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zone = "", String water = "") {
+String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zone = "", String water = "") throws Exception{
     String outputTableName = postfix "INPUT_SEA_LAND_MASK_"
     datasource.execute """Drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id serial, type varchar);""".toString()

@@ -84,7 +84,8 @@ String extractWorldPopLayer(String coverageId, List bbox) {
  * @param tableName the name of table that contains the grid data in the database
  * @return the name of the imported table
  */
-String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int epsg = 4326, String tableName = "world_pop") {
+String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int epsg = 4326, String tableName = "world_pop")
+        throws Exception{
     info "Import the the world pop asc file"
     // The name of the outputTableName is constructed
     def outputTableWorldPopName = postfix tableName
@@ -105,7 +106,8 @@ String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int eps
                 PK AS ID_POP, Z as POP from $importTable;
                 drop table if exists $importTable""".toString())
         } catch (Exception ex) {
-            info "Cannot find any worldpop data on the requested area"
+            throw new Exception("Cannot find any worldpop data on the requested area")
+        }finally {
             datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
         }
@@ -115,7 +117,8 @@ String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int eps
             datasource.execute("""ALTER TABLE $outputTableWorldPopName RENAME COLUMN PK TO ID_POP;
                                 ALTER TABLE $outputTableWorldPopName RENAME COLUMN Z TO POP;""".toString())
         } catch (Exception ex) {
-            info "Cannot find any worldpop data on the requested area"
+            throw new Exception( "Cannot find any worldpop data on the requested area")
+        }finally {
             datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
         }
