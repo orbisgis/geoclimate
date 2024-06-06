@@ -342,13 +342,9 @@ Map workflow(def input) throws Exception {
         if (!h2gis_datasource) {
             throw new Exception("Cannot load the local H2GIS database to run Geoclimate")
         }
-        def logTableZones = postfix("log_zones")
         Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters, locations.findAll { it }, file_outputFolder, outputFileTables,
-                outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, logTableZones, osm_size_area,
-                overpass_timeout, overpass_maxsize, osm_date)
-
-        h2gis_datasource.save(logTableZones, "${file_outputFolder.getAbsolutePath() + File.separator}logzones.fgb", true)
-
+                outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, osm_size_area,
+                overpass_timeout, overpass_maxsize, osm_date, databaseFolder)
         if (delete_h2gis) {
             def localCon = h2gis_datasource.getConnection()
             if (localCon) {
@@ -383,14 +379,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                    File outputFolder, def ouputTableFiles, def output_datasource, def outputTableNames,
                    def outputSRID, def downloadAllOSMData,
                    def deleteOutputData, def deleteOSMFile,
-                   def logTableZones, def bbox_size,
-                   def overpass_timeout, def overpass_maxsize, def overpass_date) throws Exception {
+                   def bbox_size,
+                   def overpass_timeout, def overpass_maxsize, def overpass_date, String databaseFolder) throws Exception {
     //Store the zone identifier and the names of the tables
     def outputTableNamesResult = [:]
-    //Create the table to log on the processed zone
-    h2gis_datasource.execute """DROP TABLE IF EXISTS $logTableZones;
-            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
-            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""".toString()
     int nbAreas = id_zones.size()
     info "$nbAreas osm areas will be processed"
     id_zones.each { id_zone ->
@@ -645,7 +637,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
             }
         } catch (Exception e) {
-            addInLogZoneTable(h2gis_datasource, logTableZones, id_zone in Collection?id_zone.join():id_zone, osm_zone_geometry, e.getLocalizedMessage())
+            saveLogZoneTable(h2gis_datasource,databaseFolder, id_zone in Collection?id_zone.join("_"):id_zone, osm_zone_geometry, e.getLocalizedMessage())
             //eat the exception and process other zone
             warn("The zone $id_zone has not been processed. Please check the log table to get more informations." )
         }
@@ -664,7 +656,12 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
  * @param message
  * @throws Exception
  */
-void addInLogZoneTable(JdbcDataSource dataSource, String logTableZones, String id_zone, Geometry osm_geometry, String message) throws Exception {
+void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, String id_zone, Geometry osm_geometry, String message) throws Exception {
+    def logTableZones = postfix("log_zones")
+    //Create the table to log on the processed zone
+    dataSource.execute("""DROP TABLE IF EXISTS $logTableZones;
+            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
+            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""")
     if (osm_geometry == null) {
         dataSource.execute("""INSERT INTO $logTableZones 
                     VALUES(null,'$id_zone', '$message', 
@@ -676,6 +673,7 @@ void addInLogZoneTable(JdbcDataSource dataSource, String logTableZones, String i
                             '${Geoindicators.version()}',
                             '${Geoindicators.buildNumber()}')""")
     }
+    dataSource.save(logTableZones, databaseFolder+File.separator+"log_zones_"+id_zone+".fgb", true )
 }
 
 /**
@@ -725,7 +723,7 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
         if ((source_geom_utm.getEnvelopeInternal().getArea() / 1.0E+6) >= bbox_size) {
             throw new Exception("The size of the OSM BBOX is greated than the limit : ${bbox_size} in km².\n" +
                     "Please increase the area parameter if you want to skip this limit.".toString())
-            return null        }
+        }
         def lat_lon_bbox_geom_extended = geom.getFactory().toGeometry(lat_lon_bbox_extended)
         lat_lon_bbox_geom_extended.setSRID(4326)
 

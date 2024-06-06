@@ -25,7 +25,6 @@ import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.URIUtilities
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
-import org.orbisgis.data.api.dataset.ISpatialTable
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
@@ -196,17 +195,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 outputTables = outputDataBaseData.tables
             }
         }
-        //Table name to log errors
-        def logTableZones = postfix("log_zones")
+
         /**
          * Run the workflow when the input data comes from a folder
          */
         if (inputFolder) {
             def h2gis_datasource = H2GIS.open(h2gis_properties)
-            //Create the table to log on the processed zone
-            h2gis_datasource.execute("""DROP TABLE IF EXISTS $logTableZones;
-            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
-            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""")
             def datafromFolder = linkDataFromFolder(inputFolder, inputWorkflowTableNames, h2gis_datasource, inputSRID)
             inputSRID = datafromFolder.inputSrid
             def sourceSrid = datafromFolder.sourceSrid
@@ -227,7 +221,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             }
                         }
                     } catch (Exception e) {
-                        addInLogZoneTable(h2gis_datasource, logTableZones, location, e.getLocalizedMessage())
+                        saveLogZoneTable(h2gis_datasource, databaseFolder, location, e.getLocalizedMessage())
                         //eat the exception and process other zone
                         warn("The zone $location has not been processed. Please check the log table to get more informations.")
                     }
@@ -260,12 +254,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
                 inputTables = inputTables_tmp
             }
-
             def h2gis_datasource = H2GIS.open(h2gis_properties)
-            //Create the table to log on the processed zone
-            h2gis_datasource.execute("""DROP TABLE IF EXISTS $logTableZones;
-            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
-            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""")
             def nbzones = 0
             for (location in locations) {
                 nbzones++
@@ -280,7 +269,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         }
                     }
                 } catch (Exception e) {
-                    addInLogZoneTable(h2gis_datasource, logTableZones, location, e.getLocalizedMessage())
+                    saveLogZoneTable(h2gis_datasource, databaseFolder, location, e.getLocalizedMessage())
                     //eat the exception and process other zone
                     warn("The zone $location has not been processed. Please check the log table to get more informations.")
                 }
@@ -302,7 +291,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @param message
      * @throws Exception
      */
-    void addInLogZoneTable(JdbcDataSource dataSource, String logTableZones, String location, String message) throws Exception {
+    void saveLogZoneTable(JdbcDataSource dataSource,String databaseFolder, String location, String message) throws Exception {
+        def logTableZones = postfix("log_zones")
+        //Create the table to log on the processed zone
+        dataSource.execute("""DROP TABLE IF EXISTS $logTableZones;
+            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
+            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""")
         //Find the geometry of the location
         Geometry geom = dataSource.firstRow("SELECT st_union(st_accum(THE_GEOM)) as the_geom FROM WHERE commune").the_geom
         if (geom == null) {
@@ -316,6 +310,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             '${Geoindicators.version()}',
                             '${Geoindicators.buildNumber()}')""")
         }
+        dataSource.save(logTableZones, databaseFolder+File.separator+"log_zones_"+id_zone+".fgb", true )
     }
 
     /**
