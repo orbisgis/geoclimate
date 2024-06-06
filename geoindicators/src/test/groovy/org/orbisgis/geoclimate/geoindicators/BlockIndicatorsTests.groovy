@@ -26,6 +26,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertThrows
 import static org.orbisgis.data.H2GIS.open
 
 class BlockIndicatorsTests {
@@ -101,5 +102,10 @@ class BlockIndicatorsTests {
         def sum = 0
         h2GIS.eachRow("SELECT * FROM test_block_closingness") { sum += it.closingness }
         assert 450 == sum
+    }
+
+    @Test
+    void holeAreaDensityExceptionTest() {
+        assertThrows(Exception.class, ()->Geoindicators.BlockIndicators.holeAreaDensity(h2GIS, "myblock_table", "test"))
     }
 }

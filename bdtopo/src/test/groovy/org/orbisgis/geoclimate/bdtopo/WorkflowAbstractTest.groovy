@@ -328,10 +328,9 @@ abstract class WorkflowAbstractTest {
             assertNotNull(process)
             //Check if the tables exist and contains at least one row
             outputTables.values().each { it ->
-                def spatialTable = externalDB.getSpatialTable(it)
-                assertNotNull(spatialTable)
-                assertEquals(2154, spatialTable.srid)
-                assertTrue(spatialTable.getRowCount() > 0)
+                assertTrue(externalDB.hasTable(it))
+                assertEquals(2154, externalDB.getSrid(it))
+                assertTrue(externalDB.getRowCount(it) > 0)
             }
             externalDB.close()
         }
@@ -348,8 +347,8 @@ abstract class WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "folder": ["path"     : dataFolder,
-                                   "locations": [2000, 2001, 2002]]],
+                        "folder": dataFolder,
+                        "locations": [2000, 2001, 2002]],
                 "output"      : [
                         "folder": ["path"  : folder.absolutePath,
                                    "tables": ["grid_indicators"]]],
@@ -362,7 +361,7 @@ abstract class WorkflowAbstractTest {
                          ]
                         ]
         ]
-        assertNull(BDTopo.workflow(bdTopoParameters, getVersion()))
+        assertThrows(Exception.class, ()->BDTopo.workflow(bdTopoParameters, getVersion()))
     }
 
     @Test
@@ -435,5 +434,4 @@ abstract class WorkflowAbstractTest {
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""".toString()).count > 0)
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""".toString()).count > 0)
      }
-
 }

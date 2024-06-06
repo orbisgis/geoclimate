@@ -63,15 +63,14 @@ def loadV2(
                                                  "terrain_sport"      : "", "construction_surfacique": "",
                                                  "surface_route"      : "", "surface_activite": "",
                                                  "piste_aerodrome"    : "", "reservoir": "", "zone_vegetation": ""],
-        float distance = 1000) {
+        float distance = 1000) throws Exception{
 
     debug('Import the BDTopo data')
 
     def commune = layers.commune
     // If the Commune table is empty, then the process is stopped
     if (!commune) {
-        error 'The process has been stopped since the table Commnune is empty'
-        return
+        throw new IllegalArgumentException('The process has been stopped since the table Commnune is empty')
     }
     debug('Import the BDTopo data')
 
@@ -94,11 +93,9 @@ def loadV2(
                         srid = currentSrid
                     } else {
                         if (currentSrid == 0) {
-                            error "The process has been stopped since the table $name has a no SRID"
-                            return
+                            throw new IllegalArgumentException( "The process has been stopped since the table $name has a no SRID")
                         } else if (currentSrid > 0 && srid != currentSrid) {
-                            error "The process has been stopped since the table $name has a different SRID from the others"
-                            return
+                            throw new IllegalArgumentException( "The process has been stopped since the table $name has a different SRID from the others")
                         }
                     }
                 }
@@ -111,8 +108,7 @@ def loadV2(
 
     // If the COMMUNE table does not exist or is empty, then the process is stopped
     if (!tablesExist.get("commune")) {
-        error 'The process has been stopped since the table zone does not exist or is empty'
-        return
+        throw new IllegalArgumentException( 'The process has been stopped since the table commune does not exist or is empty')
     }
 
     // If the following tables does not exists, we create corresponding empty tables
@@ -207,7 +203,6 @@ def loadV2(
             """.toString())
 
     //2- Preparation of the study area (zone_xx)
-
     def zoneTable = postfix("ZONE")
     datasource.execute("""
             DROP TABLE IF EXISTS $zoneTable;
@@ -365,18 +360,16 @@ Map loadV3(JdbcDataSource datasource,
                          "piste_d_aerodrome" : "", "reservoir": "", "construction_surfacique": "", "equipement_de_transport": "",
                          "troncon_de_route"  : "", "troncon_de_voie_ferree": "", "surface_hydrographique": "",
                          "zone_de_vegetation": "", "aerodrome": "", "limite_terre_mer": ""],
-           float distance = 1000) {
+           float distance = 1000) throws Exception{
     if (!layers) {
-        error "Please set a valid list of layers"
-        return
+        throw new IllegalArgumentException( "Please set a valid list of layers")
     }
     debug('Import the BDTopo data')
 
     def commune = layers.commune
     // If the Commune table is empty, then the process is stopped
     if (!commune) {
-        error 'The process has been stopped since the table Commnune is empty'
-        return
+        throw new IllegalArgumentException( 'The process has been stopped since the table Commnune is empty')
     }
 
     // -------------------------------------------------------------------------------
@@ -398,11 +391,9 @@ Map loadV3(JdbcDataSource datasource,
                         srid = currentSrid
                     } else {
                         if (currentSrid == 0) {
-                            error "The process has been stopped since the table $name has a no SRID"
-                            return
+                            throw new IllegalArgumentException( "The process has been stopped since the table $name has a no SRID")
                         } else if (currentSrid > 0 && srid != currentSrid) {
-                            error "The process has been stopped since the table $name has a different SRID from the others"
-                            return
+                            throw new IllegalArgumentException( "The process has been stopped since the table $name has a different SRID from the others")
                         }
                     }
                 }
@@ -411,8 +402,7 @@ Map loadV3(JdbcDataSource datasource,
     }
 
     if (!tablesExist.get("commune")) {
-        error 'The process has been stopped since the table zone does not exist or is empty'
-        return
+        throw new IllegalArgumentException( 'The process has been stopped since the table zone does not exist or is empty')
     }
 
     // -------------------------------------------------------------------------------

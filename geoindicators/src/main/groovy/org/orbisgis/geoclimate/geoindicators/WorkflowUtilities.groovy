@@ -153,7 +153,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource
     if (outputTable && h2gis_datasource.hasTable(outputTable)) {
         def env
         if (!reproject) {
-            env = h2gis_datasource.getSpatialTable(outputTable).getExtent().getEnvelopeInternal()
+            env = h2gis_datasource.getExtent(outputTable).getEnvelopeInternal()
         } else {
             def geom = h2gis_datasource.firstRow("SELECT st_transform(ST_EXTENT(the_geom), $outputSRID) as geom from $outputTable".toString()).geom
             if (geom) {
@@ -170,8 +170,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource
             double dy = env.getMaxY() - ymin
             def x_size = dy / nbrows
 
-            def IndicsTable = h2gis_datasource."$outputTable"
-            List columnNames = IndicsTable.columns
+            List columnNames = h2gis_datasource.getColumnNames(outputTable)
             columnNames.remove("THE_GEOM")
             columnNames.remove("ID_GRID")
             columnNames.remove("ID_COL")

@@ -49,14 +49,12 @@ import static org.orbisgis.geoclimate.osmtools.utils.OSMElement.*
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) {
+Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) throws Exception{
     if (!datasource) {
-        error("No datasource provided.")
-        return
+        throw new Exception("No datasource provided.")
     }
     if (!filterArea) {
-        error("Filter area not defined")
-        return
+        throw new Exception("Filter area not defined")
     }
     def outputZoneTable = postfix "ZONE"
     def outputZoneEnvelopeTable = postfix "ZONE_ENVELOPE"
@@ -71,18 +69,17 @@ Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) {
         geom = Utilities.geometryFromValues(filterArea)
     }
     else {
-        error "The filter area must be an Envelope or a Polygon"
-        return
+        throw new Exception("The filter area must be an Envelope or a Polygon")
     }
 
     def epsg = DEFAULT_SRID
     def env = org.h2gis.utilities.GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
     //Create table to store the geometry and the envelope of the extracted area
-    datasource """
+    datasource.execute("""
                 CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg));
                 INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg));
-        """.toString()
+        """)
 
     def geometryFactory = new GeometryFactory()
     def geomEnv = geometryFactory.toGeometry(env)
@@ -102,10 +99,10 @@ Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) {
                     prefix      : osmTablesPrefix,
                     epsg                 : epsg]
         } else {
-            error "Cannot load the OSM data from the area $filterArea"
+            throw new Exception("Cannot load the OSM data from the area $filterArea".toString())
         }
     } else {
-        error "Cannot download OSM data from the area $filterArea"
+        throw new Exception("Cannot download OSM data from the area $filterArea".toString())
     }
 }
 
@@ -123,14 +120,12 @@ Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) {
+Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) throws Exception{
     if (!placeName) {
-        error("Cannot find an area from a void place name.")
-        return
+        throw new Exception("Cannot find an area from a void place name.")
     }
     if (!datasource) {
-        error("No datasource provided.")
-        return
+        throw new Exception("No datasource provided.")
     }
     def formatedPlaceName = placeName.trim().replaceAll("([\\s|,|\\-|])+", "_")
     def outputZoneTable = postfix "ZONE_$formatedPlaceName"
@@ -141,32 +136,29 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) {
     Map nominatimRes = OSMTools.Utilities.getNominatimData(placeName);
 
     if(!nominatimRes){
-        error("Cannot find an area from the place name $placeName")
-        return
+        throw new Exception("Cannot find an area from the place name $placeName".toString())
     }
     def geom = nominatimRes["geom"]
     if (!geom) {
-        error("Cannot find an area from the place name $placeName")
-        return
+        throw new Exception("Cannot find an area from the place name $placeName".toString())
     }
     if (distance < 0) {
-        error("Cannot use a negative distance")
-        return
+        throw new Exception("Cannot use a negative distance")
     }
     def env = org.h2gis.utilities.GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
     //Create table to store the geometry and the envelope of the extracted area
-    datasource """
+    datasource.execute("""
                 CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
                 INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg), '$placeName');
-        """
+        """)
 
     def geometryFactory = new GeometryFactory()
     def geomEnv = geometryFactory.toGeometry(env)
-    datasource """
+    datasource.execute("""
                 CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
                 INSERT INTO $outputZoneEnvelopeTable VALUES (ST_GEOMFROMTEXT('$geomEnv',$epsg), '$placeName');
-        """
+        """)
 
     def query = OSMTools.Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
     String extract = extract(query)
@@ -178,11 +170,11 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) {
                     envelope: outputZoneEnvelopeTable,
                     prefix      : osmTablesPrefix]
         } else {
-            error "Cannot load the OSM data from the place $placeName"
+            throw new Exception("Cannot load the OSM data from the place $placeName".toString())
         }
 
     } else {
-        error "Cannot download OSM data from the place $placeName"
+        throw new Exception("Cannot download OSM data from the place $placeName".toString())
     }
 }
 
@@ -194,11 +186,10 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-String extract(String overpassQuery) {
+String extract(String overpassQuery) throws Exception{
     info "Extract the OSM data"
     if (!overpassQuery) {
-        error "The query should not be null or empty."
-        return
+        throw new Exception("The query should not be null or empty.")
     }
     def bboxUrl = OSMTools.Utilities.utf8ToUrl(overpassQuery);
     //hash the query to cache it
@@ -213,8 +204,7 @@ String extract(String overpassQuery) {
                     info "The OSM file has been downloaded at ${osmFilePath}."
                 } else {
                     outputOSMFile.delete()
-                    error "Cannot extract the OSM data for the query $overpassQuery"
-                    return
+                    throw new Exception("Cannot extract the OSM data for the query $overpassQuery")
                 }
             }
         } else {
@@ -226,8 +216,7 @@ String extract(String overpassQuery) {
                 info "The OSM file has been downloaded at ${osmFilePath}."
             } else {
                 outputOSMFile.delete()
-                error "Cannot extract the OSM data for the query $overpassQuery"
-                return
+                throw new Exception("Cannot extract the OSM data for the query $overpassQuery")
             }
         }
     }
@@ -246,26 +235,22 @@ String extract(String overpassQuery) {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-boolean load(JdbcDataSource datasource, String osmTablesPrefix, String osmFilePath) {
+boolean load(JdbcDataSource datasource, String osmTablesPrefix, String osmFilePath) throws Exception{
     if (!datasource) {
-        error "Please set a valid database connection."
-        return false
+        throw new Exception("Please set a valid database connection.")
     }
 
     if (!osmTablesPrefix ||
             !Pattern.compile('^[a-zA-Z0-9_]*$').matcher(osmTablesPrefix).matches()) {
-        error "Please set a valid table prefix."
-        return false
+        throw new Exception("Please set a valid table prefix.")
     }
 
     if (!osmFilePath) {
-        error "Please set a valid osm file path."
-        return false
+        throw new Exception("Please set a valid osm file path.")
     }
     def osmFile = new File(osmFilePath)
     if (!osmFile.exists()) {
-        error "The input OSM file does not exist."
-        return false
+        throw new Exception("The input OSM file does not exist.")
     }
 
     info "Load the OSM file in the database."
@@ -273,8 +258,7 @@ boolean load(JdbcDataSource datasource, String osmTablesPrefix, String osmFilePa
         info "The input OSM file has been loaded in the database."
         //We must check if there is some data at least one tag
         if (datasource.getRowCount("${osmTablesPrefix}_node".toString())==0) {
-            error "The downloaded OSM file doesn't contain any data.\n Please check the file ${osmFile} to see what happens.".toString()
-            return false
+            throw new Exception("The downloaded OSM file doesn't contain any data.\n Please check the file ${osmFile} to see what happens.".toString())
         }
         return true
     }

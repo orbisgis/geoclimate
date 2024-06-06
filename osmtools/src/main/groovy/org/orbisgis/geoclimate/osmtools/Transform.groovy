@@ -44,7 +44,8 @@ import static org.orbisgis.geoclimate.osmtools.utils.GeometryTypes.POLYGONS
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-String toPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry) {
+String toPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [],
+                Geometry geometry) {
     String outputTableName = postfix "OSM_POINTS"
     def pointsNodes = OSMTools.TransformUtils.extractNodesAsPoints(datasource, osmTablesPrefix, epsgCode, outputTableName, tags, columnsToKeep, geometry)
     if (pointsNodes) {

@@ -168,7 +168,7 @@ class GenericIndicatorsTests {
                 "test")
         assert p
         assert p == "test_geometry_properties"
-        h2GIS.test_geometry_properties.eachRow {
+        h2GIS.getTable(p).eachRow {
             row ->
                 assert row.the_geom
                 assert row.issimple
@@ -364,11 +364,10 @@ class GenericIndicatorsTests {
                         FROM building_test a, rsu_test b
                         WHERE id_build < 4;"""
         // Test 1
-        def p = Geoindicators.GenericIndicators.typeProportion(h2GIS,
+        assertThrows(Exception.class, ()-> Geoindicators.GenericIndicators.typeProportion(h2GIS,
                 "tempo_build", "id_rsu", "type",
                 "rsu_test",
-                null, null, "")
-        assertNull(p)
+                null, null, ""))
     }
 
     @Test
@@ -398,7 +397,7 @@ class GenericIndicatorsTests {
                 "RSU", ["AVG", "STD"],
                 "test")
         assert gatheredScales1
-        def finalColRsu = h2GIS."$gatheredScales1".columns.collect { it.toLowerCase() }
+        def finalColRsu = h2GIS.getColumnNames(gatheredScales1).collect { it.toLowerCase() }
         assertEquals colRsu.sort(), finalColRsu.sort()
     }
 
@@ -432,7 +431,7 @@ class GenericIndicatorsTests {
                 "tempo_rsu", "BUILDING",
                 ["AVG", "STD"], "test")
         assert gatheredScales2
-        def finalColBuild = h2GIS."$gatheredScales2".columns.collect { it.toLowerCase() }
+        def finalColBuild = h2GIS.getColumnNames(gatheredScales2).collect { it.toLowerCase() }
         assertEquals colBuild.sort(), finalColBuild.sort()
 
     }
@@ -490,7 +489,7 @@ class GenericIndicatorsTests {
         assertNotNull(upperStats)
 
         def nb_indicators = h2GIS.rows "SELECT distinct ${indicatorName} AS nb FROM $indicatorTableName"
-        def columns = upperStats.getColumns()
+        def columns = upperStats.getColumnNames()
         columns.remove("ID_GRID")
         columns.remove("THE_GEOM")
         assertEquals(nb_indicators.size(), columns.size())

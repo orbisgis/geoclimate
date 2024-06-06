@@ -44,10 +44,10 @@ import org.orbisgis.geoclimate.osmtools.utils.Utilities
  * railTableName, vegetationTableName, hydroTableName, zone, zoneEnvelopeTableName and urbanAreasTableName.
  * Note that the GIS tables are projected in a local utm projection
  */
-Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, float distance = 0, boolean downloadAllOSMData = true) {
+Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, float distance = 0,
+                              boolean downloadAllOSMData = true) throws Exception{
     if (datasource == null) {
-        error('The datasource cannot be null')
-        return null
+        throw new Exception('The datasource cannot be null')
     }
     if (zoneToExtract) {
         def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
@@ -55,16 +55,14 @@ Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, f
         def GEOMETRY_TYPE = "GEOMETRY"
         Geometry geom = Utilities.getArea(zoneToExtract)
         if (!geom) {
-            error("Cannot find an area from the place name ${zoneToExtract}")
-            return null
+            throw new Exception("Cannot find an area from the place name ${zoneToExtract}")
         }
         if (geom instanceof Polygon) {
             GEOMETRY_TYPE = "POLYGON"
         } else if (geom instanceof MultiPolygon) {
             GEOMETRY_TYPE = "MULTIPOLYGON"
         } else {
-            error("Invalid geometry to extract the OSM data ${geom.getGeometryType()}")
-            return null
+            throw new Exception("Invalid geometry to extract the OSM data ${geom.getGeometryType()}")
         }
 
         /**
@@ -118,15 +116,14 @@ Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, f
                         zone_envelope: outputZoneEnvelopeTable,
                         coastline    : results.coastline]
             } else {
-                error "Cannot load the OSM file ${extract}"
+                throw new Exception("Cannot load the OSM file ${extract}".toString())
             }
         } else {
-            error "Cannot execute the overpass query $query"
+            throw new Exception("Cannot execute the overpass query $query".toString())
         }
 
     } else {
-        error "The zone to extract cannot be null or empty"
-        return null
+        throw new Exception("The zone to extract cannot be null or empty")
     }
 }
 
@@ -139,7 +136,7 @@ Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, f
  * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
  * railTableName, vegetationTableName, hydroTableName, imperviousTableName
  */
-Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1) {
+Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1) throws Exception{
     return createGISLayers( datasource,  osmFilePath, null, epsg)
 }
 
@@ -152,10 +149,10 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath, int epsg = -1
  * @return The name of the resulting GIS tables : buildingTableName, roadTableName,
  * railTableName, vegetationTableName, hydroTableName, imperviousTableName
  */
-Map createGISLayers(JdbcDataSource datasource, String osmFilePath, org.locationtech.jts.geom.Geometry geometry, int epsg = -1) {
+Map createGISLayers(JdbcDataSource datasource, String osmFilePath,
+                    org.locationtech.jts.geom.Geometry geometry, int epsg = -1) throws Exception{
     if (epsg <= -1) {
-        error "Invalid epsg code $epsg"
-        return null
+        throw new Exception("Invalid epsg code $epsg".toString())
     }
     def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     debug "Loading"

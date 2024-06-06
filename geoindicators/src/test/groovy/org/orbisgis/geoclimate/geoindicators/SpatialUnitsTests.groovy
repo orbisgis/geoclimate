@@ -87,7 +87,7 @@ class SpatialUnitsTests {
 
         assertNotNull(outputTableGeoms)
 
-        assert h2GIS."$outputTableGeoms"
+        assert h2GIS.hasTable(outputTableGeoms)
 
         def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "tsu")
         assert h2GIS.getSpatialTable(outputTable).save(new File(folder, "tsu.shp").getAbsolutePath(), true)
@@ -196,7 +196,7 @@ class SpatialUnitsTests {
 
         assertNotNull(outputTableGeoms)
 
-        assert h2GIS."$outputTableGeoms"
+        assert h2GIS.hasTable(outputTableGeoms)
         def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "tsu")
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
@@ -224,7 +224,7 @@ class SpatialUnitsTests {
         def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
         def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS, box, 1, 1)
         assert outputTable
-        assert postGIS."$outputTable"
+        assert postGIS.hasTable(outputTable)
         def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
         assert 100 == countRows.numberOfRows
     }

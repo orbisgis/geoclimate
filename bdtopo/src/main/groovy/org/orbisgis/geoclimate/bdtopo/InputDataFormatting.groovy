@@ -38,7 +38,7 @@ import org.orbisgis.geoclimate.Geoindicators
  * @return The name of the final buildings table
  */
 String formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
-                           String urban_areas = "", float h_lev_min = 3) {
+                           String urban_areas = "", float h_lev_min = 3) throws Exception{
     if (!h_lev_min) {
         h_lev_min = 3
     }
@@ -316,7 +316,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
 
                 def newBuildingWithType = postfix("NEW_BUILDING_TYPE")
 
-                datasource.execute """DROP TABLE IF EXISTS $newBuildingWithType;
+                datasource.execute("""DROP TABLE IF EXISTS $newBuildingWithType;
                                            CREATE TABLE $newBuildingWithType as
                                             SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                             a.HEIGHT_WALL,
@@ -325,11 +325,11 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                                                COALESCE(b.TYPE, a.TYPE) AS TYPE ,
                                                COALESCE(b.MAIN_USE, a.MAIN_USE) AS MAIN_USE
                                                , a.ZINDEX, a.ROOF_SHAPE from $outputTableName
-                                        a LEFT JOIN $buildinType b on a.id_build=b.id_build""".toString()
+                                        a LEFT JOIN $buildinType b on a.id_build=b.id_build""")
 
-                datasource.execute """DROP TABLE IF EXISTS $buildinType, $outputTableName;
+                datasource.execute("""DROP TABLE IF EXISTS $buildinType, $outputTableName;
                         ALTER TABLE $newBuildingWithType RENAME TO $outputTableName;
-                        DROP TABLE IF EXISTS $newBuildingWithType;""".toString()
+                        DROP TABLE IF EXISTS $newBuildingWithType;""")
             }
         }
     }
@@ -373,14 +373,14 @@ static String[] getTypeAndUse(def main_type, def main_use, def types_and_uses) {
  * @param road The name of the raw roads table in the DB
  * @return The name of the final roads table
  */
-String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") {
+String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") throws Exception{
     debug('Formating road layer')
     def outputTableName = postfix "ROAD"
-    datasource """
+    datasource.execute("""
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
                 SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, ZINDEX INTEGER);
-        """.toString()
+        """)
     if (road) {
         def road_types_width =
                 ["highway"     : 8,
@@ -578,7 +578,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
  * @param water The name of the raw hydro table in the DB
  * @return The name of the final hydro table
  */
-String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "") {
+String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "") throws Exception{
     debug('Hydro transformation starts')
     def outputTableName = postfix("HYDRO")
     datasource.execute """Drop table if exists $outputTableName;
@@ -659,7 +659,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
  * @param rail The name of the raw rails table in the DB
  * @return The name of the final rails table
  */
-String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") {
+String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") throws Exception{
     debug('Rails transformation starts')
     def outputTableName = postfix("RAILS")
     datasource.execute """ drop table if exists $outputTableName;
@@ -756,12 +756,12 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
  * @param vegetation The name of the raw vegetation table in the DB
  * @return The name of the final vegetation table
  */
-String formatVegetationLayer(JdbcDataSource datasource, String vegetation, String zone = "") {
+String formatVegetationLayer(JdbcDataSource datasource, String vegetation, String zone = "") throws Exception{
     debug('Vegetation transformation starts')
     def outputTableName = postfix "VEGET"
-    datasource """ 
+    datasource.execute(""" 
                 DROP TABLE IF EXISTS $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""".toString()
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_veget serial, ID_SOURCE VARCHAR, TYPE VARCHAR, HEIGHT_CLASS VARCHAR(4), ZINDEX INTEGER);""")
     if (vegetation) {
         if (datasource.hasTable(vegetation)) {
             def queryMapper = "SELECT a.ID_SOURCE, a.TYPE, a.ZINDEX"
@@ -862,7 +862,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
  * @param impervious The name of the impervious table in the DB
  * @return outputTableName The name of the final impervious table
  */
-String formatImperviousLayer(H2GIS datasource, String impervious) {
+String formatImperviousLayer(H2GIS datasource, String impervious) throws Exception{
     debug('Impervious layer')
     def outputTableName = postfix("IMPERVIOUS")
     datasource.execute """ drop table if exists $outputTableName;
@@ -907,7 +907,7 @@ String formatImperviousLayer(H2GIS datasource, String impervious) {
             }
         }
     }
-    datasource.execute("DROP TABLE IF EXISTS $polygonizedTable".toString())
+    datasource.execute("DROP TABLE IF EXISTS $polygonizedTable")
     info "Impervious areas formatted"
     return outputTableName
 }

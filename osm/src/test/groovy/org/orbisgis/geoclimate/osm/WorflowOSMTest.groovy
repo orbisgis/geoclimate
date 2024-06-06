@@ -464,7 +464,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                    "terrain_roughness_class"     : 1]]
                         ]
         ]
-        OSM.workflow(osm_parmeters)
+        assertThrows(Exception.class, ()->OSM.workflow(osm_parmeters))
     }
 
     @Test
@@ -570,7 +570,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                           "svfSimplified": true]
                         ]
         ]
-        OSM.workflow(osm_parmeters)
+        assertThrows(Exception.class, ()->OSM.workflow(osm_parmeters))
     }
 
 

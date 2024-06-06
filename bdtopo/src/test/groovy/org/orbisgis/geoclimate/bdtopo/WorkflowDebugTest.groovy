@@ -157,12 +157,16 @@ class WorkflowDebugTest {
                         "folder": ["path": directory]],
                 "parameters"  :
                         ["distance"       : 0,
-                         "grid_indicators": [
+                         rsu_indicators   : [
+                                 "indicatorUse": ["LCZ",  "UTRF",  "TEB"]
+
+                         ],
+                         /*"grid_indicators": [
                                  "x_size"    : 100,
                                  "y_size"    : 100,
                                  "indicators" :["FREE_EXTERNAL_FACADE_DENSITY", "BUILDING_FRACTION"]
                                  //, "lcz_lod":2
-                         ]
+                         ]*/
                         ]
         ]
         //BDTopo.v2(bdTopoParameters)

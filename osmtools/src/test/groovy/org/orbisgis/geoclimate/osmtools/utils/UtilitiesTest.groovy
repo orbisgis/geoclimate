@@ -172,11 +172,11 @@ class UtilitiesTest extends AbstractOSMToolsTest {
         def poly1 = []
         poly1 << outer
 
-        assertNull OSMTools.Utilities.parsePolygon(null, new GeometryFactory())
-        assertNull OSMTools.Utilities.parsePolygon([], new GeometryFactory())
-        assertNull OSMTools.Utilities.parsePolygon([[]], new GeometryFactory())
-        assertNull OSMTools.Utilities.parsePolygon([[null]], new GeometryFactory())
-        assertNull OSMTools.Utilities.parsePolygon(poly1, new GeometryFactory())
+        assertThrows(Exception.class, () -> OSMTools.Utilities.parsePolygon(null, new GeometryFactory()))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.parsePolygon([], new GeometryFactory()))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.parsePolygon([[]], new GeometryFactory()))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.parsePolygon([[null]], new GeometryFactory()))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.parsePolygon(poly1, new GeometryFactory()))
     }
 
     /**
@@ -230,7 +230,7 @@ class UtilitiesTest extends AbstractOSMToolsTest {
      */
     @Test
     void badToBBoxTest() {
-        assertNull OSMTools.Utilities.toBBox(null)
+        assertThrows(Exception.class, ()-> OSMTools.Utilities.toBBox(null))
     }
 
     /**
@@ -255,9 +255,9 @@ class UtilitiesTest extends AbstractOSMToolsTest {
     @Test
     void badToPolyTest() {
         def factory = new GeometryFactory()
-        assertNull OSMTools.Utilities.toPoly(null)
-        assertNull OSMTools.Utilities.toPoly(factory.createPoint(new Coordinate(0.0, 0.0)))
-        assertNull OSMTools.Utilities.toPoly(factory.createPolygon())
+        assertThrows(Exception.class, () -> OSMTools.Utilities.toPoly(null))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.toPoly(factory.createPoint(new Coordinate(0.0, 0.0))))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.toPoly(factory.createPolygon()))
     }
 
     /**
@@ -339,7 +339,7 @@ class UtilitiesTest extends AbstractOSMToolsTest {
      */
     @Test
     void badBuildOSMQueryFromEnvelopeTest() {
-        assertNull OSMTools.Utilities.buildOSMQuery((Envelope) null, ["building"], OSMElement.NODE)
+        assertThrows(Exception.class, () -> OSMTools.Utilities.buildOSMQuery((Envelope) null, ["building"], OSMElement.NODE))
     }
 
     /**
@@ -399,8 +399,8 @@ class UtilitiesTest extends AbstractOSMToolsTest {
      */
     @Test
     void badBuildOSMQueryFromPolygonTest() {
-        assertNull OSMTools.Utilities.buildOSMQuery((Polygon) null, ["building"], OSMElement.NODE)
-        assertNull OSMTools.Utilities.buildOSMQuery(new GeometryFactory().createPolygon(), ["building"], OSMElement.NODE)
+        assertThrows(Exception.class, ()-> OSMTools.Utilities.buildOSMQuery((Polygon) null, ["building"], OSMElement.NODE))
+        assertThrows(Exception.class, ()-> OSMTools.Utilities.buildOSMQuery(new GeometryFactory().createPolygon(), ["building"], OSMElement.NODE))
     }
 
     /**
@@ -427,8 +427,8 @@ class UtilitiesTest extends AbstractOSMToolsTest {
      */
     @Test
     void badReadJSONParametersTest() {
-        assertNull OSMTools.Utilities.readJSONParameters(null)
-        assertNull OSMTools.Utilities.readJSONParameters("")
+        assertThrows(Exception.class, ()-> OSMTools.Utilities.readJSONParameters(null))
+        assertThrows(Exception.class, ()-> OSMTools.Utilities.readJSONParameters(""))
         assertNull OSMTools.Utilities.readJSONParameters("toto")
         assertNull OSMTools.Utilities.readJSONParameters("target")
         assertNull OSMTools.Utilities.readJSONParameters(new File(UtilitiesTest.getResource("bad_json_params.json").toURI()).absolutePath)

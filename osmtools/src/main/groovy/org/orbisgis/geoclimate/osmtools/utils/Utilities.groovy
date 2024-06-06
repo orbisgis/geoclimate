@@ -47,32 +47,28 @@ import static java.nio.charset.StandardCharsets.UTF_8
  *
  * @return a New geometry.
  */
-Map getNominatimData(def placeName) {
+Map getNominatimData(def placeName) throws Exception{
     if (!placeName) {
-        error "The place name should not be null or empty."
-        return null
+        throw new Exception("The place name should not be null or empty.")
     }
     def outputOSMFile = File.createTempFile("nominatim_osm", ".geojson")
     if (!executeNominatimQuery(placeName, outputOSMFile)) {
         if (!outputOSMFile.delete()) {
             warn "Unable to delete the file '$outputOSMFile'."
         }
-        warn "Unable to execute the Nominatim query."
-        return null
+        throw new Exception("Unable to execute the Nominatim query.")
     }
 
     def jsonRoot = new JsonSlurper().parse(outputOSMFile)
     if (jsonRoot == null) {
-        error "Cannot find any data from the place $placeName."
-        return null
+        throw new Exception("Cannot find any data from the place $placeName.".toString())
     }
 
     if (jsonRoot.features.size() == 0) {
-        error "Cannot find any features from the place $placeName."
         if (!outputOSMFile.delete()) {
             warn "Unable to delete the file '$outputOSMFile'."
         }
-        return null
+        throw new Exception("Cannot find any features from the place $placeName.".toString())
     }
 
     GeometryFactory geometryFactory = new GeometryFactory()
@@ -183,20 +179,18 @@ static Geometry getArea(def location) {
  *
  * @return A polygon.
  */
-Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
+Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) throws Exception{
     if (!coordinates in Collection || !coordinates ||
             !coordinates[0] in Collection || !coordinates[0] ||
             !coordinates[0][0] in Collection || !coordinates[0][0]) {
-        error "The given coordinate should be an array of an array of an array of coordinates (3D array)."
-        return null
+        throw new Exception("The given coordinate should be an array of an array of an array of coordinates (3D array).")
     }
     def ring
     try {
         ring = geometryFactory.createLinearRing(arrayToCoordinate(coordinates[0]))
     }
     catch (IllegalArgumentException e) {
-        error e.getMessage()
-        return null
+        throw new Exception(e)
     }
     if (coordinates.size() == 1) {
         return geometryFactory.createPolygon(ring)
@@ -239,14 +233,12 @@ static Coordinate[] arrayToCoordinate(def coordinates) {
  * @return True if the file has been downloaded, false otherwise.
  *
  */
-boolean executeNominatimQuery(def query, def outputOSMFile) {
+boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception{
     if (!query) {
-        error "The Nominatim query should not be null."
-        return false
+        throw new Exception("The Nominatim query should not be null.")
     }
     if (!(outputOSMFile instanceof File)) {
-        error "The OSM file should be an instance of File"
-        return false
+        throw new Exception("The OSM file should be an instance of File")
     }
     def endPoint = System.getProperty("NOMINATIM_ENDPOINT");
     if (!endPoint) {
@@ -281,8 +273,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) {
         outputOSMFile << connection.inputStream
         return true
     } else {
-        error "Cannot execute the Nominatim query."
-        return false
+        throw new Exception("Cannot execute the Nominatim query.")
     }
 }
 
@@ -297,10 +288,9 @@ boolean executeNominatimQuery(def query, def outputOSMFile) {
  *
  * @return OSM bbox.
  */
-String toBBox(Geometry geometry) {
+String toBBox(Geometry geometry) throws Exception{
     if (!geometry) {
-        error "Cannot convert to an overpass bounding box."
-        return null
+        throw new Exception("Cannot convert to an overpass bounding box.")
     }
     def env = geometry.getEnvelopeInternal()
     return "(bbox:${env.getMinY()},${env.getMinX()},${env.getMaxY()},${env.getMaxX()})".toString()
@@ -317,19 +307,16 @@ String toBBox(Geometry geometry) {
  *
  * @return The OSM polygon.
  */
-String toPoly(Geometry geometry) {
+String toPoly(Geometry geometry) throws Exception{
     if (!geometry) {
-        error "Cannot convert to an overpass poly filter."
-        return null
+        throw new Exception("Cannot convert to an overpass poly filter.")
     }
     if (!(geometry instanceof Polygon)) {
-        error "The input geometry must be polygon."
-        return null
+        throw new Exception("The input geometry must be polygon.")
     }
     def poly = (Polygon) geometry
     if (poly.isEmpty()) {
-        error "The input geometry must be polygon."
-        return null
+        throw new Exception("The input geometry must be polygon.")
     }
     Coordinate[] coordinates = poly.getExteriorRing().getCoordinates()
     def polyStr = "(poly:\""
@@ -352,7 +339,7 @@ String toPoly(Geometry geometry) {
  *
  * @return A string representation of the OSM query.
  */
-String buildOSMQuery(Envelope envelope, def keys=null) {
+String buildOSMQuery(Envelope envelope, def keys=null) throws Exception{
     return buildOSMQuery(envelope, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 }
 
@@ -369,10 +356,9 @@ String buildOSMQuery(Envelope envelope, def keys=null) {
  *
  * @return A string representation of the OSM query.
  */
- String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
+ String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) throws Exception{
     if (!envelope) {
-        error "Cannot create the overpass query from the bbox $envelope."
-        return null
+        throw new Exception("Cannot create the overpass query from the bbox $envelope.".toString())
     }
     def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
     osmElement.each { i ->
@@ -398,7 +384,7 @@ String buildOSMQuery(Envelope envelope, def keys=null) {
  *
  * @return A string representation of the OSM query.
  */
-String buildOSMQuery(List latLonCoordinates, def keys=null) {
+String buildOSMQuery(List latLonCoordinates, def keys=null) throws Exception{
     return buildOSMQuery(latLonCoordinates, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 }
 
@@ -413,15 +399,13 @@ String buildOSMQuery(List latLonCoordinates, def keys=null) {
  *
  * @return A string representation of the OSM query.
  */
- String buildOSMQuery(List latLonCoordinates, def keys, OSMElement... osmElement) {
+ String buildOSMQuery(List latLonCoordinates, def keys, OSMElement... osmElement) throws Exception{
     if (!latLonCoordinates) {
-        error "Cannot create the overpass query from the bbox $latLonCoordinates."
-        return null
+        throw new Exception("Cannot create the overpass query from the bbox $latLonCoordinates.".toString())
     }
     Geometry geom = OSMTools.Utilities.geometryFromValues(latLonCoordinates)
     if(geom==null) {
-        error "Invalid BBOX"
-        return null
+        throw new Exception("Invalid BBOX")
     }
     return buildOSMQuery(geom.getEnvelopeInternal(), keys, osmElement)
 }
@@ -439,10 +423,9 @@ String buildOSMQuery(List latLonCoordinates, def keys=null) {
  *
  * @return A string representation of the OSM query.
  */
- String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement... osmElement) {
+ String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement... osmElement) throws Exception{
     if (!envelope) {
-        error "Cannot create the overpass query from the bbox $envelope."
-        return null
+        throw new Exception("Cannot create the overpass query from the bbox $envelope.".toString())
     }
     def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n((\n"
     osmElement.each { i ->
@@ -469,7 +452,7 @@ String buildOSMQuery(List latLonCoordinates, def keys=null) {
  *
  * @return A string representation of the OSM query.
  */
-String buildOSMQuery(Polygon polygon, def keys=null) {
+String buildOSMQuery(Polygon polygon, def keys=null) throws Exception{
     return buildOSMQuery(polygon, keys, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 }
 
@@ -485,14 +468,12 @@ String buildOSMQuery(Polygon polygon, def keys=null) {
  *
  * @return A string representation of the OSM query.
  */
-String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
+String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) throws Exception{
     if (polygon == null) {
-        error "Cannot create the overpass query from a null polygon."
-        return null
+        throw new Exception("Cannot create the overpass query from a null polygon.")
     }
     if (polygon.isEmpty()) {
-        error "Cannot create the overpass query from an empty polygon."
-        return null
+        throw new Exception("Cannot create the overpass query from an empty polygon.")
     }
     Envelope envelope = polygon.getEnvelopeInternal()
     def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
@@ -528,10 +509,9 @@ String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
  *
  * @return A Map of parameters.
  */
-Map readJSONParameters(def jsonFile) {
+Map readJSONParameters(def jsonFile) throws Exception{
     if (!jsonFile) {
-        error "The given file should not be null"
-        return null
+        throw new Exception("The given file should not be null")
     }
     def file
     if (jsonFile instanceof InputStream) {

@@ -24,6 +24,8 @@ import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
+import java.sql.SQLException
+
 @BaseScript Geoindicators geoindicators
 
 /**
@@ -51,7 +53,7 @@ import org.orbisgis.geoclimate.Geoindicators
  *
  * @return The name of the road table
  */
-String build_road_traffic(JdbcDataSource datasource, String road, String zone = "", String jsonFilename = "") {
+String build_road_traffic(JdbcDataSource datasource, String road, String zone = "", String jsonFilename = "") throws Exception{
     debug('Create the default traffic data')
     def outputTableName = postfix "ROAD_TRAFFIC"
     datasource """
@@ -77,76 +79,70 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
         def road_types = traffic_flow_params.road_types
 
         if (!flow_data) {
-            error "The traffic flow data cannot be null"
-            return
+            throw new IllegalArgumentException("The traffic flow data cannot be null")
         }
 
         if (!flow_period) {
-            error "The traffic flow period cannot be null"
-            return
+            throw new IllegalArgumentException("The traffic flow period cannot be null")
         }
 
         if (!maxspeed) {
-            error "The maxspeed values data cannot be null"
-            return
+            throw new IllegalArgumentException("The maxspeed values data cannot be null")
         }
 
         if (!pavements) {
-            error "The CNOSSOS road pavement identifier cannot be null"
-            return
+            throw new IllegalArgumentException("The CNOSSOS road pavement identifier cannot be null")
         }
 
         if (!road_types) {
-            error "The road type cannot be null"
-            return
+            throw new IllegalArgumentException("The road type cannot be null")
         }
 
-        //Define the mapping between the values in OSM and those used in the abstract model
-        def queryMapper = "SELECT "
-        def inputSpatialTable = datasource."$road"
-        if (inputSpatialTable.rowCount > 0) {
-            def columnNames = inputSpatialTable.columns
-            columnNames.remove("THE_GEOM")
+        try {
+            //Define the mapping between the values in OSM and those used in the abstract model
+            def queryMapper = "SELECT "
+            if (datasource.getRowCount(road)> 0) {
+                def columnNames = datasource.getColumnNames(road)
+                columnNames.remove("THE_GEOM")
+                def flatListColumns = columnNames.inject([]) { result, iter ->
+                    result += "a.\"$iter\""
+                }.join(",")
 
-            def flatListColumns = columnNames.inject([]) { result, iter ->
-                result += "a.\"$iter\""
-            }.join(",")
-
-            if (zone) {
-                datasource.createSpatialIndex(road,"the_geom")
-                queryMapper += "${flatListColumns}, CASE WHEN st_overlaps(st_force2D(a.the_geom), b.the_geom) " +
-                        "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
-                        "ELSE st_force2D(a.the_geom) " +
-                        "END AS the_geom " +
-                        "FROM " +
-                        "$road AS a, $zone AS b " +
-                        "WHERE " +
-                        "a.the_geom && b.the_geom and a.type not in ('track', 'path', 'cycleway', 'steps') "
-            } else {
-                queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $road  as a where type not in ('track', 'path', 'cycleway', 'steps')"
-            }
-            datasource.withBatch(100) { stmt ->
-                datasource.eachRow(queryMapper) { row ->
-                    //Find road type
-                    def source_road_type = row."type"
-                    def road_type = getTrafficRoadType(road_types, source_road_type)
-                    //Set a default road
-                    if (road_type) {
-                        def maxspeed_value = row."maxspeed"
-                        //Find best speed from road type
-                        if (maxspeed_value == -1) {
-                            maxspeed_value = maxspeed[road_type]
-                        }
-                        def direction = row."direction"
-                        def surface = row."surface"
-                        def pavement_value = getPavement(pavements, surface)
-                        def traffic_data = getNumberVehiclesPerHour(road_type, direction, flow_data, flow_period)
-                        Geometry geom = row.the_geom
-                        int epsg = geom.getSRID()
-                        if (geom) {
-                            //Explode geometries
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                stmt.addBatch """insert into $outputTableName (THE_GEOM, ID_SOURCE, ROAD_TYPE, SOURCE_ROAD_TYPE,
+                if (zone) {
+                    datasource.createSpatialIndex(road, "the_geom")
+                    queryMapper += "${flatListColumns}, CASE WHEN st_overlaps(st_force2D(a.the_geom), b.the_geom) " +
+                            "THEN st_force2D(st_makevalid(st_intersection(st_force2D(a.the_geom), b.the_geom))) " +
+                            "ELSE st_force2D(a.the_geom) " +
+                            "END AS the_geom " +
+                            "FROM " +
+                            "$road AS a, $zone AS b " +
+                            "WHERE " +
+                            "a.the_geom && b.the_geom and a.type not in ('track', 'path', 'cycleway', 'steps') "
+                } else {
+                    queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $road  as a where type not in ('track', 'path', 'cycleway', 'steps')"
+                }
+                datasource.withBatch(100) { stmt ->
+                    datasource.eachRow(queryMapper) { row ->
+                        //Find road type
+                        def source_road_type = row."type"
+                        def road_type = getTrafficRoadType(road_types, source_road_type)
+                        //Set a default road
+                        if (road_type) {
+                            def maxspeed_value = row."maxspeed"
+                            //Find best speed from road type
+                            if (maxspeed_value == -1) {
+                                maxspeed_value = maxspeed[road_type]
+                            }
+                            def direction = row."direction"
+                            def surface = row."surface"
+                            def pavement_value = getPavement(pavements, surface)
+                            def traffic_data = getNumberVehiclesPerHour(road_type, direction, flow_data, flow_period)
+                            Geometry geom = row.the_geom
+                            int epsg = geom.getSRID()
+                            if (geom) {
+                                //Explode geometries
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    stmt.addBatch """insert into $outputTableName (THE_GEOM, ID_SOURCE, ROAD_TYPE, SOURCE_ROAD_TYPE,
                                         SURFACE, DIRECTION, SLOPE ,PAVEMENT,
                                         DAY_LV_HOUR, DAY_HV_HOUR , DAY_LV_SPEED  ,DAY_HV_SPEED , 
                                         NIGHT_LV_HOUR , NIGHT_HV_HOUR , NIGHT_LV_SPEED , NIGHT_HV_SPEED , 
@@ -156,12 +152,12 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
                                         ${traffic_data.day_lv_hour},${traffic_data.day_hv_hour},${maxspeed_value},${maxspeed_value},
                                         ${traffic_data.night_lv_hour},${traffic_data.night_hv_hour},${maxspeed_value},${maxspeed_value},
                                         ${traffic_data.ev_lv_hour},${traffic_data.ev_hv_hour},${maxspeed_value},${maxspeed_value})""".toString()
+                                }
                             }
                         }
                     }
                 }
-            }
-            datasource.execute """COMMENT ON COLUMN ${outputTableName}."ROAD_TYPE" IS 'Default value road type';
+                datasource.execute("""COMMENT ON COLUMN ${outputTableName}."ROAD_TYPE" IS 'Default value road type';
             COMMENT ON COLUMN ${outputTableName}."DAY_LV_HOUR" IS 'Number of light vehicles per hour for day';
             COMMENT ON COLUMN ${outputTableName}."DAY_HV_HOUR" IS 'Number of heavy vehicles per hour for day';
             COMMENT ON COLUMN ${outputTableName}."DAY_LV_SPEED" IS 'Light vehicles speed for day';
@@ -175,11 +171,12 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
             COMMENT ON COLUMN ${outputTableName}."EV_LV_SPEED" IS 'Light vehicles speed for evening';
             COMMENT ON COLUMN ${outputTableName}."EV_HV_SPEED" IS 'Number of heavy vehicles per hour for evening';
             COMMENT ON COLUMN ${outputTableName}."SLOPE" IS 'Slope (in %) of the road section.';
-            COMMENT ON COLUMN ${outputTableName}."DIRECTION" IS 'Define the direction of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill'""".toString()
-
+            COMMENT ON COLUMN ${outputTableName}."DIRECTION" IS 'Define the direction of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill'""")
+            }
+        }catch (SQLException e){
+            throw new SQLException("Cannot compute the road traffic", e)
         }
     }
-    debug('Roads traffic computed')
     return outputTableName
 }
 /**

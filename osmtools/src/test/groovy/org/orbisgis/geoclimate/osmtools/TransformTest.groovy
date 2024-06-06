@@ -59,13 +59,13 @@ class TransformTest extends AbstractOSMToolsTest {
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
-        assertNull OSMTools.Transform.toPoints(null, prefix, epsgCode, tags, columnsToKeep)
+        assertThrows(Exception.class, () -> OSMTools.Transform.toPoints(null, prefix, epsgCode, tags, columnsToKeep))
 
-        assertNull OSMTools.Transform.toPoints(ds, prefix, -1, tags, columnsToKeep)
+        assertThrows(Exception.class, () -> OSMTools.Transform.toPoints(ds, prefix, -1, tags, columnsToKeep))
 
-        assertNotNull OSMTools.Transform.toPoints(ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNotNull(OSMTools.Transform.toPoints(ds, prefix, epsgCode, tags, columnsToKeep))
 
-        assertNull OSMTools.Transform.toPoints(ds, prefix, epsgCode, null, null)
+        assertThrows(Exception.class, () -> OSMTools.Transform.toPoints(ds, prefix, epsgCode, null, null))
     }
 
     /**
@@ -334,7 +334,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = [building: "house"]
         //Test column to keep absent
         def result = OSMTools.Transform.extractWaysAsPolygons(ds, prefix, epsgCode, tags, ["landscape"])
-        assertFalse ds.getTable(result).columns.contains("landscape")
+        assertFalse ds.getColumnNames(result).contains("landscape")
     }
 
     /**
@@ -364,7 +364,7 @@ class TransformTest extends AbstractOSMToolsTest {
         def prefix = "OSM_" + uuid()
         def epsgCode = 2453
         def tags = [building: "house"]
-        def columnsToKeep = ["building","water"]
+        def columnsToKeep = ["building", "water"]
 
         createData(ds, prefix)
 
@@ -602,7 +602,7 @@ class TransformTest extends AbstractOSMToolsTest {
                 "retail",
                 "industrial"
         ]]
-         outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
+        outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
 
         assertEquals 6, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
         assertEquals 4, ds.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='residential'").count as int
@@ -615,7 +615,7 @@ class TransformTest extends AbstractOSMToolsTest {
         assertTrue OSMTools.Loader.load(ds, prefix,
                 new File(this.class.getResource("san_diegeo_complex_polygon.osm").toURI()).getAbsolutePath())
         String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, ["leisure"], ["leisure"], true)
-        assertEquals(0,ds.firstRow("SELECT COUNT(*) as count FROM $outputTableName where st_isvalid(the_geom)=false").count)
+        assertEquals(0, ds.firstRow("SELECT COUNT(*) as count FROM $outputTableName where st_isvalid(the_geom)=false").count)
     }
 
     @Test
@@ -624,7 +624,7 @@ class TransformTest extends AbstractOSMToolsTest {
         assertTrue OSMTools.Loader.load(ds, prefix,
                 new File(this.class.getResource("san_diego_invalid_polygon.osm").toURI()).getAbsolutePath())
         String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, ["leisure"], ["leisure"], true)
-        assertEquals(0,ds.firstRow("SELECT COUNT(*) as count FROM $outputTableName where st_isvalid(the_geom)=false").count)
+        assertEquals(0, ds.firstRow("SELECT COUNT(*) as count FROM $outputTableName where st_isvalid(the_geom)=false").count)
     }
 
     @Test
@@ -830,7 +830,6 @@ class TransformTest extends AbstractOSMToolsTest {
                     String outputTableName = OSMTools.Transform.toPolygons(h2GIS, prefix, tags, columns)
                     assertNotNull(outputTableName)
                     h2GIS.getTable(outputTableName).save("/tmp/results.shp", true)
-
                 }
             }
         }
@@ -838,13 +837,13 @@ class TransformTest extends AbstractOSMToolsTest {
 
     @Test
     void buildAllPolygons() {
-        def bbox =[47.647353,-2.090192,47.649413,-2.087274]
+        def bbox = [47.647353, -2.090192, 47.649413, -2.087274]
         def query = OSMTools.Utilities.buildOSMQuery(bbox)
         if (!query.isEmpty()) {
             def extract = OSMTools.Loader.extract(query)
             if (extract) {
                 def prefix = "OSM"
-                assertTrue OSMTools.Loader.load(ds, prefix,extract)
+                assertTrue OSMTools.Loader.load(ds, prefix, extract)
                 //Create building layer
                 def tags = ["amenity", "landuse", "railway", "water"]
                 String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
@@ -860,9 +859,9 @@ class TransformTest extends AbstractOSMToolsTest {
     @Test
     void testTransformForDebug() {
         H2GIS h2GIS = H2GIS.open("/tmp/geoclimate;AUTO_SERVER=TRUE")
-        Map r = OSMTools.Loader.fromArea(h2GIS, [48.733493,-3.076869,48.733995,-3.075829])
+        Map r = OSMTools.Loader.fromArea(h2GIS, [48.733493, -3.076869, 48.733995, -3.075829])
         println(r)
-        def lines = OSMTools.Transform.toPolygons(h2GIS, r.prefix,4326,  [], [])
+        def lines = OSMTools.Transform.toPolygons(h2GIS, r.prefix, 4326, [], [])
         h2GIS.save(lines, "/tmp/building.fgb")
     }
 
