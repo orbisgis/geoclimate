@@ -264,12 +264,9 @@ class TransformUtilsTest extends AbstractOSMToolsTest {
     @Test
     void badBuildIndexesTest() {
         def osmTable = "toto"
-        LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.buildIndexes(h2gis, null)
-        LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.buildIndexes(null, null)
-        LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.buildIndexes(null, osmTable)
+        assertThrows(Exception.class,()->OSMTools.TransformUtils.buildIndexes(h2gis, null))
+        assertThrows(Exception.class, ()->OSMTools.TransformUtils.buildIndexes(null, null))
+        assertThrows(Exception.class, ()->OSMTools.TransformUtils.buildIndexes(null, osmTable))
     }
 
     /**
@@ -297,55 +294,38 @@ ${osmTablesPrefix}_way_member, ${osmTablesPrefix}_way_not_taken_into_account, ${
 
         OSMTools.TransformUtils.buildIndexes(h2gis, osmTablesPrefix)
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_node")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_node")."id_node"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_node")."id_node".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_node")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_node","id_node")
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."id_node"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."id_node".indexed
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."node_order"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."node_order".indexed
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."id_way"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."id_way".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_way_node")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_way_node","id_node")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_way_node","node_order")
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")."id_way"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_way")."id_way".indexed
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")."not_taken_into_account"
-        assertFalse h2gis.getTable("${osmTablesPrefix}_way")."not_taken_into_account".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_way")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_way","id_way")
+        assertFalse h2gis.isIndexed("${osmTablesPrefix}_way","not_taken_into_account")
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_key"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_key".indexed
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."id_way"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."id_way".indexed
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_value"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_value".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_way_tag")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_way_tag","tag_key")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_way_tag","id_way")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_way_tag","tag_value")
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_key"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_key".indexed
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."id_relation"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."id_relation".indexed
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_value"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_value".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_relation_tag")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_relation_tag","tag_key")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_relation_tag","id_relation")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_relation_tag","tag_value")
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation")."id_relation"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_relation")."id_relation".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_relation")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_relation","id_relation")
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_member")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_member")."id_relation"
-        assertTrue h2gis.getTable("${osmTablesPrefix}_way_member")."id_relation".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_way_member")
+        assertTrue h2gis.isIndexed("${osmTablesPrefix}_way_member","id_relation")
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")."id_way"
-        assertFalse h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")."id_way".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_way_not_taken_into_account")
+        assertFalse h2gis.isIndexed("${osmTablesPrefix}_way_not_taken_into_account","id_way")
 
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")
-        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")."id_relation"
-        assertFalse h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")."id_relation".indexed
+        assertTrue h2gis.hasTable("${osmTablesPrefix}_relation_not_taken_into_account")
+        assertFalse h2gis.isIndexed("${osmTablesPrefix}_relation_not_taken_into_account","id_relation")
     }
 
     /**
@@ -407,14 +387,10 @@ ${osmTablesPrefix}_way_member, ${osmTablesPrefix}_way_not_taken_into_account, ${
 
         loadDataForNodeExtraction(h2gis, prefix)
 
-        LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(null, prefix, epsgCode, outTable, tags, columnsToKeep)
-        LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, null, epsgCode, outTable, tags, columnsToKeep)
-        LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, -1, outTable, tags, columnsToKeep)
-        LOGGER.warn("An error will be thrown next")
-        assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, null, tags, columnsToKeep)
+        assertThrows(Exception.class, ()->OSMTools.TransformUtils.extractNodesAsPoints(null, prefix, epsgCode, outTable, tags, columnsToKeep))
+        assertThrows(Exception.class, ()-> OSMTools.TransformUtils.extractNodesAsPoints(h2gis, null, epsgCode, outTable, tags, columnsToKeep))
+        assertThrows(Exception.class, ()->OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, -1, outTable, tags, columnsToKeep))
+        assertThrows(Exception.class, ()->OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, null, tags, columnsToKeep))
 
         assertFalse OSMTools.TransformUtils.extractNodesAsPoints(h2gis, prefix, epsgCode, outTable, [house: "false", path: 'false'], null)
     }

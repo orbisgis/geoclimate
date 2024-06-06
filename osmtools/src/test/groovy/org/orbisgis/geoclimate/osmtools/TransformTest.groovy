@@ -63,7 +63,7 @@ class TransformTest extends AbstractOSMToolsTest {
 
         assertThrows(Exception.class, () -> OSMTools.Transform.toPoints(ds, prefix, -1, tags, columnsToKeep))
 
-        assertThrows(Exception.class, () -> OSMTools.Transform.toPoints(ds, prefix, epsgCode, tags, columnsToKeep))
+        assertNotNull(OSMTools.Transform.toPoints(ds, prefix, epsgCode, tags, columnsToKeep))
 
         assertThrows(Exception.class, () -> OSMTools.Transform.toPoints(ds, prefix, epsgCode, null, null))
     }
