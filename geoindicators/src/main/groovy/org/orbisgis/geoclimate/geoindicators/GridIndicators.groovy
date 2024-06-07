@@ -21,6 +21,8 @@ package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.prep.PreparedGeometry
+import org.locationtech.jts.geom.prep.PreparedGeometryFactory
 import org.locationtech.jts.operation.distance.IndexedFacetDistance
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
@@ -306,20 +308,20 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
         CREATE TABLE $outputTableName (THE_GEOM GEOMETRY,$id_grid INT, DISTANCE FLOAT);
         """.toString())
 
-            datasource.createSpatialIndex(input_polygons)
             datasource.createSpatialIndex(grid)
-
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow("SELECT the_geom from $input_polygons".toString()) { row ->
                     Geometry geom = row.the_geom
                     if (geom) {
+                        PreparedGeometry prepGEom = PreparedGeometryFactory.prepare(geom)
                         IndexedFacetDistance indexedFacetDistance = new IndexedFacetDistance(geom)
                         datasource.eachRow("""SELECT the_geom, ${id_grid} as id from $grid 
-                where ST_GEOMFROMTEXT('${geom}',$epsg)  && the_geom and 
-            st_intersects(ST_GEOMFROMTEXT('${geom}',$epsg) , ST_POINTONSURFACE(the_geom))""".toString()) { cell ->
+                where ST_GEOMFROMTEXT('${geom}',$epsg)  && the_geom """.toString()) { cell ->
                             Geometry cell_geom = cell.the_geom
-                            double distance = indexedFacetDistance.distance(cell_geom.getCentroid())
-                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${cell_geom}',$epsg), ${cell.id},${distance})".toString()
+                            if (prepGEom.intersects(cell_geom.getCentroid())) {
+                                double distance = indexedFacetDistance.distance(cell_geom.getCentroid())
+                                stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${cell_geom}',$epsg), ${cell.id},${distance})".toString()
+                            }
                         }
                     }
                 }
@@ -328,21 +330,20 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
             datasource.execute(""" DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName ($id_grid INT, DISTANCE FLOAT);
         """.toString())
-
-            datasource.createSpatialIndex(input_polygons)
             datasource.createSpatialIndex(grid)
-
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow("SELECT the_geom from $input_polygons".toString()) { row ->
                     Geometry geom = row.the_geom
                     if (geom) {
+                        PreparedGeometry prepGEom = PreparedGeometryFactory.prepare(geom)
                         IndexedFacetDistance indexedFacetDistance = new IndexedFacetDistance(geom)
                         datasource.eachRow("""SELECT the_geom, ${id_grid} as id from $grid 
-                where ST_GEOMFROMTEXT('${geom}',$epsg)  && the_geom and 
-            st_intersects(ST_GEOMFROMTEXT('${geom}',$epsg) , ST_POINTONSURFACE(the_geom))""".toString()) { cell ->
-                            Geometry cell_geom = cell.the_geom
-                            double distance = indexedFacetDistance.distance(cell_geom.getCentroid())
-                            stmt.addBatch "insert into $outputTableName values(${cell.id},${distance})".toString()
+                where ST_GEOMFROMTEXT('${geom}',$epsg)  && the_geom""".toString()) { cell ->
+                            Geometry cell_geom = cell.the_geom.getCentroid()
+                            if (prepGEom.intersects(cell_geom)) {
+                                double distance = indexedFacetDistance.distance(cell_geom)
+                                stmt.addBatch "insert into $outputTableName values(${cell.id},${distance})".toString()
+                            }
                         }
                     }
                 }

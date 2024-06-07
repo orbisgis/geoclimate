@@ -285,7 +285,8 @@ Map workflow(def input) throws Exception {
                                     "road_traffic",
                                     "population",
                                     "ground_acoustic",
-                                    "sprawl_areas"]
+                                    "urban_sprawl_areas",
+                                    "urban_cool_areas"]
 
     //Get processing parameters
     def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
@@ -619,7 +620,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         def sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource, rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
                                 Math.max(x_size, y_size).floatValue())
                         if (sprawl_indic) {
-                            results.put("sprawl_areas", sprawl_indic.sprawl_areas)
+                            results.put("urban_sprawl_areas", sprawl_indic.urban_sprawl_areas)
+                            if(sprawl_indic.urban_cool_areas){
+                                results.put("urban_cool_areas", sprawl_indic.urban_cool_areas)
+                            }
                             results.put("grid_indicators", sprawl_indic.grid_indicators)
                         }
                         info("End computing grid_indicators")
@@ -861,8 +865,8 @@ def extractProcessingParameters(def processing_parameters) throws Exception{
                                                "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DIST",
                                                "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
-                                               "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS", "SPRAWL_AREAS",
-                                               "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+                                               "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS", "URBAN_SPRAWL_AREAS",
+                                               "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if (allowedOutputIndicators) {
                     //Update the RSU indicators list according the grid indicators
@@ -897,9 +901,9 @@ def extractProcessingParameters(def processing_parameters) throws Exception{
                         }
                         grid_indicators_tmp.put("lcz_lod", lcz_lod)
                     }
-                    def sprawl_areas = grid_indicators.sprawl_areas
+                    def sprawl_areas = grid_indicators.urban_sprawl_areas
                     if (sprawl_areas && sprawl_areas in Boolean) {
-                        grid_indicators_tmp.put("sprawl_areas", sprawl_areas)
+                        grid_indicators_tmp.put("urban_sprawl_areas", sprawl_areas)
                     }
                     defaultParameters.put("grid_indicators", grid_indicators_tmp)
                 } else {

@@ -637,7 +637,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
  * @author Erwan Bocher (CNRS)
  */
 String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
-                          float distance = 100) throws Exception {
+                          float distance = 50) throws Exception {
     //We must compute the grid
     if (!grid_indicators) {
         throw new IllegalArgumentException("No grid_indicators table to compute the sprawl areas layer")
@@ -670,7 +670,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
         select st_union(st_accum(the_geom)) as the_geom from
         $grid_indicators where lcz_warm>=2 
         and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
-        where st_isempty(st_buffer(the_geom, -100,2)) =false""".toString())
+        where st_area(st_buffer(the_geom, -$distance,2)) > 1""".toString())
 
             datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
          the_geom
@@ -680,7 +680,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
         st_removeholes(st_buffer(st_union(st_accum(st_buffer(st_removeholes(the_geom),$distance, ''quad_segs=2 endcap=flat
                      join=mitre mitre_limit=2''))),
                      -$distance, ''quad_segs=2 endcap=flat join=mitre mitre_limit=2'')) as the_geom  
-         FROM ST_EXPLODE(''$tmp_sprawl'') )') ;
+         FROM ST_EXPLODE(''$tmp_sprawl'') )') where st_area(st_buffer(the_geom, -$distance,2)) >${distance*distance};
         DROP TABLE IF EXISTS $tmp_sprawl;
         """.toString())
             return outputTableName
@@ -719,15 +719,12 @@ String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) th
  * @author Erwan Bocher (CNRS)
  */
 String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,
-                        float distance = 100) throws Exception {
+                        float distance = 50) throws Exception {
     if (!grid_indicators) {
         throw new IllegalArgumentException("No grid_indicators table to extract the cool areas layer")
     }
     def gridCols = datasource.getColumnNames(grid_indicators)
-    def lcz_columns_urban = ["LCZ_PRIMARY"]
-    def lcz_columns = gridCols.intersect(lcz_columns_urban)
-
-    if (lcz_columns.size() > 0) {
+    if (gridCols.contains("LCZ_PRIMARY")) {
         def outputTableName = postfix("cool_areas")
         datasource.execute("""
         DROP TABLE IF EXISTS $outputTableName;

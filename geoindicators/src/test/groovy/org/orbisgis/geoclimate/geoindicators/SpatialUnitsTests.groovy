@@ -361,9 +361,9 @@ class SpatialUnitsTests {
     void sprawlAreasTestIntegration() {
         //Data for test
         String path = "/home/ebocher/Autres/data/geoclimate/uhi_lcz/Angers/"
-        String data  = h2GIS.load("${path}grid_indicators.fgb")
+        String data  = h2GIS.load("${path}grid_indicators.geojson")
         String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,data,"id_grid", 1)
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 100)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 50)
         h2GIS.save(sprawl_areas, "/tmp/sprawl_areas_indic.fgb", true)
         h2GIS.save(grid_scales, "/tmp/grid_indicators.fgb", true)
         String distances = Geoindicators.GridIndicators.gridDistances(h2GIS, sprawl_areas, data, "id_grid")

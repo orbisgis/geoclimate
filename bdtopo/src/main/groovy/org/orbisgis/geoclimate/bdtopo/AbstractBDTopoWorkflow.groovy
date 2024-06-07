@@ -558,8 +558,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                    "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                    "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                    "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO",
-                                                   "SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS", "SPRAWL_AREAS",
-                                                   "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+                                                   "SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS", "URBAN_SPRAWL_AREAS",
+                                                   "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]
                     def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                     if (allowedOutputIndicators) {
                         //Update the RSU indicators list according the grid indicators
@@ -650,7 +650,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 "road_traffic",
                 "population",
                 "ground_acoustic",
-                "sprawl_areas"]
+                "urban_sprawl_areas",
+                "urban_cool_areas"]
     }
 
 

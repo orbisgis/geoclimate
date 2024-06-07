@@ -649,10 +649,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Redon"
-        //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
+        def location = "Mâcon"
+        def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
-       // location = nominatim.bbox
+        location = nominatim.bbox
        // location=[44.795480,12.323227,45.004622,12.627411]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -673,8 +673,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 ,
                 "parameters"  :
                         ["distance"                                             : 0,
-                         "rsu_indicators"                                       : [
-
+                         "rsu_indicators" : [
                                  "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
 
                          ],"grid_indicators": [
@@ -691,8 +690,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 //"ASPECT_RATIO",
                                                 //"SVF",
                                       // "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
-                                                "SPRAWL_AREAS",
-                                                "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"],
+                                                "URBAN_SPRAWL_AREAS",
+                                                "URBAN_SPRAWL_DISTANCES",
+                                                "URBAN_SPRAWL_COOL_DISTANCE"],
                                 //"lcz_lod":2
                         ],    "worldpop_indicators": true/*
 
@@ -786,7 +786,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def outputFolder = new File('/home/decide/Data/WRF/Data/output/updated')
             def subFolder = new File(outputFolder.getAbsolutePath() + File.separator + "osm_" + id_zone)
             Geoindicators.WorkflowUtilities.saveToAscGrid(computeRasterizedIndicators, subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
-
         }
             }
 
