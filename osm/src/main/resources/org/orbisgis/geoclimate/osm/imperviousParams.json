@@ -29,8 +29,10 @@
     ],
     "aeroway": [
       "apron"
-    ],"power": [
-      "plant", "substation"
+    ],
+    "power": [
+      "plant",
+      "substation"
     ]
   },
   "columns": [
@@ -74,7 +76,8 @@
         "platform"
       ],
       "power": [
-        "plant", "substation"
+        "plant",
+        "substation"
       ]
     },
     "commercial": {

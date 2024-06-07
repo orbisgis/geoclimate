@@ -23,6 +23,7 @@ import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.bdtopo.WorkflowAbstractTest
+
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
@@ -58,15 +59,15 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
     @Override
     void checkFormatData() {
         Map resultFiles = getResultFiles(folder.absolutePath)
-        H2GIS h2GIS = H2GIS.open(folder.getAbsolutePath()+File.separator+"bdtopo_${getVersion()}_format")
+        H2GIS h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "bdtopo_${getVersion()}_format")
         resultFiles.each {
-            h2GIS.load( it.value, it.key,true)
+            h2GIS.load(it.value, it.key, true)
         }
         //Check the data
         //Building
         int count = h2GIS.getRowCount("building")
-        List cols = [ "ID_BUILD", "ID_SOURCE", "HEIGHT_WALL", "HEIGHT_ROOF", "NB_LEV", "TYPE", "MAIN_USE", "ROOF_SHAPE","ZINDEX", "THE_GEOM"]
-        assertTrue h2GIS.getColumnNames("building").intersect(cols).size()==cols.size()
+        List cols = ["ID_BUILD", "ID_SOURCE", "HEIGHT_WALL", "HEIGHT_ROOF", "NB_LEV", "TYPE", "MAIN_USE", "ROOF_SHAPE", "ZINDEX", "THE_GEOM"]
+        assertTrue h2GIS.getColumnNames("building").intersect(cols).size() == cols.size()
         assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) as count FROM building where HEIGHT_WALL = 0 OR HEIGHT_ROOF = 0 OR NB_LEV = 0").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM building where TYPE IS NOT NULL OR  MAIN_USE IS NOT NULL").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM building where ZINDEX BETWEEN -4 AND 4").count)
@@ -74,8 +75,8 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
 
         //Road
         count = h2GIS.getRowCount("road")
-        cols = [ "ID_ROAD", "ID_SOURCE", "WIDTH","TYPE", "SURFACE", "SIDEWALK", "CROSSING","MAXSPEED", "DIRECTION", "ZINDEX", "THE_GEOM"]
-        assertTrue h2GIS.getColumnNames("road").intersect(cols).size()==cols.size()
+        cols = ["ID_ROAD", "ID_SOURCE", "WIDTH", "TYPE", "SURFACE", "SIDEWALK", "CROSSING", "MAXSPEED", "DIRECTION", "ZINDEX", "THE_GEOM"]
+        assertTrue h2GIS.getColumnNames("road").intersect(cols).size() == cols.size()
         assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where WIDTH = 0 ").count)
         assertEquals(22, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where crossing in ('bridge', 'crossing')").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where TYPE IS NOT NULL OR SIDEWALK is not null").count)
@@ -88,8 +89,8 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         //Rail
         count = h2GIS.getRowCount("rail")
         cols = ["THE_GEOM", "ID_RAIL",
-                "ID_SOURCE" , "TYPE" ,"CROSSING", "ZINDEX" , "WIDTH", "USAGE"]
-        assertTrue h2GIS.getColumnNames("rail").intersect(cols).size()==cols.size()
+                "ID_SOURCE", "TYPE", "CROSSING", "ZINDEX", "WIDTH", "USAGE"]
+        assertTrue h2GIS.getColumnNames("rail").intersect(cols).size() == cols.size()
         assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where WIDTH = 0 ").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where type is not null").count)
         assertEquals(2, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where crossing is not null").count)
@@ -100,7 +101,7 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         //Vegetation
         count = h2GIS.getRowCount("vegetation")
         cols = ["THE_GEOM", "ID_VEGET", "ID_SOURCE", "TYPE", "HEIGHT_CLASS", "ZINDEX"]
-        assertTrue h2GIS.getColumnNames("vegetation").intersect(cols).size()==cols.size()
+        assertTrue h2GIS.getColumnNames("vegetation").intersect(cols).size() == cols.size()
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where type is not null").count)
         assertEquals(670, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class ='high'").count)
         assertEquals(2, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class = 'low'").count)
@@ -111,7 +112,7 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         //Water
         count = h2GIS.getRowCount("water")
         cols = ["THE_GEOM", "ID_WATER", "ID_SOURCE", "TYPE", "ZINDEX"]
-        assertTrue h2GIS.getColumnNames("water").intersect(cols).size()==cols.size()
+        assertTrue h2GIS.getColumnNames("water").intersect(cols).size() == cols.size()
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM water where type is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM water where ZINDEX BETWEEN 0 AND 1 ").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM water where ST_ISEMPTY(THE_GEOM)=false OR THE_GEOM IS NOT NULL").count)
@@ -120,7 +121,7 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         //Impervious areas
         count = h2GIS.getRowCount("impervious")
         cols = ["THE_GEOM", "ID_IMPERVIOUS", "TYPE"]
-        assertTrue h2GIS.getColumnNames("impervious").intersect(cols).size()==cols.size()
+        assertTrue h2GIS.getColumnNames("impervious").intersect(cols).size() == cols.size()
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM impervious where type is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM impervious where ST_ISEMPTY(THE_GEOM)=false OR THE_GEOM IS NOT NULL").count)
 
@@ -128,7 +129,7 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         //Urban areas
         count = h2GIS.getRowCount("urban_areas")
         cols = ["THE_GEOM", "ID_URBAN", "ID_SOURCE", "TYPE"]
-        assertTrue h2GIS.getColumnNames("urban_areas").intersect(cols).size()==cols.size()
+        assertTrue h2GIS.getColumnNames("urban_areas").intersect(cols).size() == cols.size()
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM urban_areas where type is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM urban_areas where ST_ISEMPTY(THE_GEOM)=false OR THE_GEOM IS NOT NULL").count)
 

@@ -38,7 +38,6 @@ import smile.validation.Validation
 import java.util.zip.GZIPInputStream
 
 import static org.junit.jupiter.api.Assertions.*
-import static org.orbisgis.data.H2GIS.open
 
 class TypologyClassificationTests {
 

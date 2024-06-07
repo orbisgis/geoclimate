@@ -20,8 +20,6 @@
 package org.orbisgis.geoclimate.bdtopo
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.CleanupMode
-import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
@@ -29,7 +27,6 @@ import org.orbisgis.data.H2GIS
 import static org.junit.jupiter.api.Assertions.*
 
 abstract class WorkflowAbstractTest {
-
 
 
     /**
@@ -61,8 +58,8 @@ abstract class WorkflowAbstractTest {
     abstract ArrayList getFileNames()
 
 
-    Map getResultFiles(String dataFolder){
-        if(dataFolder){
+    Map getResultFiles(String dataFolder) {
+        if (dataFolder) {
             def files = [:]
             new File(dataFolder).eachFileRecurse groovy.io.FileType.FILES, { file ->
                 if (file.name.toLowerCase().endsWith(".fgb")) {
@@ -347,7 +344,7 @@ abstract class WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "folder": dataFolder,
+                        "folder"   : dataFolder,
                         "locations": [2000, 2001, 2002]],
                 "output"      : [
                         "folder": ["path"  : folder.absolutePath,
@@ -361,7 +358,7 @@ abstract class WorkflowAbstractTest {
                          ]
                         ]
         ]
-        assertThrows(Exception.class, ()->BDTopo.workflow(bdTopoParameters, getVersion()))
+        assertThrows(Exception.class, () -> BDTopo.workflow(bdTopoParameters, getVersion()))
     }
 
     @Test
@@ -433,5 +430,5 @@ abstract class WorkflowAbstractTest {
         //Test road
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""".toString()).count > 0)
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""".toString()).count > 0)
-     }
+    }
 }

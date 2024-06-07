@@ -106,6 +106,6 @@ class BlockIndicatorsTests {
 
     @Test
     void holeAreaDensityExceptionTest() {
-        assertThrows(Exception.class, ()->Geoindicators.BlockIndicators.holeAreaDensity(h2GIS, "myblock_table", "test"))
+        assertThrows(Exception.class, () -> Geoindicators.BlockIndicators.holeAreaDensity(h2GIS, "myblock_table", "test"))
     }
 }

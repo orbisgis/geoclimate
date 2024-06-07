@@ -44,8 +44,8 @@ class WorkflowAbstractTest {
      */
     void geoIndicatorsCalc(String directory, def datasource, String zone, String buildingTableName,
                            String roadTableName, String railTableName, String vegetationTableName,
-                           String hydrographicTableName, String imperviousTableName , String sealandmaskTableName ,
-                           String urban_areas ,
+                           String hydrographicTableName, String imperviousTableName, String sealandmaskTableName,
+                           String urban_areas,
                            boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "", boolean onlySea = false) {
         //Create spatial units and relations : building, block, rsu
@@ -66,7 +66,7 @@ class WorkflowAbstractTest {
 
         def maxBlocks = datasource.firstRow("select max(id_block) as max from ${relationBuildings}".toString())
         def countBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
-        if (!onlySea){
+        if (!onlySea) {
             assertEquals(countBlocks.count, maxBlocks.max)
         }
 
@@ -79,7 +79,7 @@ class WorkflowAbstractTest {
                 roadTableName, indicatorUse,
                 prefixName)
         assert buildingIndicators
-        if (!onlySea){
+        if (!onlySea) {
             assertTrue(datasource.getSpatialTable(buildingIndicators).srid > 0)
         }
         if (saveResults) {
@@ -107,7 +107,7 @@ class WorkflowAbstractTest {
             def countRelationBlocks = datasource.firstRow("select count(*) as count from ${relationBlocks}".toString())
             def countBlocksIndicators = datasource.firstRow("select count(*) as count from ${blockIndicators}".toString())
             assertEquals(countRelationBlocks.count, countBlocksIndicators.count)
-            if (!onlySea){
+            if (!onlySea) {
                 assertTrue(datasource.getSpatialTable(blockIndicators).srid > 0)
             }
         }

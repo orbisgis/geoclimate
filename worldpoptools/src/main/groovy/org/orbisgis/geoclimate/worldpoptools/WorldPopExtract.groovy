@@ -85,7 +85,7 @@ String extractWorldPopLayer(String coverageId, List bbox) {
  * @return the name of the imported table
  */
 String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int epsg = 4326, String tableName = "world_pop")
-        throws Exception{
+        throws Exception {
     info "Import the the world pop asc file"
     // The name of the outputTableName is constructed
     def outputTableWorldPopName = postfix tableName
@@ -118,7 +118,7 @@ String importAscGrid(JdbcDataSource datasource, String worldPopFilePath, int eps
         } catch (Exception ex) {
             datasource.execute("""drop table if exists $outputTableWorldPopName;
                     create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $epsg), ID_POP INTEGER, POP FLOAT);""".toString())
-            throw new Exception( "Cannot find any worldpop data on the requested area")
+            throw new Exception("Cannot find any worldpop data on the requested area")
         }
     }
     return outputTableWorldPopName
@@ -233,7 +233,7 @@ boolean grid(String wcsRequest, File outputGridFile) {
  * @param coverageId
  * @return
  */
-boolean isCoverageAvailable(String coverageId){
+boolean isCoverageAvailable(String coverageId) {
     String describeRequest = """https://ogc.worldpop.org/geoserver/ows?service=WCS&version=2.0.1&request=DescribeCoverage&coverageId=$coverageId""".toString()
     def queryUrl = new URL(describeRequest)
     final String proxyHost = System.getProperty("http.proxyHost");
@@ -251,11 +251,11 @@ boolean isCoverageAvailable(String coverageId){
     info "Executing query... $queryUrl"
     //Save the result in a file
     if (connection.responseCode == 200) {
-            XmlSlurper xmlParser = new XmlSlurper()
+        XmlSlurper xmlParser = new XmlSlurper()
         GPathResult nodes = xmlParser.parse(connection.inputStream)
-        if(nodes.Exception){
+        if (nodes.Exception) {
             return true
-        }else {
+        } else {
             error "The service is not available for the coverageId : $coverageId"
             return false
         }

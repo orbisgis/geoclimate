@@ -39,7 +39,7 @@ import java.sql.SQLException
 
 @Override
 Integer loadDataFromPostGIS(Object input_database_properties, Object code, Object distance, Object inputTables,
-                            Object inputSRID, H2GIS h2gis_datasource) throws Exception{
+                            Object inputSRID, H2GIS h2gis_datasource) throws Exception {
     def commune_location = inputTables.commune
     if (!commune_location) {
         throw new Exception("The commune table must be specified to run Geoclimate")
@@ -71,7 +71,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     if (commune_srid == 0 && inputSRID) {
         commune_srid = inputSRID
     } else if (commune_srid <= 0) {
-        throw new Exception( "Cannot find a SRID value for the layer commune.\n" +
+        throw new Exception("Cannot find a SRID value for the layer commune.\n" +
                 "Please set a valid OGC prj or use the parameter srid to force it.")
     }
 
@@ -80,11 +80,11 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     //Check if code is a string or a bbox
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (code in Collection) {
-        if(code.size()==3){
-            if(code[2]<100){
+        if (code.size() == 3) {
+            if (code[2] < 100) {
                 throw new Exception("The distance to create a bbox from a point must be greater than 100 meters")
             }
-            code = BDTopoUtils.bbox(code[0], code[1],code[2])
+            code = BDTopoUtils.bbox(code[0], code[1], code[2])
         }
         String inputTableName = """(SELECT
                     ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, CODE_INSEE  from $commune_location where 
@@ -139,7 +139,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
 
         if (inputTables.troncon_voie_ferree) {
             //Extract troncon_voie_ferree
-                def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, NB_VOIES, POS_SOL, FRANCHISST FROM ${inputTables.troncon_voie_ferree}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
+            def inputTableName = "(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, NB_VOIES, POS_SOL, FRANCHISST FROM ${inputTables.troncon_voie_ferree}  WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY))"
             outputTableName = "TRONCON_VOIE_FERREE"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
@@ -233,7 +233,7 @@ int getVersion() {
 }
 
 @Override
-Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin) throws Exception{
+Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin) throws Exception {
     if (!hLevMin) {
         hLevMin = 3
     }
@@ -290,7 +290,7 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
 
 @Override
 def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTables,
-                           int sourceSRID, int inputSRID, H2GIS h2gis_datasource) throws Exception{
+                           int sourceSRID, int inputSRID, H2GIS h2gis_datasource) throws Exception {
     def formatting_geom = "the_geom"
     if (sourceSRID == 0 && sourceSRID != inputSRID) {
         formatting_geom = "st_setsrid(the_geom, $inputSRID) as the_geom"
@@ -303,11 +303,11 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
     //Check if code is a string or a bbox
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (location in Collection) {
-        if(location.size()==3){
-            if(location[2]<100){
+        if (location.size() == 3) {
+            if (location[2] < 100) {
                 throw new Exception("The distance to create a bbox from a point must be greater than 100 meters")
             }
-            location = BDTopoUtils.bbox(location[0], location[1],location[2])
+            location = BDTopoUtils.bbox(location[0], location[1], location[2])
         }
         debug "Loading in the H2GIS database $outputTableName"
         h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
@@ -317,7 +317,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         debug "Loading in the H2GIS database $outputTableName"
         h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 
             CODE_INSEE FROM ${inputTables.commune} WHERE CODE_INSEE='$location' or lower(nom)='${location.toLowerCase()}'""".toString())
-    }else{
+    } else {
         throw new Exception("Invalid location data type. Please set a text value or a collection of coordinates to specify a bbox")
     }
     def count = h2gis_datasource.getRowCount(outputTableName)

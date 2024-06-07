@@ -21,7 +21,6 @@ package org.orbisgis.geoclimate.osmtools
 
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.io.TempDir
-import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
@@ -83,8 +82,8 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void badFromAreaTest() {
-        assertThrows(Exception.class, ()-> OSMTools.Loader.fromArea(ds, null))
-        assertThrows(Exception.class, ()-> OSMTools.Loader.fromArea(ds, "A string"))
+        assertThrows(Exception.class, () -> OSMTools.Loader.fromArea(ds, null))
+        assertThrows(Exception.class, () -> OSMTools.Loader.fromArea(ds, "A string"))
     }
 
     /**
@@ -93,7 +92,7 @@ class LoaderTest extends AbstractOSMToolsTest {
     @Test
     void fromAreaNoDistTest() {
         //With polygon
-        Map r = OSMTools.Loader.fromArea(ds, [48.733493,-3.076869,48.733995,-3.075829])
+        Map r = OSMTools.Loader.fromArea(ds, [48.733493, -3.076869, 48.733995, -3.075829])
 
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zone")
@@ -119,7 +118,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         zoneEnv.next()
         assertEquals "POLYGON ((-3.076869 48.733493, -3.076869 48.733995, -3.075829 48.733995, -3.075829 48.733493, -3.076869 48.733493))", zoneEnv.getGeometry(1).toText()
 
-        def env =  OSMTools.Utilities.geometryFromValues([48.733493,-3.076869,48.733995,-3.075829]).getEnvelopeInternal()
+        def env = OSMTools.Utilities.geometryFromValues([48.733493, -3.076869, 48.733995, -3.075829]).getEnvelopeInternal()
         //With Envelope
         r = OSMTools.Loader.fromArea(ds, env)
 
@@ -157,7 +156,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         def geomFacto = new GeometryFactory()
         def dist = 1000
 
-        def polygon = OSMTools.Utilities.geometryFromValues([ 48.790598,-3.084508,48.791800,-3.082228])
+        def polygon = OSMTools.Utilities.geometryFromValues([48.790598, -3.084508, 48.791800, -3.082228])
 
         def env = polygon.getEnvelopeInternal()
 
@@ -218,7 +217,7 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void fromPlaceNoDistTest() {
-        if(OSMTools.Utilities.isNominatimReady()) {
+        if (OSMTools.Utilities.isNominatimReady()) {
             def placeName = "Lezoen, Plourivo"
             def formattedPlaceName = "Lezoen_Plourivo_"
             Map r = OSMTools.Loader.fromPlace(ds, placeName)
@@ -257,7 +256,7 @@ class LoaderTest extends AbstractOSMToolsTest {
         def placeName = "  The place Name -toFind  "
         def dist = 5
         def formattedPlaceName = "The_place_Name_toFind_"
-        assertThrows(Exception.class, ()->OSMTools.Loader.fromPlace(ds, placeName, dist))
+        assertThrows(Exception.class, () -> OSMTools.Loader.fromPlace(ds, placeName, dist))
 
         def r = OSMTools.Loader.fromPlace(ds, "Lezoen, Plourivo", dist)
 
@@ -287,10 +286,10 @@ class LoaderTest extends AbstractOSMToolsTest {
     void badFromPlaceTest() {
         def placeName = "  The place Name -toFind  "
         def dist = -5
-        assertThrows(Exception.class, ()-> OSMTools.Loader.fromPlace(ds, placeName, dist))
-        assertThrows(Exception.class, ()-> OSMTools.Loader.fromPlace(ds, placeName, -1))
-        assertThrows(Exception.class, ()-> OSMTools.Loader.fromPlace(ds, null))
-        assertThrows(Exception.class, ()-> OSMTools.Loader.fromPlace(null, placeName))
+        assertThrows(Exception.class, () -> OSMTools.Loader.fromPlace(ds, placeName, dist))
+        assertThrows(Exception.class, () -> OSMTools.Loader.fromPlace(ds, placeName, -1))
+        assertThrows(Exception.class, () -> OSMTools.Loader.fromPlace(ds, null))
+        assertThrows(Exception.class, () -> OSMTools.Loader.fromPlace(null, placeName))
     }
 
     /**
@@ -298,7 +297,7 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void extractTest() {
-        def env =  OSMTools.Utilities.geometryFromValues([48.733493,-3.076869,48.733995,-3.075829]).getEnvelopeInternal()
+        def env = OSMTools.Utilities.geometryFromValues([48.733493, -3.076869, 48.733995, -3.075829]).getEnvelopeInternal()
         def query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(env, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         def extract = OSMTools.Loader.extract(query)
         assertNotNull extract
@@ -311,9 +310,9 @@ class LoaderTest extends AbstractOSMToolsTest {
      */
     @Test
     void badExtractTest() {
-        assertThrows(Exception.class, ()-> OSMTools.Loader.extract(null))
+        assertThrows(Exception.class, () -> OSMTools.Loader.extract(null))
         badOverpassQueryOverride()
-        assertThrows(Exception.class, ()-> OSMTools.Loader.extract("toto"))
+        assertThrows(Exception.class, () -> OSMTools.Loader.extract("toto"))
     }
 
     /**
@@ -329,17 +328,17 @@ class LoaderTest extends AbstractOSMToolsTest {
         def prefix = uuid().toUpperCase()
 
         //Null dataSource
-        assertThrows(Exception.class, ()-> OSMTools.Loader.load(null, prefix, osmFile.absolutePath))
+        assertThrows(Exception.class, () -> OSMTools.Loader.load(null, prefix, osmFile.absolutePath))
 
         //Null prefix
-        assertThrows(Exception.class, ()-> OSMTools.Loader.load(ds, null, osmFile.absolutePath))
+        assertThrows(Exception.class, () -> OSMTools.Loader.load(ds, null, osmFile.absolutePath))
         //Bad prefix
-        assertThrows(Exception.class, ()-> OSMTools.Loader.load(ds, "(╯°□°）╯︵ ┻━┻", osmFile.absolutePath))
+        assertThrows(Exception.class, () -> OSMTools.Loader.load(ds, "(╯°□°）╯︵ ┻━┻", osmFile.absolutePath))
 
         //Null path
-        assertThrows(Exception.class, ()-> OSMTools.Loader.load(ds, prefix, null))
+        assertThrows(Exception.class, () -> OSMTools.Loader.load(ds, prefix, null))
         //Unexisting path
-        assertThrows(Exception.class, ()-> OSMTools.Loader.load(ds, prefix, "ᕕ(ᐛ)ᕗ"))
+        assertThrows(Exception.class, () -> OSMTools.Loader.load(ds, prefix, "ᕕ(ᐛ)ᕗ"))
     }
 
     /**

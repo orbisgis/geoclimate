@@ -20,15 +20,14 @@
 package org.orbisgis.geoclimate.osmtools
 
 import org.h2gis.utilities.GeographyUtilities
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.*
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
 import org.orbisgis.geoclimate.osmtools.utils.Utilities
-import org.orbisgis.geoclimate.utils.LoggerUtils
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
 

@@ -78,7 +78,7 @@ class WorldPopExtractTest {
      */
     @Test
     void extractGridProcess() {
-        if(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2018")) {
+        if (WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2018")) {
             String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer("wpGlobal:ppp_2018", [47.63324, -2.78087, 47.65749, -2.75979])
             assertNotNull(outputFilePath)
             assertTrue new File(outputFilePath).exists()
@@ -90,7 +90,7 @@ class WorldPopExtractTest {
      */
     @Test
     void extractLoadGridProcess() {
-        if(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2018")) {
+        if (WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2018")) {
             String outputFilePath = WorldPopTools.Extract.extractWorldPopLayer("wpGlobal:ppp_2018", [47.63324, -2.78087, 47.65749, -2.75979])
             if (outputFilePath) {
                 assertTrue new File(outputFilePath).exists()

@@ -248,7 +248,7 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
 boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode,
-                             String outputNodesPoints, def tags, def columnsToKeep, Geometry geometry) throws Exception{
+                             String outputNodesPoints, def tags, def columnsToKeep, Geometry geometry) throws Exception {
     if (!datasource) {
         throw new Exception("The datasource should not be null")
     }
@@ -334,15 +334,15 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
         } else {
             filterTableNode = tableNode
         }
-        def lastQuery =  """DROP TABLE IF EXISTS $outputNodesPoints;
+        def lastQuery = """DROP TABLE IF EXISTS $outputNodesPoints;
                 CREATE TABLE $outputNodesPoints AS
                     SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
                     FROM $filterTableNode AS a, $tableNodeTag b
                     WHERE a.id_node = b.id_node """
-        if(columnsToKeep) {
+        if (columnsToKeep) {
             lastQuery += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
         }
-        lastQuery+= " GROUP BY a.id_node"
+        lastQuery += " GROUP BY a.id_node"
         datasource.execute(lastQuery.toString())
 
     } else {
@@ -386,10 +386,10 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
                     FROM $filterTableNode AS a, $tableNodeTag  b, $filteredNodes c
                     WHERE a.id_node=b.id_node
                     AND a.id_node=c.id_node  """
-        if(columnsToKeep){
+        if (columnsToKeep) {
             lastQuery += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
         }
-        lastQuery+=" GROUP BY a.id_node"
+        lastQuery += " GROUP BY a.id_node"
         datasource.execute(lastQuery.toString())
     }
     datasource.dropTable(tablesToDrop)
@@ -474,13 +474,13 @@ def createTagList(JdbcDataSource datasource, def selectTableQuery, List columnsT
     }
     def rowskeys = datasource.rows(selectTableQuery.toString())
     def list = []
-    if(!columnsToKeep){
+    if (!columnsToKeep) {
         rowskeys.tag_key.each { it ->
-            if (it != null ) {
+            if (it != null) {
                 list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it}\""
             }
         }
-    }else {
+    } else {
         def nullColumns = columnsToKeep.collect()
         rowskeys.tag_key.each { it ->
             if (it != null && columnsToKeep.contains(it)) {
@@ -511,7 +511,7 @@ def createTagList(JdbcDataSource datasource, def selectTableQuery, List columnsT
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-def buildIndexes(JdbcDataSource datasource, String osmTablesPrefix) throws Exception{
+def buildIndexes(JdbcDataSource datasource, String osmTablesPrefix) throws Exception {
     if (!datasource) {
         throw new Exception("The datasource should not be null.")
     }

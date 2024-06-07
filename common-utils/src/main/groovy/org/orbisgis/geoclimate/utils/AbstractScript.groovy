@@ -27,7 +27,7 @@ abstract class AbstractScript extends Script {
     static String uuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
 
     void info(def message) {
-        LoggerUtils.info( message.toString())
+        LoggerUtils.info(message.toString())
     }
 
     void warn(def message) {

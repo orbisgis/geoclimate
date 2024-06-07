@@ -18,9 +18,6 @@
  *
  */
 package org.orbisgis.geoclimate.bdtopo
-
-import org.orbisgis.geoclimate.utils.LoggerUtils
-
 /**
  * Main module for BDTopo processing tasks
  */
@@ -143,7 +140,7 @@ abstract class BDTopo extends BDTopoUtils {
      * Meteorological Society 93, no. 12 (2012): 1879-1900.
      *
      */
-    static Map workflow(def input, int version) throws Exception{
+    static Map workflow(def input, int version) throws Exception {
         if (version == 2) {
             BDTopoV2Workflow bdtopo_v2_workflow = new BDTopoV2Workflow()
             return bdtopo_v2_workflow.execute(input)

@@ -27,13 +27,11 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty
 import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
+import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertNotNull
-import org.orbisgis.data.H2GIS
 
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.*
 
 class SpatialUnitsTests {
 
@@ -82,8 +80,8 @@ class SpatialUnitsTests {
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', 'rail_test',
-                'veget_test', 'hydro_test', "","",
-                10000, 2500,10000, "block")
+                'veget_test', 'hydro_test', "", "",
+                10000, 2500, 10000, "block")
 
         assertNotNull(outputTableGeoms)
 
@@ -106,7 +104,7 @@ class SpatialUnitsTests {
         def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_test",
                 'road_test', 'rail_test',
                 'veget_test', 'hydro_test',
-                "","", 10000, 2500,10000, "block")
+                "", "", 10000, 2500, 10000, "block")
         assert createRSU
 
         assert h2GIS.getSpatialTable(createRSU).save(new File(folder, "rsu.shp").getAbsolutePath(), true)
@@ -191,7 +189,7 @@ class SpatialUnitsTests {
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', 'rail_test', 'veget_test',
-                'hydro_test', "", "",10000, 2500, 10000, "block")
+                'hydro_test', "", "", 10000, 2500, 10000, "block")
 
 
         assertNotNull(outputTableGeoms)
@@ -244,8 +242,7 @@ class SpatialUnitsTests {
         UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 6; 
         UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 6; 
         """.toString())
-        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid","id_grid",1)
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(5, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
     }
@@ -259,8 +256,7 @@ class SpatialUnitsTests {
         CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
         """.toString())
-        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid","id_grid",1)
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertTrue(h2GIS.firstRow("select st_union(st_accum(the_geom)) as the_geom from $sprawl_areas".toString()).the_geom.isEmpty())
     }
@@ -282,8 +278,7 @@ class SpatialUnitsTests {
         UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 5;
         UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 6 AND id_col = 6;
         """.toString())
-        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid","id_grid",1)
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(9, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
     }
@@ -308,8 +303,7 @@ class SpatialUnitsTests {
         UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 9 AND id_col = 9; 
         UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 1 AND id_col = 1; 
         """.toString())
-        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,"grid","id_grid",1)
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 0)
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(9, h2GIS.firstRow("select st_area(st_accum(the_geom)) as area from $sprawl_areas".toString()).area, 0.0001)
     }
@@ -329,7 +323,7 @@ class SpatialUnitsTests {
     @Test
     void inverseGeometriesTest2() {
         def wktReader = new WKTReader()
-        Geometry expectedGeom =  wktReader.read("POLYGON ((160 190, 260 190, 260 290, 320 290, 320 150, 240 150, 240 80, 160 80, 160 190))")
+        Geometry expectedGeom = wktReader.read("POLYGON ((160 190, 260 190, 260 290, 320 290, 320 150, 240 150, 240 80, 160 80, 160 190))")
         //Data for test
         h2GIS.execute("""
         DROP TABLE IF EXISTS polygons;
@@ -344,7 +338,7 @@ class SpatialUnitsTests {
     @Test
     void inverseGeometriesTest3() {
         def wktReader = new WKTReader()
-        Geometry expectedGeom =  wktReader.read("MULTIPOLYGON (((160 190, 260 190, 260 290, 320 290, 320 150, 240 150, 240 80, 160 80, 160 190)), ((230 265, 230 230, 189 230, 189 265, 230 265)))")
+        Geometry expectedGeom = wktReader.read("MULTIPOLYGON (((160 190, 260 190, 260 290, 320 290, 320 150, 240 150, 240 80, 160 80, 160 190)), ((230 265, 230 230, 189 230, 189 265, 230 265)))")
         //Data for test
         h2GIS.execute("""
         DROP TABLE IF EXISTS polygons;
@@ -361,20 +355,19 @@ class SpatialUnitsTests {
     void sprawlAreasTestIntegration() {
         //Data for test
         String path = "/home/ebocher/Autres/data/geoclimate/uhi_lcz/Angers/"
-        String data  = h2GIS.load("${path}grid_indicators.geojson")
-        String grid_scales = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS,data,"id_grid", 1)
-        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 50)
+        String grid_scales = h2GIS.load("${path}grid_indicators.geojson")
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 100)
         h2GIS.save(sprawl_areas, "/tmp/sprawl_areas_indic.fgb", true)
         h2GIS.save(grid_scales, "/tmp/grid_indicators.fgb", true)
-        String distances = Geoindicators.GridIndicators.gridDistances(h2GIS, sprawl_areas, data, "id_grid")
+        String distances = Geoindicators.GridIndicators.gridDistances(h2GIS, sprawl_areas, grid_scales, "id_grid")
         h2GIS.save(distances, "/tmp/distances.fgb", true)
 
         //Method to compute the cool areas distances
         String cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(h2GIS, grid_scales)
         h2GIS.save(cool_areas, "/tmp/cool_areas.fgb", true)
-        String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS,cool_areas)
+        String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS, cool_areas)
         h2GIS.save(inverse_cool_areas, "/tmp/inverse_cool_areas.fgb", true)
-        distances = Geoindicators.GridIndicators.gridDistances(h2GIS, inverse_cool_areas, data, "id_grid")
+        distances = Geoindicators.GridIndicators.gridDistances(h2GIS, inverse_cool_areas, grid_scales, "id_grid")
         h2GIS.save(distances, "/tmp/cool_inverse_distances.fgb", true)
     }
 
@@ -385,22 +378,22 @@ class SpatialUnitsTests {
     @Test
     void debugTSUTest() {
         String path = "/tmp/geoclimate"
-        String zone = h2GIS.load(path+File.separator+"zone.fgb")
-        String road = h2GIS.load(path+File.separator+"road.fgb")
-        String rail = h2GIS.load(path+File.separator+"rail.fgb")
-        String vegetation= h2GIS.load(path+File.separator+"vegetation.fgb")
-        String water= h2GIS.load(path+File.separator+"water.fgb")
-        String sea_land_mask= h2GIS.load(path+File.separator+"sea_land_mask.fgb")
-        String urban_areas= h2GIS.load(path+File.separator+"urban_areas.fgb")
-        double surface_vegetation =10000
-        double surface_hydro=2500
-        double surface_urban_areas=10000
+        String zone = h2GIS.load(path + File.separator + "zone.fgb")
+        String road = h2GIS.load(path + File.separator + "road.fgb")
+        String rail = h2GIS.load(path + File.separator + "rail.fgb")
+        String vegetation = h2GIS.load(path + File.separator + "vegetation.fgb")
+        String water = h2GIS.load(path + File.separator + "water.fgb")
+        String sea_land_mask = h2GIS.load(path + File.separator + "sea_land_mask.fgb")
+        String urban_areas = h2GIS.load(path + File.separator + "urban_areas.fgb")
+        double surface_vegetation = 10000
+        double surface_hydro = 2500
+        double surface_urban_areas = 10000
         double area = 1
         String rsu = Geoindicators.SpatialUnits.createTSU(h2GIS, zone,
-                 area,  road,  rail,  vegetation,
-                 water,  sea_land_mask,  urban_areas,
-                 surface_vegetation,  surface_hydro,  surface_urban_areas, "rsu")
-        if(rsu){
+                area, road, rail, vegetation,
+                water, sea_land_mask, urban_areas,
+                surface_vegetation, surface_hydro, surface_urban_areas, "rsu")
+        if (rsu) {
             h2GIS.save(rsu, "/tmp/rsu.fgb", true)
         }
     }

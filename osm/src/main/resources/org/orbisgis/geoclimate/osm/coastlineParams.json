@@ -3,7 +3,9 @@
     "natural": [
       "coastline"
     ],
-    "place": ["islet"]
+    "place": [
+      "islet"
+    ]
   },
   "columns": [
     "natural",

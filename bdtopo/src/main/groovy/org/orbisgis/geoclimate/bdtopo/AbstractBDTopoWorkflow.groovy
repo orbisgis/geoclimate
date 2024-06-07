@@ -28,7 +28,6 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-
 import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 
 import java.sql.Connection
@@ -291,7 +290,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @param message
      * @throws Exception
      */
-    void saveLogZoneTable(JdbcDataSource dataSource,String databaseFolder, String location, String message) throws Exception {
+    void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, String location, String message) throws Exception {
         def logTableZones = postfix("log_zones")
         //Create the table to log on the processed zone
         dataSource.execute("""DROP TABLE IF EXISTS $logTableZones;
@@ -310,7 +309,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             '${Geoindicators.version()}',
                             '${Geoindicators.buildNumber()}')""")
         }
-        dataSource.save(logTableZones, databaseFolder+File.separator+"log_zones_"+id_zone+".fgb", true )
+        dataSource.save(logTableZones, databaseFolder + File.separator + "log_zones_" + id_zone + ".fgb", true)
     }
 
     /**
@@ -349,7 +348,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
     def linkDataFromFolder(def inputFolder, def inputWorkflowTableNames,
                            H2GIS h2gis_datasource, def inputSRID) throws Exception {
         def folder = new File(inputFolder)
-        if(!folder.exists()){
+        if (!folder.exists()) {
             throw new Exception("The input folder doesn't exist")
         }
         if (folder.isDirectory()) {
@@ -861,7 +860,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     x_size, y_size, srid, grid_indicators_params.rowCol)
             if (gridTableName) {
                 String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, gridTableName,
-                        grid_indicators_params.indicators, grid_indicators_params.lcz_lod,
+                        grid_indicators_params.indicators,
                         results.building, results.road, results.vegetation,
                         results.water, results.impervious,
                         results.rsu_lcz, results.rsu_utrf_area, "", "",

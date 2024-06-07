@@ -1,16 +1,26 @@
 {
   "tags": {
-    "landuse": [ "commercial",
+    "landuse": [
+      "commercial",
       "residential",
       "retail",
       "industrial",
-      "construction", "military",
-      "railway", "farmyard"],
-    "construction":[],
-    "amenity": ["school",
+      "construction",
+      "military",
+      "railway",
+      "farmyard"
+    ],
+    "construction": [],
+    "amenity": [
+      "school",
       "university",
-      "research_institute", "community_centre"],
-    "power": ["plant", "substation"]
+      "research_institute",
+      "community_centre"
+    ],
+    "power": [
+      "plant",
+      "substation"
+    ]
   },
   "columns": [
     "landuse",
@@ -66,7 +76,8 @@
         "industrial"
       ],
       "power": [
-        "plant", "substation"
+        "plant",
+        "substation"
       ]
     },
     "port": {

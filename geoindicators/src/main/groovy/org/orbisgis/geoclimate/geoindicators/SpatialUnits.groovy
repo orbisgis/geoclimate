@@ -649,17 +649,14 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
         throw new IllegalArgumentException("No grid cells to compute the sprawl areas layer")
     }
     def gridCols = datasource.getColumnNames(grid_indicators)
-    def lcz_columns_urban = ["LCZ_PRIMARY", "LCZ_WARM"]
-    def lcz_columns = gridCols.intersect(lcz_columns_urban)
-    if (lcz_columns.size() > 0) {
+    if (gridCols.contains("LCZ_PRIMARY")) {
         def outputTableName = postfix("sprawl_areas")
         if (distance == 0) {
             datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
         create table $outputTableName as 
         select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
         select st_union(st_accum(the_geom)) as the_geom from
-        $grid_indicators where lcz_warm>=2 
-        and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))')""".toString())
+        $grid_indicators where  LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))')""".toString())
             return outputTableName
         } else {
             def tmp_sprawl = postfix("sprawl_tmp")
@@ -668,8 +665,8 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
          create table $tmp_sprawl as 
         select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
         select st_union(st_accum(the_geom)) as the_geom from
-        $grid_indicators where lcz_warm>=2 
-        and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
+        $grid_indicators where 
+        LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
         where st_area(st_buffer(the_geom, -$distance,2)) > 1""".toString())
 
             datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
@@ -680,7 +677,7 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
         st_removeholes(st_buffer(st_union(st_accum(st_buffer(st_removeholes(the_geom),$distance, ''quad_segs=2 endcap=flat
                      join=mitre mitre_limit=2''))),
                      -$distance, ''quad_segs=2 endcap=flat join=mitre mitre_limit=2'')) as the_geom  
-         FROM ST_EXPLODE(''$tmp_sprawl'') )') where st_area(st_buffer(the_geom, -$distance,2)) >${distance*distance};
+         FROM ST_EXPLODE(''$tmp_sprawl'') )') where st_area(st_buffer(the_geom, -$distance,2)) >${distance * distance};
         DROP TABLE IF EXISTS $tmp_sprawl;
         """.toString())
             return outputTableName
@@ -713,8 +710,9 @@ String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) th
 
 
 /**
- * This methods allows to extract the cool area geometries inside polygons
- * A cool area is continous geometry defined by vegetation and water fractions.
+ * This methods allows to extract the cool area geometries
+ * A cool area is a continous geometry defined by the LCZ 101, 102, 103,104, 106 and 107.
+ *
  *
  * @author Erwan Bocher (CNRS)
  */
@@ -731,7 +729,7 @@ String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,
         CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id,  the_geom FROM ST_EXPLODE('(
         SELECT ST_UNION(ST_ACCUM(a.THE_GEOM)) AS THE_GEOM FROM $grid_indicators as a
         where 
-         a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107))') ${distance > 0 ? " where st_isempty(st_buffer(the_geom, -$distance,2)) =false" : ""};
+         a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107))') ${distance > 0 ? " where st_area(st_buffer(the_geom, -$distance,2)) >${distance * distance}" : ""};
         """.toString())
         return outputTableName
     }
