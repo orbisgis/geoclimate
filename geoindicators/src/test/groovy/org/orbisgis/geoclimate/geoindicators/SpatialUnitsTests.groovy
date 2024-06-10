@@ -253,12 +253,13 @@ class SpatialUnitsTests {
         h2GIS.execute("""
         --Grid values
         DROP TABLE IF EXISTS grid;
-        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 105 AS LCZ_PRIMARY FROM 
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
         """.toString())
         String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0)
+        h2GIS.save(sprawl_areas, "/tmp/sprawl.fgb", true)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
-        assertTrue(h2GIS.firstRow("select st_union(st_accum(the_geom)) as the_geom from $sprawl_areas".toString()).the_geom.isEmpty())
+        assertEquals(81, h2GIS.firstRow("select st_union(st_accum(the_geom)) as the_geom from $sprawl_areas".toString()).the_geom.getArea())
     }
 
     @Test
@@ -304,8 +305,8 @@ class SpatialUnitsTests {
         UPDATE grid SET LCZ_PRIMARY= 1  WHERE id_row = 1 AND id_col = 1; 
         """.toString())
         String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0)
-        assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
-        assertEquals(9, h2GIS.firstRow("select st_area(st_accum(the_geom)) as area from $sprawl_areas".toString()).area, 0.0001)
+        assertEquals(3, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
+        assertEquals(11, h2GIS.firstRow("select st_area(st_accum(the_geom)) as area from $sprawl_areas".toString()).area, 0.0001)
     }
 
     @Test
