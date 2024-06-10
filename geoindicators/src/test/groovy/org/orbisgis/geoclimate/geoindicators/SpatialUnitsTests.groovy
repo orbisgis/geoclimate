@@ -363,9 +363,9 @@ class SpatialUnitsTests {
         h2GIS.save(distances, "/tmp/distances.fgb", true)
 
         //Method to compute the cool areas distances
-        String cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(h2GIS, grid_scales)
+        String cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(h2GIS, grid_scales, sprawl_areas)
         h2GIS.save(cool_areas, "/tmp/cool_areas.fgb", true)
-        String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS, cool_areas)
+        String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(h2GIS, sprawl_areas, cool_areas)
         h2GIS.save(inverse_cool_areas, "/tmp/inverse_cool_areas.fgb", true)
         distances = Geoindicators.GridIndicators.gridDistances(h2GIS, inverse_cool_areas, grid_scales, "id_grid")
         h2GIS.save(distances, "/tmp/cool_inverse_distances.fgb", true)

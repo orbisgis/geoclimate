@@ -2185,7 +2185,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
     String sprawl_areas
     String cool_areas
     if (list_indicators_upper.intersect(["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]) && grid_indicators) {
-        sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(datasource, grid_indicators, (distance / 2) as float)
+        sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(datasource, grid_indicators, distance )
     }
     if (sprawl_areas) {
         //Compute the distances
@@ -2211,7 +2211,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
         if (list_indicators_upper.contains("URBAN_SPRAWL_COOL_DISTANCE")) {
             cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, (distance / 2) as float)
             if (cool_areas) {
-                String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, cool_areas)
+                String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, cool_areas, sprawl_areas)
                 if (inverse_cool_areas) {
                     tablesToDrop << inverse_cool_areas
                     String cool_distances = Geoindicators.GridIndicators.gridDistances(datasource, inverse_cool_areas, grid_indicators, id_grid, false)

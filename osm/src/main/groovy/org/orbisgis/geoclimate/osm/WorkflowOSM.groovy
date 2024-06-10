@@ -445,7 +445,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                 info "Urban areas formatted"
                 /*
-                 * Do not filter the data when formatting becausethe job is already done when extracting osm data                     *
+                 * Do not filter the data when formatting because the job is already done when extracting osm data                     *
                  */
                 Map formatBuilding = OSM.InputDataFormatting.formatBuildingLayer(
                         h2gis_datasource, gisLayersResults.building,
@@ -597,7 +597,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 if (grid_indicators_params) {
                     info("Start computing grid_indicators")
                     if (!geomEnv) {
-                        geomEnv = h2gis_datasource.getSpatialTable(utm_zone_table).getExtent()
+                        geomEnv = h2gis_datasource.getExtent(utm_zone_table)
                     }
                     outputGrid = grid_indicators_params.output
                     def x_size = grid_indicators_params.x_size
