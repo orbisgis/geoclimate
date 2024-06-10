@@ -871,7 +871,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     Map sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource, rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
                             Math.max(x_size, y_size).floatValue())
                     if (sprawl_indic) {
-                        results.put("sprawl_areas", sprawl_indic.sprawl_areas)
+                        results.put("urban_sprawl_areas", sprawl_indic.urban_sprawl_areas)
+                        if (sprawl_indic.urban_cool_areas) {
+                            results.put("urban_cool_areas", sprawl_indic.urban_cool_areas)
+                        }
                         results.put("grid_indicators", sprawl_indic.grid_indicators)
                     }
                     info("End computing grid_indicators")

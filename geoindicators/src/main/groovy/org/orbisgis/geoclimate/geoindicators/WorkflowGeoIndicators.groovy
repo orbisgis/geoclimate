@@ -2207,11 +2207,10 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
                 }
             }
         }
-
         if (list_indicators_upper.contains("URBAN_SPRAWL_COOL_DISTANCE")) {
-            cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, (distance / 2) as float)
+            cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, sprawl_areas, (distance / 2) as float)
             if (cool_areas) {
-                String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, cool_areas, sprawl_areas)
+                String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, sprawl_areas,cool_areas)
                 if (inverse_cool_areas) {
                     tablesToDrop << inverse_cool_areas
                     String cool_distances = Geoindicators.GridIndicators.gridDistances(datasource, inverse_cool_areas, grid_indicators, id_grid, false)

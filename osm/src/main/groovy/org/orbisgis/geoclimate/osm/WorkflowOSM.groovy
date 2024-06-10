@@ -959,7 +959,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     } else {
         FileUtilities.deleteFiles(subFolder)
     }
-    outputFiles.each {
+    outputFiles.each { it->
         if (it == "grid_indicators") {
             if (outputGrid == "fgb") {
                 Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
