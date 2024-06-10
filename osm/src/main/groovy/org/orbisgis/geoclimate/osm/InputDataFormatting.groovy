@@ -1079,7 +1079,6 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
                 }
             }
             //Merging urban_areas
-
             def mergingUrbanAreas = postfix("merging_urban_areas")
             datasource.execute("""
             CREATE TABLE $mergingUrbanAreas as select CAST((row_number() over()) as Integer) as id_urban,the_geom, type from 
