@@ -637,7 +637,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
  * @author Erwan Bocher (CNRS)
  */
 String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
-                          float distance = 100) throws Exception {
+                          float distance = 50) throws Exception {
     //We must compute the grid
     if (!grid_indicators) {
         throw new IllegalArgumentException("No grid_indicators table to compute the sprawl areas layer")
@@ -649,17 +649,14 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
         throw new IllegalArgumentException("No grid cells to compute the sprawl areas layer")
     }
     def gridCols = datasource.getColumnNames(grid_indicators)
-    def lcz_columns_urban = ["LCZ_PRIMARY", "LCZ_WARM"]
-    def lcz_columns = gridCols.intersect(lcz_columns_urban)
-    if (lcz_columns.size() > 0) {
+    if (gridCols.contains("LCZ_PRIMARY")) {
         def outputTableName = postfix("sprawl_areas")
         if (distance == 0) {
             datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
         create table $outputTableName as 
         select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
         select st_union(st_accum(the_geom)) as the_geom from
-        $grid_indicators where lcz_warm>=2 
-        and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))')""".toString())
+        $grid_indicators where  LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') WHERE  the_geom is not null or st_isempty(the_geom) = false""".toString())
             return outputTableName
         } else {
             def tmp_sprawl = postfix("sprawl_tmp")
@@ -668,9 +665,9 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
          create table $tmp_sprawl as 
         select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
         select st_union(st_accum(the_geom)) as the_geom from
-        $grid_indicators where lcz_warm>=2 
-        and LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
-        where st_isempty(st_buffer(the_geom, -100,2)) =false""".toString())
+        $grid_indicators where 
+        LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
+        where st_area(st_buffer(the_geom, -$distance,2)) > 1""".toString())
 
             datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
          the_geom
@@ -680,7 +677,8 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
         st_removeholes(st_buffer(st_union(st_accum(st_buffer(st_removeholes(the_geom),$distance, ''quad_segs=2 endcap=flat
                      join=mitre mitre_limit=2''))),
                      -$distance, ''quad_segs=2 endcap=flat join=mitre mitre_limit=2'')) as the_geom  
-         FROM ST_EXPLODE(''$tmp_sprawl'') )') ;
+         FROM ST_EXPLODE(''$tmp_sprawl'') )') where (the_geom is not null or
+         st_isempty(the_geom) = false) and st_area(st_buffer(the_geom, -$distance,2)) >${distance * distance};
         DROP TABLE IF EXISTS $tmp_sprawl;
         """.toString())
             return outputTableName
@@ -705,36 +703,62 @@ String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons) th
     FROM
     ST_EXPLODE('(
         select st_difference(a.the_geom, st_accum(b.the_geom)) as the_geom from $tmp_extent as a, $input_polygons
-        as b where st_dimension(b.the_geom)=2)');        
+        as b where st_dimension(b.the_geom)=2)') where st_isempty(the_geom) = false or the_geom is not null;        
     DROP TABLE IF EXISTS $tmp_extent;
+    """.toString())
+    return outputTableName
+}
+
+/**
+ * This method is used to compute the difference between an input layer of polygons and the bounding box
+ * of the input layer.
+ * @param input_polygons a layer that contains polygons
+ * @param polygons_to_remove the polygons to remove in the input_polygons table
+ * @author Erwan Bocher (CNRS)
+ */
+String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons, String polygons_to_remove) throws Exception {
+    def outputTableName = postfix("inverse_geometries")
+    datasource.createSpatialIndex(input_polygons)
+    datasource.createSpatialIndex(polygons_to_remove)
+    datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+    CREATE TABLE $outputTableName as
+    SELECT CAST((row_number() over()) as Integer) as id, the_geom
+    FROM
+    ST_EXPLODE('(
+        select st_difference(a.the_geom, st_accum(b.the_geom)) as the_geom from $input_polygons as a, $polygons_to_remove
+        as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, st_pointonsurface(b.the_geom)) group by a.the_geom)')
+    where the_geom is not null or st_isempty(the_geom) = false;   
     """.toString())
     return outputTableName
 }
 
 
 /**
- * This methods allows to extract the cool area geometries inside polygons
- * A cool area is continous geometry defined by vegetation and water fractions.
+ * This methods allows to extract the cool area geometries inside a set of geometries,
+ * defined in a polygon mask table
+ * A cool area is a continous geometry defined by the LCZ 101, 102, 103,104, 106 and 107.
+ *
  *
  * @author Erwan Bocher (CNRS)
  */
-String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,
-                        float distance = 100) throws Exception {
-    if (!grid_indicators) {
+String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,String polygons_mask,
+                        float distance = 50) throws Exception {
+    if (!grid_indicators || !polygons_mask) {
         throw new IllegalArgumentException("No grid_indicators table to extract the cool areas layer")
     }
     def gridCols = datasource.getColumnNames(grid_indicators)
-    def lcz_columns_urban = ["LCZ_PRIMARY"]
-    def lcz_columns = gridCols.intersect(lcz_columns_urban)
-
-    if (lcz_columns.size() > 0) {
+    if (gridCols.contains("LCZ_PRIMARY")) {
+        datasource.createSpatialIndex(polygons_mask)
+        datasource.createSpatialIndex(grid_indicators)
         def outputTableName = postfix("cool_areas")
         datasource.execute("""
         DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id,  the_geom FROM ST_EXPLODE('(
-        SELECT ST_UNION(ST_ACCUM(a.THE_GEOM)) AS THE_GEOM FROM $grid_indicators as a
+        SELECT ST_UNION(ST_ACCUM(a.THE_GEOM)) AS THE_GEOM FROM $grid_indicators as a, $polygons_mask as b
         where 
-         a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107))') ${distance > 0 ? " where st_isempty(st_buffer(the_geom, -$distance,2)) =false" : ""};
+         a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107) and
+         a.the_geom && b.the_geom and st_intersects(st_pointonsurface(a.the_geom), b.the_geom))') ${distance > 0 ? 
+                " where (the_geom is not null or st_isempty(the_geom) = false) and st_area(st_buffer(the_geom, -$distance,2)) >${distance * distance}" : ""};
         """.toString())
         return outputTableName
     }

@@ -183,7 +183,7 @@ String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCod
  * @return outputTableName a name for the table that contains all polygons
  * @author Erwan Bocher CNRS LAB-STICC
  */
-String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean  valid_geom) {
+String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom) {
     return OSMTools.TransformUtils.toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom)
 }
 
@@ -202,8 +202,8 @@ String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCod
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [],  boolean valid_geom = false) {
-    return extractWaysAsPolygons( datasource,  osmTablesPrefix,  epsgCode ,  tags ,  columnsToKeep ,  null, valid_geom)
+String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = false) {
+    return extractWaysAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom)
 }
 
 /**
@@ -333,7 +333,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
 
     query += " FROM $waysPolygonTmp AS a, $osmTableTag b WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false "
 
-    if(columnsToKeep) {
+    if (columnsToKeep) {
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
 
@@ -342,7 +342,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
     query += " GROUP BY  a.id_way;"
     datasource.execute(query)
     if (geometry) {
-        def query_out  ="""DROP TABLE IF EXISTS $outputTableName;
+        def query_out = """DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName AS SELECT * FROM $allPolygonsTables as a where """
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
@@ -357,8 +357,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
                 $query_out;
                 DROP TABLE IF EXISTS $waysPolygonTmp, $idWaysPolygons, $allPolygonsTables;""".toString()
         return outputTableName
-    }
-    else{
+    } else {
         datasource """
                 ALTER TABLE $allPolygonsTables RENAME TO $outputTableName;
                 DROP TABLE IF EXISTS $waysPolygonTmp, $idWaysPolygons;
@@ -383,7 +382,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
 def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = false) {
-    return extractRelationsAsPolygons(datasource, osmTablesPrefix, epsgCode, tags , columnsToKeep, null, valid_geom)
+    return extractRelationsAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom)
 }
 
 /**
@@ -459,7 +458,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
             """.toString()
 
         if (columnsToKeep) {
-            if (datasource.getRowCount(relationFilteredKeys)< 1) {
+            if (datasource.getRowCount(relationFilteredKeys) < 1) {
                 debug "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
                 datasource """
                             DROP TABLE IF EXISTS $outputTableName;
@@ -584,14 +583,14 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false  """
     }
 
-    if(columnsToKeep) {
+    if (columnsToKeep) {
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
     query += " GROUP BY  a.the_geom, a.id_relation;"
     datasource.execute(query.toString())
 
     if (geometry) {
-        def query_out ="""DROP TABLE IF EXISTS $outputTableName;
+        def query_out = """DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName as SELECT * FROM $allRelationPolygons as a where"""
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
@@ -604,12 +603,12 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
         datasource.createSpatialIndex(allRelationPolygons, "the_geom")
         datasource.execute(query_out.toString())
         datasource.dropTable(relationsPolygonsOuter, relationsPolygonsInner, relationsPolygonsOuterExploded,
-                relationsPolygonsInnerExploded,relationsMpHoles,relationFilteredKeys, allRelationPolygons)
+                relationsPolygonsInnerExploded, relationsMpHoles, relationFilteredKeys, allRelationPolygons)
         return outputTableName
-    }else{
+    } else {
         datasource.execute("""ALTER TABLE $allRelationPolygons RENAME TO $outputTableName""".toString())
         datasource.dropTable(relationsPolygonsOuter, relationsPolygonsInner, relationsPolygonsOuterExploded,
-                relationsPolygonsInnerExploded,relationsMpHoles,relationFilteredKeys)
+                relationsPolygonsInnerExploded, relationsMpHoles, relationFilteredKeys)
         return outputTableName
     }
 
@@ -747,18 +746,18 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
     def query = """
                 DROP TABLE IF EXISTS $allLinesTables;
                 CREATE TABLE $allLinesTables AS 
-                    SELECT 'w'||a.id_way AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector,columnsToKeep)} 
+                    SELECT 'w'||a.id_way AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)} 
                     FROM $waysLinesTmp AS a, ${osmTablesPrefix}_way_tag b 
                     WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false """
 
-    if(columnsToKeep) {
+    if (columnsToKeep) {
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
 
     query += " GROUP BY a.id_way;"
     datasource.execute(query.toString())
     if (geometry) {
-        def  query_out =  """DROP TABLE IF EXISTS $outputTableName;
+        def query_out = """DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName as select * from $allLinesTables as a where """
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
@@ -774,7 +773,7 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
                 DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable, $allLinesTables;
         """.toString()
         return outputTableName
-    }else{
+    } else {
         datasource """
                 ALTER TABLE $allLinesTables RENAME TO $outputTableName;
                 DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable;
@@ -919,20 +918,20 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
 
     def columnsSelector = OSMTools.TransformUtils.getColumnSelector(osmTableTag, tags, columnsToKeep)
 
-    def allRelationLines =  postfix("all_relation_lines")
+    def allRelationLines = postfix("all_relation_lines")
     def query = """
                 DROP TABLE IF EXISTS $allRelationLines;
                 CREATE TABLE $allRelationLines AS
                     SELECT 'r'||a.id_relation AS id, a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}
                     FROM $relationsLinesTmp AS a, ${osmTablesPrefix}_relation_tag  b
                     WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false """
-    if(columnsToKeep) {
+    if (columnsToKeep) {
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
     query += " GROUP BY a.id_relation;"
     datasource.execute(query.toString())
     if (geometry) {
-        def query_out =""" DROP TABLE IF EXISTS $outputTableName;
+        def query_out = """ DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName as SELECT * FROM $allRelationLines as a where """
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
@@ -947,7 +946,7 @@ String extractRelationsAsLines(JdbcDataSource datasource, String osmTablesPrefix
                 DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys, $allRelationLines;
         """.toString())
         return outputTableName
-    }else{
+    } else {
         datasource.execute(""" ALTER TABLE $allRelationLines RENAME TO $outputTableName;
                 DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys;
         """.toString())

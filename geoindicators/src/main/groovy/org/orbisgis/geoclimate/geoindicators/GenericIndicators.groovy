@@ -336,7 +336,7 @@ String buildingDirectionDistribution(JdbcDataSource datasource, String buildingT
                         SELECT $inputIdUp, LEN_L, LEN_H, CASEWHEN(ANG_L>=180, ANG_L-180, ANG_L) AS ANG_L, 
                         CASEWHEN(ANG_H>180, ANG_H-180, ANG_H) AS ANG_H FROM $build_dir360""")
 
-            datasource.execute( "CREATE INDEX ON $build_dir180 ($inputIdUp)")
+            datasource.execute("CREATE INDEX ON $build_dir180 ($inputIdUp)")
 
             // The query aiming to create the building direction distribution is created
             def sqlQueryDist = "DROP TABLE IF EXISTS $build_dir_dist; CREATE TABLE $build_dir_dist AS SELECT "

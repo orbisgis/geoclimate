@@ -108,7 +108,7 @@ class WorkflowGeoIndicatorsTest {
         List listFacadeDistrib = []
         List listRoofDensDistrib = []
         int rangeDeg = 360 / parameters.facadeDensNumberOfDirection
-        for (int i in 0..parameters.facadeDensListLayersBottom.size()-1) {
+        for (int i in 0..parameters.facadeDensListLayersBottom.size() - 1) {
             Integer h_bot = parameters.facadeDensListLayersBottom[i]
             Integer h_up
             if (h_bot == parameters.facadeDensListLayersBottom[-1]) {
@@ -130,7 +130,7 @@ class WorkflowGeoIndicatorsTest {
         }
         // Indicator list (at RSU scale) for each building height level
         List listHeightDistrib = []
-        for (int i in 0..parameters.buildHeightListLayersBottom.size()-1) {
+        for (int i in 0..parameters.buildHeightListLayersBottom.size() - 1) {
             Integer h_bot = parameters.buildHeightListLayersBottom[i]
             Integer h_up
             if (h_bot == parameters.buildHeightListLayersBottom[-1]) {
@@ -162,10 +162,10 @@ class WorkflowGeoIndicatorsTest {
 
         // Indicators common to each indicator use
         listColCommon = ["LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION",
-                           "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                           "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
-                           "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
-                           "HIGH_VEGETATION_BUILDING_FRACTION", "UNDEFINED_FRACTION", "BUILDING_FLOOR_AREA_DENSITY"]
+                         "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                         "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
+                         "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
+                         "HIGH_VEGETATION_BUILDING_FRACTION", "UNDEFINED_FRACTION", "BUILDING_FLOOR_AREA_DENSITY"]
 
         // Column names in the LCZ Table
         listColLcz = ["LCZ_PRIMARY", "LCZ_SECONDARY", "LCZ_EQUALITY_VALUE", "LCZ_UNIQUENESS_VALUE", "MIN_DISTANCE"]
@@ -195,7 +195,7 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.hydrographicTable, "", "", "", "", "",
                 ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
 
-        datasource.save(geoIndicatorsCompute_i.rsu_indicators, "/tmp/rsu.geojson" , true)
+        datasource.save(geoIndicatorsCompute_i.rsu_indicators, "/tmp/rsu.geojson", true)
         assertNotNull(geoIndicatorsCompute_i)
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
         assertEquals(listUrbTyp.Bu.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.building_indicators).sort())
@@ -225,19 +225,19 @@ class WorkflowGeoIndicatorsTest {
         assertEquals dfBlock.nrows(), dfBlock.omitNullRows().nrows()
 
         // Test that the sum of all building fractions is 100% for both LCZ and TEB building types
-        if (listBuildTypTeb){
+        if (listBuildTypTeb) {
             def sum_afrac_teb = datasource.firstRow("SELECT AVG(${listBuildTypTeb.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
             assertEquals sum_afrac_teb.SUM_FRAC, 1.0, 0.01
         }
-        if (listBuildTypLcz){
+        if (listBuildTypLcz) {
             def sum_afrac_lcz = datasource.firstRow("SELECT AVG(${listBuildTypLcz.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
             assertEquals sum_afrac_lcz.SUM_FRAC, 1.0, 0.01
         }
-        if (listFloorBuildTypLcz){
+        if (listFloorBuildTypLcz) {
             def sum_fafrac_lcz = datasource.firstRow("SELECT AVG(${listFloorBuildTypLcz.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
             assertEquals sum_fafrac_lcz.SUM_FRAC, 1.0, 0.01
         }
-        if (listFloorBuildTypTeb){
+        if (listFloorBuildTypTeb) {
             def sum_fafrac_teb = datasource.firstRow("SELECT AVG(${listFloorBuildTypTeb.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
             assertEquals sum_fafrac_teb.SUM_FRAC, 1.0, 0.01
         }
@@ -275,7 +275,7 @@ class WorkflowGeoIndicatorsTest {
             assertEquals countSumAreaRemove0.NB, countSumAreaEqual1.NB
 
             // Check that the sum of proportion (or building floor area) for each RSU is equal to 1
-            def colUtrfFloorArea  = datasource.getColumnNames(geoIndicatorsCompute_i.rsu_utrf_floor_area)
+            def colUtrfFloorArea = datasource.getColumnNames(geoIndicatorsCompute_i.rsu_utrf_floor_area)
 
             // Test that the TYPO_SECOND is inside the RSU UTRF table
             assertEquals 1, colUtrfFloorArea.count("TYPO_SECOND")
@@ -522,7 +522,7 @@ class WorkflowGeoIndicatorsTest {
         String grid = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, datasource.getExtent("building"), 10, 10, 0)
         assertNotNull(grid)
         String grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, [],
-                null, "building", null, null, null, null, null,
+                "building", null, null, null, null, null,
                 null, null, null)
         assertNull(grid_indicators)
         def list_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
@@ -531,8 +531,8 @@ class WorkflowGeoIndicatorsTest {
                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
-        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators, null,
-                "building", null, null, null, null, null, null,
+        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators,
+                "building", null, null, null, null, null,
                 null, null, null)
         assertNotNull(grid_indicators)
         assertEquals(1, datasource.getRowCount(grid_indicators))
@@ -618,7 +618,7 @@ class WorkflowGeoIndicatorsTest {
 
     @Disabled
     @Test
-     void test(){
+    void test() {
         datasource.load("/tmp/road_inter.geojson", "road", true)
         datasource.load("/tmp/rsu_table.geojson", "rsu", true)
         datasource.createSpatialIndex("road")

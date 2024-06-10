@@ -47,7 +47,9 @@
     "surface": [
       "grass"
     ],
-    "tourism": ["camp_site"],
+    "tourism": [
+      "camp_site"
+    ],
     "sport": []
   },
   "columns": [
@@ -126,8 +128,13 @@
       "surface": [
         "grass"
       ],
-      "tourism": ["camp_site"],
-      "sport": ["soccer", "rugby"]
+      "tourism": [
+        "camp_site"
+      ],
+      "sport": [
+        "soccer",
+        "rugby"
+      ]
     },
     "grassland": {
       "landcover": [

@@ -87,7 +87,7 @@
     "hospital": 2,
     "parking": 1,
     "slight_construction": 0,
-    "water_tower" : 0,
+    "water_tower": 0,
     "fortress": 0,
     "abbey": 0,
     "cathedral": 0,
@@ -98,10 +98,10 @@
     "shrine": 0,
     "place_of_worship": 0,
     "wayside_shrine": 0,
-    "swimming_pool" : 0,
+    "swimming_pool": 0,
     "fitness_centre": 1,
     "horse_riding": 0,
-    "ice_rink" : 0,
+    "ice_rink": 0,
     "pitch": 0,
     "stadium": 0,
     "track": 0,
@@ -120,23 +120,23 @@
     "bank": 1,
     "bureau_de_change": 0,
     "boat_rental": 0,
-    "car_rental" : 0,
+    "car_rental": 0,
     "internet_cafe": 0,
     "kiosk": 0,
     "money_transfer": 0,
     "market": 0,
     "marketplace": 0,
-    "pharmacy" : 0,
-    "post_office" : 1,
+    "pharmacy": 0,
+    "post_office": 1,
     "retail": 0,
-    "shop" : 0,
+    "shop": 0,
     "store": 0,
     "supermarket": 0,
     "warehouse": 0,
     "factory": 0,
-    "gas" : 0,
+    "gas": 0,
     "heating_station": 0,
-    "oil_mill" : 0,
+    "oil_mill": 0,
     "oil": 0,
     "wellsite": 0,
     "well_cluster": 0,
@@ -145,7 +145,7 @@
     "dormitory": 1,
     "condominium": 1,
     "sheltered_housing": 0,
-    "workers_dormitory" :0,
+    "workers_dormitory": 0,
     "terrace": 1,
     "transportation": 0,
     "hangar": 0,
@@ -1330,10 +1330,14 @@
       ]
     },
     "slight_construction": {
-      "wall": ["no"]
+      "wall": [
+        "no"
+      ]
     },
     "water_tower:service": {
-      "man_made": ["water_tower"]
+      "man_made": [
+        "water_tower"
+      ]
     },
     "building": {
       "building": [

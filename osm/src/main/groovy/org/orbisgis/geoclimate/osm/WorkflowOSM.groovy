@@ -285,7 +285,8 @@ Map workflow(def input) throws Exception {
                                     "road_traffic",
                                     "population",
                                     "ground_acoustic",
-                                    "sprawl_areas"]
+                                    "urban_sprawl_areas",
+                                    "urban_cool_areas"]
 
     //Get processing parameters
     def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
@@ -444,7 +445,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                 info "Urban areas formatted"
                 /*
-                 * Do not filter the data when formatting becausethe job is already done when extracting osm data                     *
+                 * Do not filter the data when formatting because the job is already done when extracting osm data                     *
                  */
                 Map formatBuilding = OSM.InputDataFormatting.formatBuildingLayer(
                         h2gis_datasource, gisLayersResults.building,
@@ -596,7 +597,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 if (grid_indicators_params) {
                     info("Start computing grid_indicators")
                     if (!geomEnv) {
-                        geomEnv = h2gis_datasource.getSpatialTable(utm_zone_table).getExtent()
+                        geomEnv = h2gis_datasource.getExtent(utm_zone_table)
                     }
                     outputGrid = grid_indicators_params.output
                     def x_size = grid_indicators_params.x_size
@@ -605,7 +606,6 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             x_size, y_size, srid, grid_indicators_params.rowCol)
                     String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                             grid_indicators_params.indicators,
-                            grid_indicators_params.lcz_lod,
                             results.building, roadTableName, vegetationTableName,
                             hydrographicTableName, imperviousTableName,
                             results.rsu_lcz,
@@ -619,7 +619,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         def sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource, rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
                                 Math.max(x_size, y_size).floatValue())
                         if (sprawl_indic) {
-                            results.put("sprawl_areas", sprawl_indic.sprawl_areas)
+                            results.put("urban_sprawl_areas", sprawl_indic.urban_sprawl_areas)
+                            if (sprawl_indic.urban_cool_areas) {
+                                results.put("urban_cool_areas", sprawl_indic.urban_cool_areas)
+                            }
                             results.put("grid_indicators", sprawl_indic.grid_indicators)
                         }
                         info("End computing grid_indicators")
@@ -637,9 +640,9 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
             }
         } catch (Exception e) {
-            saveLogZoneTable(h2gis_datasource,databaseFolder, id_zone in Collection?id_zone.join("_"):id_zone, osm_zone_geometry, e.getLocalizedMessage())
+            saveLogZoneTable(h2gis_datasource, databaseFolder, id_zone in Collection ? id_zone.join("_") : id_zone, osm_zone_geometry, e.getLocalizedMessage())
             //eat the exception and process other zone
-            warn("The zone $id_zone has not been processed. Please check the log table to get more informations." )
+            warn("The zone $id_zone has not been processed. Please check the log table to get more informations.")
         }
     }
     if (outputTableNamesResult) {
@@ -673,7 +676,7 @@ void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, String i
                             '${Geoindicators.version()}',
                             '${Geoindicators.buildNumber()}')""")
     }
-    dataSource.save(logTableZones, databaseFolder+File.separator+"log_zones_"+id_zone+".fgb", true )
+    dataSource.save(logTableZones, databaseFolder + File.separator + "log_zones_" + id_zone + ".fgb", true)
 }
 
 /**
@@ -689,7 +692,7 @@ void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, String i
  * osm_geometry the geometry that represents the processed zone in lat/lon
  * utm_srid the UTM srid code
  */
-def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_size) throws Exception{
+def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_size) throws Exception {
     def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}".toString()
     def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}".toString()
     if (zoneToExtract) {
@@ -755,7 +758,7 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
  * @param processing_parameters the file parameters
  * @return a filled map of parameters
  */
-def extractProcessingParameters(def processing_parameters) throws Exception{
+def extractProcessingParameters(def processing_parameters) throws Exception {
     def defaultParameters = [distance: 0f, prefixName: "",
                              hLevMin : 3]
     def rsu_indicators_default = [indicatorUse       : [],
@@ -851,18 +854,18 @@ def extractProcessingParameters(def processing_parameters) throws Exception{
             def list_indicators = grid_indicators.indicators
             if (x_size && y_size) {
                 if (x_size <= 0 || y_size <= 0) {
-                    throw new Exception( "Invalid grid size padding. Must be greater that 0")
+                    throw new Exception("Invalid grid size padding. Must be greater that 0")
                 }
                 if (!list_indicators) {
-                    throw new Exception( "The list of indicator names cannot be null or empty")
+                    throw new Exception("The list of indicator names cannot be null or empty")
                 }
                 def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                                "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DIST",
                                                "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
-                                               "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS", "SPRAWL_AREAS",
-                                               "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+                                               "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS", "URBAN_SPRAWL_AREAS",
+                                               "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if (allowedOutputIndicators) {
                     //Update the RSU indicators list according the grid indicators
@@ -893,17 +896,17 @@ def extractProcessingParameters(def processing_parameters) throws Exception{
                     def lcz_lod = grid_indicators.lcz_lod
                     if (lcz_lod && lcz_lod in Integer) {
                         if (lcz_lod < 0 && lcz_lod > 10) {
-                            throw new Exception( "The number of level of details to aggregate the LCZ must be between 0 and 10")
+                            throw new Exception("The number of level of details to aggregate the LCZ must be between 0 and 10")
                         }
                         grid_indicators_tmp.put("lcz_lod", lcz_lod)
                     }
-                    def sprawl_areas = grid_indicators.sprawl_areas
+                    def sprawl_areas = grid_indicators.urban_sprawl_areas
                     if (sprawl_areas && sprawl_areas in Boolean) {
-                        grid_indicators_tmp.put("sprawl_areas", sprawl_areas)
+                        grid_indicators_tmp.put("urban_sprawl_areas", sprawl_areas)
                     }
                     defaultParameters.put("grid_indicators", grid_indicators_tmp)
                 } else {
-                    throw new Exception( "Please set a valid list of indicator names in ${allowed_grid_indicators}")
+                    throw new Exception("Please set a valid list of indicator names in ${allowed_grid_indicators}")
                 }
             }
         }
@@ -947,7 +950,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception{
  * @return
  */
 def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID,
-                    def reproject, def deleteOutputData, def outputGrid) throws Exception{
+                    def reproject, def deleteOutputData, def outputGrid) throws Exception {
     //Create a subfolder to store each results
     def folderName = id_zone in Collection ? id_zone.join("_") : id_zone
     def subFolder = new File(ouputFolder.getAbsolutePath() + File.separator + subFolderName + folderName)
@@ -956,7 +959,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
     } else {
         FileUtilities.deleteFiles(subFolder)
     }
-    outputFiles.each {
+    outputFiles.each { it->
         if (it == "grid_indicators") {
             if (outputGrid == "fgb") {
                 Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
@@ -983,7 +986,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
  * @return
  */
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames,
-                         def h2gis_tables, def id_zone, def inputSRID, def outputSRID, def reproject) throws Exception{
+                         def h2gis_tables, def id_zone, def inputSRID, def outputSRID, def reproject) throws Exception {
     //Export building indicators
     indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators, id_zone, h2gis_datasource, h2gis_tables.building_indicators
             , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID, reproject)
@@ -1088,7 +1091,7 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
  */
 def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
                                        def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save,
-                                       def filter, def inputSRID, def outputSRID, def reproject) throws Exception{
+                                       def filter, def inputSRID, def outputSRID, def reproject) throws Exception {
     if (output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
@@ -1209,7 +1212,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
  */
 def indicatorTableBatchExportTable(JdbcDataSource output_datasource, def output_table, def id_zone,
                                    def h2gis_datasource, h2gis_table_to_save, def filter, def inputSRID, def outputSRID,
-                                   def reproject) throws Exception{
+                                   def reproject) throws Exception {
     if (output_table) {
         if (h2gis_table_to_save) {
             if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
@@ -1334,7 +1337,7 @@ def indicatorTableBatchExportTable(JdbcDataSource output_datasource, def output_
  * @return
  */
 def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID, H2GIS h2gis_datasource,
-                       def output_table, def outputSRID, def output_datasource) throws Exception{
+                       def output_table, def outputSRID, def output_datasource) throws Exception {
     def targetTableSrid = output_datasource.getSpatialTable(output_table).srid
     if (filter) {
         if (outputSRID == 0) {
@@ -1407,7 +1410,7 @@ def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID, H2GIS
  * @return
  */
 Map buildGeoclimateLayers(JdbcDataSource datasource, Object zoneToExtract,
-                          float distance = 500, int hLevMin = 3) throws Exception{
+                          float distance = 500, int hLevMin = 3) throws Exception {
     if (datasource == null) {
         throw new Exception("Cannot access to the database to store the osm data")
     }

@@ -53,7 +53,7 @@ import java.sql.SQLException
  *
  * @return The name of the road table
  */
-String build_road_traffic(JdbcDataSource datasource, String road, String zone = "", String jsonFilename = "") throws Exception{
+String build_road_traffic(JdbcDataSource datasource, String road, String zone = "", String jsonFilename = "") throws Exception {
     debug('Create the default traffic data')
     def outputTableName = postfix "ROAD_TRAFFIC"
     datasource """
@@ -101,7 +101,7 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
         try {
             //Define the mapping between the values in OSM and those used in the abstract model
             def queryMapper = "SELECT "
-            if (datasource.getRowCount(road)> 0) {
+            if (datasource.getRowCount(road) > 0) {
                 def columnNames = datasource.getColumnNames(road)
                 columnNames.remove("THE_GEOM")
                 def flatListColumns = columnNames.inject([]) { result, iter ->
@@ -173,7 +173,7 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
             COMMENT ON COLUMN ${outputTableName}."SLOPE" IS 'Slope (in %) of the road section.';
             COMMENT ON COLUMN ${outputTableName}."DIRECTION" IS 'Define the direction of the road section. 1 = one way road section and the traffic goes in the same way that the slope definition you have used, 2 = one way road section and the traffic goes in the inverse way that the slope definition you have used, 3 = bi-directional traffic flow, the flow is split into two components and correct half for uphill and half for downhill'""")
             }
-        }catch (SQLException e){
+        } catch (SQLException e) {
             throw new SQLException("Cannot compute the road traffic", e)
         }
     }

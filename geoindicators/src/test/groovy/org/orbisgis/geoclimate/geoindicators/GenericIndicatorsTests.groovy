@@ -364,7 +364,7 @@ class GenericIndicatorsTests {
                         FROM building_test a, rsu_test b
                         WHERE id_build < 4;"""
         // Test 1
-        assertThrows(Exception.class, ()-> Geoindicators.GenericIndicators.typeProportion(h2GIS,
+        assertThrows(Exception.class, () -> Geoindicators.GenericIndicators.typeProportion(h2GIS,
                 "tempo_build", "id_rsu", "type",
                 "rsu_test",
                 null, null, ""))
@@ -436,7 +436,7 @@ class GenericIndicatorsTests {
 
     }
 
-        @Test
+    @Test
     void gatherScalesTest3() {
         h2GIS """
                 DROP TABLE IF EXISTS tempo_block, tempo_build, tempo_rsu; 
@@ -481,7 +481,7 @@ class GenericIndicatorsTests {
         assertEquals(4, h2GIS.getSpatialTable(gridProcess).getRowCount())
 
         def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(h2GIS,
-                gridProcess, "id_grid", indicatorTableName,indicatorName, indicatorName, "agg")
+                gridProcess, "id_grid", indicatorTableName, indicatorName, indicatorName, "agg")
 
         assertNotNull(upperScaleAreaStatistics)
 

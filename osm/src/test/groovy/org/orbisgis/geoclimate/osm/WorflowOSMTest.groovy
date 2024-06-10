@@ -100,7 +100,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         datasource.load(urlZone, zone, true)
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, datasource, zone, buildingTableName, roadTableName,
-                railTableName, vegetationTableName, hydrographicTableName, "", "","",
+                railTableName, vegetationTableName, hydrographicTableName, "", "", "",
                 saveResults, svfSimplified, indicatorUse, prefixName, false)
     }
 
@@ -195,7 +195,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         //Run tests
         geoIndicatorsCalc(dirFile.absolutePath, datasource, zone, buildingTableName, roadTableName,
-                railTableName, vegetationTableName, hydrographicTableName, imperviousTableName, sealandTableName,"",
+                railTableName, vegetationTableName, hydrographicTableName, imperviousTableName, sealandTableName, "",
                 saveResults, svfSimplified, indicatorUse, prefixName, true)
     }
 
@@ -464,7 +464,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                    "terrain_roughness_class"     : 1]]
                         ]
         ]
-        assertThrows(Exception.class, ()->OSM.workflow(osm_parmeters))
+        assertThrows(Exception.class, () -> OSM.workflow(osm_parmeters))
     }
 
     @Test
@@ -570,7 +570,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                           "svfSimplified": true]
                         ]
         ]
-        assertThrows(Exception.class, ()->OSM.workflow(osm_parmeters))
+        assertThrows(Exception.class, () -> OSM.workflow(osm_parmeters))
     }
 
 
@@ -649,11 +649,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Redon"
+        def location = "Mâcon"
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
-       // location = nominatim.bbox
-       // location=[44.795480,12.323227,45.004622,12.627411]
+        //location = nominatim.bbox
+        // location=[44.795480,12.323227,45.004622,12.627411]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -663,7 +663,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 ],
                 "input"       : [
                         "locations": [location],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
-                         "area": 2800,
+                        "area"     : 2800,
                         //"date":"2017-12-31T19:20:00Z",
                         /*"timeout":182,
                         "maxsize": 536870918,
@@ -672,29 +672,29 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory]
                 ,
                 "parameters"  :
-                        ["distance"                                             : 0,
-                         "rsu_indicators"                                       : [
-
+                        ["distance"             : 0,
+                         "rsu_indicators"       : [
                                  "indicatorUse": ["LCZ"] //, "UTRF", "TEB"]
 
-                         ],"grid_indicators": [
-                                "x_size": grid_size,
-                                "y_size": grid_size,
+                         ], "grid_indicators"   : [
+                                "x_size"    : grid_size,
+                                "y_size"    : grid_size,
                                 //"rowCol": true,
-                                "indicators":  [//"BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
-                                                //"BUILDING_TYPE_FRACTION",
-                                                //"WATER_FRACTION","VEGETATION_FRACTION",
-                                                //"ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                                                "LCZ_PRIMARY",
-                                                //"BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                                //"SEA_LAND_FRACTION",
-                                                //"ASPECT_RATIO",
-                                                //"SVF",
-                                      // "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
-                                                "SPRAWL_AREAS",
-                                                "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"],
-                                //"lcz_lod":2
-                        ],    "worldpop_indicators": true/*
+                                "indicators": [//"BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
+                                               //"BUILDING_TYPE_FRACTION",
+                                               //"WATER_FRACTION","VEGETATION_FRACTION",
+                                               //"ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                                               "LCZ_PRIMARY",
+                                               //"BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
+                                               //"SEA_LAND_FRACTION",
+                                               //"ASPECT_RATIO",
+                                               //"SVF",
+                                               // "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
+                                               "URBAN_SPRAWL_AREAS",
+                                               "URBAN_SPRAWL_DISTANCES",
+                                               "URBAN_SPRAWL_COOL_DISTANCE"],
+                                "lcz_lod":1
+                        ], "worldpop_indicators": true/*
 
                          "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
@@ -702,18 +702,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          ]*/
                         ]
         ]
-        Map results = OSM.workflow(osm_parmeters)
-        /*if(results) {
-            H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_test_integration;AUTO_SERVER=TRUE")
-            def tableNames = results.values()
-            def gridTable = tableNames.grid_indicators[0]
-            String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2gis, gridTable,grid_size)
-            def folder_save =location in Collection ? location.join("_") : location
-            def path = directory + File.separator + "osm_$folder_save" +  File.separator
-            path = "/tmp/"
-            h2gis.save(sprawl_areas, path + "sprawl_areas.fgb", true)
-            h2gis.save(tableNames.rsu_lcz[0], path + "rsu_lcz.fgb", true)
-        }*/
+         OSM.workflow(osm_parmeters)
     }
 
     @Disabled
@@ -762,7 +751,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def rsuLczUpdated = "UPDATED_HEIGHTTEST_RSU_LCZ"
         println(""" Grid indicators are calculated """)
         def gridProcess = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, geomEnv,
-                x_size,  y_size,srid_calc, false)
+                x_size, y_size, srid_calc, false)
         if (gridProcess) {
             def computeRasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource,
                     gridProcess,
@@ -786,9 +775,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def outputFolder = new File('/home/decide/Data/WRF/Data/output/updated')
             def subFolder = new File(outputFolder.getAbsolutePath() + File.separator + "osm_" + id_zone)
             Geoindicators.WorkflowUtilities.saveToAscGrid(computeRasterizedIndicators, subFolder, "grid_indicators", datasource, 3007, reproject, deleteOutputData)
-
         }
-            }
+    }
 
     @Test
     //Integration tests
@@ -813,13 +801,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [[43.726898,7.298452,43.727677,7.299632]]],
+                        "locations": [[43.726898, 7.298452, 43.727677, 7.299632]]],
                 "output"      : [
                         "folder": ["path"  : directory,
                                    "tables": ["building", "zone"]]],
                 "parameters"  :
-                        ["distance"       : 0,
-                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                        ["distance"    : 0,
+                         rsu_indicators: ["indicatorUse": ["LCZ"]]
                         ]
         ]
         Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
@@ -842,13 +830,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [[43.726898,7.298452,100]]],
+                        "locations": [[43.726898, 7.298452, 100]]],
                 "output"      : [
                         "folder": ["path"  : directory,
                                    "tables": ["building", "zone"]]],
                 "parameters"  :
                         [
-                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                                rsu_indicators: ["indicatorUse": ["LCZ"]]
                         ]
         ]
         Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
@@ -872,7 +860,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [[43.726898,7.298452,100]]],
+                        "locations": [[43.726898, 7.298452, 100]]],
                 "output"      : [
                         "folder": ["path"  : directory,
                                    "tables": ["building", "zone"]]]
@@ -900,19 +888,20 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [[43.726898,7.298452,100]]]
+                        "locations": [[43.726898, 7.298452, 100]]]
         ]
         Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
         def tableNames = process.values()[0]
         H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db")
         //All tables must exist in the database
-        tableNames.each {it->
+        tableNames.each { it ->
             assertTrue(h2gis.hasTable(it.value))
         }
     }
 
 
-    @Disabled //Because it takes some time to build the OSM query
+    @Disabled
+    //Because it takes some time to build the OSM query
     @Test
     void testEstimateBuildingWithAllInputHeightDate() {
         String directory = folder.absolutePath + File.separator + "test_building_height"
@@ -926,14 +915,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [[43.726898,7.298452,43.727677,7.299632]],
-                        "date":"2015-12-31T19:20:00Z"],
+                        "locations": [[43.726898, 7.298452, 43.727677, 7.299632]],
+                        "date"     : "2015-12-31T19:20:00Z"],
                 "output"      : [
                         "folder": ["path"  : directory,
                                    "tables": ["building", "zone"]]],
                 "parameters"  :
-                        ["distance"       : 0,
-                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                        ["distance"    : 0,
+                         rsu_indicators: ["indicatorUse": ["LCZ"]]
                         ]
         ]
         Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
@@ -962,8 +951,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "input"       : [
                         "locations": [[47.4, -4.8, 47.6, -4.6]]],
                 "parameters"  :
-                        ["distance"       : 0,
-                         rsu_indicators: ["indicatorUse" : ["LCZ"]]
+                        ["distance"    : 0,
+                         rsu_indicators: ["indicatorUse": ["LCZ"]]
                         ]
         ]
         Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
@@ -971,10 +960,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def lcz = tableNames.rsu_lcz[0]
         H2GIS h2gis = H2GIS.open("${directory + File.separator}sea_lcz_db;AUTO_SERVER=TRUE")
         h2gis.save(lcz, "/tmp/sea.geojson", true)
-        def lcz_group=  h2gis.firstRow("select  lcz_primary, count(*) as count from $lcz group by lcz_primary".toString())
-        assertTrue(lcz_group.size()==2)
-        assertTrue(lcz_group.lcz_primary==107)
-        assertTrue(lcz_group.count==1)
+        def lcz_group = h2gis.firstRow("select  lcz_primary, count(*) as count from $lcz group by lcz_primary".toString())
+        assertTrue(lcz_group.size() == 2)
+        assertTrue(lcz_group.lcz_primary == 107)
+        assertTrue(lcz_group.count == 1)
     }
 
     /**

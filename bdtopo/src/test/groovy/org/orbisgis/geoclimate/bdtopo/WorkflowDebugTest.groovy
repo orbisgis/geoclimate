@@ -58,23 +58,23 @@ class WorkflowDebugTest {
             */
             def input = [
                     "locations": locations,
-                    "database": [
-                            "user"     : user,
-                            "password" : password,
-                            "url"      : url,
-                            "tables"   : ["commune"                : "ign_bdtopo_2018.commune",
-                                          "bati_indifferencie"     : "ign_bdtopo_2018.bati_indifferencie",
-                                          "bati_industriel"        : "ign_bdtopo_2018.bati_industriel",
-                                          "bati_remarquable"       : "ign_bdtopo_2018.bati_remarquable",
-                                          "route"                  : "ign_bdtopo_2018.route",
-                                          "troncon_voie_ferree"    : "ign_bdtopo_2018.troncon_voie_ferree",
-                                          "surface_eau"            : "ign_bdtopo_2018.surface_eau",
-                                          "zone_vegetation"        : "ign_bdtopo_2018.zone_vegetation",
-                                          "terrain_sport"          : "ign_bdtopo_2018.terrain_sport",
-                                          "construction_surfacique": "ign_bdtopo_2018.construction_surfacique",
-                                          "surface_route"          : "ign_bdtopo_2018.surface_route",
-                                          "surface_activite"       : "ign_bdtopo_2018.surface_activite",
-                                          "piste_aerodrome"        : "ign_bdtopo_2018.piste_aerodrome"]
+                    "database" : [
+                            "user"    : user,
+                            "password": password,
+                            "url"     : url,
+                            "tables"  : ["commune"                : "ign_bdtopo_2018.commune",
+                                         "bati_indifferencie"     : "ign_bdtopo_2018.bati_indifferencie",
+                                         "bati_industriel"        : "ign_bdtopo_2018.bati_industriel",
+                                         "bati_remarquable"       : "ign_bdtopo_2018.bati_remarquable",
+                                         "route"                  : "ign_bdtopo_2018.route",
+                                         "troncon_voie_ferree"    : "ign_bdtopo_2018.troncon_voie_ferree",
+                                         "surface_eau"            : "ign_bdtopo_2018.surface_eau",
+                                         "zone_vegetation"        : "ign_bdtopo_2018.zone_vegetation",
+                                         "terrain_sport"          : "ign_bdtopo_2018.terrain_sport",
+                                         "construction_surfacique": "ign_bdtopo_2018.construction_surfacique",
+                                         "surface_route"          : "ign_bdtopo_2018.surface_route",
+                                         "surface_activite"       : "ign_bdtopo_2018.surface_activite",
+                                         "piste_aerodrome"        : "ign_bdtopo_2018.piste_aerodrome"]
                     ]]
 
 
@@ -137,7 +137,7 @@ class WorkflowDebugTest {
     @Test
     void testIntegrationFolderInput() {
         def input_data = "/home/decide/Data/URBIO/Donnees_brutes/BD_TOPO/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D076_2024-03-15"
-        def locations = ["76005","76020"]
+        def locations = ["76005", "76020"]
         String directory = "/tmp/bdtopo3"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -156,9 +156,9 @@ class WorkflowDebugTest {
                 "output"      : [
                         "folder": ["path": directory]],
                 "parameters"  :
-                        ["distance"       : 0,
-                         rsu_indicators   : [
-                                 "indicatorUse": ["LCZ",  "UTRF",  "TEB"]
+                        ["distance"    : 0,
+                         rsu_indicators: [
+                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
 
                          ],
                          /*"grid_indicators": [

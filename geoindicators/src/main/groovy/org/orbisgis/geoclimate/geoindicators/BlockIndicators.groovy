@@ -84,7 +84,7 @@ String holeAreaDensity(JdbcDataSource datasource, String blockTable, String pref
  * @author Jérémy Bernard
  * @author Erwan Bocher
  */
-String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField, String buildingContiguityField, String prefixName) throws Exception{
+String netCompactness(JdbcDataSource datasource, String building, String buildingVolumeField, String buildingContiguityField, String prefixName) throws Exception {
     def GEOMETRY_FIELD_BU = "the_geom"
     def ID_COLUMN_BL = "id_block"
     def HEIGHT_WALL = "height_wall"
@@ -177,6 +177,6 @@ String closingness(JdbcDataSource datasource, String correlationTableName, Strin
         datasource.execute(query)
         return outputTableName
     } catch (SQLException e) {
-        throw new SQLException("Cannot compute the closingness for the building blocks",e)
+        throw new SQLException("Cannot compute the closingness for the building blocks", e)
     }
 }

@@ -230,7 +230,7 @@ class UtilitiesTest extends AbstractOSMToolsTest {
      */
     @Test
     void badToBBoxTest() {
-        assertThrows(Exception.class, ()-> OSMTools.Utilities.toBBox(null))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.toBBox(null))
     }
 
     /**
@@ -399,8 +399,8 @@ class UtilitiesTest extends AbstractOSMToolsTest {
      */
     @Test
     void badBuildOSMQueryFromPolygonTest() {
-        assertThrows(Exception.class, ()-> OSMTools.Utilities.buildOSMQuery((Polygon) null, ["building"], OSMElement.NODE))
-        assertThrows(Exception.class, ()-> OSMTools.Utilities.buildOSMQuery(new GeometryFactory().createPolygon(), ["building"], OSMElement.NODE))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.buildOSMQuery((Polygon) null, ["building"], OSMElement.NODE))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.buildOSMQuery(new GeometryFactory().createPolygon(), ["building"], OSMElement.NODE))
     }
 
     /**
@@ -427,8 +427,8 @@ class UtilitiesTest extends AbstractOSMToolsTest {
      */
     @Test
     void badReadJSONParametersTest() {
-        assertThrows(Exception.class, ()-> OSMTools.Utilities.readJSONParameters(null))
-        assertThrows(Exception.class, ()-> OSMTools.Utilities.readJSONParameters(""))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.readJSONParameters(null))
+        assertThrows(Exception.class, () -> OSMTools.Utilities.readJSONParameters(""))
         assertNull OSMTools.Utilities.readJSONParameters("toto")
         assertNull OSMTools.Utilities.readJSONParameters("target")
         assertNull OSMTools.Utilities.readJSONParameters(new File(UtilitiesTest.getResource("bad_json_params.json").toURI()).absolutePath)

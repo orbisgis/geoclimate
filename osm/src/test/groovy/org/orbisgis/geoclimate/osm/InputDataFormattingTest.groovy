@@ -288,15 +288,20 @@ class InputDataFormattingTest {
         }
 
         def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
-        def zoneToExtract = "Marseille"
+        def zoneToExtract = "Nimes"
 
-        zoneToExtract =[44.795480,12.323227,45.004622,12.627411]
+        //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(zoneToExtract)
+        // zoneToExtract = nominatim.bbox
+
+        zoneToExtract = [43.824643, 4.383599, 43.827271, 4.388207]
+
+        //zoneToExtract =[44.795480,12.323227,45.004622,12.627411]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
 
-        if(!formatedPlaceName){
-            formatedPlaceName=zoneToExtract
+        if (!formatedPlaceName) {
+            formatedPlaceName = zoneToExtract
         }
 
         if (extractData.zone != null) {
@@ -306,7 +311,7 @@ class InputDataFormattingTest {
 
             //Zone envelope
             h2GIS.getTable(extractData.zone_envelope).save("${file.absolutePath + File.separator}zone_envelope.fgb", true)
-
+/*
             //Urban Areas
             def inputUrbanAreas = OSM.InputDataFormatting.formatUrbanAreas(h2GIS,
                     extractData.urban_areas,extractData.zone)
@@ -338,31 +343,32 @@ class InputDataFormattingTest {
                     h2GIS,extractData.vegetation,extractData.zone_envelope)
             h2GIS.save(inputVegetationTableName,"${file.absolutePath + File.separator}vegetation.fgb", true)
 
-            println("Vegetation formatted")
+            println("Vegetation formatted")*/
 
             //Hydrography
             def inputWaterTableName = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
 
             //Impervious
-            String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
-                    extractData.zone_envelope)
-            h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}impervious.fgb", true)
+            /* String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
+                     extractData.zone_envelope)
+             h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}impervious.fgb", true)
 
-            println("Impervious formatted")
+             println("Impervious formatted")*/
 
             //Save coastlines to debug
-            h2GIS.save(extractData.coastline,"${file.absolutePath + File.separator}coastlines.fgb", true)
+            h2GIS.save(extractData.coastline, "${file.absolutePath + File.separator}coastlines.fgb", true)
 
 
             //Sea/Land mask
             def inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
                     extractData.zone_envelope, inputWaterTableName)
-            h2GIS.save(inputSeaLandTableName,"${file.absolutePath + File.separator}sea_land_mask.fgb", true)
+            println(inputSeaLandTableName.isEmpty())
+            h2GIS.save(inputSeaLandTableName, "${file.absolutePath + File.separator}sea_land_mask.fgb", true)
 
             println("Sea land mask formatted")
 
             //Save it after sea/land mask because the water table can be modified
-            h2GIS.save(inputWaterTableName,"${file.absolutePath + File.separator}water.fgb", true)
+            h2GIS.save(inputWaterTableName, "${file.absolutePath + File.separator}water.fgb", true)
 
         } else {
             assertTrue(false)
@@ -374,7 +380,6 @@ class InputDataFormattingTest {
     @Disabled
     void createGISFormatLayersTestIntegration() {
         Map gISLayers = OSM.InputDataLoading.createGISLayers(h2GIS, "/tmp/map.osm", 2154)
-
         //Format Roads
         def road = OSM.InputDataFormatting.formatRoadLayer(h2GIS, gISLayers.road)
         h2GIS.getTable(road).save("/tmp/formated_osm_road.shp", true)

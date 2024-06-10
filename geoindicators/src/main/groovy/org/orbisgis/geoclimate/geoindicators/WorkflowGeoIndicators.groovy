@@ -42,7 +42,7 @@ import java.sql.SQLException
  */
 String computeBuildingsIndicators(JdbcDataSource datasource, String building, String road,
                                   List indicatorUse = ["LCZ", "UTRF", "TEB"],
-                                  String prefixName = "") throws Exception{
+                                  String prefixName = "") throws Exception {
 
     info "Start computing building indicators..."
 
@@ -150,7 +150,7 @@ String computeBuildingsIndicators(JdbcDataSource datasource, String building, St
  * @return
  */
 String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTableName, String inputBlockTableName,
-                              String prefixName = "") throws Exception{
+                              String prefixName = "") throws Exception {
     def BASE_NAME = "block_indicators"
 
     info "Start computing block indicators..."
@@ -300,127 +300,127 @@ String computeBlockIndicators(JdbcDataSource datasource, String inputBuildingTab
  */
 String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                             String rsu, String vegetation, String road, String water, String impervious, String rail, Map parameters =
-                                    [facadeDensListLayersBottom         : [0, 10, 20, 30, 40, 50],
-                                     facadeDensNumberOfDirection        : 12,
-                                     svfPointDensity                    : 0.008,
-                                     svfRayLength                       : 100,
-                                     svfNumberOfDirection               : 60,
-                                     heightColumnName                   : "height_roof",
-                                     inputFields                        : ["id_build", "the_geom"],
-                                     levelForRoads                      : [0],
-                                     angleRangeSizeBuDirection          : 30,
-                                     angleRangeSizeRoDirection          : 30,
-                                     svfSimplified                      : true,
-                                     indicatorUse                       : ["LCZ", "UTRF", "TEB"],
-                                     surfSuperpositions                 : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
-                                     surfPriorities                     : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
-                                     buildingAreaTypeAndCompositionLcz  : ["light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
-                                                                           "commercial_lcz": ["commercial", "shop", "retail", "port",
-                                                                                              "exhibition_centre", "cinema"],
-                                                                            "heavy_industry_lcz": ["refinery"],
-                                                                            "residential_lcz"   : ["house", "detached", "bungalow", "farm", "apartments", "barracks",
+                                    [facadeDensListLayersBottom       : [0, 10, 20, 30, 40, 50],
+                                     facadeDensNumberOfDirection      : 12,
+                                     svfPointDensity                  : 0.008,
+                                     svfRayLength                     : 100,
+                                     svfNumberOfDirection             : 60,
+                                     heightColumnName                 : "height_roof",
+                                     inputFields                      : ["id_build", "the_geom"],
+                                     levelForRoads                    : [0],
+                                     angleRangeSizeBuDirection        : 30,
+                                     angleRangeSizeRoDirection        : 30,
+                                     svfSimplified                    : true,
+                                     indicatorUse                     : ["LCZ", "UTRF", "TEB"],
+                                     surfSuperpositions               : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
+                                     surfPriorities                   : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
+                                     buildingAreaTypeAndCompositionLcz: ["light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
+                                                                         "commercial_lcz"    : ["commercial", "shop", "retail", "port",
+                                                                                                "exhibition_centre", "cinema"],
+                                                                         "heavy_industry_lcz": ["refinery"],
+                                                                         "residential_lcz"   : ["house", "detached", "bungalow", "farm", "apartments", "barracks",
                                                                                                 "abbey", "condominium", "villa", "dormitory", "sheltered_housing",
-                                                                                               "workers_dormitory", "terrace", "residential", "cabin"]],
-                                     floorAreaTypeAndCompositionLcz     : [:],
-                                     buildingAreaTypeAndCompositionTeb  : ["individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
-                                                                           "collective_housing": [ "apartments","barracks","abbey", "dormitory",
+                                                                                                "workers_dormitory", "terrace", "residential", "cabin"]],
+                                     floorAreaTypeAndCompositionLcz   : [:],
+                                     buildingAreaTypeAndCompositionTeb: ["individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
+                                                                         "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
                                                                                                    "sheltered_housing", "workers_dormitory",
                                                                                                    "condominium"],
-                                                                           "undefined_residential": ["residential"],
-                                                                           "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
-                                                                                              "post_office","cinema","arts_centre", "brothel", "casino",
-                                                                                              "sustenance","hotel","restaurant","bar","cafe","fast_food",
-                                                                                              "ice_cream","pub","aquarium"],
-                                                                           "tertiary"   : [ "government", "townhall", "retail","gambling","music_venue", "nightclub",
-                                                                                            "shop","store","supermarket","office","terminal","airport_terminal","bank",
-                                                                                            "bureau_de_change","boat_rental","car_rental","research_institute",
-                                                                                            "community_centre", "conference_centre","events_venue",
-                                                                                            "exhibition_centre","social_centre","studio","theatre",
-                                                                                            "library","healthcare","entertainment_arts_culture",
-                                                                                            "hospital", "information"],
-                                                                           "education"   : [  "education","swimming-pool", "fitness_centre","sports_centre",
-                                                                                              "college","kindergarten","school","university","museum","gallery"],
-                                                                           "light_industrial"   : ["industrial", "factory", "warehouse", "port"],
-                                                                           "heavy_industrial"   : ["refinery"],
-                                                                           "non_heated"   : [ "silo", "barn", "cowshed","ruins","church","chapel","military",
-                                                                                              "castle","monument","fortress","synagogue","mosquee","musalla",
-                                                                                              "shrine","cathedral", "agricultural", "farm_auxiliary","digester",
-                                                                                              "horse_riding","stadium","track","pitch", "ice_rink","sports_hall",
-                                                                                              "ammunition","bunker","casemate","shelter","religious","place_of_worship",
-                                                                                              "wayside_shrine","station","stable","sty","greenhouse","kiosk","marketplace",
-                                                                                              "marker","warehouse","planetarium","fire_station","water_tower","grandstand",
-                                                                                              "transportation","toll_booth", "hut", "shed"]],
-                                     floorAreaTypeAndCompositionTeb     : ["individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
-                                                                           "collective_housing": [ "apartments","barracks","abbey", "dormitory",
+                                                                         "undefined_residential": ["residential"],
+                                                                         "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
+                                                                                                   "post_office", "cinema", "arts_centre", "brothel", "casino",
+                                                                                                   "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
+                                                                                                   "ice_cream", "pub", "aquarium"],
+                                                                         "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
+                                                                                                   "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
+                                                                                                   "bureau_de_change", "boat_rental", "car_rental", "research_institute",
+                                                                                                   "community_centre", "conference_centre", "events_venue",
+                                                                                                   "exhibition_centre", "social_centre", "studio", "theatre",
+                                                                                                   "library", "healthcare", "entertainment_arts_culture",
+                                                                                                   "hospital", "information"],
+                                                                         "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
+                                                                                                   "college", "kindergarten", "school", "university", "museum", "gallery"],
+                                                                         "light_industrial"     : ["industrial", "factory", "warehouse", "port"],
+                                                                         "heavy_industrial"     : ["refinery"],
+                                                                         "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
+                                                                                                   "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
+                                                                                                   "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
+                                                                                                   "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
+                                                                                                   "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
+                                                                                                   "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
+                                                                                                   "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
+                                                                                                   "transportation", "toll_booth", "hut", "shed"]],
+                                     floorAreaTypeAndCompositionTeb   : ["individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
+                                                                         "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
                                                                                                    "sheltered_housing", "workers_dormitory",
                                                                                                    "condominium"],
-                                                                           "undefined_residential": ["residential"],
-                                                                           "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
-                                                                                              "post_office","cinema","arts_centre", "brothel", "casino",
-                                                                                              "sustenance","hotel","restaurant","bar","cafe","fast_food",
-                                                                                              "ice_cream","pub","aquarium"],
-                                                                           "tertiary"   : [ "government", "townhall", "retail","gambling","music_venue", "nightclub",
-                                                                                            "shop","store","supermarket","office","terminal","airport_terminal","bank",
-                                                                                            "bureau_de_change","boat_rental","car_rental","research_institute",
-                                                                                            "community_centre", "conference_centre","events_venue",
-                                                                                            "exhibition_centre","social_centre","studio","theatre",
-                                                                                            "library","healthcare","entertainment_arts_culture",
-                                                                                            "hospital", "information"],
-                                                                           "education"   : [  "education","swimming-pool", "fitness_centre","sports_centre",
-                                                                                              "college","kindergarten","school","university","museum","gallery"],
-                                                                           "light_industrial"   : ["industrial", "factory", "warehouse", "port"],
-                                                                           "heavy_industrial"   : ["refinery"],
-                                                                           "non_heated"   : [ "silo", "barn", "cowshed","ruins","church","chapel","military",
-                                                                                              "castle","monument","fortress","synagogue","mosquee","musalla",
-                                                                                              "shrine","cathedral", "agricultural", "farm_auxiliary","digester",
-                                                                                              "horse_riding","stadium","track","pitch", "ice_rink","sports_hall",
-                                                                                              "ammunition","bunker","casemate","shelter","religious","place_of_worship",
-                                                                                              "wayside_shrine","station","stable","sty","greenhouse","kiosk","marketplace",
-                                                                                              "marker","warehouse","planetarium","fire_station","water_tower","grandstand",
-                                                                                              "transportation","toll_booth", "hut", "shed"]],
-                                     utrfSurfFraction                   : ["vegetation_fraction_utrf"                : ["high_vegetation_fraction",
-                                                                                                                   "low_vegetation_fraction",
-                                                                                                                   "high_vegetation_low_vegetation_fraction",
-                                                                                                                   "high_vegetation_road_fraction",
-                                                                                                                   "high_vegetation_impervious_fraction",
-                                                                                                                   "high_vegetation_water_fraction",
-                                                                                                                   "high_vegetation_building_fraction"],
-                                                                          "low_vegetation_fraction_utrf"            : ["low_vegetation_fraction"],
-                                                                          "high_vegetation_impervious_fraction_utrf": ["high_vegetation_road_fraction",
-                                                                                                                       "high_vegetation_impervious_fraction"],
-                                                                          "high_vegetation_pervious_fraction_utrf"  : ["high_vegetation_fraction",
-                                                                                                                       "high_vegetation_low_vegetation_fraction",
-                                                                                                                       "high_vegetation_water_fraction"],
-                                                                          "road_fraction_utrf"                      : ["road_fraction",
-                                                                                                                       "high_vegetation_road_fraction"],
-                                                                          "impervious_fraction_utrf"                : ["road_fraction",
-                                                                                                                       "high_vegetation_road_fraction",
-                                                                                                                       "impervious_fraction",
-                                                                                                                       "high_vegetation_impervious_fraction"]],
-                                     lczSurfFraction                    : ["building_fraction_lcz"       : ["building_fraction",
-                                                                                                             "high_vegetation_building_fraction"],
-                                                                            "pervious_fraction_lcz"       : ["high_vegetation_fraction",
-                                                                                                               "low_vegetation_fraction",
-                                                                                                               "water_fraction",
-                                                                                                               "high_vegetation_low_vegetation_fraction",
-                                                                                                               "high_vegetation_water_fraction"],
-                                                                            "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
-                                                                                                               "high_vegetation_low_vegetation_fraction",
-                                                                                                               "high_vegetation_road_fraction",
-                                                                                                               "high_vegetation_impervious_fraction",
-                                                                                                               "high_vegetation_water_fraction",
-                                                                                                               "high_vegetation_building_fraction"],
-                                                                            "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
-                                                                            "impervious_fraction_lcz"     : ["impervious_fraction",
-                                                                                                               "road_fraction",
-                                                                                                               "rail_fraction",
-                                                                                                               "high_vegetation_impervious_fraction",
-                                                                                                               "high_vegetation_road_fraction",
-                                                                                                               "high_vegetation_rail_fraction"],
-                                                                            "water_fraction_lcz"          : ["water_fraction",
-                                                                                                       "high_vegetation_water_fraction"]],
-                                     buildingFractions                  : ["high_vegetation_building_fraction", "building_fraction"]], String prefixName = "")
-    throws Exception{
+                                                                         "undefined_residential": ["residential"],
+                                                                         "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
+                                                                                                   "post_office", "cinema", "arts_centre", "brothel", "casino",
+                                                                                                   "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
+                                                                                                   "ice_cream", "pub", "aquarium"],
+                                                                         "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
+                                                                                                   "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
+                                                                                                   "bureau_de_change", "boat_rental", "car_rental", "research_institute",
+                                                                                                   "community_centre", "conference_centre", "events_venue",
+                                                                                                   "exhibition_centre", "social_centre", "studio", "theatre",
+                                                                                                   "library", "healthcare", "entertainment_arts_culture",
+                                                                                                   "hospital", "information"],
+                                                                         "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
+                                                                                                   "college", "kindergarten", "school", "university", "museum", "gallery"],
+                                                                         "light_industrial"     : ["industrial", "factory", "warehouse", "port"],
+                                                                         "heavy_industrial"     : ["refinery"],
+                                                                         "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
+                                                                                                   "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
+                                                                                                   "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
+                                                                                                   "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
+                                                                                                   "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
+                                                                                                   "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
+                                                                                                   "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
+                                                                                                   "transportation", "toll_booth", "hut", "shed"]],
+                                     utrfSurfFraction                 : ["vegetation_fraction_utrf"                : ["high_vegetation_fraction",
+                                                                                                                      "low_vegetation_fraction",
+                                                                                                                      "high_vegetation_low_vegetation_fraction",
+                                                                                                                      "high_vegetation_road_fraction",
+                                                                                                                      "high_vegetation_impervious_fraction",
+                                                                                                                      "high_vegetation_water_fraction",
+                                                                                                                      "high_vegetation_building_fraction"],
+                                                                         "low_vegetation_fraction_utrf"            : ["low_vegetation_fraction"],
+                                                                         "high_vegetation_impervious_fraction_utrf": ["high_vegetation_road_fraction",
+                                                                                                                      "high_vegetation_impervious_fraction"],
+                                                                         "high_vegetation_pervious_fraction_utrf"  : ["high_vegetation_fraction",
+                                                                                                                      "high_vegetation_low_vegetation_fraction",
+                                                                                                                      "high_vegetation_water_fraction"],
+                                                                         "road_fraction_utrf"                      : ["road_fraction",
+                                                                                                                      "high_vegetation_road_fraction"],
+                                                                         "impervious_fraction_utrf"                : ["road_fraction",
+                                                                                                                      "high_vegetation_road_fraction",
+                                                                                                                      "impervious_fraction",
+                                                                                                                      "high_vegetation_impervious_fraction"]],
+                                     lczSurfFraction                  : ["building_fraction_lcz"       : ["building_fraction",
+                                                                                                          "high_vegetation_building_fraction"],
+                                                                         "pervious_fraction_lcz"       : ["high_vegetation_fraction",
+                                                                                                          "low_vegetation_fraction",
+                                                                                                          "water_fraction",
+                                                                                                          "high_vegetation_low_vegetation_fraction",
+                                                                                                          "high_vegetation_water_fraction"],
+                                                                         "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
+                                                                                                          "high_vegetation_low_vegetation_fraction",
+                                                                                                          "high_vegetation_road_fraction",
+                                                                                                          "high_vegetation_impervious_fraction",
+                                                                                                          "high_vegetation_water_fraction",
+                                                                                                          "high_vegetation_building_fraction"],
+                                                                         "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
+                                                                         "impervious_fraction_lcz"     : ["impervious_fraction",
+                                                                                                          "road_fraction",
+                                                                                                          "rail_fraction",
+                                                                                                          "high_vegetation_impervious_fraction",
+                                                                                                          "high_vegetation_road_fraction",
+                                                                                                          "high_vegetation_rail_fraction"],
+                                                                         "water_fraction_lcz"          : ["water_fraction",
+                                                                                                          "high_vegetation_water_fraction"]],
+                                     buildingFractions                : ["high_vegetation_building_fraction", "building_fraction"]], String prefixName = "")
+        throws Exception {
 
     info "Start computing RSU indicators..."
     def to_start = System.currentTimeMillis()
@@ -561,7 +561,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     // rsu_building_density + rsu_building_volume_density + rsu_mean_building_volume
     // + rsu_mean_building_neighbor_number + rsu_building_floor_density + rsu_roughness_length
     // + rsu_building_number_density (RSU number of buildings divided RSU area)
-    def inputVarAndOperations = ["floor_area"      : ["DENS"]]
+    def inputVarAndOperations = ["floor_area": ["DENS"]]
     def heightColumnName = parameters.heightColumnName
 
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
@@ -748,7 +748,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
  * @return 4 tables: rsu_lcz, rsu_utrf_area, rsu_utrf_floor_area, building_utrf
  */
 Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicators, String block_indicators,
-                              String rsu_indicators, Map parameters, String prefixName) throws Exception{
+                              String rsu_indicators, Map parameters, String prefixName) throws Exception {
     info "Start computing Typology indicators..."
 
     def tablesToDrop = []
@@ -968,7 +968,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
                           String rsu, double surface_vegetation,
                           double surface_hydro, double surface_urban_areas,
                           double snappingTolerance,
-                          List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") throws Exception{
+                          List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") throws Exception {
     info "Create the spatial units..."
     def idRsu = "id_rsu"
     def tablesToDrop = []
@@ -1032,137 +1032,137 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String buildin
  */
 Map getParameters() {
     return [
-            "surface_vegetation"            : 10000d, "surface_hydro": 2500d, "surface_urban_areas": 10000d,
-            "snappingTolerance"             : 0.01d, "indicatorUse": ["LCZ", "UTRF", "TEB"],
-            "mapOfWeights"                  : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
-                                               "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
-                                               "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-            "utrfModelName"                 : "",
-            "buildingHeightModelName"       : "",
-            "nbEstimatedBuildHeight"        : 0,
-            "svfSimplified"                 : true,
-            "facadeDensListLayersBottom"    : [0, 10, 20, 30, 40, 50],
-            "buildHeightListLayersBottom"   : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-            "facadeDensNumberOfDirection"   : 12,
-            "svfPointDensity"               : 0.008,
-            "svfRayLength"                  : 100,
-            "svfNumberOfDirection"          : 60,
-            "heightColumnName"              : "height_roof",
-            "inputFields"                   : ["id_build", "the_geom"],
-            "levelForRoads"                 : [0],
-            "angleRangeSizeBuDirection"     : 30,
-            "angleRangeSizeRoDirection"     : 30,
-            "surfSuperpositions"            : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
-            "surfPriorities"                : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
-            "buildingAreaTypeAndCompositionLcz"  : ["undefined_lcz": ["building"],
-                                                    "light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
-                                                  "commercial_lcz": ["commercial", "shop", "retail", "port",
-                                                                     "exhibition_centre", "cinema"],
+            "surface_vegetation"               : 10000d, "surface_hydro": 2500d, "surface_urban_areas": 10000d,
+            "snappingTolerance"                : 0.01d, "indicatorUse": ["LCZ", "UTRF", "TEB"],
+            "mapOfWeights"                     : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
+                                                  "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
+                                                  "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
+            "utrfModelName"                    : "",
+            "buildingHeightModelName"          : "",
+            "nbEstimatedBuildHeight"           : 0,
+            "svfSimplified"                    : true,
+            "facadeDensListLayersBottom"       : [0, 10, 20, 30, 40, 50],
+            "buildHeightListLayersBottom"      : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+            "facadeDensNumberOfDirection"      : 12,
+            "svfPointDensity"                  : 0.008,
+            "svfRayLength"                     : 100,
+            "svfNumberOfDirection"             : 60,
+            "heightColumnName"                 : "height_roof",
+            "inputFields"                      : ["id_build", "the_geom"],
+            "levelForRoads"                    : [0],
+            "angleRangeSizeBuDirection"        : 30,
+            "angleRangeSizeRoDirection"        : 30,
+            "surfSuperpositions"               : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
+            "surfPriorities"                   : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
+            "buildingAreaTypeAndCompositionLcz": ["undefined_lcz"     : ["building"],
+                                                  "light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
+                                                  "commercial_lcz"    : ["commercial", "shop", "retail", "port",
+                                                                         "exhibition_centre", "cinema"],
                                                   "heavy_industry_lcz": ["refinery"],
                                                   "residential_lcz"   : ["house", "detached", "bungalow", "farm", "apartments", "barracks",
                                                                          "abbey", "condominium", "villa", "dormitory", "sheltered_housing",
                                                                          "workers_dormitory", "terrace", "residential", "cabin"]],
-            "floorAreaTypeAndCompositionLcz"     : [:],
-            "buildingAreaTypeAndCompositionTeb"  : ["undefined": ["building"],
-                                                  "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
-                                                  "collective_housing": [ "apartments","barracks","abbey", "dormitory",
-                                                                          "sheltered_housing", "workers_dormitory",
-                                                                          "condominium", "residential"],
+            "floorAreaTypeAndCompositionLcz"   : [:],
+            "buildingAreaTypeAndCompositionTeb": ["undefined"            : ["building"],
+                                                  "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
+                                                  "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
+                                                                            "sheltered_housing", "workers_dormitory",
+                                                                            "condominium", "residential"],
                                                   "undefined_residential": ["residential"],
-                                                  "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
-                                                                     "post_office","cinema","arts_centre", "brothel", "casino",
-                                                                     "sustenance","hotel","restaurant","bar","cafe","fast_food",
-                                                                     "ice_cream","pub","aquarium"],
-                                                  "tertiary"   : [ "government", "townhall", "retail","gambling","music_venue", "nightclub",
-                                                                   "shop","store","supermarket","office","terminal","airport_terminal","bank",
-                                                                   "bureau_de_change","boat_rental","car_rental","research_institute",
-                                                                   "community_centre", "conference_centre","events_venue",
-                                                                   "exhibition_centre","social_centre","studio","theatre",
-                                                                   "library","healthcare","entertainment_arts_culture",
-                                                                   "hospital", "information"],
-                                                  "education"   : [  "education","swimming-pool", "fitness_centre","sports_centre",
-                                                                     "college","kindergarten","school","university","museum","gallery"],
-                                                  "light_industrial"   : ["industrial", "factory", "warehouse", "port"],
-                                                  "heavy_industrial"   : ["refinery"],
-                                                  "non_heated"   : [ "silo", "barn", "cowshed","ruins","church","chapel","military",
-                                                                     "castle","monument","fortress","synagogue","mosquee","musalla",
-                                                                     "shrine","cathedral", "agricultural", "farm_auxiliary","digester",
-                                                                     "horse_riding","stadium","track","pitch", "ice_rink","sports_hall",
-                                                                     "ammunition","bunker","casemate","shelter","religious","place_of_worship",
-                                                                     "wayside_shrine","station","stable","sty","greenhouse","kiosk","marketplace",
-                                                                     "marker","warehouse","planetarium","fire_station","water_tower","grandstand",
-                                                                     "transportation","toll_booth", "hut", "shed"]],
-            "floorAreaTypeAndCompositionTeb"     : ["undefined": ["building"],
-                                                    "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
-                                                  "collective_housing": [ "apartments","barracks","abbey", "dormitory",
-                                                                          "sheltered_housing", "workers_dormitory",
-                                                                          "condominium", "residential"],
+                                                  "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
+                                                                            "post_office", "cinema", "arts_centre", "brothel", "casino",
+                                                                            "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
+                                                                            "ice_cream", "pub", "aquarium"],
+                                                  "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
+                                                                            "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
+                                                                            "bureau_de_change", "boat_rental", "car_rental", "research_institute",
+                                                                            "community_centre", "conference_centre", "events_venue",
+                                                                            "exhibition_centre", "social_centre", "studio", "theatre",
+                                                                            "library", "healthcare", "entertainment_arts_culture",
+                                                                            "hospital", "information"],
+                                                  "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
+                                                                            "college", "kindergarten", "school", "university", "museum", "gallery"],
+                                                  "light_industrial"     : ["industrial", "factory", "warehouse", "port"],
+                                                  "heavy_industrial"     : ["refinery"],
+                                                  "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
+                                                                            "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
+                                                                            "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
+                                                                            "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
+                                                                            "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
+                                                                            "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
+                                                                            "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
+                                                                            "transportation", "toll_booth", "hut", "shed"]],
+            "floorAreaTypeAndCompositionTeb"   : ["undefined"            : ["building"],
+                                                  "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
+                                                  "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
+                                                                            "sheltered_housing", "workers_dormitory",
+                                                                            "condominium", "residential"],
                                                   "undefined_residential": ["residential"],
-                                                  "commercial"    : ["commercial","internet_cafe","money_transfer","pharmacy",
-                                                                     "post_office","cinema","arts_centre", "brothel", "casino",
-                                                                     "sustenance","hotel","restaurant","bar","cafe","fast_food",
-                                                                     "ice_cream","pub","aquarium"],
-                                                  "tertiary"   : [ "government", "townhall", "retail","gambling","music_venue", "nightclub",
-                                                                   "shop","store","supermarket","office","terminal","airport_terminal","bank",
-                                                                   "bureau_de_change","boat_rental","car_rental","research_institute",
-                                                                   "community_centre", "conference_centre","events_venue",
-                                                                   "exhibition_centre","social_centre","studio","theatre",
-                                                                   "library","healthcare","entertainment_arts_culture",
-                                                                   "hospital", "information"],
-                                                  "education"   : [  "education","swimming-pool", "fitness_centre","sports_centre",
-                                                                     "college","kindergarten","school","university","museum","gallery"],
-                                                  "light_industrial"   : ["industrial", "factory", "warehouse", "port"],
-                                                  "heavy_industrial"   : ["refinery"],
-                                                  "non_heated"   : [ "silo", "barn", "cowshed","ruins","church","chapel","military",
-                                                                     "castle","monument","fortress","synagogue","mosquee","musalla",
-                                                                     "shrine","cathedral", "agricultural", "farm_auxiliary","digester",
-                                                                     "horse_riding","stadium","track","pitch", "ice_rink","sports_hall",
-                                                                     "ammunition","bunker","casemate","shelter","religious","place_of_worship",
-                                                                     "wayside_shrine","station","stable","sty","greenhouse","kiosk","marketplace",
-                                                                     "marker","warehouse","planetarium","fire_station","water_tower","grandstand",
-                                                                     "transportation","toll_booth","hut", "shed"]],
-            "utrfSurfFraction"              : ["vegetation_fraction_utrf"                : ["high_vegetation_fraction",
-                                                                                            "low_vegetation_fraction",
-                                                                                            "high_vegetation_low_vegetation_fraction",
-                                                                                            "high_vegetation_road_fraction",
-                                                                                            "high_vegetation_impervious_fraction",
-                                                                                            "high_vegetation_water_fraction",
-                                                                                            "high_vegetation_building_fraction"],
-                                               "low_vegetation_fraction_utrf"            : ["low_vegetation_fraction"],
-                                               "high_vegetation_impervious_fraction_utrf": ["high_vegetation_road_fraction",
-                                                                                            "high_vegetation_impervious_fraction"],
-                                               "high_vegetation_pervious_fraction_utrf"  : ["high_vegetation_fraction",
-                                                                                            "high_vegetation_low_vegetation_fraction",
-                                                                                            "high_vegetation_water_fraction"],
-                                               "road_fraction_utrf"                      : ["road_fraction",
-                                                                                            "high_vegetation_road_fraction"],
-                                               "impervious_fraction_utrf"                : ["road_fraction",
-                                                                                            "high_vegetation_road_fraction",
-                                                                                            "impervious_fraction",
-                                                                                            "high_vegetation_impervious_fraction"]],
-            "lczSurfFraction"               : ["building_fraction_lcz"       : ["building_fraction",
-                                                                                "high_vegetation_building_fraction"],
-                                               "pervious_fraction_lcz"       : ["high_vegetation_fraction",
-                                                                                "low_vegetation_fraction",
-                                                                                "water_fraction",
-                                                                                "high_vegetation_low_vegetation_fraction",
-                                                                                "high_vegetation_water_fraction"],
-                                               "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
-                                                                                "high_vegetation_low_vegetation_fraction",
-                                                                                "high_vegetation_road_fraction",
-                                                                                "high_vegetation_impervious_fraction",
-                                                                                "high_vegetation_water_fraction",
-                                                                                "high_vegetation_building_fraction"],
-                                               "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
-                                               "impervious_fraction_lcz"     : ["impervious_fraction",
-                                                                                "rail_fraction",
-                                                                                "road_fraction",
-                                                                                "high_vegetation_impervious_fraction",
-                                                                                "high_vegetation_road_fraction",
-                                                                                "high_vegetation_rail_fraction"],
-                                               "water_fraction_lcz"          : ["water_fraction",
-                                                                                "high_vegetation_water_fraction"]],
-            "buildingFractions"             : ["high_vegetation_building_fraction", "building_fraction"]]
+                                                  "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
+                                                                            "post_office", "cinema", "arts_centre", "brothel", "casino",
+                                                                            "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
+                                                                            "ice_cream", "pub", "aquarium"],
+                                                  "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
+                                                                            "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
+                                                                            "bureau_de_change", "boat_rental", "car_rental", "research_institute",
+                                                                            "community_centre", "conference_centre", "events_venue",
+                                                                            "exhibition_centre", "social_centre", "studio", "theatre",
+                                                                            "library", "healthcare", "entertainment_arts_culture",
+                                                                            "hospital", "information"],
+                                                  "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
+                                                                            "college", "kindergarten", "school", "university", "museum", "gallery"],
+                                                  "light_industrial"     : ["industrial", "factory", "warehouse", "port"],
+                                                  "heavy_industrial"     : ["refinery"],
+                                                  "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
+                                                                            "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
+                                                                            "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
+                                                                            "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
+                                                                            "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
+                                                                            "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
+                                                                            "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
+                                                                            "transportation", "toll_booth", "hut", "shed"]],
+            "utrfSurfFraction"                 : ["vegetation_fraction_utrf"                : ["high_vegetation_fraction",
+                                                                                               "low_vegetation_fraction",
+                                                                                               "high_vegetation_low_vegetation_fraction",
+                                                                                               "high_vegetation_road_fraction",
+                                                                                               "high_vegetation_impervious_fraction",
+                                                                                               "high_vegetation_water_fraction",
+                                                                                               "high_vegetation_building_fraction"],
+                                                  "low_vegetation_fraction_utrf"            : ["low_vegetation_fraction"],
+                                                  "high_vegetation_impervious_fraction_utrf": ["high_vegetation_road_fraction",
+                                                                                               "high_vegetation_impervious_fraction"],
+                                                  "high_vegetation_pervious_fraction_utrf"  : ["high_vegetation_fraction",
+                                                                                               "high_vegetation_low_vegetation_fraction",
+                                                                                               "high_vegetation_water_fraction"],
+                                                  "road_fraction_utrf"                      : ["road_fraction",
+                                                                                               "high_vegetation_road_fraction"],
+                                                  "impervious_fraction_utrf"                : ["road_fraction",
+                                                                                               "high_vegetation_road_fraction",
+                                                                                               "impervious_fraction",
+                                                                                               "high_vegetation_impervious_fraction"]],
+            "lczSurfFraction"                  : ["building_fraction_lcz"       : ["building_fraction",
+                                                                                   "high_vegetation_building_fraction"],
+                                                  "pervious_fraction_lcz"       : ["high_vegetation_fraction",
+                                                                                   "low_vegetation_fraction",
+                                                                                   "water_fraction",
+                                                                                   "high_vegetation_low_vegetation_fraction",
+                                                                                   "high_vegetation_water_fraction"],
+                                                  "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
+                                                                                   "high_vegetation_low_vegetation_fraction",
+                                                                                   "high_vegetation_road_fraction",
+                                                                                   "high_vegetation_impervious_fraction",
+                                                                                   "high_vegetation_water_fraction",
+                                                                                   "high_vegetation_building_fraction"],
+                                                  "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
+                                                  "impervious_fraction_lcz"     : ["impervious_fraction",
+                                                                                   "rail_fraction",
+                                                                                   "road_fraction",
+                                                                                   "high_vegetation_impervious_fraction",
+                                                                                   "high_vegetation_road_fraction",
+                                                                                   "high_vegetation_rail_fraction"],
+                                                  "water_fraction_lcz"          : ["water_fraction",
+                                                                                   "high_vegetation_water_fraction"]],
+            "buildingFractions"                : ["high_vegetation_building_fraction", "building_fraction"]]
 
 }
 
@@ -1195,7 +1195,7 @@ Map getParameters(Map parameters) {
 Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String building, String road, String rail, String vegetation,
                             String water, String impervious, String buildingEstimateTableName,
                             String sea_land_mask, String urban_areas, String rsuTable,
-                            Map parameters = [:], String prefixName) throws Exception{
+                            Map parameters = [:], String prefixName) throws Exception {
     Map inputParameters = getParameters()
     if (parameters) {
         inputParameters = getParameters(parameters)
@@ -1342,7 +1342,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
                            String water, String impervious,
                            String building_estimate, String sea_land_mask, String urban_areas, String rsu,
                            double surface_vegetation, double surface_hydro, double surface_urban_areas,
-                           double snappingTolerance, String buildingHeightModelName, String prefixName = "") throws Exception{
+                           double snappingTolerance, String buildingHeightModelName, String prefixName = "") throws Exception {
     if (!building_estimate) {
         throw new IllegalArgumentException("To estimate the building height a table that contains the list of building to estimate must be provided")
     }
@@ -1473,7 +1473,7 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String b
         "mapOfWeights" : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                           "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                           "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
-        "utrfModelName": "", "nbEstimatedBuildHeight": 0], String prefixName = "") throws Exception{
+        "utrfModelName": "", "nbEstimatedBuildHeight": 0], String prefixName = "") throws Exception {
     info "Start computing the geoindicators..."
     def start = System.currentTimeMillis()
 
@@ -1567,11 +1567,11 @@ Map computeGeoclimateIndicators(JdbcDataSource datasource, String zone, String b
  * @return
  */
 String rasterizeIndicators(JdbcDataSource datasource,
-                           String grid, List list_indicators, Integer lcz_lod,
+                           String grid, List list_indicators,
                            String building, String road, String vegetation,
                            String water, String impervious, String rsu_lcz,
                            String rsu_utrf_area, String rsu_utrf_floor_area, String sea_land_mask,
-                           String prefixName = "") throws Exception{
+                           String prefixName = "") throws Exception {
     if (!list_indicators) {
         info "The list of indicator names cannot be null or empty"
         return
@@ -1593,11 +1593,11 @@ String rasterizeIndicators(JdbcDataSource datasource,
     indicatorTablesToJoin.put(grid, grid_column_identifier)
 
     //An array to execute some commands on the final table
-    def sqlUpdateCommand =[]
+    def sqlUpdateCommand = []
     /*
     * Make aggregation process with previous grid and current rsu lcz
     */
-    if (list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY", "SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]) && rsu_lcz) {
+    if (list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY", "URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]) && rsu_lcz) {
         def indicatorName = "LCZ_PRIMARY"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(
                 datasource, grid, grid_column_identifier,
@@ -1659,7 +1659,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource,
                 grid, grid_column_identifier, rsu_utrf_area,
                 indicatorName, "AREA_TYPO_MAJ", false, "utrf_area")
-         indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
+        indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
 
     }
 
@@ -1721,7 +1721,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
             surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions(
                     datasource, grid, grid_column_identifier, superpositionsTableGrid,
                     [:], priorities_tmp, prefixName)
-           indicatorTablesToJoin.put(surfaceFractionsProcess, grid_column_identifier)
+            indicatorTablesToJoin.put(surfaceFractionsProcess, grid_column_identifier)
 
             tablesToDrop << superpositionsTableGrid
         } else {
@@ -1765,8 +1765,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 buildingCutted,
                 indicatorName, indicatorName, false,
                 "building_type_fraction")
-            indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
-            tablesToDrop << upperScaleAreaStatistics
+        indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
+        tablesToDrop << upperScaleAreaStatistics
 
     }
 
@@ -1868,9 +1868,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
 
             }
-        }else{
+        } else {
             //Update the final table
-            sqlUpdateCommand<<"""ALTER TABLE $grid_indicators_table ADD COLUMN LAND_FRACTION DOUBLE PRECISION DEFAULT 1;
+            sqlUpdateCommand << """ALTER TABLE $grid_indicators_table ADD COLUMN LAND_FRACTION DOUBLE PRECISION DEFAULT 1;
             ALTER TABLE $grid_indicators_table ADD COLUMN SEA_FRACTION DOUBLE PRECISION DEFAULT 0;"""
         }
     }
@@ -1953,10 +1953,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
     // Remove temporary tables
     datasource.dropTable(tablesToDrop)
 
-    //We must compute the LOC indicators if the user also wants sprawl indicators
-    if(lcz_lod || list_indicators_upper.intersect(["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"])){
-        return Geoindicators.GridIndicators.multiscaleLCZGrid(datasource, grid_indicators_table,grid_column_identifier,lcz_lod==null?1:lcz_lod)
-    }
     return grid_indicators_table
 }
 
@@ -1967,7 +1963,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
  * @param building
  * @return
  */
-String cutBuilding(JdbcDataSource datasource, String grid, String building) throws Exception{
+String cutBuilding(JdbcDataSource datasource, String grid, String building) throws Exception {
     String buildingCutted = postfix("building_cutted")
     datasource.createSpatialIndex(grid)
     datasource.createSpatialIndex(building)
@@ -1983,7 +1979,7 @@ String cutBuilding(JdbcDataSource datasource, String grid, String building) thro
         """.toString())
     }
     catch (SQLException ex) {
-        throw new SQLException("Cannot cut the building",ex)
+        throw new SQLException("Cannot cut the building", ex)
     }
     return buildingCutted
 }
@@ -2001,7 +1997,7 @@ String cutBuilding(JdbcDataSource datasource, String grid, String building) thro
 String createGrid(JdbcDataSource datasource,
                   Geometry envelope,
                   int x_size, int y_size,
-                  int srid, boolean rowCol = false) throws Exception{
+                  int srid, boolean rowCol = false) throws Exception {
     //Start to compute the grid
     def grid_table_name = Geoindicators.SpatialUnits.createGrid(datasource, envelope, x_size, y_size, rowCol)
     if (grid_table_name) {
@@ -2026,7 +2022,7 @@ String createGrid(JdbcDataSource datasource,
  * @param epsg srid code of the output table
  * @return The name of the final buildings table
  */
-String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName, int epsg, float h_lev_min = 3) throws Exception{
+String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName, int epsg, float h_lev_min = 3) throws Exception {
     def outputTableName = postfix "INPUT_BUILDING_REFORMATED_"
     info 'Re-formating building layer'
     def outputEstimateTableName = ""
@@ -2136,7 +2132,7 @@ static Map formatHeightsAndNbLevels(def heightWall, def heightRoof, def nbLevels
  * @param modelName
  * @return true if the model exists or if we can download it on the repository
  */
-static boolean modelCheck(String modelName) throws Exception{
+static boolean modelCheck(String modelName) throws Exception {
     if (!modelName) {
         throw new IllegalArgumentException("Cannot find any model file")
     }
@@ -2150,12 +2146,12 @@ static boolean modelCheck(String modelName) throws Exception{
         if (!localInputModelFile.exists()) {
             FileUtils.copyURLToFile(new URL(modelURL), localInputModelFile)
             if (!localInputModelFile.exists()) {
-                throw new IllegalArgumentException( "Cannot find any model file")
+                throw new IllegalArgumentException("Cannot find any model file")
             }
         }
     } else {
         if (!FilenameUtils.isExtension(modelName, "model")) {
-            throw new IllegalArgumentException( "The extension of the model file must be .model")
+            throw new IllegalArgumentException("The extension of the model file must be .model")
         }
     }
     return true
@@ -2168,34 +2164,35 @@ static boolean modelCheck(String modelName) throws Exception{
  * - the distance to cool areas (LCZ 101, 102, 103, 104,106,107) inside the sprawl_areas
  *
  * @param datasource
- * @param  grid_indicators
- * @param  list_indicators
- * @param  distance the erode and dilate the geometries
+ * @param grid_indicators
+ * @param list_indicators
+ * @param distance the erode and dilate the geometries
  * @return the sprawl_areas layer plus new distance columns on the input grid_indicators
  */
 Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String id_grid, List list_indicators,
-                     float  distance) throws Exception{
+                     float distance) throws Exception {
     if (!list_indicators) {
-        throw new IllegalArgumentException( "The list of indicator names cannot be null or empty")
+        throw new IllegalArgumentException("The list of indicator names cannot be null or empty")
     }
 
     //Concert the list of indicators to upper case
-    allowed_indicators = ["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]
+    allowed_indicators = ["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]
     def list_indicators_upper = list_indicators.collect { it.toUpperCase() }
 
     def tablesToDrop = []
     def tablesToJoin = [:]
-    tablesToJoin.put(grid_indicators,id_grid)
+    tablesToJoin.put(grid_indicators, id_grid)
     String sprawl_areas
-    if (list_indicators_upper.intersect(["SPRAWL_AREAS", "SPRAWL_DISTANCES", "SPRAWL_COOL_DISTANCE"]) && grid_indicators) {
-        sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(datasource, grid_indicators, distance)
+    String cool_areas
+    if (list_indicators_upper.intersect(["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]) && grid_indicators) {
+        sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(datasource, grid_indicators, distance )
     }
     if (sprawl_areas) {
         //Compute the distances
-        if (list_indicators_upper.contains("SPRAWL_DISTANCES")) {
+        if (list_indicators_upper.contains("URBAN_SPRAWL_DISTANCES")) {
             String inside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, sprawl_areas, grid_indicators, id_grid, false)
             if (inside_sprawl_areas) {
-                datasource.execute("""ALTER TABLE $inside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_INDIST""".toString())
+                datasource.execute("""ALTER TABLE $inside_sprawl_areas RENAME COLUMN DISTANCE TO URBAN_SPRAWL_INDIST""".toString())
                 tablesToDrop << inside_sprawl_areas
                 String inverse_sprawl_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, sprawl_areas)
                 if (inverse_sprawl_areas) {
@@ -2203,24 +2200,23 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
                     tablesToJoin.put(inside_sprawl_areas, id_grid)
                     String outside_sprawl_areas = Geoindicators.GridIndicators.gridDistances(datasource, inverse_sprawl_areas, grid_indicators, id_grid, false)
                     if (outside_sprawl_areas) {
-                        datasource.execute("""ALTER TABLE $outside_sprawl_areas RENAME COLUMN DISTANCE TO SPRAWL_OUTDIST""".toString())
+                        datasource.execute("""ALTER TABLE $outside_sprawl_areas RENAME COLUMN DISTANCE TO URBAN_SPRAWL_OUTDIST""".toString())
                         tablesToDrop << outside_sprawl_areas
                         tablesToJoin.put(outside_sprawl_areas, id_grid)
                     }
                 }
             }
         }
-        if (list_indicators_upper.contains("SPRAWL_COOL_DISTANCE")) {
-            String cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, distance)
+        if (list_indicators_upper.contains("URBAN_SPRAWL_COOL_DISTANCE")) {
+            cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, sprawl_areas, (distance / 2) as float)
             if (cool_areas) {
-                tablesToDrop << cool_areas
-                String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, cool_areas)
+                String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, sprawl_areas,cool_areas)
                 if (inverse_cool_areas) {
                     tablesToDrop << inverse_cool_areas
                     String cool_distances = Geoindicators.GridIndicators.gridDistances(datasource, inverse_cool_areas, grid_indicators, id_grid, false)
                     if (cool_distances) {
                         tablesToDrop << cool_distances
-                        datasource.execute("""ALTER TABLE $cool_distances RENAME COLUMN DISTANCE TO SPRAWL_COOL_INDIST""".toString())
+                        datasource.execute("""ALTER TABLE $cool_distances RENAME COLUMN DISTANCE TO URBAN_SPRAWL_COOL_INDIST""".toString())
                         tablesToJoin.put(cool_distances, id_grid)
                     }
                 }
@@ -2228,10 +2224,10 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
         }
     }
     if (tablesToJoin.size() > 1) {
-        tablesToDrop<<grid_indicators
+        tablesToDrop << grid_indicators
         grid_indicators = Geoindicators.DataUtils.joinTables(datasource, tablesToJoin, postfix("grid_indicators"))
     }
     datasource.dropTable(tablesToDrop)
 
-    return ["sprawl_areas":sprawl_areas, "grid_indicators": grid_indicators]
+    return ["urban_sprawl_areas": sprawl_areas, "grid_indicators": grid_indicators, "urban_cool_areas": cool_areas]
 }

@@ -39,7 +39,7 @@ import java.sql.SQLException
 
 @Override
 def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTables,
-                           int sourceSRID, int inputSRID, H2GIS h2gis_datasource) throws Exception{
+                           int sourceSRID, int inputSRID, H2GIS h2gis_datasource) throws Exception {
     def formatting_geom = "the_geom"
     if (sourceSRID == 0 && sourceSRID != inputSRID) {
         formatting_geom = "st_setsrid(the_geom, $inputSRID) as the_geom"
@@ -54,34 +54,31 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
     if (location in Collection) {
         debug "Loading in the H2GIS database $outputTableName"
         def communeColumns = h2gis_datasource.getColumnNames(inputTables.commune)
-        if(communeColumns.contains("INSEE_COM")) {
-            if(location.size()==3){
-                if(location[2]<100){
+        if (communeColumns.contains("INSEE_COM")) {
+            if (location.size() == 3) {
+                if (location[2] < 100) {
                     throw new IllegalArgumentException("The distance to create a bbox from a point must be greater than 100 meters")
                 }
-                location = BDTopoUtils.bbox(location[0], location[1],location[2])
+                location = BDTopoUtils.bbox(location[0], location[1], location[2])
             }
 
             h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
                     ST_INTERSECTION(the_geom, ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID)) as the_geom, INSEE_COM AS CODE_INSEE  from ${inputTables.commune} where the_geom 
                     && ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID) """.toString())
-        }
-        else {
+        } else {
             throw new Exception("Cannot find a column insee_com or code_insee to filter the commune")
         }
     } else if (location instanceof String) {
         debug "Loading in the H2GIS database $outputTableName"
         def communeColumns = h2gis_datasource.getColumnNames(inputTables.commune)
-        if(communeColumns.contains("INSEE_COM")){
-        h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 
+        if (communeColumns.contains("INSEE_COM")) {
+            h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 
             INSEE_COM AS CODE_INSEE FROM ${inputTables.commune} WHERE INSEE_COM='$location' or lower(nom)='${location.toLowerCase()}'""".toString())
-        }
-        else {
+        } else {
             throw new Exception("Cannot find a column insee_com or code_insee to filter the commune")
         }
 
-    }
-    else {
+    } else {
         throw new IllegalArgumentException("Invalid location")
     }
     def count = h2gis_datasource.getRowCount(outputTableName)
@@ -215,7 +212,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
 
 @Override
 Integer loadDataFromPostGIS(Object input_database_properties, Object code, Object distance, Object inputTables, Object inputSRID,
-                            H2GIS h2gis_datasource) throws Exception{
+                            H2GIS h2gis_datasource) throws Exception {
     def commune_location = inputTables.commune
     if (!commune_location) {
         throw new Exception("The commune table must be specified to run Geoclimate")
@@ -259,12 +256,12 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     //The zone is a osm bounding box represented by ymin,xmin , ymax,xmax,
     if (code in Collection) {
         def communeColumns = h2gis_datasource.getColumnNames(commune_location)
-        if(communeColumns.contains("INSEE_COM")) {
-            if(code.size()==3){
-                if(code[2]<100){
+        if (communeColumns.contains("INSEE_COM")) {
+            if (code.size() == 3) {
+                if (code[2] < 100) {
                     throw new Exception("The distance to create a bbox from a point must be greater than 100 meters")
                 }
-                code = BDTopoUtils.bbox(code[0], code[1],code[2])
+                code = BDTopoUtils.bbox(code[0], code[1], code[2])
             }
             String inputTableName = """(SELECT
                     ST_INTERSECTION(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)) as the_geom, INSEE_COM as CODE_INSEE   from $commune_location where 
@@ -273,20 +270,19 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
                     st_intersects(st_setsrid(the_geom, $commune_srid), ST_MakeEnvelope(${code[1]},${code[0]},${code[3]},${code[2]}, $commune_srid)))""".toString()
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 100)
-        }else {
+        } else {
             throw new Exception("Cannot find a column insee_com or code_insee to filter the commune")
         }
     } else if (code instanceof String) {
         def communeColumns = h2gis_datasource.getColumnNames(commune_location)
-        if(communeColumns.contains("insee_com")){
+        if (communeColumns.contains("insee_com")) {
             String inputTableName = "(SELECT st_setsrid(the_geom, $commune_srid) as the_geom, INSEE_COM as CODE_INSEE FROM $commune_location WHERE INSEE_COM='$code' or lower(nom)='${code.toLowerCase()}')"
             debug "Loading in the H2GIS database $outputTableName"
             IOMethods.exportToDataBase(sourceConnection, inputTableName, h2gis_datasource.getConnection(), outputTableName, -1, 1000)
-        }
-        else {
+        } else {
             throw new Exception("Cannot find a column insee_com to filter the commune")
         }
-    }else{
+    } else {
         throw new Exception("Invalid location data type. Please set a text value or a collection of coordinates to specify a bbox")
     }
     def count = h2gis_datasource.getRowCount(outputTableName)
@@ -427,7 +423,7 @@ int getVersion() {
 }
 
 @Override
-Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin) throws Exception{
+Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hLevMin) throws Exception {
     if (!hLevMin) {
         hLevMin = 3
     }

@@ -38,7 +38,7 @@ import org.orbisgis.geoclimate.Geoindicators
  * @return The name of the final buildings table
  */
 String formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
-                           String urban_areas = "", float h_lev_min = 3) throws Exception{
+                           String urban_areas = "", float h_lev_min = 3) throws Exception {
     if (!h_lev_min) {
         h_lev_min = 3
     }
@@ -101,147 +101,147 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                     ]
 
             def building_type_level = [
-                    "building": 1,
-                   "house": 1,
-                   "detached": 1,
-                   "residential": 1,
-                   "apartments": 1,
-                   "bungalow": 0,
-                   "historic": 0,
-                   "monument": 0,
-                   "ruins": 0,
-                   "castle": 1,
-                   "agricultural": 0,
-                   "farm": 0,
-                   "farm_auxiliary": 0,
-                   "barn": 0,
-                   "greenhouse": 0,
-                   "silo": 0,
-                   "commercial": 2,
-                   "industrial": 0,
-                   "sport": 0,
-                   "sports_centre": 0,
-                   "grandstand": 0,
-                   "transport": 0,
-                   "train_station": 0,
-                   "toll_booth": 0,
-                   "toll": 0,
-                   "terminal": 0,
-                   "airport_terminal": 0,
-                   "healthcare": 1,
-                   "education": 1,
-                   "entertainment_arts_culture": 0,
-                   "sustenance": 1,
-                   "military": 0,
-                   "religious": 0,
-                   "chapel": 0,
-                   "church": 0,
-                   "government": 1,
-                   "townhall": 1,
-                   "office": 1,
-                   "emergency": 0,
-                   "hotel": 2,
-                   "hospital": 2,
-                   "parking": 1,
-                   "slight_construction": 0,
-                   "water_tower" : 0,
-                   "fortress": 0,
-                   "abbey": 0,
-                   "cathedral": 0,
-                   "mosque": 0,
-                   "musalla": 0,
-                   "temple": 0,
-                   "synagogue": 0,
-                   "shrine": 0,
-                   "place_of_worship": 0,
-                   "wayside_shrine": 0,
-                   "swimming_pool" : 0,
-                   "fitness_centre": 1,
-                   "horse_riding": 0,
-                   "ice_rink" : 0,
-                   "pitch": 0,
-                   "stadium": 0,
-                   "track": 0,
-                   "sports_hall": 0,
-                   "ammunition": 0,
-                   "bunker": 0,
-                   "barracks": 1,
-                   "casemate": 0,
-                   "station": 0,
-                   "government_office": 1,
-                   "stable": 0,
-                   "sty": 0,
-                   "cowshed": 0,
-                   "digester": 0,
-                   "farmhouse": 0,
-                   "bank": 1,
-                   "bureau_de_change": 0,
-                   "boat_rental": 0,
-                   "car_rental" : 0,
-                   "internet_cafe": 0,
-                   "kiosk": 0,
-                   "money_transfer": 0,
-                   "market": 0,
-                   "marketplace": 0,
-                   "pharmacy" : 0,
-                   "post_office" : 1,
-                   "retail": 0,
-                   "shop" : 0,
-                   "store": 0,
-                   "supermarket": 0,
-                   "warehouse": 0,
-                   "factory": 0,
-                   "gas" : 0,
-                   "heating_station": 0,
-                   "oil_mill" : 0,
-                   "oil": 0,
-                   "wellsite": 0,
-                   "well_cluster": 0,
-                   "grain_silo": 0,
-                   "villa": 1,
-                   "dormitory": 1,
-                   "condominium": 1,
-                   "sheltered_housing": 0,
-                   "workers_dormitory" :0,
-                   "terrace": 1,
-                   "transportation": 0,
-                   "hangar": 0,
-                   "tower": 1,
-                   "control_tower": 0,
-                   "aeroway": 1,
-                   "roundhouse": 0,
-                   "social_facility": 1,
-                   "college": 1,
-                   "kindergarten": 0,
-                   "school": 0,
-                   "university": 1,
-                   "cinema": 1,
-                   "arts_centre": 0,
-                   "brothel": 1,
-                   "casino": 0,
-                   "community_centre": 0,
-                   "conference_centre": 1,
-                   "events_venue": 1,
-                   "exhibition_centre": 0,
-                   "gambling": 0,
-                   "music_venue": 0,
-                   "nightclub": 0,
-                   "planetarium": 0,
-                   "social_centre": 0,
-                   "studio": 0,
-                   "theatre": 0,
-                   "library": 1,
-                   "museum": 0,
-                   "aquarium": 0,
-                   "gallery": 0,
-                   "information": 0,
-                   "restaurant": 0,
-                   "bar": 0,
-                   "cafe": 0,
-                   "fast_food": 0,
-                   "ice_cream": 0,
-                   "pub": 0,
-                   "attraction": 0
+                    "building"                  : 1,
+                    "house"                     : 1,
+                    "detached"                  : 1,
+                    "residential"               : 1,
+                    "apartments"                : 1,
+                    "bungalow"                  : 0,
+                    "historic"                  : 0,
+                    "monument"                  : 0,
+                    "ruins"                     : 0,
+                    "castle"                    : 1,
+                    "agricultural"              : 0,
+                    "farm"                      : 0,
+                    "farm_auxiliary"            : 0,
+                    "barn"                      : 0,
+                    "greenhouse"                : 0,
+                    "silo"                      : 0,
+                    "commercial"                : 2,
+                    "industrial"                : 0,
+                    "sport"                     : 0,
+                    "sports_centre"             : 0,
+                    "grandstand"                : 0,
+                    "transport"                 : 0,
+                    "train_station"             : 0,
+                    "toll_booth"                : 0,
+                    "toll"                      : 0,
+                    "terminal"                  : 0,
+                    "airport_terminal"          : 0,
+                    "healthcare"                : 1,
+                    "education"                 : 1,
+                    "entertainment_arts_culture": 0,
+                    "sustenance"                : 1,
+                    "military"                  : 0,
+                    "religious"                 : 0,
+                    "chapel"                    : 0,
+                    "church"                    : 0,
+                    "government"                : 1,
+                    "townhall"                  : 1,
+                    "office"                    : 1,
+                    "emergency"                 : 0,
+                    "hotel"                     : 2,
+                    "hospital"                  : 2,
+                    "parking"                   : 1,
+                    "slight_construction"       : 0,
+                    "water_tower"               : 0,
+                    "fortress"                  : 0,
+                    "abbey"                     : 0,
+                    "cathedral"                 : 0,
+                    "mosque"                    : 0,
+                    "musalla"                   : 0,
+                    "temple"                    : 0,
+                    "synagogue"                 : 0,
+                    "shrine"                    : 0,
+                    "place_of_worship"          : 0,
+                    "wayside_shrine"            : 0,
+                    "swimming_pool"             : 0,
+                    "fitness_centre"            : 1,
+                    "horse_riding"              : 0,
+                    "ice_rink"                  : 0,
+                    "pitch"                     : 0,
+                    "stadium"                   : 0,
+                    "track"                     : 0,
+                    "sports_hall"               : 0,
+                    "ammunition"                : 0,
+                    "bunker"                    : 0,
+                    "barracks"                  : 1,
+                    "casemate"                  : 0,
+                    "station"                   : 0,
+                    "government_office"         : 1,
+                    "stable"                    : 0,
+                    "sty"                       : 0,
+                    "cowshed"                   : 0,
+                    "digester"                  : 0,
+                    "farmhouse"                 : 0,
+                    "bank"                      : 1,
+                    "bureau_de_change"          : 0,
+                    "boat_rental"               : 0,
+                    "car_rental"                : 0,
+                    "internet_cafe"             : 0,
+                    "kiosk"                     : 0,
+                    "money_transfer"            : 0,
+                    "market"                    : 0,
+                    "marketplace"               : 0,
+                    "pharmacy"                  : 0,
+                    "post_office"               : 1,
+                    "retail"                    : 0,
+                    "shop"                      : 0,
+                    "store"                     : 0,
+                    "supermarket"               : 0,
+                    "warehouse"                 : 0,
+                    "factory"                   : 0,
+                    "gas"                       : 0,
+                    "heating_station"           : 0,
+                    "oil_mill"                  : 0,
+                    "oil"                       : 0,
+                    "wellsite"                  : 0,
+                    "well_cluster"              : 0,
+                    "grain_silo"                : 0,
+                    "villa"                     : 1,
+                    "dormitory"                 : 1,
+                    "condominium"               : 1,
+                    "sheltered_housing"         : 0,
+                    "workers_dormitory"         : 0,
+                    "terrace"                   : 1,
+                    "transportation"            : 0,
+                    "hangar"                    : 0,
+                    "tower"                     : 1,
+                    "control_tower"             : 0,
+                    "aeroway"                   : 1,
+                    "roundhouse"                : 0,
+                    "social_facility"           : 1,
+                    "college"                   : 1,
+                    "kindergarten"              : 0,
+                    "school"                    : 0,
+                    "university"                : 1,
+                    "cinema"                    : 1,
+                    "arts_centre"               : 0,
+                    "brothel"                   : 1,
+                    "casino"                    : 0,
+                    "community_centre"          : 0,
+                    "conference_centre"         : 1,
+                    "events_venue"              : 1,
+                    "exhibition_centre"         : 0,
+                    "gambling"                  : 0,
+                    "music_venue"               : 0,
+                    "nightclub"                 : 0,
+                    "planetarium"               : 0,
+                    "social_centre"             : 0,
+                    "studio"                    : 0,
+                    "theatre"                   : 0,
+                    "library"                   : 1,
+                    "museum"                    : 0,
+                    "aquarium"                  : 0,
+                    "gallery"                   : 0,
+                    "information"               : 0,
+                    "restaurant"                : 0,
+                    "bar"                       : 0,
+                    "cafe"                      : 0,
+                    "fast_food"                 : 0,
+                    "ice_cream"                 : 0,
+                    "pub"                       : 0,
+                    "attraction"                : 0
             ]
 
 
@@ -373,7 +373,7 @@ static String[] getTypeAndUse(def main_type, def main_use, def types_and_uses) {
  * @param road The name of the raw roads table in the DB
  * @return The name of the final roads table
  */
-String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") throws Exception{
+String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "") throws Exception {
     debug('Formating road layer')
     def outputTableName = postfix "ROAD"
     datasource.execute("""
@@ -522,8 +522,8 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                         if (!qualified_road_zindex) {
                             qualified_road_zindex = 1
                         }
-                    }else if(road_crossing=='NC'){
-                        qualified_crossing=null
+                    } else if (road_crossing == 'NC') {
+                        qualified_crossing = null
                     }
                     def road_sens = row.DIRECTION
 
@@ -578,7 +578,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
  * @param water The name of the raw hydro table in the DB
  * @return The name of the final hydro table
  */
-String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "") throws Exception{
+String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "") throws Exception {
     debug('Hydro transformation starts')
     def outputTableName = postfix("HYDRO")
     datasource.execute """Drop table if exists $outputTableName;
@@ -600,31 +600,31 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
 
             }
             def water_types =
-                    ["Aqueduc"               : "aqueduct",
-                     "Canal"                 : "canal",
-                     "Delta"                 : "bay",
-                     "Ecoulement canalisé"   : "canal",
-                     "Ecoulement endoréique" : "water",
-                     "Ecoulement hyporhéique": "water",
-                     "Ecoulement karstique"  : "water",
-                     "Ecoulement naturel"    : "water",
-                     "Ecoulement phréatique" : "water",
-                     "Estuaire"              : "bay",
-                     "Inconnue"              : "water",
-                     "Lac"                   : "lake",
-                     "Lagune"                : "lagoon", "Mangrove": "mangrove",
-                     "Mare"                  : "pond",
-                     "Plan d'eau de gravière": "pond",
-                     "Plan d'eau de mine": "basin", "Ravine": "water",
-                     "Réservoir-bassin"      : "basin",
-                     "Réservoir-bassin d'orage": "basin",
+                    ["Aqueduc"                   : "aqueduct",
+                     "Canal"                     : "canal",
+                     "Delta"                     : "bay",
+                     "Ecoulement canalisé"       : "canal",
+                     "Ecoulement endoréique"     : "water",
+                     "Ecoulement hyporhéique"    : "water",
+                     "Ecoulement karstique"      : "water",
+                     "Ecoulement naturel"        : "water",
+                     "Ecoulement phréatique"     : "water",
+                     "Estuaire"                  : "bay",
+                     "Inconnue"                  : "water",
+                     "Lac"                       : "lake",
+                     "Lagune"                    : "lagoon", "Mangrove": "mangrove",
+                     "Mare"                      : "pond",
+                     "Plan d'eau de gravière"    : "pond",
+                     "Plan d'eau de mine"        : "basin", "Ravine": "water",
+                     "Réservoir-bassin"          : "basin",
+                     "Réservoir-bassin d'orage"  : "basin",
                      "Réservoir-bassin piscicole": "basin",
-                     "Retenue"               : "basin",
-                     "Retenuebarrage": "basin",
-                     "Retenue-bassin portuaire": "basin",
-                     "Retenue-digue": "basin",
-                     "Surface d'eau" :"water",
-                     "Bassin" :"basin"
+                     "Retenue"                   : "basin",
+                     "Retenuebarrage"            : "basin",
+                     "Retenue-bassin portuaire"  : "basin",
+                     "Retenue-digue"             : "basin",
+                     "Surface d'eau"             : "water",
+                     "Bassin"                    : "basin"
                     ]
 
             int rowcount = 1
@@ -659,7 +659,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
  * @param rail The name of the raw rails table in the DB
  * @return The name of the final rails table
  */
-String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") throws Exception{
+String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") throws Exception {
     debug('Rails transformation starts')
     def outputTableName = postfix("RAILS")
     datasource.execute """ drop table if exists $outputTableName;
@@ -756,7 +756,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
  * @param vegetation The name of the raw vegetation table in the DB
  * @return The name of the final vegetation table
  */
-String formatVegetationLayer(JdbcDataSource datasource, String vegetation, String zone = "") throws Exception{
+String formatVegetationLayer(JdbcDataSource datasource, String vegetation, String zone = "") throws Exception {
     debug('Vegetation transformation starts')
     def outputTableName = postfix "VEGET"
     datasource.execute(""" 
@@ -862,7 +862,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
  * @param impervious The name of the impervious table in the DB
  * @return outputTableName The name of the final impervious table
  */
-String formatImperviousLayer(H2GIS datasource, String impervious) throws Exception{
+String formatImperviousLayer(H2GIS datasource, String impervious) throws Exception {
     debug('Impervious layer')
     def outputTableName = postfix("IMPERVIOUS")
     datasource.execute """ drop table if exists $outputTableName;
@@ -916,8 +916,8 @@ String formatImperviousLayer(H2GIS datasource, String impervious) throws Excepti
  *
  * @return
  */
-String setAliasOnColumns(String tableName){
-    return  columnNames.inject([]) { result, iter ->
+String setAliasOnColumns(String tableName) {
+    return columnNames.inject([]) { result, iter ->
         result += "a.$iter"
     }.join(",")
 }

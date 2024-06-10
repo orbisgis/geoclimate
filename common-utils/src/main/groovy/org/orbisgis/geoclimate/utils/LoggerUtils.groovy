@@ -1,7 +1,6 @@
 package org.orbisgis.geoclimate.utils
 
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * GeoClimate is a geospatial processing toolbox for environmental and climate studies
@@ -26,20 +25,20 @@ class LoggerUtils {
 
     static Logger logger
 
-    static LOGLEVEL_KEY="org.orbisgis.geoclimate.loglevel"
+    static LOGLEVEL_KEY = "org.orbisgis.geoclimate.loglevel"
 
-    private LoggerUtils() throws IOException{
+    private LoggerUtils() throws IOException {
         String level = System.getProperty(LOGLEVEL_KEY)
-        if(level){
+        if (level) {
             setLoggerLevel(level)
-        }else{
+        } else {
             setLoggerLevel("info")
         }
-        logger =org.slf4j.LoggerFactory.getLogger("GeoClimate")
+        logger = org.slf4j.LoggerFactory.getLogger("GeoClimate")
     }
 
-    private static Logger getLogger(){
-        if(logger == null){
+    private static Logger getLogger() {
+        if (logger == null) {
             try {
                 new LoggerUtils()
             } catch (IOException e) {
@@ -50,7 +49,7 @@ class LoggerUtils {
     }
 
     static info(def message) {
-        getLogger().info( message.toString())
+        getLogger().info(message.toString())
     }
 
     static warn(def message) {

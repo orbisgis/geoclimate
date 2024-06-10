@@ -177,8 +177,8 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource
             columnNames.remove("ID_ROW")
 
             //Add indexes
-            h2gis_datasource.createIndex(outputTable,"ID_COL")
-            h2gis_datasource.createIndex(outputTable,"ID_ROW")
+            h2gis_datasource.createIndex(outputTable, "ID_COL")
+            h2gis_datasource.createIndex(outputTable, "ID_ROW")
 
             //Save each grid
             columnNames.each { it ->

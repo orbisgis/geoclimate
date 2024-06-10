@@ -142,7 +142,7 @@ class RsuIndicatorsTests {
         h2GIS "DROP TABLE IF EXISTS corr_tempo; CREATE TABLE corr_tempo AS SELECT a.*, b.the_geom, b.height_wall " +
                 "FROM rsu_build_corr a, tempo_build b WHERE a.id_build = b.id_build"
 
-        def p = Geoindicators.RsuIndicators.groundSkyViewFactor(h2GIS, "rsu_test","id_rsu", "corr_tempo",
+        def p = Geoindicators.RsuIndicators.groundSkyViewFactor(h2GIS, "rsu_test", "id_rsu", "corr_tempo",
                 0.008, 100, 60, "test")
         assertNotNull(p)
         assertEquals 0.54, h2GIS.firstRow("SELECT * FROM test_rsu_ground_sky_view_factor " +
@@ -183,7 +183,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def rangeDeg = 360 / numberOfDirection
-        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test","id_rsu", listLayersBottom,
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", "id_rsu", listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(p)
         def concat = ""
@@ -217,7 +217,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def rangeDeg = 360 / numberOfDirection
-        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", "id_rsu",listLayersBottom,
+        def p = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build", "rsu_test", "id_rsu", listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(p)
         def concat = ""
@@ -303,7 +303,7 @@ class RsuIndicatorsTests {
         def listLayersBottom = [0, 10, 20, 30, 40, 50]
         def numberOfDirection = 4
         def pFacadeDistrib = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build",
-                "rsu_test","id_rsu", listLayersBottom,
+                "rsu_test", "id_rsu", listLayersBottom,
                 numberOfDirection, "test")
         assertNotNull(pFacadeDistrib)
         def pGeomAvg = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(h2GIS, "tempo_build",
@@ -320,7 +320,7 @@ class RsuIndicatorsTests {
         h2GIS "CREATE TABLE rsu_table AS SELECT a.*, b.geom_avg_height_roof, b.the_geom " +
                 "FROM test_rsu_projected_facade_area_distribution a, test_unweighted_operation_from_lower_scale b " +
                 "WHERE a.id_rsu = b.id_rsu"
-        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(h2GIS, "rsu_table","id_rsu",
+        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(h2GIS, "rsu_table", "id_rsu",
                 "projected_facade_area_distribution", "geom_avg_height_roof",
                 listLayersBottom, numberOfDirection, "test")
         assertNotNull(p)
@@ -372,7 +372,7 @@ class RsuIndicatorsTests {
         h2GIS "DROP TABLE IF EXISTS rsu_tempo; CREATE TABLE rsu_tempo AS SELECT *, CASEWHEN(id_rsu = 1, 2.3," +
                 "CASEWHEN(id_rsu = 2, 0.1, null)) AS effective_terrain_roughness_length FROM rsu_test"
 
-        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(h2GIS, "rsu_tempo","id_rsu", "effective_terrain_roughness_length",
+        def p = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(h2GIS, "rsu_tempo", "id_rsu", "effective_terrain_roughness_length",
                 "test")
         assertNotNull(p)
         def concat = ""
@@ -413,15 +413,15 @@ class RsuIndicatorsTests {
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', '',
-                'veget_test', 'hydro_test', "","",
-                10000, 2500,10000, "prepare_rsu")
+                'veget_test', 'hydro_test', "", "",
+                10000, 2500, 10000, "prepare_rsu")
 
         assertNotNull h2GIS.getTable(outputTableGeoms)
 
         def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "rsu")
 
         def outputTableStats = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                outputTable, "id_rsu", "building_test", "road_test", "hydro_test", "veget_test", "","",
+                outputTable, "id_rsu", "building_test", "road_test", "hydro_test", "veget_test", "", "",
                 "test")
         assertNotNull(outputTableStats)
 
@@ -497,7 +497,7 @@ class RsuIndicatorsTests {
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", "building_test", "", "hydro_test", "veget_test", "","",
+                "rsu_tempo", "id_rsu", "building_test", "", "hydro_test", "veget_test", "", "",
                 "test")
         assertNotNull(tempoTable)
 
@@ -567,7 +567,7 @@ class RsuIndicatorsTests {
 
         // Need to create the smallest geometries used as input of the surface fraction process
         def tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", null, "road_tempo", null, null, null,null,
+                "rsu_tempo", "id_rsu", null, "road_tempo", null, null, null, null,
                 "test")
         assertNotNull(tempoTable)
 
@@ -617,7 +617,7 @@ class RsuIndicatorsTests {
                 "FROM rsu_test WHERE id_rsu = 4"
         // Need to create the smallest geometries used as input of the surface fraction process
         String tempoTable = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
-                "rsu_tempo", "id_rsu", "building_test", null, "hydro_test", "veget_test", null,null,
+                "rsu_tempo", "id_rsu", "building_test", null, "hydro_test", "veget_test", null, null,
                 "test")
         assertNotNull(tempoTable)
 
@@ -726,7 +726,7 @@ class RsuIndicatorsTests {
                 "tempo_rsu",
                 "id_rsu",
                 [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                12,true,
+                12, true,
                 "test")
         assertNotNull(p)
         assertEquals 0.00566, h2GIS.firstRow("SELECT * FROM ${p} WHERE id_rsu = 1").FRONTAL_AREA_INDEX_H0_5_D30_60, 0.00001
