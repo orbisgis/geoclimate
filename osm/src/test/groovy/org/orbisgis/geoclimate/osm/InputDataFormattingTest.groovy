@@ -293,7 +293,7 @@ class InputDataFormattingTest {
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
-        zoneToExtract = [43.824643, 4.383599, 43.827271, 4.388207]
+        zoneToExtract = [62.2, 28.2, 62.4, 28.4]
 
         //zoneToExtract =[44.795480,12.323227,45.004622,12.627411]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
@@ -311,7 +311,7 @@ class InputDataFormattingTest {
 
             //Zone envelope
             h2GIS.getTable(extractData.zone_envelope).save("${file.absolutePath + File.separator}zone_envelope.fgb", true)
-/*
+
             //Urban Areas
             def inputUrbanAreas = OSM.InputDataFormatting.formatUrbanAreas(h2GIS,
                     extractData.urban_areas,extractData.zone)
@@ -343,17 +343,17 @@ class InputDataFormattingTest {
                     h2GIS,extractData.vegetation,extractData.zone_envelope)
             h2GIS.save(inputVegetationTableName,"${file.absolutePath + File.separator}vegetation.fgb", true)
 
-            println("Vegetation formatted")*/
+            println("Vegetation formatted")
 
             //Hydrography
             def inputWaterTableName = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
 
             //Impervious
-            /* String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
+             String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
                      extractData.zone_envelope)
              h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}impervious.fgb", true)
 
-             println("Impervious formatted")*/
+             println("Impervious formatted")
 
             //Save coastlines to debug
             h2GIS.save(extractData.coastline, "${file.absolutePath + File.separator}coastlines.fgb", true)
