@@ -1597,7 +1597,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     /*
     * Make aggregation process with previous grid and current rsu lcz
     */
-    if (list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY", "URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]) && rsu_lcz) {
+    if (list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY", "URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES"]) && rsu_lcz) {
         def indicatorName = "LCZ_PRIMARY"
         String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(
                 datasource, grid, grid_column_identifier,
@@ -2176,7 +2176,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
     }
 
     //Concert the list of indicators to upper case
-    allowed_indicators = ["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]
+    allowed_indicators = ["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES"]
     def list_indicators_upper = list_indicators.collect { it.toUpperCase() }
 
     def tablesToDrop = []
@@ -2184,7 +2184,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
     tablesToJoin.put(grid_indicators, id_grid)
     String sprawl_areas
     String cool_areas
-    if (list_indicators_upper.intersect(["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]) && grid_indicators) {
+    if (list_indicators_upper.intersect(["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES"]) && grid_indicators) {
         sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(datasource, grid_indicators, distance )
     }
     if (sprawl_areas) {
@@ -2207,7 +2207,7 @@ Map sprawlIndicators(JdbcDataSource datasource, String grid_indicators, String i
                 }
             }
         }
-        if (list_indicators_upper.contains("URBAN_SPRAWL_COOL_DISTANCE")) {
+        if (list_indicators_upper.contains("URBAN_SPRAWL_COOL_DISTANCES")) {
             cool_areas = Geoindicators.SpatialUnits.extractCoolAreas(datasource, grid_indicators, sprawl_areas, (distance / 2) as float)
             if (cool_areas) {
                 String inverse_cool_areas = Geoindicators.SpatialUnits.inversePolygonsLayer(datasource, sprawl_areas,cool_areas)

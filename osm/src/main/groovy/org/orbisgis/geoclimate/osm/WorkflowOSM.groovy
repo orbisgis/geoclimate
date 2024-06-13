@@ -865,7 +865,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DIST",
                                                "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
                                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS", "URBAN_SPRAWL_AREAS",
-                                               "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCE"]
+                                               "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES"]
                 def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
                 if (allowedOutputIndicators) {
                     //Update the RSU indicators list according the grid indicators

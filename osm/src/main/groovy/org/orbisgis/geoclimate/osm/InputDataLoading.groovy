@@ -221,7 +221,7 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath,
         parametersMap = readJSONParameters(paramsDefaultFile)
         tags = parametersMap.get("tags")
         columnsToKeep = parametersMap.get("columns")
-        String water = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep, geometry, true)
+        String water = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep, geometry, false)
         debug "Create the water layer"
         if (water) {
             outputHydroTableName = postfix("OSM_WATER")
