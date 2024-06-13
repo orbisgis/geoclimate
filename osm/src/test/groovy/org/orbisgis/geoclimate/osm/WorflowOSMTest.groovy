@@ -693,7 +693,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                // "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
                                                "URBAN_SPRAWL_AREAS",
                                                "URBAN_SPRAWL_DISTANCES",
-                                               "URBAN_SPRAWL_COOL_DISTANCE"]/*,
+                                               "URBAN_SPRAWL_COOL_DISTANCES"]/*,
                                 "lcz_lod":1*/
                         ], "worldpop_indicators": true
                          /*
