@@ -544,8 +544,6 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
 
     debug "Build all polygon relations"
     def relationsMpHoles = postfix "RELATIONS_MP_HOLES"
-    datasource.save(relationsPolygonsOuterExploded, "/tmp/outer.geojson", true)
-    datasource.save(relationsPolygonsInnerExploded, "/tmp/inner.geojson", true)
     datasource """
                 CREATE SPATIAL INDEX ON $relationsPolygonsOuterExploded (the_geom);
                 CREATE SPATIAL INDEX ON $relationsPolygonsInnerExploded (the_geom);
