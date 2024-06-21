@@ -53,8 +53,8 @@ jobs:
       - name: Deploy
         run: mvn deploy --no-transfer-progress --batch-mode
         env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_USERNAME: ${{ secrets.MVN_CENTRAL_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MVN_CENTRAL_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSWORD }}
 
       # Build jar with dependencies

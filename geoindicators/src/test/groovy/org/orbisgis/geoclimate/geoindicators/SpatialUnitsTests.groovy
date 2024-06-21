@@ -398,4 +398,24 @@ class SpatialUnitsTests {
             h2GIS.save(rsu, "/tmp/rsu.fgb", true)
         }
     }
+
+    @Test
+    void sprawlAreasTest5() {
+        //Data for test
+        h2GIS.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
+        ST_MakeGrid('POLYGON((0 0, 2500 0, 2500 2500, 0 0))'::GEOMETRY, 250, 250);
+        --Center cell urban
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 6; 
+        """.toString())
+        String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 250/2)
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
+        assertEquals(312500, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
+    }
 }

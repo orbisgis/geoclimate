@@ -649,12 +649,15 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Genève, Suisse"
+        def location = "Redon"
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
-        def grid_size = 100
+        def grid_size = 250
         //location = nominatim.bbox
-         location=[46.178404,6.095524,46.222959,6.190109]
-        //location =[62.2, 28.2, 62.4, 28.4]
+         //location=[46.178404,6.095524,46.222959,6.190109]
+        location =[ 48.84017284026897,
+                    2.3061887733275785,
+                    48.878115442982086,
+                    2.36742047202511]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -675,9 +678,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"             : 0,
                          "rsu_indicators"       : [
-                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
 
-                         ], "grid_indicators"   : [
+                         ], /*"grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
                                 //"rowCol": true,
@@ -693,9 +696,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                // "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
                                                "URBAN_SPRAWL_AREAS",
                                                "URBAN_SPRAWL_DISTANCES",
-                                               "URBAN_SPRAWL_COOL_DISTANCES"]/*,
-                                "lcz_lod":1*/
-                        ], "worldpop_indicators": true
+                                               "URBAN_SPRAWL_COOL_DISTANCES"]*//*,
+                                "lcz_lod":1*//*
+                        ], "worldpop_indicators": true*/
                          /*
 
                          "road_traffic"                                         : true,

@@ -629,5 +629,47 @@ class WorkflowGeoIndicatorsTest {
         """.toString())
     }
 
+    @Test
+    void sprawlIndicators1() {
+        //Data for test
+        datasource.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
+        ST_MakeGrid('POLYGON((0 0, 2500 0, 2500 2500, 0 0))'::GEOMETRY, 250, 250);
+        --Center cell urban
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 4; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 5;
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 6 AND id_col = 6; 
+        UPDATE grid SET LCZ_PRIMARY= 1 WHERE id_row = 5 AND id_col = 6; 
+        """)
+        def results = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(datasource, "grid", "id_grid",  ["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES"],
+               250/2 )
+        def urban_cool_areas = results.urban_cool_areas
+        def urban_sprawl_areas = results.urban_sprawl_areas
+        assertEquals(312500, datasource.firstRow("select st_area(the_geom) as area from $urban_sprawl_areas").area, 0.0001)
+        assertEquals(0, datasource.getRowCount(urban_cool_areas))
+    }
+
+
+    @Test
+    void sprawlIndicators2() {
+        //Data for test only vegetation
+        datasource.execute("""
+        --Grid values
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, 104 AS LCZ_PRIMARY FROM 
+        ST_MakeGrid('POLYGON((0 0, 2500 0, 2500 2500, 0 0))'::GEOMETRY, 250, 250);
+        """.toString())
+        def results = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(datasource, "grid", "id_grid",  ["URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES"],
+                250/2 )
+        def urban_cool_areas = results.urban_cool_areas
+        def urban_sprawl_areas = results.urban_sprawl_areas
+        assertTrue(datasource.isEmpty(urban_sprawl_areas))
+        assertNull(urban_cool_areas)
+
+    }
+
 
 }
