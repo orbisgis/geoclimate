@@ -105,6 +105,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                                         Geometry subGeom = geom.getGeometryN(i)
                                         if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                            subGeom.normalize()
                                             stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
@@ -138,27 +139,29 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 def id_build = 1;
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
-                        def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
-                        def use = typeAndUseValues[1]
-                        def type = typeAndUseValues[0]
-                        if (type) {
-                            String height = row.height
-                            String roof_height = row.'roof:height'
-                            String b_lev = row.'building:levels'
-                            String roof_lev = row.'roof:levels'
-                            def heightRoof = getHeightRoof(height, heightPattern)
-                            def heightWall = getHeightWall(heightRoof, roof_height)
-                            def nbLevels = getNbLevels(b_lev, roof_lev)
-                            def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
-                            def zIndex = getZIndex(row.'layer')
-                            String roof_shape = row.'roof:shape'
-                            if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                                Geometry geom = row.the_geom
-                                def srid = geom.getSRID()
-                                for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    Geometry subGeom = geom.getGeometryN(i)
-                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                        stmt.addBatch """
+                        Geometry geom = row.the_geom
+                        if(geom) {
+                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                            def use = typeAndUseValues[1]
+                            def type = typeAndUseValues[0]
+                            if (type) {
+                                String height = row.height
+                                String roof_height = row.'roof:height'
+                                String b_lev = row.'building:levels'
+                                String roof_lev = row.'roof:levels'
+                                def heightRoof = getHeightRoof(height, heightPattern)
+                                def heightWall = getHeightWall(heightRoof, roof_height)
+                                def nbLevels = getNbLevels(b_lev, roof_lev)
+                                def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
+                                def zIndex = getZIndex(row.'layer')
+                                String roof_shape = row.'roof:shape'
+                                if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
+                                    def srid = geom.getSRID()
+                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                        Geometry subGeom = geom.getGeometryN(i)
+                                        if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                            subGeom.normalize()
+                                            stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
@@ -172,14 +175,15 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                                     ${roof_shape ? "'" + roof_shape + "'" : null})
                                             """.toString()
 
-                                        if (formatedHeight.estimated) {
-                                            stmt.addBatch """
+                                            if (formatedHeight.estimated) {
+                                                stmt.addBatch """
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build, 
                                                     '${row.id}')
                                                 """.toString()
+                                            }
+                                            id_build++
                                         }
-                                        id_build++
                                     }
                                 }
                             }
@@ -205,7 +209,8 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.createSpatialIndex(triangles)
 
                 datasource.execute """DROP TABLE IF EXISTS $urbanAreasPart, $buildinType ;
-            CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part FROM $outputTableName a, $triangles b 
+            CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part 
+                        FROM $outputTableName a, $triangles b 
                         WHERE a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND  a.TYPE ='building';   
             CREATE INDEX ON $urbanAreasPart(id_build);                     
             create table $buildinType as select 
