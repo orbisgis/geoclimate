@@ -667,12 +667,12 @@ void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, String i
             location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""")
     if (osm_geometry == null) {
         dataSource.execute("""INSERT INTO $logTableZones 
-                    VALUES(null,'$id_zone', '$message', 
+                    VALUES(null,'$id_zone', '${message.replace("'","''")}', 
                             '${Geoindicators.version()}',
                             '${Geoindicators.buildNumber()}')""")
     } else {
         dataSource.execute("""INSERT INTO $logTableZones 
-                    VALUES(st_geomfromtext('${osm_geometry}',4326) ,'$id_zone', '$message', 
+                    VALUES(st_geomfromtext('${osm_geometry}',4326) ,'$id_zone', '${message.replace("'","''")}', 
                             '${Geoindicators.version()}',
                             '${Geoindicators.buildNumber()}')""")
     }

@@ -661,26 +661,25 @@ String computeSprawlAreas(JdbcDataSource datasource, String grid_indicators,
         } else {
             def tmp_sprawl = postfix("sprawl_tmp")
             datasource.execute("""
-        DROP TABLE IF EXISTS  $tmp_sprawl, $outputTableName;
-         create table $tmp_sprawl as 
-        select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
-        select st_union(st_accum(the_geom)) as the_geom from
-        $grid_indicators where 
-        LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
-        where st_area(st_buffer(the_geom, -$distance,2)) > 1""".toString())
+            DROP TABLE IF EXISTS  $tmp_sprawl, $outputTableName;
+            create table $tmp_sprawl as 
+            select  CAST((row_number() over()) as Integer) as id, st_removeholes(the_geom) as the_geom from ST_EXPLODE('(
+            select st_union(st_accum(the_geom)) as the_geom from
+            $grid_indicators where 
+            LCZ_PRIMARY NOT IN (101, 102,103,104,106, 107))') 
+            where st_area(st_buffer(the_geom, -$distance,2)) > 1""".toString())
 
             datasource.execute("""CREATE TABLE $outputTableName as SELECT CAST((row_number() over()) as Integer) as id, 
-         the_geom
-        FROM
-        ST_EXPLODE('(
-        SELECT 
-        st_removeholes(st_buffer(st_union(st_accum(st_buffer(st_removeholes(the_geom),$distance, ''quad_segs=2 endcap=flat
+            the_geom FROM
+            ST_EXPLODE('(
+            SELECT 
+            st_removeholes(st_buffer(st_union(st_accum(st_buffer(st_removeholes(the_geom),$distance, ''quad_segs=2 endcap=flat
                      join=mitre mitre_limit=2''))),
                      -$distance, ''quad_segs=2 endcap=flat join=mitre mitre_limit=2'')) as the_geom  
-         FROM ST_EXPLODE(''$tmp_sprawl'') )') where (the_geom is not null or
-         st_isempty(the_geom) = false) and st_area(st_buffer(the_geom, -$distance,2)) >${distance * distance};
-        DROP TABLE IF EXISTS $tmp_sprawl;
-        """.toString())
+            FROM ST_EXPLODE(''$tmp_sprawl'') )') where (the_geom is not null or
+            st_isempty(the_geom) = false) and st_area(st_buffer(the_geom, -$distance,2)) >${distance * distance};
+            DROP TABLE IF EXISTS $tmp_sprawl;
+            """)
             return outputTableName
         }
     }
@@ -741,7 +740,7 @@ String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons, St
  *
  * @author Erwan Bocher (CNRS)
  */
-String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,String polygons_mask,
+String extractCoolAreas(JdbcDataSource datasource, String grid_indicators, String polygons_mask,
                         float distance = 50) throws Exception {
     if (!grid_indicators || !polygons_mask) {
         throw new IllegalArgumentException("No grid_indicators table to extract the cool areas layer")
@@ -757,8 +756,9 @@ String extractCoolAreas(JdbcDataSource datasource, String grid_indicators,String
         SELECT ST_UNION(ST_ACCUM(a.THE_GEOM)) AS THE_GEOM FROM $grid_indicators as a, $polygons_mask as b
         where 
          a.LCZ_PRIMARY in (101, 102, 103,104, 106, 107) and
-         a.the_geom && b.the_geom and st_intersects(st_pointonsurface(a.the_geom), b.the_geom))') ${distance > 0 ? 
-                " where (the_geom is not null or st_isempty(the_geom) = false) and st_area(st_buffer(the_geom, -$distance,2)) >${distance * distance}" : ""};
+         a.the_geom && b.the_geom and st_intersects(st_pointonsurface(a.the_geom), b.the_geom))') ${distance > 0 ?
+                " where (the_geom is not null or st_isempty(the_geom) = false) and st_area(st_buffer(the_geom, -$distance,2)) >${distance * distance}" : ""
+        };
         """.toString())
         return outputTableName
     }

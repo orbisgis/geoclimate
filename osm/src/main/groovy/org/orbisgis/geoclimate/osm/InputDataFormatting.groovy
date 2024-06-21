@@ -53,18 +53,18 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
     def outputTableName = postfix "INPUT_BUILDING"
     debug 'Formating building layer'
     def outputEstimateTableName = "EST_${outputTableName}"
-    datasource """
+    datasource.execute("""
                     DROP TABLE if exists ${outputEstimateTableName};
                     CREATE TABLE ${outputEstimateTableName} (
                         id_build INTEGER,
                         ID_SOURCE VARCHAR)
-                """.toString()
+                """)
 
-    datasource """ 
+    datasource.execute(""" 
                 DROP TABLE if exists ${outputTableName};
                 CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY, id_build INTEGER, ID_SOURCE VARCHAR, 
                     HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER, ROOF_SHAPE VARCHAR);
-            """.toString()
+            """)
     if (building) {
         def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
         def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
@@ -82,8 +82,10 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 Geometry geomZone = datasource.firstRow("select st_union(st_accum(the_geom)) as the_geom from $zone").the_geom
                 PreparedGeometry pZone = PreparedGeometryFactory.prepare(geomZone)
                 def id_build = 1;
-                datasource.withBatch(200) { stmt ->
+                datasource.withBatch(100) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
+                        Geometry geom = row.the_geom
+                        if (pZone.intersects(geom)) {
                         def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                         def use = typeAndUseValues[1]
                         def type = typeAndUseValues[0]
@@ -99,8 +101,6 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                             def zIndex = getZIndex(row.'layer')
                             String roof_shape = row.'roof:shape'
                             if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                                Geometry geom = row.the_geom
-                                if (pZone.intersects(geom)) {
                                     def srid = geom.getSRID()
                                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                                         Geometry subGeom = geom.getGeometryN(i)
@@ -136,7 +136,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 }
             } else {
                 def id_build = 1;
-                datasource.withBatch(200) { stmt ->
+                datasource.withBatch(100) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
                         def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                         def use = typeAndUseValues[1]
@@ -152,7 +152,6 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                             def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
                             def zIndex = getZIndex(row.'layer')
                             String roof_shape = row.'roof:shape'
-
                             if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
                                 Geometry geom = row.the_geom
                                 def srid = geom.getSRID()
@@ -201,7 +200,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.execute("""DROP TABLE IF EXISTS $triangles;
                 CREATE TABLE $triangles as 
                 SELECT * FROM st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 
-                      THEN ST_Tessellate(st_buffer(the_geom, -0.001,2)) ELSE THE_GEOM END AS THE_GEOM,
+                      THEN ST_Tessellate(st_snaptoself(the_geom, -0.001)) ELSE THE_GEOM END AS THE_GEOM,
                       type FROM $urban_areas)')""".toString())
                 datasource.createSpatialIndex(triangles)
 

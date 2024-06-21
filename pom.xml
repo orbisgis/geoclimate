@@ -40,7 +40,7 @@
         <!-- Dependencies versions -->
         <junit-version>5.9.1</junit-version>
         <jts-version>1.19.0</jts-version>
-        <h2gis-version>2.2.1</h2gis-version>
+        <h2gis-version>2.2.2-SNAPSHOT</h2gis-version>
         <h2-version>2.2.224</h2-version>
         <cts-version>1.7.1</cts-version>
         <orbisdata-version>2.1.1-SNAPSHOT</orbisdata-version>
