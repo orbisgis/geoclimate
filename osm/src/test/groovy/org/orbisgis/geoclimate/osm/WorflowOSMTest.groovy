@@ -654,7 +654,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def grid_size = 250
         //location = nominatim.bbox
          //location=[46.178404,6.095524,46.222959,6.190109]
-        location =[49.260483, 6.015968, 49.415665, 6.2368684]
+        //location =[47.693558, -3.5087318, 47.814945, -3.284718]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -675,7 +675,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"             : 0,
                          "rsu_indicators"       : [
-                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
+                                 "indicatorUse": ["LCZ"]//, "TEB"] //, "UTRF"]
 
                          ], /*"grid_indicators"   : [
                                 "x_size"    : grid_size,
