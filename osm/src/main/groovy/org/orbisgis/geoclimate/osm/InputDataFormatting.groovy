@@ -203,15 +203,15 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 //Tessellate the urban_areas to perform the intersection on large geometry
                 datasource.execute("""DROP TABLE IF EXISTS $triangles;
                 CREATE TABLE $triangles as 
-                SELECT * FROM st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 
-                      THEN ST_Tessellate(st_snaptoself(the_geom, -0.001)) ELSE THE_GEOM END AS THE_GEOM,
+                SELECT * FROM st_explode('(SELECT CASE WHEN ST_NPoints(THE_GEOM) > 2500 
+                      THEN st_subdivide(the_geom, 2500) ELSE THE_GEOM END AS THE_GEOM,
                       type FROM $urban_areas)')""".toString())
                 datasource.createSpatialIndex(triangles)
 
                 datasource.execute """DROP TABLE IF EXISTS $urbanAreasPart, $buildinType ;
             CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part 
                         FROM $outputTableName a, $triangles b 
-                        WHERE a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND  a.TYPE ='building';   
+                        WHERE a.the_geom && b.the_geom and st_intersects(st_buffer(a.the_geom, 0), b.the_geom) AND  a.TYPE ='building';   
             CREATE INDEX ON $urbanAreasPart(id_build);                     
             create table $buildinType as select 
             MAX(part) FILTER (WHERE type = 'residential') as "residential",
@@ -1046,36 +1046,38 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(urban_areas)
-                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                queryMapper += ", st_snaptoself(st_intersection(a.the_geom, b.the_geom), -0.001) as the_geom " +
                         "FROM " +
                         "$urban_areas AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom "
             } else {
-                queryMapper += ",  a.the_geom as the_geom FROM $urban_areas  as a"
+                queryMapper += ",  st_snaptoself(a.the_geom, -0.001) as the_geom FROM $urban_areas  as a"
 
             }
             def constructions = ["industrial", "commercial", "residential"]
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
-                    if (!row.building) {
-                        def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
-                        def type = typeAndUseValues[0]
-                        //Check if the urban areas is under construction
-                        if (type == "construction") {
-                            def construction = row."construction"
-                            if (construction && construction in constructions) {
-                                type = construction
+                    Geometry geom = row.the_geom
+                    if(geom) {
+                        if (!row.building) {
+                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)
+                            def type = typeAndUseValues[0]
+                            //Check if the urban areas is under construction
+                            if (type == "construction") {
+                                def construction = row."construction"
+                                if (construction && construction in constructions) {
+                                    type = construction
+                                }
                             }
-                        }
-                        if (type) {
-                            Geometry geom = row.the_geom
-                            int epsg = geom.getSRID()
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                Geometry subGeom = geom.getGeometryN(i)
-                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', ${singleQuote(type)})".toString()
+                            if (type) {
+                                int epsg = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', ${singleQuote(type)})".toString()
+                                    }
                                 }
                             }
                         }

@@ -288,12 +288,12 @@ class InputDataFormattingTest {
         }
 
         def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
-        def zoneToExtract = "Nimes"
+        def zoneToExtract = "Lorient"
 
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
-        zoneToExtract = [62.2, 28.2, 62.4, 28.4]
+        //zoneToExtract = [62.2, 28.2, 62.4, 28.4]
 
         //zoneToExtract =[44.795480,12.323227,45.004622,12.627411]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
@@ -321,7 +321,7 @@ class InputDataFormattingTest {
 
             //Buildings
             def inputBuildings = OSM.InputDataFormatting.formatBuildingLayer(h2GIS,
-                     extractData.building,extractData.zone,null)
+                     extractData.building,extractData.zone,inputUrbanAreas)
             h2GIS.save(inputBuildings.building,"${file.absolutePath + File.separator}building.fgb", true)
 
             println("Building formatted")
