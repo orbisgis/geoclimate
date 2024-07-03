@@ -654,7 +654,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def grid_size = 250
         location = nominatim.bbox
         //location=[46.178404,6.095524,46.222959,6.190109]
-       /* location =[ 48.84017284026897,
+        /* location =[ 48.84017284026897,
                     2.3061887733275785,
                     48.878115442982086,
                     2.36742047202511]*/
