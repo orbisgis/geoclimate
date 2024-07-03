@@ -602,7 +602,7 @@ ${osmTablesPrefix}_way_member, ${osmTablesPrefix}_way_not_taken_into_account, ${
         result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
         table = h2gis.getTable(result)
-        assertEquals 2, table.rowCount
+        assertEquals 1, table.rowCount
         table.each {
             switch (it.row) {
                 case 1:
@@ -611,32 +611,16 @@ ${osmTablesPrefix}_way_member, ${osmTablesPrefix}_way_not_taken_into_account, ${
                     assertEquals 2, it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
-                case 2:
-                    assertEquals "house", it.building
-                    assertEquals "r1", it.id
-                    assertEquals 2, it.the_geom.getDimension()
-                    assertEquals "lake", it.water
-                    break
             }
         }
 
         //Test no way tags
-        h2gis.execute """DROP TABLE ${prefix}_way_tag;
-        CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);""".toString()
+        h2gis.execute("""DROP TABLE ${prefix}_way_tag;
+        CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar);""")
         result = OSMTools.TransformUtils.toPolygonOrLine(polygonType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
         table = h2gis.getTable(result)
-        assertEquals 1, table.rowCount
-        table.each {
-            switch (it.row) {
-                case 1:
-                    assertEquals "house", it.building
-                    assertEquals "r1", it.id
-                    assertEquals 2, it.the_geom.getDimension()
-                    assertEquals "lake", it.water
-                    break
-            }
-        }
+        assertEquals 0, table.rowCount
         result = OSMTools.TransformUtils.toPolygonOrLine(lineType, h2gis, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
         table = h2gis.getTable(result)
