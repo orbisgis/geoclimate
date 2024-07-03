@@ -298,7 +298,6 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
             return outputTableName
         }
     }
-
     datasource """
                 CREATE TABLE $waysPolygonTmp AS
                     SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), $epsgCode) AS the_geom, id_way
@@ -415,13 +414,10 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
         error "The tag list cannot be null"
         return
     }
-
+    def tablesToDrop =[]
     def outputTableName = postfix "RELATION_POLYGONS"
     def osmTableTag = prefix osmTablesPrefix, "relation_tag"
-    def countTagsQuery = OSMTools.TransformUtils.getCountTagsQuery(osmTableTag, tags)
-    def columnsSelector = OSMTools.TransformUtils.getColumnSelector(osmTableTag, tags, columnsToKeep)
     def tagsFilter = OSMTools.TransformUtils.createWhereFilter(tags)
-
     if (!datasource.hasTable(osmTableTag)) {
         debug "No tags table found to build the table. An empty table will be returned."
         datasource """ 
@@ -431,59 +427,56 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
         return outputTableName
     }
 
-    if (datasource.firstRow(countTagsQuery.toString()).count <= 0) {
+    def relationFilteredKeys = postfix "RELATION_FILTERED_KEYS"
+    tablesToDrop<<relationFilteredKeys
+    if (tagsFilter) {
+        datasource.execute("""
+                    DROP TABLE IF EXISTS $relationFilteredKeys;
+                    CREATE TABLE $relationFilteredKeys AS 
+                        SELECT DISTINCT a.id_relation
+                        FROM ${osmTablesPrefix}_relation_tag as a 
+                        right JOIN 
+                        (SELECT ID_RELATION FROM  ${osmTablesPrefix}_relation_tag 
+                        WHERE tag_key='type' AND tag_value='multipolygon') as b 
+                        ON a.ID_RELATION = b.id_relation
+                        WHERE $tagsFilter;                   
+            """)
+    }else {
+        datasource.execute("""
+                    DROP TABLE IF EXISTS $relationFilteredKeys;
+                    CREATE TABLE $relationFilteredKeys AS 
+                        SELECT DISTINCT id_relation
+                        FROM  ${osmTablesPrefix}_relation_tag WHERE tag_key='type' AND tag_value='multipolygon';                   
+            """)
+    }
+
+    if (datasource.getRowCount(relationFilteredKeys) <= 0) {
         debug "No keys or values found in the relations. An empty table will be returned."
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
             """.toString()
+        datasource.dropTable(tablesToDrop)
         return outputTableName
     }
-    debug "Build outer polygons"
-    def relationsPolygonsOuter = postfix "RELATIONS_POLYGONS_OUTER"
-    def relationFilteredKeys = postfix "RELATION_FILTERED_KEYS"
-    def outer_condition
-    def inner_condition
-    if (!tagsFilter) {
-        outer_condition = "WHERE w.id_way = br.id_way AND br.role='outer'"
-        inner_condition = "WHERE w.id_way = br.id_way AND br.role='inner'"
-    } else {
-        datasource """
-                    DROP TABLE IF EXISTS $relationFilteredKeys;
-                    CREATE TABLE $relationFilteredKeys AS 
-                        SELECT DISTINCT id_relation
-                        FROM ${osmTablesPrefix}_relation_tag as a 
-                        WHERE $tagsFilter;
-                    CREATE INDEX ON $relationFilteredKeys(id_relation);
-            """.toString()
 
-        if (columnsToKeep) {
-            if (datasource.getRowCount(relationFilteredKeys) < 1) {
-                debug "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
-                datasource """
-                            DROP TABLE IF EXISTS $outputTableName;
-                            CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-                    """.toString()
-                return outputTableName
-            }
-        }
-
-        outer_condition = """, $relationFilteredKeys g 
-                    WHERE br.id_relation=g.id_relation
-                    AND w.id_way = br.id_way
-                    AND br.role='outer'
-            """
-        inner_condition = """, $relationFilteredKeys g
-                    WHERE br.id_relation=g.id_relation
-                    AND w.id_way = br.id_way
-                    AND br.role='inner'
-            """
-    }
+    //Extract the corresponding way by relation
+    def ways_list_relations = postfix "WAY_LIST_RELATIONS"
+    tablesToDrop<<ways_list_relations
 
     datasource.execute("""
+            CREATE INDEX ON $relationFilteredKeys(id_relation);
+            DROP TABLE IF EXISTS $ways_list_relations;
+            CREATE TABLE $ways_list_relations as SELECT br.id_way, br.id_relation, br.role, br.way_order 
+            FROM ${osmTablesPrefix}_way_member br, $relationFilteredKeys as r WHERE br.id_relation=r.id_relation""")
+
+    debug "Build outer polygons"
+    def relationsPolygonsOuter = postfix "RELATIONS_POLYGONS_OUTER"
+    datasource.execute("""
+                CREATE INDEX ON $relationFilteredKeys(id_relation);
                 DROP TABLE IF EXISTS $relationsPolygonsOuter;
                 CREATE TABLE $relationsPolygonsOuter AS 
-                SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) as the_geom, id_relation 
+                SELECT st_linemerge(ST_ACCUM(the_geom)) as the_geom, id_relation 
                 FROM(
                     SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) AS  the_geom, id_relation, role, id_way 
                     FROM(
@@ -493,8 +486,8 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                                 SELECT n.id_node, n.the_geom, wn.id_way idway 
                                 FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn 
                                 WHERE n.id_node = wn.id_node ORDER BY wn.node_order) 
-                            WHERE  idway = w.id_way) the_geom, w.id_way, br.id_relation, br.role 
-                        FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br $outer_condition) geom_table
+                            WHERE  idway = br.id_way) the_geom, br.id_way, br.id_relation, br.role , br.way_order
+                        FROM ${ways_list_relations} as br WHERE br.role='outer' ) geom_table
                         WHERE st_numgeometries(the_geom)>=2) 
                 GROUP BY id_relation;
         """.toString())
@@ -504,8 +497,8 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
     datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsInner;
                 CREATE TABLE $relationsPolygonsInner AS 
-                SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
-                FROM(
+                SELECT st_linemerge(ST_ACCUM(the_geom)) the_geom, id_relation 
+                FROM (
                     SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) AS the_geom, id_relation, role, id_way 
                     FROM(     
                         SELECT(
@@ -514,8 +507,8 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                                 SELECT n.id_node, n.the_geom, wn.id_way idway 
                                 FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn 
                                 WHERE n.id_node = wn.id_node ORDER BY wn.node_order) 
-                            WHERE  idway = w.id_way) the_geom, w.id_way, br.id_relation, br.role 
-                        FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br ${inner_condition}) geom_table 
+                            WHERE  idway = br.id_way) the_geom, br.id_way, br.id_relation, br.role 
+                        FROM  ${ways_list_relations} as br WHERE br.role='inner') geom_table 
                         WHERE st_numgeometries(the_geom)>=2) 
                 GROUP BY id_relation;
         """.toString()
@@ -559,6 +552,8 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                 CREATE INDEX ON $relationsMpHoles(id_relation);
         """.toString()
 
+    //select the column to keep
+    def columnsSelector = OSMTools.TransformUtils.getColumnSelector(osmTableTag, tags, columnsToKeep)
     String allRelationPolygons = postfix("all_relation_polygons")
     def query = """
                 DROP TABLE IF EXISTS $allRelationPolygons;     

@@ -1141,31 +1141,37 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                        SELECT the_geom, EXPLOD_ID  FROM st_explode('(  
                        SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
 
-                    datasource.execute """  
+                    //Reduce the zone to limit intersection rounding with JTS
+                    String reducedZone = postfix("reduced_zone")
+                    datasource.execute("""DROP TABLE IF EXISTS $reducedZone;
+                    CREATE TABLE $reducedZone as select st_buffer(the_geom, -0.01,2) as the_geom from $zone;""")
+
+                    datasource.execute("""  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
                         UNION ALL
-                        SELECT st_tomultiline(st_buffer(the_geom, -0.01,2))
-                        from $zone 
+                        SELECT the_geom
+                        from $reducedZone 
                         UNION ALL
                         SELECT st_tomultiline(the_geom)
                         from $water ;
                         CREATE TABLE $sea_land_mask (THE_GEOM GEOMETRY,ID serial, TYPE VARCHAR, ZINDEX INTEGER) AS SELECT THE_GEOM, EXPLOD_ID, 'land', 0 AS ZINDEX FROM
                         st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)')
-                        as foo where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;  """.toString()
+                        as foo where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;  """)
 
-                    datasource.execute """
+                    datasource.execute("""
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
                        
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
                         st_explode('(select ST_GeometryN(ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)), 1) as the_geom from $islands_mark as a,
-                        $zone as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
+                        $reducedZone as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
     
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
 
-                        CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);""".toString()
+                        CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
+                        DROP TABLE IF EXISTS $reducedZone;""")
 
                     //Perform triangulation to tag the areas as sea or water
                     datasource.execute """

@@ -649,15 +649,15 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Redon"
-        //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
+        def location = "Villeurbanne"
+        def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 250
-        //location = nominatim.bbox
-         //location=[46.178404,6.095524,46.222959,6.190109]
-        location =[ 48.84017284026897,
+        location = nominatim.bbox
+        //location=[46.178404,6.095524,46.222959,6.190109]
+       /* location =[ 48.84017284026897,
                     2.3061887733275785,
                     48.878115442982086,
-                    2.36742047202511]
+                    2.36742047202511]*/
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -678,27 +678,27 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"             : 0,
                          "rsu_indicators"       : [
-                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
+                                 "indicatorUse": ["LCZ"]//, "TEB"] //, "UTRF"]
 
-                         ], /*"grid_indicators"   : [
+                         ], "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
-                                //"rowCol": true,
-                                "indicators": [//"BUILDING_FRACTION","BUILDING_HEIGHT", "BUILDING_POP",
-                                               //"BUILDING_TYPE_FRACTION",
-                                               //"WATER_FRACTION","VEGETATION_FRACTION",
-                                               //"ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                                               "LCZ_PRIMARY",
-                                               //"BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                               //"SEA_LAND_FRACTION",
-                                               //"ASPECT_RATIO",
-                                               //"SVF",
-                                               // "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
-                                               "URBAN_SPRAWL_AREAS",
-                                               "URBAN_SPRAWL_DISTANCES",
-                                               "URBAN_SPRAWL_COOL_DISTANCES"]*//*,
-                                "lcz_lod":1*//*
-                        ], "worldpop_indicators": true*/
+                                "indicators": [
+                                        "BUILDING_FRACTION",
+                                        "BUILDING_HEIGHT",
+                                        "BUILDING_POP",
+                                        "BUILDING_TYPE_FRACTION",
+                                        "WATER_FRACTION",
+                                        "VEGETATION_FRACTION",
+                                        "ROAD_FRACTION",
+                                        "IMPERVIOUS_FRACTION",
+                                        "LCZ_FRACTION",
+                                        "LCZ_PRIMARY",
+                                        "SEA_LAND_FRACTION",
+                                        "ASPECT_RATIO",
+                                        "SVF" ]
+                                //"lcz_lod":1
+                        ], "worldpop_indicators": true
                          /*
 
                          "road_traffic"                                         : true,
