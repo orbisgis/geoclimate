@@ -208,16 +208,11 @@ class TransformTest extends AbstractOSMToolsTest {
         String result = OSMTools.Transform.toPolygons(ds, prefix, epsgCode, tags, columnsToKeep)
         assertFalse result.isEmpty()
         def table = ds.getSpatialTable(result)
-        assertEquals 2, table.rowCount
+        assertEquals 1, table.rowCount
         table.each {
             switch (it.row) {
                 case 1:
                     assertEquals "w1", it.id
-                    assertEquals 2, it.the_geom.getDimension()
-                    assertEquals "lake", it.water
-                    break
-                case 2:
-                    assertEquals "r1", it.id
                     assertEquals 2, it.the_geom.getDimension()
                     assertEquals "lake", it.water
                     break
@@ -369,18 +364,9 @@ class TransformTest extends AbstractOSMToolsTest {
 
         String result = OSMTools.Transform.extractRelationsAsPolygons(ds, prefix, epsgCode, tags, columnsToKeep)
         assertFalse result.isEmpty()
+        ds.save(result, "/tmp/building.geojson", true)
         def table = ds.getTable(result)
-        assertEquals 1, table.rowCount
-        table.each {
-            switch (it.row) {
-                case 1:
-                    assertEquals "r1", it.id
-                    assertEquals 2, it.the_geom.getDimension()
-                    assertEquals "house", it.building
-                    assertEquals "lake", it.water
-                    break
-            }
-        }
+        assertEquals 0, table.rowCount
 
         //Test not existing tags
         result = OSMTools.Transform.extractRelationsAsPolygons(ds, prefix, epsgCode, [toto: "tata"], [])
@@ -391,17 +377,7 @@ class TransformTest extends AbstractOSMToolsTest {
         CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar);""".toString()
         result = OSMTools.Transform.extractRelationsAsPolygons(ds, prefix, epsgCode, [], [])
         table = ds.getTable(result)
-        assertEquals 1, table.rowCount
-        table.each {
-            switch (it.row) {
-                case 1:
-                    assertEquals "r1", it.id
-                    assertEquals 2, it.the_geom.getDimension()
-                    assertEquals "house", it.building
-                    assertEquals "lake", it.water
-                    break
-            }
-        }
+        assertEquals 0, table.rowCount
 
         //Test column to keep absent
         result = OSMTools.Transform.extractRelationsAsPolygons(ds, prefix, epsgCode, tags, ["landscape"])

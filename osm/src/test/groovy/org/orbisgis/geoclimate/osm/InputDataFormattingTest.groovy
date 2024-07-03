@@ -286,16 +286,16 @@ class InputDataFormattingTest {
         if (!file.exists()) {
             file.mkdir()
         }
-
         def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
-        def zoneToExtract = "Lorient"
+
+        def zoneToExtract = "Vannes"
 
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
         //zoneToExtract = [62.2, 28.2, 62.4, 28.4]
 
-        //zoneToExtract =[44.795480,12.323227,45.004622,12.627411]
+        //zoneToExtract =[45.784554,4.861279,45.796015,4.883981]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
@@ -346,10 +346,11 @@ class InputDataFormattingTest {
             println("Vegetation formatted")
 
             //Hydrography
+            h2GIS.save(extractData.water,"${file.absolutePath + File.separator}water_osm.fgb", true)
             def inputWaterTableName = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
 
             //Impervious
-             String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
+            String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
                      extractData.zone_envelope)
              h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}impervious.fgb", true)
 
@@ -362,7 +363,6 @@ class InputDataFormattingTest {
             //Sea/Land mask
             def inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
                     extractData.zone_envelope, inputWaterTableName)
-            println(inputSeaLandTableName.isEmpty())
             h2GIS.save(inputSeaLandTableName, "${file.absolutePath + File.separator}sea_land_mask.fgb", true)
 
             println("Sea land mask formatted")
