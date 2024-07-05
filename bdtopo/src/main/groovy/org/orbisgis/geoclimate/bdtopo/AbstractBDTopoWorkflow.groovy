@@ -220,7 +220,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             }
                         }
                     } catch (Exception e) {
-                        saveLogZoneTable(h2gis_datasource, databaseFolder, location, e.getLocalizedMessage())
+                        saveLogZoneTable(h2gis_datasource, databaseFolder, location in Collection ? location.join("_") : location, e.getLocalizedMessage())
                         //eat the exception and process other zone
                         warn("The zone $location has not been processed. Please check the log table to get more informations.")
                     }
@@ -268,7 +268,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         }
                     }
                 } catch (Exception e) {
-                    saveLogZoneTable(h2gis_datasource, databaseFolder, location, e.getLocalizedMessage())
+                    saveLogZoneTable(h2gis_datasource, databaseFolder, location in Collection ? location.join("_") : location, e.getLocalizedMessage())
                     //eat the exception and process other zone
                     warn("The zone $location has not been processed. Please check the log table to get more informations.")
                 }
@@ -293,23 +293,23 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
     void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, String location, String message) throws Exception {
         def logTableZones = postfix("log_zones")
         //Create the table to log on the processed zone
-        dataSource.execute("""DROP TABLE IF EXISTS $logTableZones;
+        dataSource """DROP TABLE IF EXISTS $logTableZones;
             CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
-            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""")
+            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);"""
         //Find the geometry of the location
-        Geometry geom = dataSource.firstRow("SELECT st_union(st_accum(THE_GEOM)) as the_geom FROM WHERE commune").the_geom
-        if (geom == null) {
-            dataSource.execute("""INSERT INTO $logTableZones 
+        Geometry geom = dataSource.firstRow("SELECT st_union(st_accum(THE_GEOM)) as the_geom FROM commune").the_geom
+        if (geom == null | geom.isEmpty()) {
+            dataSource """INSERT INTO $logTableZones 
                     VALUES(null,'$location', '$message', 
                             '${Geoindicators.version()}',
-                            '${Geoindicators.buildNumber()}')""")
+                            '${Geoindicators.buildNumber()}')"""
         } else {
-            dataSource.execute("""INSERT INTO $logTableZones 
+            dataSource """INSERT INTO $logTableZones 
                     VALUES(st_geomfromtext('${geom}',${geom.getSRID()}) ,'$location', '$message', 
                             '${Geoindicators.version()}',
-                            '${Geoindicators.buildNumber()}')""")
+                            '${Geoindicators.buildNumber()}')"""
         }
-        dataSource.save(logTableZones, databaseFolder + File.separator + "log_zones_" + id_zone + ".fgb", true)
+        dataSource.save(logTableZones, databaseFolder + File.separator + "log_zones_" + location + ".fgb", true)
     }
 
     /**
