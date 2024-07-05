@@ -529,7 +529,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
     datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsInnerExploded;
                 CREATE TABLE $relationsPolygonsInnerExploded AS 
-                    SELECT the_geom AS the_geom, id_relation 
+                    SELECT st_makepolygon(the_geom) AS the_geom, id_relation 
                     FROM st_explode('$relationsPolygonsInner') 
                     WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom)
                     AND ST_NPoints(the_geom)>=4; 
@@ -544,10 +544,11 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                 CREATE INDEX ON $relationsPolygonsInnerExploded(id_relation);       
                 DROP TABLE IF EXISTS $relationsMpHoles;
                 CREATE TABLE $relationsMpHoles AS 
-                    SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.the_geom), ST_ACCUM(b.the_geom)) AS the_geom, a.ID_RELATION
+                    SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.the_geom), ST_ToMultiLine(ST_ACCUM(b.the_geom))) AS the_geom, a.ID_RELATION
                     FROM $relationsPolygonsOuterExploded AS a 
                     LEFT JOIN $relationsPolygonsInnerExploded AS b 
-                    ON( a.ID_RELATION=b.ID_RELATION)
+                    ON( a.ID_RELATION=b.ID_RELATION and  a.the_geom && b.the_geom 
+                    AND st_intersects(a.the_geom, st_pointonsurface(b.the_geom)))
                     GROUP BY a.the_geom, a.id_relation;
                 CREATE INDEX ON $relationsMpHoles(id_relation);
         """.toString()
