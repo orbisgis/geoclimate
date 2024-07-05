@@ -840,5 +840,16 @@ class TransformTest extends AbstractOSMToolsTest {
         h2GIS.save(lines, "/tmp/building.fgb")
     }
 
-
+    @Test
+    void buildGISLayersTest2() {
+        def prefix = "OSM_WATER"
+        assertTrue OSMTools.Loader.load(ds, prefix,
+                new File(this.class.getResource("water.osm").toURI()).getAbsolutePath())
+        //Create building layer
+        def tags = ["natural":"water"]
+        String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
+        def res = ds.firstRow("select count(*) as count, sum(ST_NumInteriorRings(the_geom)) as nb_holes from $outputTableName")
+        assertEquals(7, res.count)
+        assertEquals(3, res.nb_holes)
+    }
 }

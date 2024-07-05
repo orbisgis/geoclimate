@@ -297,7 +297,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
             location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);""")
         //Find the geometry of the location
-        Geometry geom = dataSource.firstRow("SELECT st_union(st_accum(THE_GEOM)) as the_geom FROM WHERE commune").the_geom
+        Geometry geom = dataSource.firstRow("SELECT st_union(st_accum(THE_GEOM)) as the_geom FROM commune").the_geom
         if (geom == null) {
             dataSource.execute("""INSERT INTO $logTableZones 
                     VALUES(null,'$location', '$message', 

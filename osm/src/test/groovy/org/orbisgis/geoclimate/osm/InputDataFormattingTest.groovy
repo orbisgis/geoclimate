@@ -279,7 +279,6 @@ class InputDataFormattingTest {
     @Test
     //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
-
         def directory = "/tmp/geoclimate"
 
         File file = new File(directory)
@@ -288,17 +287,17 @@ class InputDataFormattingTest {
         }
         def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
 
-        def zoneToExtract = "Vannes"
+        def zoneToExtract = "Nantes"
 
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
         //zoneToExtract = [62.2, 28.2, 62.4, 28.4]
 
-        //zoneToExtract =[45.784554,4.861279,45.796015,4.883981]
+        zoneToExtract =[47.0619, -1.8145005, 47.394558, -1.2849174]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
-        String formatedPlaceName = zoneToExtract.join("-").trim().split("\\s*(,|\\s)\\s*").join("_");
+        String formatedPlaceName = zoneToExtract.join("_").trim().split("\\s*(,|\\s)\\s*").join("_");
 
         if (!formatedPlaceName) {
             formatedPlaceName = zoneToExtract
