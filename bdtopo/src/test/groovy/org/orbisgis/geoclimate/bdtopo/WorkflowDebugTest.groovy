@@ -137,7 +137,7 @@ class WorkflowDebugTest {
     @Test
     void testIntegrationFolderInput() {
         def input_data = "/home/bernardj/Data/BDT/V3/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_R11_2024-03-15"
-        def locations = [[6961277.075588564, 653602.1968784243, 6962277.075588564, 654602.1968784243],
+        def locations = [
                          [6864452.136340265, 651978.2850116278, 6865452.136340265, 652978.2850116278]]
         String directory = "/tmp/bdtopo3"
         File dirFile = new File(directory)

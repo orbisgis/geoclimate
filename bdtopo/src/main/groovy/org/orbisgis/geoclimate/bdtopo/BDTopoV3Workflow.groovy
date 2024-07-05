@@ -206,7 +206,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         return true
 
     } else {
-        throw new Exception("Cannot find any commune with the insee code : $location")
+        throw new Exception("Cannot find any commune for the following bbox or insee code : $location")
     }
 }
 
