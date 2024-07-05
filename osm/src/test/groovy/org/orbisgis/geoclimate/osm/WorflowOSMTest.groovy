@@ -649,7 +649,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Villeurbanne"
+        def location = "Nantes"
         def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
         def grid_size = 250
         location = nominatim.bbox
