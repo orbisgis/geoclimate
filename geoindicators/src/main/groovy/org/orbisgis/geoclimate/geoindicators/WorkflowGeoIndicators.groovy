@@ -485,12 +485,13 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         def missingElementsUrb = neededSurfUrb - neededSurfUrb.findAll { indUrb -> surfFracList.contains(indUrb.toUpperCase()) }
         if (missingElementsUrb.size() == 0) {
             def queryUrbSurfFrac = """DROP TABLE IF EXISTS $utrfFractionIndic;
-                                        CREATE TABLE $utrfFractionIndic AS SELECT $columnIdRsu, """
+                                        CREATE TABLE $utrfFractionIndic AS SELECT $columnIdRsu"""
+            def columnsFrac =[]
             utrfSurfFraction.each { urbIndicator, indicatorList ->
-                queryUrbSurfFrac += "${indicatorList.join("+")} AS $urbIndicator, "
+                columnsFrac << "${indicatorList.join("+")} AS $urbIndicator "
             }
-            queryUrbSurfFrac += " FROM $surfaceFractions"
-            datasource.execute queryUrbSurfFrac.toString()
+            queryUrbSurfFrac += "${!columnsFrac.isEmpty()?","+columnsFrac.join(","):""} FROM $surfaceFractions"
+            datasource.execute(queryUrbSurfFrac)
             finalTablesToJoin.put(utrfFractionIndic, columnIdRsu)
         } else {
             throw new IllegalArgumentException("""'utrfSurfFraction' and 'surfSuperpositions' parameters given by the user are not consistent.
@@ -506,12 +507,13 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
         def missingElementsLcz = neededSurfLcz - neededSurfLcz.findAll { indLcz -> surfFracList.contains(indLcz.toUpperCase()) }
         if (missingElementsLcz.size() == 0) {
             def querylczSurfFrac = """DROP TABLE IF EXISTS $lczFractionIndic;
-                                            CREATE TABLE $lczFractionIndic AS SELECT $columnIdRsu, """
+                                            CREATE TABLE $lczFractionIndic AS SELECT $columnIdRsu """
+            def columnsSurfFrac =[]
             lczSurfFraction.each { urbIndicator, indicatorList ->
-                querylczSurfFrac += "${indicatorList.join("+")} AS $urbIndicator, "
+                columnsSurfFrac << "${indicatorList.join("+")} AS $urbIndicator"
             }
-            querylczSurfFrac += " FROM $surfaceFractions"
-            datasource.execute querylczSurfFrac.toString()
+            querylczSurfFrac += "${!columnsSurfFrac.isEmpty()?","+columnsSurfFrac.join(","):""}  FROM $surfaceFractions"
+            datasource.execute(querylczSurfFrac)
             finalTablesToJoin.put(lczFractionIndic, columnIdRsu)
         } else {
             throw new IllegalArgumentException("""'lczSurfFraction' and 'surfSuperpositions' parameters given by the user are not consistent.
