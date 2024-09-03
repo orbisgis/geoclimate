@@ -9,7 +9,6 @@
         <version>1.0.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
-    <groupId>org.orbisgis.geoclimate</groupId>
     <artifactId>geoindicators</artifactId>
     <version>1.0.1-SNAPSHOT</version>
 

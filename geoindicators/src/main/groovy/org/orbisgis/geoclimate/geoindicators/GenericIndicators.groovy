@@ -713,53 +713,54 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
             def outputTableName = prefix prefixName, BASE_NAME
 
             // Define the pieces of query according to each type of the input table
-            def queryCalc = ""
-            def queryCaseWh = ""
+            def queryCalc = []
+            def queryCaseWh = []
             // For the area fractions
             if (areaTypeAndComposition) {
-                queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA, "
+                queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA "
                 areaTypeAndComposition.forEach { type, compo ->
-                    queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type},"
-                    queryCalc += "CASE WHEN SUM(AREA)=0 THEN 0 ELSE SUM(AREA_${type})/SUM(AREA) END AS AREA_FRACTION_${type}, "
+                    queryCaseWh<< "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type}"
+                    queryCalc << "CASE WHEN SUM(AREA)=0 THEN 0 ELSE SUM(AREA_${type})/SUM(AREA) END AS AREA_FRACTION_${type}"
                 }
             }
 
             // For the floor area fractions in case the objects are buildings
             if (floorAreaTypeAndComposition) {
-                queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA, "
+                queryCaseWh << "ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV AS FLOOR_AREA"
                 floorAreaTypeAndComposition.forEach { type, compo ->
-                    queryCaseWh += "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type},"
-                    queryCalc += "CASE WHEN SUM(FLOOR_AREA) =0 THEN 0 ELSE SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) END AS FLOOR_AREA_FRACTION_${type}, "
+                    queryCaseWh << "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type}"
+                    queryCalc << "CASE WHEN SUM(FLOOR_AREA) =0 THEN 0 ELSE SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) END AS FLOOR_AREA_FRACTION_${type} "
                 }
             }
 
             // Calculates the surface of each object depending on its type
             datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
                                     CREATE TABLE $caseWhenTab 
-                                            AS SELECT $idField,
-                                                        ${queryCaseWh[0..-2]} 
+                                            AS SELECT $idField
+                                                        ${!queryCaseWh.isEmpty()?","+queryCaseWh.join(","):""} 
                                             FROM $inputTableName""".toString()
 
             datasource.createIndex(caseWhenTab, idField)
 
+
             // Calculate the proportion of each type
-            datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull;
+            datasource.execute("""DROP TABLE IF EXISTS $outputTableWithNull;
                                     CREATE TABLE $outputTableWithNull 
-                                            AS SELECT $idField, ${queryCalc[0..-2]}
-                                            FROM $caseWhenTab GROUP BY $idField""".toString()
+                                            AS SELECT $idField ${!queryCalc.isEmpty()?","+queryCalc.join(","):""}
+                                            FROM $caseWhenTab GROUP BY $idField""")
 
             // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
             def allFinalCol = datasource.getColumnNames(outputTableWithNull)
             allFinalCol = allFinalCol.minus([idField.toUpperCase()])
             datasource.createIndex(inputUpperTableName, idField)
             datasource.createIndex(outputTableWithNull, idField)
-            def pieceOfQuery = ""
+            def pieceOfQuery = []
             allFinalCol.each { col ->
-                pieceOfQuery += "COALESCE(a.$col, 0) AS $col, "
+                pieceOfQuery << "COALESCE(a.$col, 0) AS $col "
             }
             datasource """DROP TABLE IF EXISTS $outputTableName;
                                 CREATE TABLE $outputTableName 
-                                    AS SELECT       ${pieceOfQuery[0..-2]}
+                                    AS SELECT       ${!pieceOfQuery.isEmpty()?pieceOfQuery.join(",")+",":""}
                                                     b.$idField 
                                         FROM $outputTableWithNull a RIGHT JOIN $inputUpperTableName b
                                         ON a.$idField = b.$idField;
@@ -942,7 +943,7 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
             datasource.createIndex(scale1ScaleFin, idBlockForMerge)
             datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
                             CREATE TABLE $outputTableName 
-                                AS SELECT a.*, ${listblockFinalRename.join(', ')}
+                                AS SELECT a.* ${!listblockFinalRename.isEmpty()?","+listblockFinalRename.join(', '):""}
                                 FROM $scale1ScaleFin a LEFT JOIN $blockIndicFinalScale b
                                 ON a.$idBlockForMerge = b.$idBlockForMerge;""".toString()
             datasource.dropTable(finalScaleTableName, scale1ScaleFin, buildIndicRsuScale)

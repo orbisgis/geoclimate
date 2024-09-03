@@ -152,7 +152,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, Stri
 
         //Compute the indices for each levels and find the 8 adjacent cells
         datasource.execute("""DROP TABLE IF EXISTS $grid_scaling_indices;
-    CREATE TABLE $grid_scaling_indices as SELECT *, ${grid_levels_query.join(",")},
+    CREATE TABLE $grid_scaling_indices as SELECT * ${!grid_levels_query.isEmpty()?","+grid_levels_query.join(","):""},
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL) AS LCZ_PRIMARY_N,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW+1 AND ID_COL=a.ID_COL+1) AS LCZ_PRIMARY_NE,
     (SELECT LCZ_PRIMARY FROM $grid_indicators WHERE ID_ROW = a.ID_ROW AND ID_COL=a.ID_COL+1) AS LCZ_PRIMARY_E,
@@ -204,7 +204,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, Stri
         WHEN LCZ_PRIMARY= 101 THEN 14
         WHEN LCZ_PRIMARY =102 THEN 15
         WHEN LCZ_PRIMARY IN (103,104) THEN 16
-        ELSE LCZ_PRIMARY END AS weight_lcz,
+        ELSE LCZ_PRIMARY END AS weight_lcz
         FROM $grid_scaling_indices 
         WHERE LCZ_PRIMARY IS NOT NULL 
         GROUP BY ID_ROW_LOD_${i}, ID_COL_LOD_${i}, LCZ_PRIMARY;""".toString())
@@ -223,7 +223,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, Stri
         and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_WARM_LOD_${i},
         (select sum(count) from  $lcz_count_lod where  
         LCZ_PRIMARY in (101,102,103,104,106,107) 
-        and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_COOL_LOD_${i},
+        and ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} and ID_COL_LOD_${i}= a.ID_COL_LOD_${i}) AS  LCZ_COOL_LOD_${i}
         from $lcz_count_lod as a
         order by count desc, ID_ROW_LOD_${i}, ID_COL_LOD_${i}, weight_lcz;""".toString())
 
@@ -250,7 +250,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, Stri
         (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}) AS LCZ_WARM_S_LOD_${i},
         (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}-1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARM_SW_LOD_${i},
         (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i} AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARM_W_LOD_${i},
-        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARM_NW_LOD_${i},
+        (SELECT LCZ_WARM_LOD_${i} FROM $lcz_count_lod_mode WHERE ID_ROW_LOD_${i} = a.ID_ROW_LOD_${i}+1 AND ID_COL_LOD_${i}=a.ID_COL_LOD_${i}-1) AS LCZ_WARM_NW_LOD_${i}
      
          FROM  $lcz_count_lod_mode as a;  """.toString())
 

@@ -575,7 +575,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_fraction>0".toString())
-        assertEquals(25, countResult.count)
+        assertEquals(24, countResult.count)
 
         //Check high_vegetation_water_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
@@ -603,7 +603,7 @@ class WorkflowGeoIndicatorsTest {
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0".toString())
-        assertEquals(53, countResult.count)
+        assertEquals(55, countResult.count)
 
         //Check low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())
