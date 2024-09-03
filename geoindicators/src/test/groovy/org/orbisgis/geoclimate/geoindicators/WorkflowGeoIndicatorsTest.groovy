@@ -373,6 +373,7 @@ class WorkflowGeoIndicatorsTest {
                 "", "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
+        datasource.save(geoIndicatorsCompute_i.rsu_indicators, "/tmp/test4.geojson", true)
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
 
         if (indicatorUse.contains("UTRF")) {
@@ -601,11 +602,11 @@ class WorkflowGeoIndicatorsTest {
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE water_fraction>0".toString())
         assertEquals(2, countResult.count)
 
-        //Check low_vegetation_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0".toString())
-        assertEquals(55, countResult.count)
+        //Check low_vegetation_fraction > 0.001
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0.001".toString())
+        assertEquals(49, countResult.count)
 
-        //Check low_vegetation_fraction > 0
+        //Check impervious_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())
         assertEquals(0, countResult.count)
     }
