@@ -330,7 +330,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
         query += """ a.the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)}  """
     }
 
-    query += " FROM $waysPolygonTmp AS a, $osmTableTag b WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false "
+    query += " FROM $waysPolygonTmp AS a, $osmTableTag b WHERE a.id_way=b.id_way and st_isempty(a.the_geom)=false and st_isvalid(a.the_geom) "
 
     if (columnsToKeep) {
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
@@ -567,7 +567,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
     } else {
         query += """ st_normalize(a.the_geom) as the_geom ${OSMTools.TransformUtils.createTagList(datasource, columnsSelector, columnsToKeep)} 
         FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
-                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false  """
+                    WHERE a.id_relation=b.id_relation and st_isempty(a.the_geom)=false and st_isvalid(a.the_geom) """
     }
 
     if (columnsToKeep) {

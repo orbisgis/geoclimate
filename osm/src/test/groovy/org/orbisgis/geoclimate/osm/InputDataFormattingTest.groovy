@@ -294,7 +294,7 @@ class InputDataFormattingTest {
 
         //zoneToExtract = [62.2, 28.2, 62.4, 28.4]
 
-        zoneToExtract =[47.0619, -1.8145005, 47.394558, -1.2849174]
+        zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("_").trim().split("\\s*(,|\\s)\\s*").join("_");
@@ -382,5 +382,11 @@ class InputDataFormattingTest {
         //Format Roads
         def road = OSM.InputDataFormatting.formatRoadLayer(h2GIS, gISLayers.road)
         h2GIS.getTable(road).save("/tmp/formated_osm_road.shp", true)
+    }
+
+    @Test
+    void parseFloat() {
+        def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
+        assertEquals(0, InputDataFormatting.getHeightRoof("II OSK 1559/12", heightPattern))
     }
 }

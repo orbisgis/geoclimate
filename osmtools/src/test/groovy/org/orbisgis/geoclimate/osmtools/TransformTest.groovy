@@ -364,7 +364,7 @@ class TransformTest extends AbstractOSMToolsTest {
 
         String result = OSMTools.Transform.extractRelationsAsPolygons(ds, prefix, epsgCode, tags, columnsToKeep)
         assertFalse result.isEmpty()
-        ds.save(result, "/tmp/building.geojson", true)
+        //ds.save(result, "/tmp/building.geojson", true)
         def table = ds.getTable(result)
         assertEquals 0, table.rowCount
 
