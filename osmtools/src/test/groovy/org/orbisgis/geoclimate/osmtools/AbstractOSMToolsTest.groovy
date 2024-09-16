@@ -114,8 +114,8 @@ abstract class AbstractOSMToolsTest {
        ('POINT(0 10)', 3),('POINT(10 10)', 4);
 
        CREATE TABLE ${prefix}_way_node(id_way int, id_node int, node_order int);
-       INSERT INTO ${prefix}_way_node VALUES(1, 1, 1),(1, 2, 2),(1, 3, 3),
-       (1, 4, 4),(1, 1, 5);
+       INSERT INTO ${prefix}_way_node VALUES(1, 1, 1),(1, 2, 2),(1, 4, 3),
+       (1, 5, 4),(1, 1, 5);
 
        CREATE TABLE ${prefix}_way(id_way int);
        INSERT INTO ${prefix}_way VALUES(1);

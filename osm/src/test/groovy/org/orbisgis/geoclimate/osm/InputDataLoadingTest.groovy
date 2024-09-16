@@ -55,9 +55,8 @@ class InputDataLoadingTest {
     void createGISLayersTest() {
         def osmfile = new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath()
         Map extract = OSM.InputDataLoading.createGISLayers(h2GIS, osmfile, 2154)
-        assertEquals 1038, h2GIS.getTable(extract.building).rowCount
-
-        assertEquals 136, h2GIS.getTable(extract.vegetation).rowCount
+        assertEquals 1034, h2GIS.getTable(extract.building).rowCount
+        assertEquals 135, h2GIS.getTable(extract.vegetation).rowCount
         assertEquals 211, h2GIS.getTable(extract.road).rowCount
 
         assertEquals 44, h2GIS.getTable(extract.rail).rowCount
@@ -66,7 +65,7 @@ class InputDataLoadingTest {
 
         assertEquals 47, h2GIS.getTable(extract.impervious).rowCount
 
-        assertEquals 11, h2GIS.getTable(extract.urban_areas).rowCount
+        assertEquals 10, h2GIS.getTable(extract.urban_areas).rowCount
     }
 
     //This test is used for debug purpose

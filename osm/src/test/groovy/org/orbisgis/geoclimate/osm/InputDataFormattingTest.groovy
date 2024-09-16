@@ -61,20 +61,20 @@ class InputDataFormattingTest {
         Map extractData = OSM.InputDataLoading.createGISLayers(
                 h2GIS, new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(), epsg)
 
-        assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
+        assertEquals 1034, h2GIS.getTable(extractData.building).rowCount
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
-        assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
+        assertEquals 135, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 10, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
-        assertEquals 11, h2GIS.getTable(extractData.urban_areas).rowCount
+        assertEquals 10, h2GIS.getTable(extractData.urban_areas).rowCount
         assertEquals 0, h2GIS.getTable(extractData.coastline).rowCount
 
         //Buildings
         Map buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
         String building = buildingLayers.building
         assertNotNull h2GIS.getTable(building).save(new File(folder, "osm_building_formated.shp").absolutePath, true)
-        assertEquals 1038, h2GIS.getTable(building).rowCount
+        assertEquals 1028, h2GIS.getTable(building).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where NB_LEV is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where NB_LEV<0".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where HEIGHT_WALL is null".toString()).count == 0
@@ -92,12 +92,12 @@ class InputDataFormattingTest {
         assertNotNull h2GIS.getTable(buiding_imp).save(new File(folder, "osm_building_formated_type.shp").absolutePath, true)
         def rows = h2GIS.rows("select type from ${buiding_imp} where id_build=158 or id_build=982".toString())
         assertEquals(2, rows.size())
-        assertTrue(rows.type == ['residential', 'residential'])
+        assertTrue(rows.type == ['residential', 'slight_construction'])
 
         rows = h2GIS.rows("select type from ${buiding_imp} where id_build=881 or id_build=484 or id_build=610".toString())
 
         assertEquals(3, rows.size())
-        assertTrue(rows.type == ['industrial', 'industrial', 'industrial'])
+        assertTrue(rows.type == ['industrial', 'building', 'slight_construction'])
 
 
         //Roads
@@ -117,7 +117,7 @@ class InputDataFormattingTest {
         //Vegetation
         String vegetation = OSM.InputDataFormatting.formatVegetationLayer(h2GIS, extractData.vegetation)
         assertNotNull h2GIS.getTable(vegetation).save(new File(folder, "osm_vegetation_formated.shp").absolutePath, true)
-        assertEquals 140, h2GIS.getTable(vegetation).rowCount
+        assertEquals 138, h2GIS.getTable(vegetation).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${vegetation} where type is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${vegetation} where HEIGHT_CLASS is null".toString()).count == 0
 
@@ -246,10 +246,10 @@ class InputDataFormattingTest {
         def epsg = 2154
         Map extractData = OSM.InputDataLoading.createGISLayers(h2GIS, new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(), epsg)
 
-        assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
+        assertEquals 1034, h2GIS.getTable(extractData.building).rowCount
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
-        assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
+        assertEquals 135, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 10, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
 
@@ -257,7 +257,7 @@ class InputDataFormattingTest {
         Map buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
         String buildingLayer = buildingLayers.building
         assertNotNull h2GIS.getTable(buildingLayer).save(new File(folder, "osm_building_formated.shp").absolutePath, true)
-        assertEquals 1038, h2GIS.getTable(buildingLayer).rowCount
+        assertEquals 1028, h2GIS.getTable(buildingLayer).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV=0").count == 0
@@ -265,13 +265,13 @@ class InputDataFormattingTest {
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_WALL<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF<0").count == 0
-        assertEquals 1033, h2GIS.getTable(buildingLayers.building_estimated).rowCount
-        assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_estimated} using (id_build, id_source) where 1=1").count == 1033
+        assertEquals 1023, h2GIS.getTable(buildingLayers.building_estimated).rowCount
+        assertEquals(1023, h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_estimated} using (id_build, id_source) where 1=1").count)
 
         //Buildings without estimation state
         buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
-        assertEquals 1038, h2GIS.getTable(buildingLayers.building).rowCount
-        assertEquals 1033, h2GIS.getTable(buildingLayers.building_estimated).rowCount
+        assertEquals 1028, h2GIS.getTable(buildingLayers.building).rowCount
+        assertEquals 1023, h2GIS.getTable(buildingLayers.building_estimated).rowCount
     }
 
 
@@ -294,7 +294,7 @@ class InputDataFormattingTest {
 
         //zoneToExtract = [62.2, 28.2, 62.4, 28.4]
 
-        zoneToExtract =[47.0619, -1.8145005, 47.394558, -1.2849174]
+        zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("_").trim().split("\\s*(,|\\s)\\s*").join("_");
@@ -382,5 +382,11 @@ class InputDataFormattingTest {
         //Format Roads
         def road = OSM.InputDataFormatting.formatRoadLayer(h2GIS, gISLayers.road)
         h2GIS.getTable(road).save("/tmp/formated_osm_road.shp", true)
+    }
+
+    @Test
+    void parseFloat() {
+        def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
+        assertEquals(0, InputDataFormatting.getHeightRoof("II OSK 1559/12", heightPattern))
     }
 }

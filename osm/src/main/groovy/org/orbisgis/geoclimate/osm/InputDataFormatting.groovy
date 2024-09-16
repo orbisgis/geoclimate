@@ -846,33 +846,46 @@ static float getHeightRoof(height, heightPattern) {
         def match2_group1 = matcher.group(1)
         def match2_group2 = matcher.group(2)
         if (match1_group1) {
-            new_h = Float.parseFloat(match1_group1) * 12
+            new_h = parseFloat(match1_group1) * 12
         }
         if (match2_group2 == "''") {
-            new_h += Float.parseFloat(match2_group1)
+            new_h += parseFloat(match2_group1)
         }
         return new_h * 0.0254
 
     } else {
         if (match1_group1 && match1_group2 == null) {
-            return Float.parseFloat(match1_group1)
+               return parseFloat(match1_group1)
         }
         //next mach for feet, inch matcher.find();
         else {
             def type = match1_group2.toLowerCase()
             switch (type) {
                 case "m":
-                    return Float.parseFloat(match1_group1)
+                    return parseFloat(match1_group1)
                 case "foot":
-                    return Float.parseFloat(match1_group1) * 0.3048
+                    return parseFloat(match1_group1) * 0.3048
                 case "'":
-                    return Float.parseFloat(match1_group1) * 12 * 0.0254
+                    return parseFloat(match1_group1) * 12 * 0.0254
                 case "''":
-                    return Float.parseFloat(match1_group1) * 0.0254
+                    return parseFloat(match1_group1) * 0.0254
                 default:
                     return 0
             }
         }
+    }
+}
+
+/**
+ * Parse to float otherwise return 0
+ * @param value to parse
+ * @return a float value
+ */
+static Float parseFloat(def value){
+    try {
+        return Float.parseFloat(value)
+    }catch (NumberFormatException ex){
+        return 0
     }
 }
 
