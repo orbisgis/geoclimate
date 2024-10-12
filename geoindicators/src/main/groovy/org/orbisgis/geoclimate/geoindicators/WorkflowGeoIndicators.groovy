@@ -1384,13 +1384,13 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
 
     def estimated_building_with_indicators = "ESTIMATED_BUILDING_INDICATORS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
-    datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators;
+    datasource.execute("""DROP TABLE IF EXISTS $estimated_building_with_indicators;
                                                CREATE TABLE $estimated_building_with_indicators 
                                                         AS SELECT a.*
                                                         FROM $buildingIndicatorsForHeightEst a 
                                                             RIGHT JOIN $building_estimate b 
                                                             ON a.id_build=b.id_build
-                                                        WHERE a.ID_RSU IS NOT NULL;""".toString()
+                                                        WHERE a.ID_RSU IS NOT NULL;""")
 
     info "Collect building indicators to estimate the height"
 
@@ -1405,11 +1405,10 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String buildi
     def buildEstimatedHeight
     if (datasource.getTable(gatheredScales).isEmpty()) {
         info "No building height to estimate"
-        nbBuildingEstimated = 0
-        datasource.execute """DROP TABLE IF EXISTS $buildingTableName;
+        datasource.execute("""DROP TABLE IF EXISTS $buildingTableName;
                                            CREATE TABLE $buildingTableName 
                                                 AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
-                                                    HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $estimated_building_with_indicators""".toString()
+                                                    HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $estimated_building_with_indicators""")
 
     } else {
         info "Start estimating the building height"
