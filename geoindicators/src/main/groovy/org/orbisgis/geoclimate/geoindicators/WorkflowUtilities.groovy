@@ -78,6 +78,9 @@ def createDatasource(def database_properties) {
             String url = db_output_url.substring("jdbc:".length());
             if (url.startsWith("h2")) {
                 return H2GIS.open(database_properties)
+            } else if (url.startsWith("postgis")) {
+                database_properties.url = "jdbc:postgresql"+url.substring("postgis".length())
+                return POSTGIS.open(database_properties)
             } else if (url.startsWith("postgresql")) {
                 return POSTGIS.open(database_properties)
             } else {
@@ -85,8 +88,21 @@ def createDatasource(def database_properties) {
                 return
             }
         } else {
-            error "Invalid output database url"
-            return
+            //Try to create the URL without JDBC prefix
+            if (db_output_url.startsWith("h2")) {
+                database_properties.url = "jdbc:"+db_output_url
+                return H2GIS.open(database_properties)
+            } else if (db_output_url.startsWith("postgresql")) {
+                database_properties.url = "jdbc:"+db_output_url
+                return POSTGIS.open(database_properties)
+            }else if (db_output_url.startsWith("postgis")) {
+                database_properties.url = "jdbc:postgresql"+db_output_url.substring("postgis".length())
+                return POSTGIS.open(database_properties)
+            }
+            else {
+                error "Unsupported database"
+                return
+            }
         }
 
     } else {

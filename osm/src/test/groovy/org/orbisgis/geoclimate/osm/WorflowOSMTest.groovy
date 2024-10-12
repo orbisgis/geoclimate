@@ -649,11 +649,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Nantes"
+        def location = "Hesdin"
         def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
-        def grid_size = 250
-        location = nominatim.bbox
-        location=[51.2, 1.0, 51.4, 1.2]
+        def grid_size = 100
+        //location = nominatim.bbox
+        //location=[51.2, 1.0, 51.4, 1.2]
         /* location =[ 48.84017284026897,
                     2.3061887733275785,
                     48.878115442982086,
@@ -674,6 +674,15 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "endpoint":"https://lz4.overpass-api.de/api"*/],
                 "output"      : [
                         "folder": directory]
+                        /*[
+                        "database":
+                                ["user"    : "ebocher",
+                                 "password": "k@ndinsky5622",
+                                 "url"     : "postgis://localhost:5432/orbisgis_db",
+                                 "tables"  : [
+                                         "rsu_indicators"         : "rsu_indicators",
+                                         "rsu_lcz"                : "rsu_lcz",
+                                         "zone"                   : "zone"]]]*/
                 ,
                 "parameters"  :
                         ["distance"             : 0,

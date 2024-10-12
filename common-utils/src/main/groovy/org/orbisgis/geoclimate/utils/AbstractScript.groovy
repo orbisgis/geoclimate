@@ -26,19 +26,19 @@ abstract class AbstractScript extends Script {
 
     static String uuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
 
-    void info(def message) {
+    static void info(def message) {
         LoggerUtils.info(message.toString())
     }
 
-    void warn(def message) {
+    static void warn(def message) {
         LoggerUtils.warn(message.toString())
     }
 
-    void error(def message) {
+    static void error(def message) {
         LoggerUtils.error(message.toString())
     }
 
-    void debug(def message) {
+    static void debug(def message) {
         LoggerUtils.debug(message.toString())
     }
 

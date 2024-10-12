@@ -977,38 +977,48 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             //Extract and compute population indicators for the specified year
             //This data can be used by the grid_indicators process
             if (worldpop_indicators) {
-                def envelope = h2gis_datasource.firstRow("select st_transform(the_geom, 4326) as geom from $zone".toString()).geom.getEnvelopeInternal()
-                def bbox = [envelope.getMinY() as Float, envelope.getMinX() as Float,
-                            envelope.getMaxY() as Float, envelope.getMaxX() as Float]
                 String coverageId = "wpGlobal:ppp_2018"
-                String worldPopFile = WorldPopTools.Extract.extractWorldPopLayer(coverageId, bbox)
-                if (worldPopFile) {
-                    String worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource, worldPopFile, srid, coverageId.replaceAll(":", "_"))
-                    if (worldPopTableName) {
-                        results.put("population", worldPopTableName)
-                        building = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building,
-                                worldPopTableName, ["pop"])
-                        if (!building) {
-                            info "Cannot compute any population data at building level"
+                //Test if the coverage is available
+                if(WorldPopTools.Extract.isCoverageAvailable(coverageId)) {
+                    def envelope = h2gis_datasource.firstRow("select st_transform(the_geom, 4326) as geom from $zone".toString()).geom.getEnvelopeInternal()
+                    def bbox = [envelope.getMinY() as Float, envelope.getMinX() as Float,
+                                envelope.getMaxY() as Float, envelope.getMaxX() as Float]
+
+                    String worldPopFile = WorldPopTools.Extract.extractWorldPopLayer(coverageId, bbox)
+                    if (worldPopFile) {
+                        String worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource, worldPopFile, srid, coverageId.replaceAll(":", "_"))
+                        if (worldPopTableName) {
+                            results.put("population", worldPopTableName)
+                            building = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building,
+                                    worldPopTableName, ["pop"])
+                            if (!building) {
+                                info "Cannot compute any population data at building level"
+                            }
+                            tablesToDrop << results.building
+                            //Update the building table with the population data
+                            results.put("building", building)
+
+                        } else {
+                            info "Cannot import the worldpop asc file $worldPopFile"
+                            info "Create a default empty worldpop table"
+                            def outputTableWorldPopName = postfix "world_pop"
+                            h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
+                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
+                            results.put("population", outputTableWorldPopName)
                         }
-                        tablesToDrop << results.building
-                        //Update the building table with the population data
-                        results.put("building", building)
 
                     } else {
-                        info "Cannot import the worldpop asc file $worldPopFile"
-                        info "Create a default empty worldpop table"
+                        info "Cannot find the population grid $coverageId \n Create a default empty worldpop table"
                         def outputTableWorldPopName = postfix "world_pop"
                         h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
-                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
+                        create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
                         results.put("population", outputTableWorldPopName)
                     }
-
                 } else {
                     info "Cannot find the population grid $coverageId \n Create a default empty worldpop table"
                     def outputTableWorldPopName = postfix "world_pop"
                     h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
-                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
+                        create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
                     results.put("population", outputTableWorldPopName)
                 }
             }

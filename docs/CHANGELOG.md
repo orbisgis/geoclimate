@@ -4,3 +4,5 @@
 - Fix some tests due to some rounding precision in JTS 1.20
 - Fix bad OSM geometry representation #994
 - Fix height value parsing with OSM #995
+- Simplify database url in config file. Use only the name of the database. e.g : h2://, postgis://
+- Add a test to check if the worldpop service is available

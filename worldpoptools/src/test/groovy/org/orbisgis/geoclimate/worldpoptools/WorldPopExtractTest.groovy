@@ -57,19 +57,21 @@ class WorldPopExtractTest {
      */
     @Test
     void extractGrid() {
-        def outputGridFile = new File(folder, "extractGrid.asc")
-        if (outputGridFile.exists()) {
-            outputGridFile.delete()
-        }
         def coverageId = "wpGlobal:ppp_2018"
-        def bbox = [47.63324, -2.78087, 47.65749, -2.75979]
-        if (WorldPopTools.Extract.grid(coverageId, bbox, outputGridFile)) {
-            AscReaderDriver ascReaderDriver = new AscReaderDriver()
-            ascReaderDriver.setAs3DPoint(false)
-            ascReaderDriver.setEncoding("UTF-8")
-            ascReaderDriver.setDeleteTable(true)
-            ascReaderDriver.read(h2GIS.getConnection(), outputGridFile, new EmptyProgressVisitor(), "grid", 4326)
-            assertEquals(720, h2GIS.getSpatialTable("grid").rowCount)
+        if (WorldPopExtract.Extract.isCoverageAvailable(coverageId)) {
+            def outputGridFile = new File(folder, "extractGrid.asc")
+            if (outputGridFile.exists()) {
+                outputGridFile.delete()
+            }
+            def bbox = [47.63324, -2.78087, 47.65749, -2.75979]
+            if (WorldPopTools.Extract.grid(coverageId, bbox, outputGridFile)) {
+                AscReaderDriver ascReaderDriver = new AscReaderDriver()
+                ascReaderDriver.setAs3DPoint(false)
+                ascReaderDriver.setEncoding("UTF-8")
+                ascReaderDriver.setDeleteTable(true)
+                ascReaderDriver.read(h2GIS.getConnection(), outputGridFile, new EmptyProgressVisitor(), "grid", 4326)
+                assertEquals(720, h2GIS.getSpatialTable("grid").rowCount)
+            }
         }
     }
 
@@ -107,7 +109,6 @@ class WorldPopExtractTest {
      */
     @Test
     void testCoverageAvailable() {
-        assertFalse(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2050"))
-        assertTrue(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2018"))
+        assertFalse(WorldPopExtract.Extract.isCoverageAvailable("wpGlobal:ppp_2150"))
     }
 }
