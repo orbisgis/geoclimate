@@ -1805,7 +1805,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
 
-    if (list_indicators_upper.contains("BUILDING_HEIGHT_DIST") && building) {
+    if (list_indicators_upper.contains("BUILDING_HEIGHT_DISTRIBUTION") && building) {
         if (!buildingCutted) {
             buildingCutted = cutBuilding(datasource, grid, building)
         }
