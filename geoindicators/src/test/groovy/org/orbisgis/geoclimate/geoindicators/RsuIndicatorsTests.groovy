@@ -175,6 +175,27 @@ class RsuIndicatorsTests {
     }
 
     @Test
+    void streetWidthTest() {
+        def p = Geoindicators.RsuIndicators.streetWidth(h2GIS, "rsu_test_all_indics_for_lcz",
+                "GEOM_AVG_HEIGHT_ROOF", "aspect_ratio", "test")
+        assertNotNull(p)
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM test_rsu_street_width WHERE id_rsu = 1") {
+            row -> concat += row.street_width
+        }
+        assertEquals(7.5, concat, 0.001)
+    }
+
+    @Test
+    void streetWidthTest2() {
+        def p = Geoindicators.RsuIndicators.streetWidth(h2GIS, "rsu_test_all_indics_for_lcz",
+                "GEOM_AVG_HEIGHT_ROOF", "aspect_ratio", "test")
+        assert (p)
+        def result = h2GIS.firstRow("SELECT street_width FROM test_rsu_street_width WHERE id_rsu = 18")
+        assertEquals(null, result["street_width"])
+    }
+
+    @Test
     void projectedFacadeAreaDistributionTest() {
         // Only the first 5 first created buildings are selected for the tests
         h2GIS.execute("DROP TABLE IF EXISTS tempo_build, test_rsu_projected_facade_area_distribution;" +

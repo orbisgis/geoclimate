@@ -1592,6 +1592,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
     def grid_column_identifier = "id_grid"
     def indicatorTablesToJoin = [:]
     indicatorTablesToJoin.put(grid, grid_column_identifier)
+    // Needed for intermediate calculations...
+    def tablesToJoinForWidth = [:]
 
     //An array to execute some commands on the final table
     def sqlUpdateCommand = []
@@ -1685,7 +1687,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     list_indicators_upper.each {
         if (it == "BUILDING_FRACTION"
                 || it == "BUILDING_SURFACE_DENSITY" ||
-                it == "ASPECT_RATIO" || it == "FREE_EXTERNAL_FACADE_DENSITY") {
+                it == "ASPECT_RATIO" || it == "FREE_EXTERNAL_FACADE_DENSITY" || it == "STREET_WIDTH") {
             columnFractionsList.put(priorities.indexOf("building"), "building")
         } else if (it == "WATER_FRACTION") {
             columnFractionsList.put(priorities.indexOf("water"), "water")
@@ -1723,6 +1725,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                     datasource, grid, grid_column_identifier, superpositionsTableGrid,
                     [:], priorities_tmp, prefixName)
             indicatorTablesToJoin.put(surfaceFractionsProcess, grid_column_identifier)
+            tablesToJoinForWidth.put(surfaceFractionsProcess, grid_column_identifier)
 
             tablesToDrop << superpositionsTableGrid
         } else {
@@ -1753,7 +1756,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 weightedBuildingIndicators, prefixName)
 
         indicatorTablesToJoin.put(computeWeightedAggregStat, grid_column_identifier)
+        tablesToJoinForWidth.put(computeWeightedAggregStat, grid_column_identifier)
 
+        tablesToDrop << computeWeightedAggregStat
     }
 
     if (list_indicators_upper.contains("BUILDING_TYPE_FRACTION") && building) {
@@ -1771,7 +1776,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     }
 
-    if ((list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO", "BUILDING_SURFACE_DENSITY"]) && building)) {
+    if (list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO", "BUILDING_SURFACE_DENSITY", "STREET_WIDTH"]) && building) {
         if (!createScalesRelationsGridBl) {
             // Create the relations between grid cells and buildings
             createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,
@@ -1780,11 +1785,38 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
         def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(datasource, createScalesRelationsGridBl,
                 grid, grid_column_identifier, prefixName)
+        tablesToJoinForWidth.put(freeFacadeDensityExact, grid_column_identifier)
         if (freeFacadeDensityExact) {
-            if (list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO"])) {
+            if (list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO", "STREET_WIDTH"])) {
                 indicatorTablesToJoin.put(freeFacadeDensityExact, grid_column_identifier)
                 tablesToDrop << freeFacadeDensityExact
             }
+
+            def gridForWidth = Geoindicators.DataUtils.joinTables(datasource, tablesToJoinForWidth, "grid_for_width")
+            tablesToDrop << gridForWidth
+
+            // Compute the aspect_ratio (and street width if needed)
+            if (list_indicators_upper.intersect(["ASPECT_RATIO", "STREET_WIDTH"]) && building) {
+                datasource "ALTER TABLE $gridForWidth RENAME COLUMN $grid_column_identifier TO ID_RSU"
+                def aspectRatio = Geoindicators.RsuIndicators.aspectRatio(datasource, gridForWidth,
+                        "free_external_facade_density", "building_fraction", prefixName)
+                datasource "ALTER TABLE $aspectRatio RENAME COLUMN ID_RSU TO $grid_column_identifier"
+                indicatorTablesToJoin.put(aspectRatio, grid_column_identifier)
+                tablesToDrop << aspectRatio
+
+                // Calculates the street width if needed
+                if (list_indicators_upper.contains("STREET_WIDTH") && building) {
+                    tablesToJoinForWidth.put(aspectRatio, grid_column_identifier)
+                    gridForWidth = Geoindicators.DataUtils.joinTables(datasource, tablesToJoinForWidth, "grid_for_width")
+                    datasource "ALTER TABLE $gridForWidth RENAME COLUMN $grid_column_identifier TO ID_RSU"
+                    def streetWidth = Geoindicators.RsuIndicators.streetWidth(datasource, gridForWidth,
+                            "avg_height_roof_area_weighted", "aspect_ratio", prefixName)
+                    datasource "ALTER TABLE $streetWidth RENAME COLUMN ID_RSU TO $grid_column_identifier"
+                    indicatorTablesToJoin.put(streetWidth, grid_column_identifier)
+                    tablesToDrop << streetWidth
+                }
+            }
+
             if (list_indicators_upper.contains("FREE_EXTERNAL_FACADE_DENSITY")) {
                 def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity(
                         datasource, freeFacadeDensityExact,
@@ -1935,14 +1967,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
     //Join all indicators at grid scale
     def joinGrids = Geoindicators.DataUtils.joinTables(datasource, indicatorTablesToJoin, grid_indicators_table)
 
-    //Compute the aspect_ratio
-    if (list_indicators_upper.contains("ASPECT_RATIO") && building) {
-        //Because all other indicators have been yet computed we just alter the table with the aspect_ratio column
-        datasource.execute("""
-        ALTER TABLE $grid_indicators_table ADD COLUMN ASPECT_RATIO DOUBLE PRECISION;
-        UPDATE $grid_indicators_table SET ASPECT_RATIO = case when building_fraction = 1 then null else  free_external_facade_density / (1 - building_fraction) end
-        """.toString())
-    }
     //Execute commands
     datasource.execute(sqlUpdateCommand.join(" "))
 
