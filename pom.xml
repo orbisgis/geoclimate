@@ -40,10 +40,10 @@
         <!-- Dependencies versions -->
         <junit-version>5.9.1</junit-version>
         <jts-version>1.20.0</jts-version>
-        <h2gis-version>2.2.2-SNAPSHOT</h2gis-version>
+        <h2gis-version>2.2.3</h2gis-version>
         <h2-version>2.3.232</h2-version>
         <cts-version>1.7.1</cts-version>
-        <orbisdata-version>2.1.1-SNAPSHOT</orbisdata-version>
+        <orbisdata-version>2.1.2-SNAPSHOT</orbisdata-version>
         <slf4j-version>2.0.16</slf4j-version>
         <groovy-version>4.0.22</groovy-version>
         <picocli-version>4.7.6</picocli-version>
