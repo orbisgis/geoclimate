@@ -531,7 +531,8 @@ class WorkflowGeoIndicatorsTest {
                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
-                               "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]
+                               "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
+                               "STREET_WIDTH"]
         grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators,
                 "building", null, null, null, null, null,
                 null, null, null)
@@ -556,6 +557,7 @@ class WorkflowGeoIndicatorsTest {
         assertTrue(1.5 - rows.EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH < 0.001)
         assertEquals(8, rows.EFFECTIVE_TERRAIN_ROUGHNESS_CLASS)
         assertNull(rows.ASPECT_RATIO)
+        assertNull(rows.STREET_WIDTH)
         assertTrue(0.5 - rows.SVF < 0.1)
         assertEquals(1d, rows.TYPE_OFFICE)
     }

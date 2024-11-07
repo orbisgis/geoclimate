@@ -733,7 +733,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                               "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
                               "FREE_EXTullERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
-                              "BUILDING_HEIGHT_DIST", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
+                              "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
         def databasePath = '/tmp/geoclimate_chain_dbtest;AUTO_SERVER=TRUE'
         def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
         def datasource = H2GIS.open(h2gis_properties)

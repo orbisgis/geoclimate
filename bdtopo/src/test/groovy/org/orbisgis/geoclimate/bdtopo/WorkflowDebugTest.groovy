@@ -138,7 +138,7 @@ class WorkflowDebugTest {
     void testIntegrationFolderInput() {
         def input_data = "/home/bernardj/Data/BDT/V3/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_R11_2024-03-15"
         def locations = [
-                         [6864452.136340265, 651978.2850116278, 6865452.136340265, 652978.2850116278]]
+                         [6857743.1274865065, 653030.9684552355, 6858743.1274865065, 654030.9684552355]]
         String directory = "/tmp/bdtopo3"
         File dirFile = new File(directory)
         dirFile.delete()
