@@ -6,3 +6,4 @@
 - Fix height value parsing with OSM #995
 - Simplify database url in config file. Use only the name of the database. e.g : h2://, postgis://
 - Add a test to check if the worldpop service is available
+- Fix github actions
