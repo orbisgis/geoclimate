@@ -288,7 +288,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception {
  *
  * @return OSM bbox.
  */
-String toBBox(Geometry geometry) throws Exception {
+ String toBBox(Geometry geometry) throws Exception {
     if (!geometry) {
         throw new Exception("Cannot convert to an overpass bounding box.")
     }
@@ -307,7 +307,7 @@ String toBBox(Geometry geometry) throws Exception {
  *
  * @return The OSM polygon.
  */
-String toPoly(Geometry geometry) throws Exception {
+ String toPoly(Geometry geometry) throws Exception {
     if (!geometry) {
         throw new Exception("Cannot convert to an overpass poly filter.")
     }
@@ -587,7 +587,7 @@ Geometry buildGeometry(def bbox) {
  * @param bbox 4 values
  * @return a JTS polygon
  */
-//TODO why not merging methods
+//TODO: why not merging methods
 Geometry geometryFromNominatim(def bbox) {
     if (!bbox) {
         error "The latitude and longitude values cannot be null or empty"

@@ -1294,7 +1294,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         if (!geoIndicators) {
             error "Cannot build the geoindicators"
             datasource.dropTable(blocksForGeoCalc, rsuForGeoCalc, buildingIndicatorsForHeightEst, rsuIndicatorsForHeightEst)
-            return
+            return null
         } else {
             //Clean the System properties that stores intermediate table names
             datasource.dropTable(getCachedTableNames())
@@ -1689,22 +1689,30 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 || it == "BUILDING_SURFACE_DENSITY" ||
                 it == "ASPECT_RATIO" || it == "FREE_EXTERNAL_FACADE_DENSITY" || it == "STREET_WIDTH") {
             columnFractionsList.put(priorities.indexOf("building"), "building")
-        } else if (it == "WATER_FRACTION") {
+        }
+        if (it == "WATER_FRACTION") {
             columnFractionsList.put(priorities.indexOf("water"), "water")
-        } else if (it == "VEGETATION_FRACTION") {
+        }
+        if (it == "VEGETATION_FRACTION") {
             columnFractionsList.put(priorities.indexOf("high_vegetation"), "high_vegetation")
             columnFractionsList.put(priorities.indexOf("low_vegetation"), "low_vegetation")
-        } else if (it == "ROAD_FRACTION") {
+        }
+        if (it == "ROAD_FRACTION") {
             columnFractionsList.put(priorities.indexOf("road"), "road")
-        } else if (it == "IMPERVIOUS_FRACTION") {
+        }
+        if (it == "IMPERVIOUS_FRACTION") {
             columnFractionsList.put(priorities.indexOf("impervious"), "impervious")
-        } else if (it == "BUILDING_HEIGHT" && building) {
+        }
+        if (it == "BUILDING_HEIGHT" && building) {
             height_roof_unweighted_list.addAll(["AVG", "STD"])
-        } else if (it == "BUILDING_HEIGHT_WEIGHTED" && building) {
+        }
+        if ((it == "BUILDING_HEIGHT_WEIGHTED" || it == "STREET_WIDTH") && building) {
             weightedBuildingIndicators["height_roof"] = ["area": ["AVG", "STD"]]
-        } else if (it == "BUILDING_POP" && building) {
+        }
+        if (it == "BUILDING_POP" && building) {
             unweightedBuildingIndicators.put("pop", ["SUM"])
-        } else if (it == "HEIGHT_OF_ROUGHNESS_ELEMENTS" && building) {
+        }
+        if (it == "HEIGHT_OF_ROUGHNESS_ELEMENTS" && building) {
             height_roof_unweighted_list.add("GEOM_AVG")
         }
     }
