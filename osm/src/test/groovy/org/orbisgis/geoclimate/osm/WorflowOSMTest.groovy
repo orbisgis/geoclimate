@@ -29,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
+import org.orbisgis.geoclimate.osmtools.OSMTools
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -649,9 +650,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Hesdin"
-        def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(location)
+        def location = "Nantes"
+        def nominatim = OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
+        location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
         //location = nominatim.bbox
         //location=[51.2, 1.0, 51.4, 1.2]
         /* location =[ 48.84017284026897,
@@ -695,8 +697,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "indicators": [
                                         "BUILDING_FRACTION",
                                         "BUILDING_HEIGHT",
-                                        "BUILDING_POP",
-                                        "BUILDING_TYPE_FRACTION",
+                                        //"BUILDING_POP",
+                                        //"BUILDING_TYPE_FRACTION",
                                         "WATER_FRACTION",
                                         "VEGETATION_FRACTION",
                                         "ROAD_FRACTION",
@@ -705,7 +707,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "LCZ_PRIMARY",
                                         "SEA_LAND_FRACTION",
                                         "ASPECT_RATIO",
-                                        "SVF" ]
+                                        //"SVF",
+                                        "STREET_WIDTH" ,
+                                        "IMPERVIOUS_FRACTION",
+                                        "high_vegetation",
+                                        "LOW_vegetation"]
                                 //"lcz_lod":1
                         ], "worldpop_indicators": true
                          /*

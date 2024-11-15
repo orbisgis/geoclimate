@@ -33,10 +33,10 @@ import org.orbisgis.geoclimate.utils.AbstractScript
  */
 
 abstract class OSMTools extends AbstractScript {
-    static Loader Loader = new Loader()
-    static Transform Transform = new Transform()
-    static Utilities Utilities = new Utilities()
-    static TransformUtils TransformUtils = new TransformUtils()
+    public static Loader Loader = new Loader()
+    public static Transform Transform = new Transform()
+    public static Utilities Utilities = new Utilities()
+    public static TransformUtils TransformUtils = new TransformUtils()
 
     OSMTools() {
     }
