@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
 
     @TempDir(cleanup = CleanupMode.ON_SUCCESS)
-    static File folder
+    public static File folder
 
     @Override
     ArrayList getFileNames() {
@@ -45,6 +45,12 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
     int getVersion() {
         return 2
     }
+
+    @Override
+    String getDBFolderPath(){
+        return folder.absolutePath
+    }
+
 
     @Override
     String getFolderName() {

@@ -1241,8 +1241,9 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String build
         }
 
         indicatorUse = inputParameters.indicatorUse
-        //This is a shortcut to extract building with estimated height
-        if (indicatorUse.isEmpty()) {
+        //This is a shortcut to produce only the data
+        //TARGET indicators can be computed atthe grid scale with the input data
+        if (indicatorUse.isEmpty() || (indicatorUse.size()==1 && indicatorUse.contains("TARGET"))) {
             //Clean the System properties that stores intermediate table names
             datasource.dropTable(getCachedTableNames())
             clearTablesCache()
