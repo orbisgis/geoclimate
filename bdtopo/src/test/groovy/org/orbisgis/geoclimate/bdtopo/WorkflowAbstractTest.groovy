@@ -35,6 +35,11 @@ abstract class WorkflowAbstractTest {
      */
     abstract int getVersion()
 
+    /**
+     * The path to store the db
+     * @return
+     */
+    abstract String getDBFolderPath()
 
 /**
  * The folder that contains the BDTopo test data
@@ -430,5 +435,76 @@ abstract class WorkflowAbstractTest {
         //Test road
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""".toString()).count > 0)
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""".toString()).count > 0)
+    }
+
+    @Test
+    void testTarguet() {
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": getDBFolderPath(),
+                        "name"  : "testFormatedData",
+                        "delete": false
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": getDBFolderPath()]],
+                "parameters"  :
+                        ["distance": 0,
+                         rsu_indicators: [
+                                         "indicatorUse" : ["TARGET"]
+                                         ]
+                        ]
+                ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+        def tableNames = process.values()
+        def targetGrid = tableNames.grid_target[0]
+        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testFormatedData")
+        assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
+        where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
+    }
+
+    @Test
+    void testTargetGridSize() {
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": getDBFolderPath(),
+                        "name"  : "testFormatedData",
+                        "delete": false
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": getDBFolderPath()]],
+                "parameters"  :
+                        ["distance": 0,
+                         rsu_indicators: [
+                                 "indicatorUse" : ["TARGET", "LCZ"]
+                         ],
+                         "grid_indicators"   : [
+                                "x_size"    : 200,
+                                "y_size"    : 200,
+                                "indicators": ["LCZ_PRIMARY"]
+                        ]
+                        ]
+        ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+        def tableNames = process.values()
+        def targetGrid = tableNames.grid_target[0]
+        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testFormatedData")
+        assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
+        where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
+        def gridIndicators = tableNames.grid_indicators[0]
+        assertTrue(h2gis.getColumnNames(gridIndicators).contains("LCZ_PRIMARY"))
     }
 }

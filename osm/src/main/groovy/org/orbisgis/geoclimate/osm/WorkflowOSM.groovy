@@ -88,7 +88,7 @@ import java.sql.SQLException
  *  *     {"distance" : 1000,
  *  *         "prefixName": "",
  *  *        rsu_indicators:{
- *  *         "indicatorUse": ["LCZ", "UTRF", "TEB"],
+ *  *         "indicatorUse": ["LCZ", "UTRF", "TEB", "TARGET"],
  *  *         "svfSimplified": false,
  *  *         "mapOfWeights":
  *  *         {"sky_view_factor": 1,
@@ -110,7 +110,7 @@ import java.sql.SQLException
  * - distance The integer value to expand the envelope of zone when recovering the data
  * - distance The integer value to expand the envelope of zone when recovering the data
  * (some objects may be badly truncated if they are not within the envelope)
- * - indicatorUse List of geoindicator types to compute (default ["LCZ", "UTRF", "TEB"]
+ * - indicatorUse List of geoindicator types to compute (default ["LCZ", "UTRF", "TEB""]
  *                  --> "LCZ" : compute the indicators needed for the LCZ classification (Stewart et Oke, 2012)
  *                  --> "UTRF" : compute the indicators needed for the urban typology classification (Bocher et al., 2017)
  *                  --> "TEB" : compute the indicators needed for the Town Energy Balance model
@@ -286,7 +286,8 @@ Map workflow(def input) throws Exception {
                                     "population",
                                     "ground_acoustic",
                                     "urban_sprawl_areas",
-                                    "urban_cool_areas"]
+                                    "urban_cool_areas",
+                                    "grid_target"]
 
     //Get processing parameters
     def processing_parameters = extractProcessingParameters(parameters.get("parameters"))
@@ -627,12 +628,16 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         results.put("grid_indicators", rasterizedIndicators)
                         def sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource, rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
                                 Math.max(x_size, y_size).floatValue())
-                        if (sprawl_indic) {
+                        if (sprawl_indic && sprawl_indic.urban_sprawl_areas) {
                             results.put("urban_sprawl_areas", sprawl_indic.urban_sprawl_areas)
                             if (sprawl_indic.urban_cool_areas) {
                                 results.put("urban_cool_areas", sprawl_indic.urban_cool_areas)
                             }
                             results.put("grid_indicators", sprawl_indic.grid_indicators)
+                        }
+                        //We must transform the grid_indicators to produce the target land input
+                        if(rsu_indicators_params.indicatorUse.contains("TARGET")){
+                            results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators))
                         }
                         info("End computing grid_indicators")
                     }
@@ -804,12 +809,17 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
 
         //Check for rsu indicators
         def rsu_indicators = processing_parameters.rsu_indicators
+        def target_grid_indicators =false
         if (rsu_indicators) {
-            def indicatorUseP = rsu_indicators.indicatorUse
+            def indicatorUseP = rsu_indicators.indicatorUse*.toUpperCase()
             if (indicatorUseP && indicatorUseP in List) {
-                def allowed_rsu_indicators = ["LCZ", "UTRF", "TEB"]
-                def allowedOutputRSUIndicators = allowed_rsu_indicators.intersect(indicatorUseP*.toUpperCase())
+                def allowed_rsu_indicators = ["LCZ", "UTRF", "TEB", "TARGET"]
+                def allowedOutputRSUIndicators = allowed_rsu_indicators.intersect(indicatorUseP)
                 if (allowedOutputRSUIndicators) {
+                    //We must update the grid indicators for TARGET schema
+                    if(indicatorUseP.contains("TARGET")){
+                        target_grid_indicators = true
+                    }
                     rsu_indicators_default.indicatorUse = indicatorUseP
                 } else {
                     throw new Exception("Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}".toString())
@@ -857,7 +867,24 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
 
         //Check for grid indicators
         def grid_indicators = processing_parameters.grid_indicators
-        if (grid_indicators) {
+        if(target_grid_indicators && !grid_indicators){
+            def grid_indicators_tmp = [
+                    "x_size"    : 100,
+                    "y_size"    : 100,
+                    "output"    : "fgb",
+                    "rowCol"    : false,
+                    "indicators": ["BUILDING_FRACTION",
+                                    "BUILDING_HEIGHT",
+                                    "WATER_FRACTION",
+                                    "ROAD_FRACTION",
+                                    "IMPERVIOUS_FRACTION",
+                                    "STREET_WIDTH" ,
+                                    "IMPERVIOUS_FRACTION",
+                                    "VEGETATION_FRACTION"]
+            ]
+            defaultParameters.put("grid_indicators", grid_indicators_tmp)
+        }
+        else if (grid_indicators) {
             def x_size = grid_indicators.x_size
             def y_size = grid_indicators.y_size
             def list_indicators = grid_indicators.indicators
@@ -884,6 +911,17 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                         } else if (val.trim().toUpperCase() in ["UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION"]) {
                             rsu_indicators.indicatorUse << "UTRF"
                         }
+                    }
+                    //Update the GRID indicators list if TARGET output is specified
+                    if(target_grid_indicators){
+                        allowedOutputIndicators.addAll(["BUILDING_FRACTION",
+                                                        "BUILDING_HEIGHT",
+                                                        "WATER_FRACTION",
+                                                        "ROAD_FRACTION",
+                                                        "IMPERVIOUS_FRACTION",
+                                                        "STREET_WIDTH" ,
+                                                        "IMPERVIOUS_FRACTION",
+                                                        "VEGETATION_FRACTION"])
                     }
                     def grid_indicators_tmp = [
                             "x_size"    : x_size,
