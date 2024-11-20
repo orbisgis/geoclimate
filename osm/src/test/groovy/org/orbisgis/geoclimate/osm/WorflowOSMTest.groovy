@@ -689,7 +689,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"             : 0,
                          "rsu_indicators"       : [
-                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
+                                 "indicatorUse": ["LCZ", "TEB", "TARGET"] //, "UTRF"]
 
                          ], "grid_indicators"   : [
                                 "x_size"    : grid_size,
