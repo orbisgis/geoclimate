@@ -595,7 +595,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         [
                                 rsu_indicators: [
-                                        "unit"         : "GRID",
                                         "indicatorUse" : ["TEB"],
                                         "svfSimplified": true
                                 ]
@@ -605,12 +604,82 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
+    void testTarget() {
+        String directory = folder.absolutePath + File.separator + "testOSMTEB"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" : "Compute the targuet land input",
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": ["Pont-de-Veyle"]],
+                "output"      : [
+                        "folder": directory],
+                "parameters"  :
+                        [
+                                rsu_indicators: [
+                                        "indicatorUse" : ["target"]
+                                ]
+                        ]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        def targetGrid = tableNames.grid_target[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db")
+        assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
+        where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
+    }
+
+    @Test
+    void testTargetGridSize() {
+        String directory = folder.absolutePath + File.separator + "testOSMTEB"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" : "Compute the targuet land input",
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": ["Pont-de-Veyle"]],
+                "output"      : [
+                        "folder": directory],
+                "parameters"  :
+                        [
+                                rsu_indicators: [
+                                        "indicatorUse" : ["TARGET", "LCZ"]
+                                ],"grid_indicators"   : [
+                                "x_size"    : 200,
+                                "y_size"    : 200,
+                                "indicators": [
+                                        "LCZ_PRIMARY"]
+                        ]
+                        ]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        def targetGrid = tableNames.grid_target[0]
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db")
+        assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
+        where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
+        def gridIndicators = tableNames.grid_indicators[0]
+        assertTrue(h2gis.getColumnNames(gridIndicators).contains("LCZ_PRIMARY"))
+    }
+
+    @Test
     void testRoadTrafficAndNoiseIndicators() {
         String directory = folder.absolutePath + File.separator + "testRoad_traffic"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-
         def osm_parmeters = [
                 "description" : "Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb": [
@@ -709,9 +778,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "ASPECT_RATIO",
                                         //"SVF",
                                         "STREET_WIDTH" ,
-                                        "IMPERVIOUS_FRACTION",
-                                        "high_vegetation",
-                                        "LOW_vegetation"]
+                                        "IMPERVIOUS_FRACTION"]
                                 //"lcz_lod":1
                         ], "worldpop_indicators": true
                          /*

@@ -35,6 +35,11 @@ abstract class WorkflowAbstractTest {
      */
     abstract int getVersion()
 
+    /**
+     * The path to store the db
+     * @return
+     */
+    abstract String getDBFolderPath()
 
 /**
  * The folder that contains the BDTopo test data
@@ -87,7 +92,7 @@ abstract class WorkflowAbstractTest {
         def bdTopoParameters = [
                 "description" : "Full workflow configuration file",
                 "geoclimatedb": [
-                        "folder": folder.absolutePath,
+                        "folder": getDBFolderPath(),
                         "name"  : "testFullWorflow;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -95,7 +100,7 @@ abstract class WorkflowAbstractTest {
                         "folder"   : dataFolder,
                         "locations": [getInseeCode()]],
                 "output"      : [
-                        "folder": ["path": folder.absolutePath]],
+                        "folder": ["path": getDBFolderPath()]],
                 "parameters"  :
                         ["distance"        : 0,
                          rsu_indicators    : [
@@ -117,7 +122,7 @@ abstract class WorkflowAbstractTest {
 
         def tableNames = process[getInseeCode()]
         assertTrue(tableNames.size() > 0)
-        H2GIS h2gis = H2GIS.open(folder.absolutePath + File.separator + "testFullWorflow;AUTO_SERVER=TRUE")
+        H2GIS h2gis = H2GIS.open(getDBFolderPath() + File.separator + "testFullWorflow;AUTO_SERVER=TRUE")
 
         //Test zone
         assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.zone} where the_geom is not null").count > 0
@@ -165,7 +170,7 @@ abstract class WorkflowAbstractTest {
         def filePath = getClass().getResource(getFolderName() + File.separator + "COMMUNE.shp")
         // If some layers are missing, do not try to load them...
         if (filePath) {
-            H2GIS h2GIS = H2GIS.open(folder.absolutePath + File.separator + "tmpdb")
+            H2GIS h2GIS = H2GIS.open(getDBFolderPath() + File.separator + "tmpdb")
             h2GIS.link(filePath, "COMMUNE", true)
             Geometry geom = h2GIS.firstRow("""SELECT ST_BUFFER(ST_POINTONSURFACE(the_geom), 200) AS the_geom from commune""".toString()).the_geom
             h2GIS.close()
@@ -175,7 +180,7 @@ abstract class WorkflowAbstractTest {
             def bdTopoParameters = [
                     "description" : "Example of configuration file to set the SRID",
                     "geoclimatedb": [
-                            "folder": folder.absolutePath,
+                            "folder": getDBFolderPath(),
                             "name"  : "testFullWorflowSRID;AUTO_SERVER=TRUE",
                             "delete": false
                     ],
@@ -183,7 +188,7 @@ abstract class WorkflowAbstractTest {
                             "folder"   : dataFolder,
                             "locations": [location]],
                     "output"      : [
-                            "folder": ["path": folder.absolutePath, "tables": ["grid_indicators"]],
+                            "folder": ["path": getDBFolderPath(), "tables": ["grid_indicators"]],
                             "srid"  : 4326],
                     "parameters"  :
                             ["distance"       : 0,
@@ -203,10 +208,10 @@ abstract class WorkflowAbstractTest {
             def tableNames = process.values()
             def grid_table = tableNames.grid_indicators[0]
             assertNotNull(grid_table)
-            H2GIS h2gis = H2GIS.open("${folder.absolutePath + File.separator}testFullWorflowSRID;AUTO_SERVER=TRUE")
+            H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testFullWorflowSRID;AUTO_SERVER=TRUE")
             assertTrue h2gis.firstRow("select count(*) as count from $grid_table".toString()).count == 100
             assertTrue h2gis.firstRow("select count(*) as count from $grid_table where BUILDING_FRACTION>0".toString()).count > 0
-            File grid_file = new File(folder.absolutePath + File.separator + "bdtopo_" + getVersion() + "_" + location.join("_") + File.separator + "grid_indicators.fgb")
+            File grid_file = new File(getDBFolderPath() + File.separator + "bdtopo_" + getVersion() + "_" + location.join("_") + File.separator + "grid_indicators.fgb")
             assertTrue(grid_file.exists())
             h2gis.load(grid_file.absolutePath, "grid_indicators_file", true)
             assertEquals(4326, h2gis.getSpatialTable("grid_indicators_file").srid)
@@ -215,7 +220,7 @@ abstract class WorkflowAbstractTest {
 
     @Test
     void workflowExternalDB() {
-        def externaldb_dbProperties = [databaseName: "${folder.absolutePath + File.separator}external_db",
+        def externaldb_dbProperties = [databaseName: "${getDBFolderPath() + File.separator}external_db",
                                        user        : 'sa',
                                        password    : 'sa'
         ]
@@ -225,13 +230,13 @@ abstract class WorkflowAbstractTest {
                             "zone"               : "zone",
                             "grid_indicators"    : "grid_indicators"]
         //Drop all output tables if exist
-        H2GIS externalDB = H2GIS.open(folder.absolutePath + File.separator + externaldb_dbProperties.databaseName,
+        H2GIS externalDB = H2GIS.open(getDBFolderPath() + File.separator + externaldb_dbProperties.databaseName,
                 externaldb_dbProperties.user, externaldb_dbProperties.password)
         externalDB.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};".toString())
         def bdTopoParameters = [
                 "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                 "geoclimatedb": [
-                        "folder": folder.getAbsolutePath(),
+                        "folder": getDBFolderPath(),
                         "name"  : "bdtopo_workflow_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -242,7 +247,7 @@ abstract class WorkflowAbstractTest {
                         "database":
                                 ["user"        : externaldb_dbProperties.user,
                                  "password"    : externaldb_dbProperties.password,
-                                 "databaseName": folder.absolutePath + File.separator + externaldb_dbProperties.databaseName,
+                                 "databaseName": getDBFolderPath() + File.separator + externaldb_dbProperties.databaseName,
                                  "tables"      : outputTables]],
                 "parameters"  :
                         ["distance"       : 0,
@@ -275,11 +280,11 @@ abstract class WorkflowAbstractTest {
         def filePath = getClass().getResource(getFolderName() + File.separator + "COMMUNE.shp")
         // If some layers are missing, do not try to load them...
         if (filePath) {
-            def externaldb_dbProperties = [databaseName: "${folder.absolutePath + File.separator}external_db_bbox",
+            def externaldb_dbProperties = [databaseName: "${getDBFolderPath() + File.separator}external_db_bbox",
                                            user        : 'sa',
                                            password    : 'sa'
             ]
-            H2GIS externalDB = H2GIS.open(folder.absolutePath + File.separator + externaldb_dbProperties.databaseName, externaldb_dbProperties.user, externaldb_dbProperties.password)
+            H2GIS externalDB = H2GIS.open(getDBFolderPath() + File.separator + externaldb_dbProperties.databaseName, externaldb_dbProperties.user, externaldb_dbProperties.password)
             externalDB.link(filePath, "COMMUNE", true)
             Geometry geom = externalDB.firstRow("""SELECT ST_BUFFER(ST_POINTONSURFACE(the_geom), 200) AS the_geom from commune""".toString()).the_geom
 
@@ -295,7 +300,7 @@ abstract class WorkflowAbstractTest {
             def bdTopoParameters = [
                     "description" : "Example of configuration file to run the BDTopo workflow and store the results in a folder",
                     "geoclimatedb": [
-                            "folder": folder.absolutePath,
+                            "folder": getDBFolderPath(),
                             "name"  : "bdtopo_workflow_db_bbox;AUTO_SERVER=TRUE",
                             "delete": true
                     ],
@@ -306,7 +311,7 @@ abstract class WorkflowAbstractTest {
                             "database":
                                     ["user"        : externaldb_dbProperties.user,
                                      "password"    : externaldb_dbProperties.password,
-                                     "databaseName": folder.absolutePath + File.separator + externaldb_dbProperties.databaseName,
+                                     "databaseName": getDBFolderPath() + File.separator + externaldb_dbProperties.databaseName,
                                      "tables"      : outputTables]],
                     "parameters"  :
                             ["distance"       : 0,
@@ -339,7 +344,7 @@ abstract class WorkflowAbstractTest {
         def bdTopoParameters = [
                 "description" : "Example of configuration file to run the grid indicators",
                 "geoclimatedb": [
-                        "folder": folder.absolutePath,
+                        "folder": getDBFolderPath(),
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -347,7 +352,7 @@ abstract class WorkflowAbstractTest {
                         "folder"   : dataFolder,
                         "locations": [2000, 2001, 2002]],
                 "output"      : [
-                        "folder": ["path"  : folder.absolutePath,
+                        "folder": ["path"  : getDBFolderPath(),
                                    "tables": ["grid_indicators"]]],
                 "parameters"  :
                         ["distance"       : 0,
@@ -367,7 +372,7 @@ abstract class WorkflowAbstractTest {
         def bdTopoParameters = [
                 "description" : "Full workflow configuration file",
                 "geoclimatedb": [
-                        "folder": folder.absolutePath,
+                        "folder": getDBFolderPath(),
                         "name"  : "testFormatedData;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -375,7 +380,7 @@ abstract class WorkflowAbstractTest {
                         "folder"   : dataFolder,
                         "locations": [getInseeCode()]],
                 "output"      : [
-                        "folder": ["path": folder.absolutePath]],
+                        "folder": ["path": getDBFolderPath()]],
                 "parameters"  :
                         ["distance": 0]
         ]
@@ -391,7 +396,7 @@ abstract class WorkflowAbstractTest {
         def bdTopoParameters = [
                 "description" : "Workflow format data",
                 "geoclimatedb": [
-                        "folder": folder.absolutePath,
+                        "folder": getDBFolderPath(),
                         "name"  : "testFormat;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -399,7 +404,7 @@ abstract class WorkflowAbstractTest {
                         "folder"   : dataFolder,
                         "locations": [getInseeCode()]],
                 "output"      : [
-                        "folder": ["path": folder.absolutePath]]
+                        "folder": ["path": getDBFolderPath()]]
         ]
 
         Map process = BDTopo.workflow(bdTopoParameters, getVersion())
@@ -407,7 +412,7 @@ abstract class WorkflowAbstractTest {
 
         def tableNames = process[getInseeCode()]
         assertTrue(tableNames.size() > 0)
-        H2GIS h2gis = H2GIS.open(folder.absolutePath + File.separator + "testFormat;AUTO_SERVER=TRUE")
+        H2GIS h2gis = H2GIS.open(getDBFolderPath() + File.separator + "testFormat;AUTO_SERVER=TRUE")
 
         //Test zone
         assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.zone} where the_geom is not null").count > 0
@@ -430,5 +435,76 @@ abstract class WorkflowAbstractTest {
         //Test road
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""".toString()).count > 0)
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""".toString()).count > 0)
+    }
+
+    @Test
+    void testTarguet() {
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": getDBFolderPath(),
+                        "name"  : "testFormatedData",
+                        "delete": false
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": getDBFolderPath()]],
+                "parameters"  :
+                        ["distance": 0,
+                         rsu_indicators: [
+                                         "indicatorUse" : ["TARGET"]
+                                         ]
+                        ]
+                ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+        def tableNames = process.values()
+        def targetGrid = tableNames.grid_target[0]
+        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testFormatedData")
+        assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
+        where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
+    }
+
+    @Test
+    void testTargetGridSize() {
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": getDBFolderPath(),
+                        "name"  : "testFormatedData",
+                        "delete": false
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": getDBFolderPath()]],
+                "parameters"  :
+                        ["distance": 0,
+                         rsu_indicators: [
+                                 "indicatorUse" : ["TARGET", "LCZ"]
+                         ],
+                         "grid_indicators"   : [
+                                "x_size"    : 200,
+                                "y_size"    : 200,
+                                "indicators": ["LCZ_PRIMARY"]
+                        ]
+                        ]
+        ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+        def tableNames = process.values()
+        def targetGrid = tableNames.grid_target[0]
+        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testFormatedData")
+        assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
+        where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
+        def gridIndicators = tableNames.grid_indicators[0]
+        assertTrue(h2gis.getColumnNames(gridIndicators).contains("LCZ_PRIMARY"))
     }
 }

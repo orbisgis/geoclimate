@@ -40,6 +40,11 @@ class WorkflowBDTopoV3Test extends WorkflowAbstractTest {
     }
 
     @Override
+    String getDBFolderPath() {
+        return folder.absolutePath
+    }
+
+    @Override
     String getFolderName() {
         return "sample_${getInseeCode()}"
     }

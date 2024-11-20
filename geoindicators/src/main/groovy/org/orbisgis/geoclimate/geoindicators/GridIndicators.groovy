@@ -354,3 +354,59 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
         throw new SQLException("Cannot compute the grid distances", e)
     }
 }
+
+/**
+ * Format the grid_indicators table to the TARGET land schema
+ *
+ * List of TARGET columns :
+ * FID – cell identifier, unique numerical number for each grid point (can start at 0 or 1)
+ * roof – fractional roof planar area
+ * road – fractional road planar area
+ * watr – factional water planar area
+ * conc – fractional concrete planar area
+ * veg – fractional tree planar area
+ * dry – fractional dry grass area
+ * irr – fractional irrigated grass/low vegetation area
+ * H – average building height (m)
+ * W – average street width, distance between buildings (m)
+ *
+ * @param datasource input database
+ * @param gridTable input grid_indicators
+ * @return a grid formated
+ *
+ * @author Erwan Bocher, CNRS
+ */
+String formatGrid4Target(JdbcDataSource datasource, String gridTable) {
+    //Format target landcover
+    def grid_target = postfix("grid_target")
+    try {
+        datasource.execute("""
+                            DROP TABLE IF EXISTS ${grid_target};
+                            CREATE TABLE ${grid_target} as SELECT
+                            THE_GEOM,
+                            CAST(row_number() over(ORDER BY ID_ROW DESC) as integer) as "FID",
+                            BUILDING_FRACTION AS "roof",
+                            ROAD_FRACTION AS "road",
+                            WATER_FRACTION AS "watr",
+                            IMPERVIOUS_FRACTION AS "conc",
+                            HIGH_VEGETATION_FRACTION AS "Veg",
+                            CASE WHEN (
+                            BUILDING_FRACTION+ROAD_FRACTION+WATER_FRACTION+IMPERVIOUS_FRACTION+high_vegetation_FRACTION+LOW_vegetation_FRACTION < 1)
+                            THEN
+                            (1- (BUILDING_FRACTION+ROAD_FRACTION+WATER_FRACTION+IMPERVIOUS_FRACTION+high_vegetation_FRACTION))
+                            ELSE 
+                            LOW_VEGETATION_FRACTION END AS "dry",
+                            0  AS "irr",
+                            AVG_HEIGHT_ROOF AS "H",
+                            CASE WHEN
+                            STREET_WIDTH IS NULL THEN 0.1 ELSE STREET_WIDTH END AS "W"
+                            FROM ${gridTable} 
+                            """)
+        return grid_target
+    }catch (SQLException e){
+        //We create an empty table
+        datasource.execute("""CREATE TABLE $grid_target (FID INT, THE_GEOM GEOMETRY,
+        "roof" VARCHAR, "road" VARCHAR, "watr" VARCHAR, "conc" VARCHAR,
+        "Veg" VARCHAR, "dry" VARCHAR, "irr" VARCHAR , "H" VARCHAR, "W" VARCHAR)""")
+    }
+}

@@ -491,13 +491,18 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             }
             //Check for rsu indicators
             def rsu_indicators = processing_parameters.rsu_indicators
+            def target_grid_indicators =false
             if (rsu_indicators) {
                 def indicatorUseP = rsu_indicators.indicatorUse
                 if (indicatorUseP && indicatorUseP in List) {
-                    def allowed_rsu_indicators = ["LCZ", "UTRF", "TEB"]
+                    def allowed_rsu_indicators = ["LCZ", "UTRF", "TEB", "TARGET"]
                     def allowedOutputRSUIndicators = allowed_rsu_indicators.intersect(indicatorUseP*.toUpperCase())
                     if (allowedOutputRSUIndicators) {
                         rsu_indicators_default.indicatorUse = indicatorUseP
+                        //We must update the grid indicators for TARGET schema
+                        if(indicatorUseP*.toUpperCase().contains("TARGET")){
+                            target_grid_indicators = true
+                        }
                     } else {
                         throw new Exception("Please set a valid list of RSU indicator names in ${allowedOutputRSUIndicators}".toString())
                     }
@@ -541,7 +546,24 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
             //Check for grid indicators
             def grid_indicators = processing_parameters.grid_indicators
-            if (grid_indicators) {
+            if(target_grid_indicators && !grid_indicators){
+                def grid_indicators_tmp = [
+                        "x_size"    : 100,
+                        "y_size"    : 100,
+                        "output"    : "fgb",
+                        "rowCol"    : false,
+                        "indicators": ["BUILDING_FRACTION",
+                                       "BUILDING_HEIGHT",
+                                       "WATER_FRACTION",
+                                       "ROAD_FRACTION",
+                                       "IMPERVIOUS_FRACTION",
+                                       "STREET_WIDTH" ,
+                                       "IMPERVIOUS_FRACTION",
+                                       "VEGETATION_FRACTION"]
+                ]
+                defaultParameters.put("grid_indicators", grid_indicators_tmp)
+            }
+            else if (grid_indicators) {
                 def x_size = grid_indicators.x_size
                 def y_size = grid_indicators.y_size
                 def list_indicators = grid_indicators.indicators
@@ -568,6 +590,17 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             } else if (val.trim().toUpperCase() in ["UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION"]) {
                                 rsu_indicators.indicatorUse << "UTRF"
                             }
+                        }
+                        //Update the GRID indicators list if TARGET output is specified
+                        if(target_grid_indicators){
+                            allowedOutputIndicators.addAll(["BUILDING_FRACTION",
+                                                            "BUILDING_HEIGHT",
+                                                            "WATER_FRACTION",
+                                                            "ROAD_FRACTION",
+                                                            "IMPERVIOUS_FRACTION",
+                                                            "STREET_WIDTH" ,
+                                                            "IMPERVIOUS_FRACTION",
+                                                            "VEGETATION_FRACTION"])
                         }
                         def grid_indicators_tmp = [
                                 "x_size"    : x_size,
@@ -650,7 +683,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 "population",
                 "ground_acoustic",
                 "urban_sprawl_areas",
-                "urban_cool_areas"]
+                "urban_cool_areas",
+                "grid_target"]
     }
 
 
@@ -870,12 +904,16 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     results.put("grid_indicators", rasterizedIndicators)
                     Map sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource, rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
                             Math.max(x_size, y_size).floatValue())
-                    if (sprawl_indic) {
+                    if (sprawl_indic && sprawl_indic.urban_sprawl_areas) {
                         results.put("urban_sprawl_areas", sprawl_indic.urban_sprawl_areas)
                         if (sprawl_indic.urban_cool_areas) {
                             results.put("urban_cool_areas", sprawl_indic.urban_cool_areas)
                         }
                         results.put("grid_indicators", sprawl_indic.grid_indicators)
+                    }
+                    //We must transform the grid_indicators to produce the target land input
+                    if(processing_parameters.rsu_indicators.indicatorUse.contains("TARGET")){
+                        results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators))
                     }
                     info("End computing grid_indicators")
                 }
@@ -1057,15 +1095,15 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         }
     }
 
-/**
- * Save the geoclimate tables into files
- * @param id_zone the id of the zone
- * @param results a list of tables computed by geoclimate
- * @param outputFolder the output folder
- * @param outputSRID srid code to reproject the result
- * @param deleteOutputData true to delete the file if exists
- * @return
- */
+    /**
+    * Save the geoclimate tables into files
+    * @param id_zone the id of the zone
+    * @param results a list of tables computed by geoclimate
+    * @param outputFolder the output folder
+    * @param outputSRID srid code to reproject the result
+    * @param deleteOutputData true to delete the file if exists
+    * @return
+    */
     def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outputFolder, def outputSRID,
                         def reproject, def deleteOutputData, def outputGrid) throws Exception {
         outputFiles.each {
