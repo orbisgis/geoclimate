@@ -1684,7 +1684,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     def unweightedBuildingIndicators = [:]
     def weightedBuildingIndicators = [:]
-    def height_roof_unweighted_list = []
+    HashSet height_roof_unweighted_list = new HashSet()
     list_indicators_upper.each {
         if (it == "BUILDING_FRACTION"
                 || it == "BUILDING_SURFACE_DENSITY" ||

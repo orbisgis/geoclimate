@@ -915,7 +915,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                     //Update the GRID indicators list if TARGET output is specified
                     if(target_grid_indicators){
                         allowedOutputIndicators.addAll(["BUILDING_FRACTION",
-                                                        "BUILDING_HEIGHT",
+                                                        "BUILDING_HEIGHT_WEIGHTED",
                                                         "WATER_FRACTION",
                                                         "ROAD_FRACTION",
                                                         "IMPERVIOUS_FRACTION",

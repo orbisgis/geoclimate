@@ -553,7 +553,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         "output"    : "fgb",
                         "rowCol"    : false,
                         "indicators": ["BUILDING_FRACTION",
-                                       "BUILDING_HEIGHT",
+                                       "BUILDING_HEIGHT_WEIGHTED",
                                        "WATER_FRACTION",
                                        "ROAD_FRACTION",
                                        "IMPERVIOUS_FRACTION",
