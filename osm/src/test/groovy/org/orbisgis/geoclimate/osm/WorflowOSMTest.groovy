@@ -723,6 +723,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def nominatim = OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
         location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
+        //location=[47.215334,-1.558058,47.216646,-1.556185]
         //location = nominatim.bbox
         //location=[51.2, 1.0, 51.4, 1.2]
         /* location =[ 48.84017284026897,
@@ -758,14 +759,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         ["distance"             : 0,
                          "rsu_indicators"       : [
-                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
+                                 "indicatorUse": ["LCZ", "TEB", "TARGET"] //, "UTRF"]
 
                          ], "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
                                 "indicators": [
                                         "BUILDING_FRACTION",
-                                        "BUILDING_HEIGHT",
+                                        "BUILDING_HEIGHT_WEIGHTED",
                                         //"BUILDING_POP",
                                         //"BUILDING_TYPE_FRACTION",
                                         "WATER_FRACTION",

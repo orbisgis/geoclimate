@@ -384,6 +384,7 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable) {
                             DROP TABLE IF EXISTS ${grid_target};
                             CREATE TABLE ${grid_target} as SELECT
                             THE_GEOM,
+                            ID_COL, ID_ROW,
                             CAST(row_number() over(ORDER BY ID_ROW DESC) as integer) as "FID",
                             BUILDING_FRACTION AS "roof",
                             ROAD_FRACTION AS "road",
@@ -397,7 +398,7 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable) {
                             ELSE 
                             LOW_VEGETATION_FRACTION END AS "dry",
                             0  AS "irr",
-                            AVG_HEIGHT_ROOF AS "H",
+                            AVG_HEIGHT_ROOF_AREA_WEIGHTED AS "H",
                             CASE WHEN
                             STREET_WIDTH IS NULL THEN 0.1 ELSE STREET_WIDTH END AS "W"
                             FROM ${gridTable} 
@@ -405,7 +406,7 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable) {
         return grid_target
     }catch (SQLException e){
         //We create an empty table
-        datasource.execute("""CREATE TABLE $grid_target (FID INT, THE_GEOM GEOMETRY,
+        datasource.execute("""CREATE TABLE $grid_target (FID INT, ID_COL INT, ID_ROW INT, THE_GEOM GEOMETRY,
         "roof" VARCHAR, "road" VARCHAR, "watr" VARCHAR, "conc" VARCHAR,
         "Veg" VARCHAR, "dry" VARCHAR, "irr" VARCHAR , "H" VARCHAR, "W" VARCHAR)""")
     }
