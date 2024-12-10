@@ -637,7 +637,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         }
                         //We must transform the grid_indicators to produce the target land input
                         if(rsu_indicators_params.indicatorUse.contains("TARGET")){
-                            results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators))
+                            results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators, x_size))
                         }
                         info("End computing grid_indicators")
                     }
@@ -923,6 +923,11 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                                                         "IMPERVIOUS_FRACTION",
                                                         "VEGETATION_FRACTION"])
                     }
+
+                    if(x_size != y_size){
+                        throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                    }
+
                     def grid_indicators_tmp = [
                             "x_size"    : x_size,
                             "y_size"    : y_size,
