@@ -8,3 +8,4 @@
 - Add a test to check if the worldpop service is available
 - Fix github actions
 - Add TARGET landcover production
+- Force TARGET W indicator to the grid resolution
