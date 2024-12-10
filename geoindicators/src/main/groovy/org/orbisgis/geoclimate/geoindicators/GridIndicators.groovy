@@ -387,7 +387,7 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
                             THE_GEOM,
                             ID_COL, ID_ROW,
                             CAST(row_number() over(ORDER BY ID_ROW DESC) as integer) as "FID",
-                            BUILDING_FRACTION AS "roof",
+                            CASE WHEN BUILDING_FRACTION>0.75 THEN 0.75 ELSE BUILDING_FRACTION END AS "roof",
                             ROAD_FRACTION AS "road",
                             WATER_FRACTION AS "watr",
                             IMPERVIOUS_FRACTION AS "conc",
