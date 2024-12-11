@@ -372,11 +372,12 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
  *
  * @param datasource input database
  * @param gridTable input grid_indicators
+ * @param resolution grid resolution in meters
  * @return a grid formated
  *
  * @author Erwan Bocher, CNRS
  */
-String formatGrid4Target(JdbcDataSource datasource, String gridTable) {
+String formatGrid4Target(JdbcDataSource datasource, String gridTable, float resolution) {
     //Format target landcover
     def grid_target = postfix("grid_target")
     try {
@@ -400,7 +401,9 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable) {
                             0  AS "irr",
                             AVG_HEIGHT_ROOF_AREA_WEIGHTED AS "H",
                             CASE WHEN
-                            STREET_WIDTH IS NULL THEN 0.1 ELSE STREET_WIDTH END AS "W"
+                            STREET_WIDTH IS NULL THEN 0.1 
+                            WHEN STREET_WIDTH > ${resolution} THEN ${resolution}
+                            ELSE STREET_WIDTH END AS "W"
                             FROM ${gridTable} 
                             """)
         return grid_target

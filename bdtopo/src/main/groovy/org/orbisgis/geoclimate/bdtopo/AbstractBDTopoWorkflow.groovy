@@ -602,6 +602,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                             "IMPERVIOUS_FRACTION",
                                                             "VEGETATION_FRACTION"])
                         }
+                        if(x_size != y_size){
+                            throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                        }
                         def grid_indicators_tmp = [
                                 "x_size"    : x_size,
                                 "y_size"    : y_size,
@@ -913,7 +916,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     }
                     //We must transform the grid_indicators to produce the target land input
                     if(processing_parameters.rsu_indicators.indicatorUse.contains("TARGET")){
-                        results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators))
+                        results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators, x_size))
                     }
                     info("End computing grid_indicators")
                 }
