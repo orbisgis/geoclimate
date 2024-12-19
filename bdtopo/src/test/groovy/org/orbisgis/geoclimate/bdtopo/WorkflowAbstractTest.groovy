@@ -143,17 +143,17 @@ abstract class WorkflowAbstractTest {
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.water} where TYPE is not null;""".toString()).count > 0)
 
         //Test vegetation
-        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.vegetation} where TYPE is not null;""".toString()).count > 0)
-        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.vegetation} where HEIGHT_CLASS is not null;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.vegetation} where TYPE is not null;""").count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.vegetation} where HEIGHT_CLASS is not null;""").count > 0)
 
         //Test road
-        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""".toString()).count > 0)
-        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""".toString()).count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""").count > 0)
+        assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""").count > 0)
 
         //Test road_traffic
-        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.road_traffic} where road_type is null".toString()).count == 0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.road_traffic} where road_type is null").count == 0
         assertEquals(h2gis.firstRow("""SELECT sum(ST_Length(the_geom)) as road_length from ${tableNames.road} where type not in ('track', 'path', 'cycleway', 'steps');""".toString()).road_length,
-                h2gis.firstRow("""SELECT sum(ST_Length(the_geom)) as traffic_Length from ${tableNames.road_traffic};""".toString()).traffic_Length)
+                h2gis.firstRow("""SELECT sum(ST_Length(the_geom)) as traffic_Length from ${tableNames.road_traffic};""").traffic_Length)
 
 
         //Test ground acoustic

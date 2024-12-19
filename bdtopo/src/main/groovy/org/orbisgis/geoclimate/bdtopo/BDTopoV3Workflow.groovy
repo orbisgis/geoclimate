@@ -103,7 +103,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
             debug "Loading in the H2GIS database $outputTableName"
             h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; 
                 CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, NATURE, LARGEUR, POS_SOL, SENS,
-                IMPORTANCE, CL_ADMIN, NAT_RESTR FROM ${inputTables.troncon_de_route}  
+                IMPORTANCE, CL_ADMIN, NAT_RESTR, NB_VOIES FROM ${inputTables.troncon_de_route}  
                 WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY 
                 AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) 
                 AND NATURE NOT IN ('Bac ou liaison maritime', 'Escalier')
@@ -300,7 +300,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
         if (inputTables.troncon_de_route) {
             //Extract route
             def inputTableName = """(SELECT ID, st_setsrid(the_geom, $commune_srid) as the_geom, NATURE, LARGEUR, POS_SOL, 
-            FRANCHISST, SENS, IMPORTANCE, CL_ADMIN, NAT_RESTR  FROM ${inputTables.troncon_de_route}  
+            FRANCHISST, SENS, IMPORTANCE, CL_ADMIN, NAT_RESTR, NB_VOIES  FROM ${inputTables.troncon_de_route}  
             WHERE st_setsrid(the_geom, $commune_srid) && 'SRID=$commune_srid;$geomToExtract'::GEOMETRY 
             AND ST_INTERSECTS(st_setsrid(the_geom, $commune_srid), 'SRID=$commune_srid;$geomToExtract'::GEOMETRY)
             AND NATURE NOT IN ('Bac ou liaison maritime', 'Escalier'))""".toString()
