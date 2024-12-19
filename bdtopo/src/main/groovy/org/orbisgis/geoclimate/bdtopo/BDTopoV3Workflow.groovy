@@ -107,7 +107,7 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
                 WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY 
                 AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY) 
                 AND NATURE NOT IN ('Bac ou liaison maritime', 'Escalier')
-                """.toString())
+                """)
         } else {
             throw new Exception("The troncon_de_route table must be provided")
         }

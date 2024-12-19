@@ -427,7 +427,7 @@ Map loadV3(JdbcDataSource datasource,
         datasource.execute("""DROP TABLE IF EXISTS $troncon_de_route;  
                 CREATE TABLE $troncon_de_route (THE_GEOM geometry(linestring, $srid), ID varchar, 
                 LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar, 
-                 IMPORTANCE VARCHAR, CL_ADMIN VARCHAR, NAT_RESTR VARCHAR);""".toString())
+                 IMPORTANCE VARCHAR, CL_ADMIN VARCHAR, NAT_RESTR VARCHAR, NB_VOIES INTEGER);""".toString())
     }
 
     String troncon_de_voie_ferree = tablesExist.get("troncon_de_voie_ferree")
@@ -561,7 +561,7 @@ Map loadV3(JdbcDataSource datasource,
             DROP TABLE IF EXISTS INPUT_ROAD;
             CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, 
             TYPE varchar,  ZINDEX integer, CROSSING varchar, DIRECTION varchar,
-            RANK INTEGER, ADMIN_SCALE VARCHAR)
+            RANK INTEGER, ADMIN_SCALE VARCHAR, NB_VOIES INTEGER)
             AS SELECT  ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.LARGEUR, 
             CASE WHEN a.NAT_RESTR = 'Piste cyclable' then  a.NAT_RESTR else a.NATURE end,  
             CASE WHEN a.POS_SOL='Gué ou radier' THEN 0 ELSE CAST(a.POS_SOL AS INT ) END AS POS_SOL, 
@@ -573,7 +573,7 @@ Map loadV3(JdbcDataSource datasource,
             WHEN a.SENS='Sens inverse' THEN 'Inverse'
             ELSE null END AS SENS,
             CASE WHEN a.IMPORTANCE IN ('1', '2', '3', '4', '5', '6') THEN CAST (a.IMPORTANCE AS INTEGER) ELSE NULL END ,
-            a.CL_ADMIN
+            a.CL_ADMIN, a.NB_VOIES
             FROM $troncon_de_route a, 
             ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
             and a.POS_SOL not in ('-4' , '-3' ,'-2' ,'-1');
