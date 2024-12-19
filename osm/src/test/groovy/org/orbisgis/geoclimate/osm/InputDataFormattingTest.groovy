@@ -107,6 +107,7 @@ class InputDataFormattingTest {
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where WIDTH is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where WIDTH<=0".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where CROSSING IS NOT NULL".toString()).count == 7
+        assertTrue h2GIS.firstRow("select count(*) as count from ${road} where LANES IS NOT NULL".toString()).count == 17
 
         //Rails
         String rails = OSM.InputDataFormatting.formatRailsLayer(h2GIS, extractData.rail)

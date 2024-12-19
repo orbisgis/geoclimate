@@ -379,7 +379,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
     datasource.execute("""
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
-                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, ZINDEX INTEGER);
+                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, LANES INTEGER, ZINDEX INTEGER);
         """)
     if (road) {
         def road_types_width =
@@ -402,7 +402,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                  "pedestrian"  : 3,
                  "service"     : 3]
         if (datasource.hasTable(road)) {
-            def queryMapper = "SELECT a.ID_SOURCE, a.WIDTH, a.TYPE, a.ZINDEX, a.CROSSING, a.DIRECTION, a.RANK, a.ADMIN_SCALE"
+            def queryMapper = "SELECT a.ID_SOURCE, a.WIDTH, a.TYPE, a.ZINDEX, a.CROSSING, a.DIRECTION, a.RANK, a.ADMIN_SCALE, a.NB_VOIES"
             if (zone) {
                 datasource.createSpatialIndex(road, "the_geom")
                 queryMapper += ", ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom), 2) as the_geom " +
@@ -557,6 +557,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                                         '${qualified_sidewalk}',
                                         ${qualified_road_maxspeed},
                                         ${road_sens},
+                                        ${row.'nb_voies'},
                                         ${qualified_road_zindex})
                                         """.toString()
                                 }
