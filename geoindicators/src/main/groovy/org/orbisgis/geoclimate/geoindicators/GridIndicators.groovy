@@ -414,3 +414,26 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
         "Veg" VARCHAR, "dry" VARCHAR, "irr" VARCHAR , "H" VARCHAR, "W" VARCHAR)""")
     }
 }
+
+/**
+ *
+ * @author Erwan Bocher (CNRS)
+ */
+String gridWindows(JdbcDataSource datasource, String grid_indicators, String id_grid,def distance, int nb_levels = 1) throws Exception {
+
+    if (!grid_indicators) {
+        throw new IllegalArgumentException("No grid_indicators table to compute the statistics")
+    }
+
+    datasource.createIndex(grid_indicators, id_grid)
+
+    datasource.execute("""
+    UPDATE $grid_indicators SET count_warn =(
+            select avg(b.avg_ta) as num_neighbors from $grid_indicators a, $grid_indicators b
+    where st_dwithin(a.THE_GEOM, b.THE_GEOM, $distance) and a.$id_grid != b.$id_grid and a.$id_grid=mydata.$id_grid
+    group by a.$id_grid);
+
+    """)
+
+
+}

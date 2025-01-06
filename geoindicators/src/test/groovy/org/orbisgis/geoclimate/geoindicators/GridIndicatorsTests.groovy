@@ -121,4 +121,19 @@ class GridIndicatorsTests {
         String grid_distances = Geoindicators.GridIndicators.gridDistances(h2GIS, "polygons", "grid", "id")
         assertEquals(12, h2GIS.firstRow("select count(*) as count from $grid_distances where distance =0.5".toString()).count)
     }
+
+    @Test
+    void gridDistanceStats() {
+        h2GIS.execute("""
+        --Grid with random values between 1 and 5 (Urban LCZ)
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, (CAST 3 AS INTEGER) AS lcz_primary FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
+        --Add some cool LCZ
+        
+        """)
+
+        h2GIS.save("grid", "/tmp/grid.fgb", true)
+
+    }
 }
