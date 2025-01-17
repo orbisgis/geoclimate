@@ -9,7 +9,7 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.assertThrows
 import static org.orbisgis.data.H2GIS.open
 
 class GridIndicatorsTests {
@@ -60,13 +60,13 @@ class GridIndicatorsTests {
 
         def expectedValues = [ID_COL: 2, ID_ROW: 2, ID_GRID: 10, LCZ_PRIMARY: 2, LCZ_PRIMARY_N: 104, LCZ_PRIMARY_NE: 104, LCZ_PRIMARY_E: 104, LCZ_PRIMARY_SE: 104, LCZ_PRIMARY_S: 104, LCZ_PRIMARY_SW: 104, LCZ_PRIMARY_W: 104, LCZ_PRIMARY_NW: 104, LCZ_WARM: 1, ID_ROW_LOD_1: 1, ID_COL_LOD_1: 0, LCZ_WARM_LOD_1: 1, LCZ_COOL_LOD_1: 8, LCZ_PRIMARY_LOD_1: 104, LCZ_PRIMARY_N_LOD_1: 104, LCZ_PRIMARY_NE_LOD_1: 2, LCZ_PRIMARY_E_LOD_1: 104, LCZ_PRIMARY_SE_LOD_1: null, LCZ_PRIMARY_S_LOD_1: null, LCZ_PRIMARY_SW_LOD_1: null, LCZ_PRIMARY_W_LOD_1: null, LCZ_PRIMARY_NW_LOD_1: null, LCZ_WARM_N_LOD_1: null, LCZ_WARM_NE_LOD_1: 4, LCZ_WARM_E_LOD_1: null, LCZ_WARM_SE_LOD_1: null, LCZ_WARM_S_LOD_1: null, LCZ_WARM_SW_LOD_1: null, LCZ_WARM_W_LOD_1: null, LCZ_WARM_NW_LOD_1: null, ID_ROW_LOD_2: 1, ID_COL_LOD_2: 1, LCZ_WARM_LOD_2: 10, LCZ_COOL_LOD_2: 71, LCZ_PRIMARY_LOD_2: 104, LCZ_PRIMARY_N_LOD_2: null, LCZ_PRIMARY_NE_LOD_2: null, LCZ_PRIMARY_E_LOD_2: null, LCZ_PRIMARY_SE_LOD_2: null, LCZ_PRIMARY_S_LOD_2: null, LCZ_PRIMARY_SW_LOD_2: null, LCZ_PRIMARY_W_LOD_2: null, LCZ_PRIMARY_NW_LOD_2: null, LCZ_WARM_N_LOD_2: null, LCZ_WARM_NE_LOD_2: null, LCZ_WARM_E_LOD_2: null, LCZ_WARM_SE_LOD_2: null, LCZ_WARM_S_LOD_2: null, LCZ_WARM_SW_LOD_2: null, LCZ_WARM_W_LOD_2: null, LCZ_WARM_NW_LOD_2: null]
 
-        assertTrue(values == expectedValues)
+        assertEquals(values , expectedValues)
 
         values = h2GIS.firstRow("SELECT * EXCEPT(THE_GEOM) FROM $grid_scale  WHERE id_row = 5 AND id_col = 5 ".toString())
 
         expectedValues = [ID_COL: 5, ID_ROW: 5, ID_GRID: 40, LCZ_PRIMARY: 102, LCZ_PRIMARY_N: 2, LCZ_PRIMARY_NE: 2, LCZ_PRIMARY_E: 2, LCZ_PRIMARY_SE: 104, LCZ_PRIMARY_S: 104, LCZ_PRIMARY_SW: 104, LCZ_PRIMARY_W: 104, LCZ_PRIMARY_NW: 2, LCZ_WARM: 4, ID_ROW_LOD_1: 2, ID_COL_LOD_1: 1, LCZ_WARM_LOD_1: 4, LCZ_COOL_LOD_1: 5, LCZ_PRIMARY_LOD_1: 2, LCZ_PRIMARY_N_LOD_1: 104, LCZ_PRIMARY_NE_LOD_1: 2, LCZ_PRIMARY_E_LOD_1: 104, LCZ_PRIMARY_SE_LOD_1: 104, LCZ_PRIMARY_S_LOD_1: 104, LCZ_PRIMARY_SW_LOD_1: 104, LCZ_PRIMARY_W_LOD_1: 104, LCZ_PRIMARY_NW_LOD_1: 104, LCZ_WARM_N_LOD_1: null, LCZ_WARM_NE_LOD_1: 5, LCZ_WARM_E_LOD_1: null, LCZ_WARM_SE_LOD_1: null, LCZ_WARM_S_LOD_1: null, LCZ_WARM_SW_LOD_1: 1, LCZ_WARM_W_LOD_1: null, LCZ_WARM_NW_LOD_1: null, ID_ROW_LOD_2: 1, ID_COL_LOD_2: 1, LCZ_WARM_LOD_2: 10, LCZ_COOL_LOD_2: 71, LCZ_PRIMARY_LOD_2: 104, LCZ_PRIMARY_N_LOD_2: null, LCZ_PRIMARY_NE_LOD_2: null, LCZ_PRIMARY_E_LOD_2: null, LCZ_PRIMARY_SE_LOD_2: null, LCZ_PRIMARY_S_LOD_2: null, LCZ_PRIMARY_SW_LOD_2: null, LCZ_PRIMARY_W_LOD_2: null, LCZ_PRIMARY_NW_LOD_2: null, LCZ_WARM_N_LOD_2: null, LCZ_WARM_NE_LOD_2: null, LCZ_WARM_E_LOD_2: null, LCZ_WARM_SE_LOD_2: null, LCZ_WARM_S_LOD_2: null, LCZ_WARM_SW_LOD_2: null, LCZ_WARM_W_LOD_2: null, LCZ_WARM_NW_LOD_2: null]
 
-        assertTrue(values == expectedValues)
+        assertEquals(values , expectedValues)
 
         h2GIS.dropTable("grid")
     }
@@ -123,17 +123,39 @@ class GridIndicatorsTests {
     }
 
     @Test
-    void gridDistanceStats() {
+    void gridCountCellsWarnTest1() {
         h2GIS.execute("""
         --Grid with random values between 1 and 5 (Urban LCZ)
         DROP TABLE IF EXISTS grid;
-        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, (CAST 3 AS INTEGER) AS lcz_primary FROM 
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, CEIL(RANDOM() * 10) AS lcz_primary FROM 
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
-        --Add some cool LCZ
         
+        --Add some vegetation cells
+        UPDATE grid SET lcz_primary= 102 WHERE id_row = 2 AND id_col = 2;
+        UPDATE grid SET lcz_primary= 102 WHERE id_row>3 and id_row<6 AND id_col>3 and id_col<6;
         """)
-
         h2GIS.save("grid", "/tmp/grid.fgb", true)
+        String grid_stats = Geoindicators.GridIndicators.gridCountCellsWarn(h2GIS, "grid", [1])
 
+        def expectedValues = [72: [count_cells_1: 3, count_warn_1: 3],
+                              40: [count_cells_1: 8, count_warn_1: 5],
+                              1: [count_cells_1: 5, count_warn_1: 4]]
+
+        expectedValues.each { it ->
+            def values = it.value
+            def valuesRes = h2GIS.rows("SELECT count_cells_1, count_warn_1 from $grid_stats where id_grid = ${it.key}")
+            assertEquals(values.count_cells_1, valuesRes.count_cells_1[0])
+            assertEquals(values.count_warn_1, valuesRes.count_warn_1[0])
+        }
+    }
+
+    @Test
+    void gridCountCellsWarnTest2() {
+        assertThrows(Exception.class, () -> Geoindicators.GridIndicators.gridCountCellsWarn(h2GIS, "grid", [-1, 2, 3, 4]))
+    }
+
+    @Test
+    void gridCountCellsWarnTest3() {
+        assertThrows(Exception.class, () -> Geoindicators.GridIndicators.gridCountCellsWarn(h2GIS, "grid", [5, 2, 3, 50]))
     }
 }

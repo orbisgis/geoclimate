@@ -81,7 +81,7 @@ String joinTables(JdbcDataSource datasource, Map inputTableNamesWithId, String o
         ${indexes.toString()}
         CREATE TABLE $outputTableName AS SELECT $columnsAsString $leftQuery""")
         return outputTableName
-    } catch (java.sql.SQLException e) {
+    } catch (SQLException e) {
         throw new SQLException("Cannot join the tables", e)
     }
 }
