@@ -294,7 +294,7 @@ String formatRoadLayer(
     datasource """
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
-                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, ZINDEX INTEGER);
+                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, LANES INTEGER, ZINDEX INTEGER);
         """.toString()
     if (road) {
         //Define the mapping between the values in OSM and those used in the abstract model
@@ -416,6 +416,7 @@ String formatRoadLayer(
                                         ${singleQuote(sidewalk)},
                                         ${maxspeed_value},
                                         ${direction},
+                                        ${row.'lanes'},
                                         ${zIndex})
                                 """.toString()
                                 }

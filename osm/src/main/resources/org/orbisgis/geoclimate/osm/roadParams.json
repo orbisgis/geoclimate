@@ -40,6 +40,7 @@
     "sidewalk",
     "layer",
     "maxspeed",
+    "lanes",
     "oneway",
     "route",
     "junction",

@@ -85,7 +85,7 @@ def loadV2(
         String name = layer.getValue()
         if (name) {
             if (datasource.hasTable(name)) {
-                def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1".toString())
+                def hasRow = datasource.firstRow("select 1 as id from ${name} limit 1")
                 if (hasRow) {
                     tablesExist.put(layer.key, name)
                     def currentSrid = GeometryTableUtilities.getSRID(con, TableLocation.parse(name, datasource.getDataBaseType()))
@@ -133,7 +133,7 @@ def loadV2(
         datasource.execute("""DROP TABLE IF EXISTS $route; 
         CREATE TABLE $route (THE_GEOM geometry(linestring, $srid), ID varchar, 
         LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar,
-        IMPORTANCE VARCHAR, CL_ADMIN VARCHAR);""".toString())
+        IMPORTANCE VARCHAR, CL_ADMIN VARCHAR, NB_VOIES INTEGER);""".toString())
     }
     String troncon_voie_ferree = tablesExist.get("troncon_voie_ferree")
     if (!troncon_voie_ferree) {
@@ -234,16 +234,15 @@ def loadV2(
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_ROAD;
             CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, ZINDEX integer, CROSSING varchar,
-             DIRECTION varchar,  RANK INTEGER, ADMIN_SCALE VARCHAR)
+             DIRECTION varchar,  RANK INTEGER, ADMIN_SCALE VARCHAR, NB_VOIES INTEGER)
             AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, 
             a.POS_SOL, a.FRANCHISST, a.SENS , 
             CASE WHEN a.IMPORTANCE IN ('1', '2', '3', '4', '5') THEN CAST (a.IMPORTANCE AS INTEGER) ELSE NULL END ,
-            a.CL_ADMIN
+            a.CL_ADMIN, A.NB_VOIES
             FROM $route a, ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
     //5. Prepare the Rail table (from the layer "TRONCON_VOIE_FERREE") that are in the study area (ZONE)
-
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_RAIL;
             CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
@@ -428,7 +427,7 @@ Map loadV3(JdbcDataSource datasource,
         datasource.execute("""DROP TABLE IF EXISTS $troncon_de_route;  
                 CREATE TABLE $troncon_de_route (THE_GEOM geometry(linestring, $srid), ID varchar, 
                 LARGEUR DOUBLE PRECISION, NATURE varchar, POS_SOL integer, FRANCHISST varchar, SENS varchar, 
-                 IMPORTANCE VARCHAR, CL_ADMIN VARCHAR, NAT_RESTR VARCHAR);""".toString())
+                 IMPORTANCE VARCHAR, CL_ADMIN VARCHAR, NAT_RESTR VARCHAR, NB_VOIES INTEGER);""".toString())
     }
 
     String troncon_de_voie_ferree = tablesExist.get("troncon_de_voie_ferree")
@@ -562,7 +561,7 @@ Map loadV3(JdbcDataSource datasource,
             DROP TABLE IF EXISTS INPUT_ROAD;
             CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, 
             TYPE varchar,  ZINDEX integer, CROSSING varchar, DIRECTION varchar,
-            RANK INTEGER, ADMIN_SCALE VARCHAR)
+            RANK INTEGER, ADMIN_SCALE VARCHAR, NB_VOIES INTEGER)
             AS SELECT  ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.LARGEUR, 
             CASE WHEN a.NAT_RESTR = 'Piste cyclable' then  a.NAT_RESTR else a.NATURE end,  
             CASE WHEN a.POS_SOL='Gué ou radier' THEN 0 ELSE CAST(a.POS_SOL AS INT ) END AS POS_SOL, 
@@ -574,7 +573,7 @@ Map loadV3(JdbcDataSource datasource,
             WHEN a.SENS='Sens inverse' THEN 'Inverse'
             ELSE null END AS SENS,
             CASE WHEN a.IMPORTANCE IN ('1', '2', '3', '4', '5', '6') THEN CAST (a.IMPORTANCE AS INTEGER) ELSE NULL END ,
-            a.CL_ADMIN
+            a.CL_ADMIN, a.NB_VOIES
             FROM $troncon_de_route a, 
             ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
             and a.POS_SOL not in ('-4' , '-3' ,'-2' ,'-1');
