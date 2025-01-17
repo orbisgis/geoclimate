@@ -10,6 +10,7 @@ import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertThrows
+import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
 class GridIndicatorsTests {
@@ -60,13 +61,13 @@ class GridIndicatorsTests {
 
         def expectedValues = [ID_COL: 2, ID_ROW: 2, ID_GRID: 10, LCZ_PRIMARY: 2, LCZ_PRIMARY_N: 104, LCZ_PRIMARY_NE: 104, LCZ_PRIMARY_E: 104, LCZ_PRIMARY_SE: 104, LCZ_PRIMARY_S: 104, LCZ_PRIMARY_SW: 104, LCZ_PRIMARY_W: 104, LCZ_PRIMARY_NW: 104, LCZ_WARM: 1, ID_ROW_LOD_1: 1, ID_COL_LOD_1: 0, LCZ_WARM_LOD_1: 1, LCZ_COOL_LOD_1: 8, LCZ_PRIMARY_LOD_1: 104, LCZ_PRIMARY_N_LOD_1: 104, LCZ_PRIMARY_NE_LOD_1: 2, LCZ_PRIMARY_E_LOD_1: 104, LCZ_PRIMARY_SE_LOD_1: null, LCZ_PRIMARY_S_LOD_1: null, LCZ_PRIMARY_SW_LOD_1: null, LCZ_PRIMARY_W_LOD_1: null, LCZ_PRIMARY_NW_LOD_1: null, LCZ_WARM_N_LOD_1: null, LCZ_WARM_NE_LOD_1: 4, LCZ_WARM_E_LOD_1: null, LCZ_WARM_SE_LOD_1: null, LCZ_WARM_S_LOD_1: null, LCZ_WARM_SW_LOD_1: null, LCZ_WARM_W_LOD_1: null, LCZ_WARM_NW_LOD_1: null, ID_ROW_LOD_2: 1, ID_COL_LOD_2: 1, LCZ_WARM_LOD_2: 10, LCZ_COOL_LOD_2: 71, LCZ_PRIMARY_LOD_2: 104, LCZ_PRIMARY_N_LOD_2: null, LCZ_PRIMARY_NE_LOD_2: null, LCZ_PRIMARY_E_LOD_2: null, LCZ_PRIMARY_SE_LOD_2: null, LCZ_PRIMARY_S_LOD_2: null, LCZ_PRIMARY_SW_LOD_2: null, LCZ_PRIMARY_W_LOD_2: null, LCZ_PRIMARY_NW_LOD_2: null, LCZ_WARM_N_LOD_2: null, LCZ_WARM_NE_LOD_2: null, LCZ_WARM_E_LOD_2: null, LCZ_WARM_SE_LOD_2: null, LCZ_WARM_S_LOD_2: null, LCZ_WARM_SW_LOD_2: null, LCZ_WARM_W_LOD_2: null, LCZ_WARM_NW_LOD_2: null]
 
-        assertEquals(values , expectedValues)
+        assertTrue(values == expectedValues)
 
         values = h2GIS.firstRow("SELECT * EXCEPT(THE_GEOM) FROM $grid_scale  WHERE id_row = 5 AND id_col = 5 ".toString())
 
         expectedValues = [ID_COL: 5, ID_ROW: 5, ID_GRID: 40, LCZ_PRIMARY: 102, LCZ_PRIMARY_N: 2, LCZ_PRIMARY_NE: 2, LCZ_PRIMARY_E: 2, LCZ_PRIMARY_SE: 104, LCZ_PRIMARY_S: 104, LCZ_PRIMARY_SW: 104, LCZ_PRIMARY_W: 104, LCZ_PRIMARY_NW: 2, LCZ_WARM: 4, ID_ROW_LOD_1: 2, ID_COL_LOD_1: 1, LCZ_WARM_LOD_1: 4, LCZ_COOL_LOD_1: 5, LCZ_PRIMARY_LOD_1: 2, LCZ_PRIMARY_N_LOD_1: 104, LCZ_PRIMARY_NE_LOD_1: 2, LCZ_PRIMARY_E_LOD_1: 104, LCZ_PRIMARY_SE_LOD_1: 104, LCZ_PRIMARY_S_LOD_1: 104, LCZ_PRIMARY_SW_LOD_1: 104, LCZ_PRIMARY_W_LOD_1: 104, LCZ_PRIMARY_NW_LOD_1: 104, LCZ_WARM_N_LOD_1: null, LCZ_WARM_NE_LOD_1: 5, LCZ_WARM_E_LOD_1: null, LCZ_WARM_SE_LOD_1: null, LCZ_WARM_S_LOD_1: null, LCZ_WARM_SW_LOD_1: 1, LCZ_WARM_W_LOD_1: null, LCZ_WARM_NW_LOD_1: null, ID_ROW_LOD_2: 1, ID_COL_LOD_2: 1, LCZ_WARM_LOD_2: 10, LCZ_COOL_LOD_2: 71, LCZ_PRIMARY_LOD_2: 104, LCZ_PRIMARY_N_LOD_2: null, LCZ_PRIMARY_NE_LOD_2: null, LCZ_PRIMARY_E_LOD_2: null, LCZ_PRIMARY_SE_LOD_2: null, LCZ_PRIMARY_S_LOD_2: null, LCZ_PRIMARY_SW_LOD_2: null, LCZ_PRIMARY_W_LOD_2: null, LCZ_PRIMARY_NW_LOD_2: null, LCZ_WARM_N_LOD_2: null, LCZ_WARM_NE_LOD_2: null, LCZ_WARM_E_LOD_2: null, LCZ_WARM_SE_LOD_2: null, LCZ_WARM_S_LOD_2: null, LCZ_WARM_SW_LOD_2: null, LCZ_WARM_W_LOD_2: null, LCZ_WARM_NW_LOD_2: null]
 
-        assertEquals(values , expectedValues)
+        assertTrue(values == expectedValues)
 
         h2GIS.dropTable("grid")
     }
