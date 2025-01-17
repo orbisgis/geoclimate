@@ -9,5 +9,6 @@
 - Fix github actions
 - Add TARGET landcover production
 - Force TARGET ROOF fraction to 0.75 when BUILDING fraction is greater than 0.75
-- Force TARGET W indicator to the grid resolution
+- Force TARGET W indicator to the grid resolution- 
+- Add lanes informations on abstract model plus OSM and BDTopo drivers
 - New grid indicator COUNT_WARN_X where X is the step of the sliding window
