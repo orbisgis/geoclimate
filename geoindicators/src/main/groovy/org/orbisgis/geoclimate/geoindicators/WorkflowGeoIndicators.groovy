@@ -1594,11 +1594,11 @@ String rasterizeIndicators(JdbcDataSource datasource,
     def indicatorTablesToJoin = [:]
     indicatorTablesToJoin.put(grid, grid_column_identifier)
 
-    //We check if the COUNT_WARN indicators must be computed.
+    //We check if the COUNT_WARM indicators must be computed.
     //If yes we collect all window sizes
     def window_sizes=[]
     list_indicators_upper.each{
-        if(it.startsWith("COUNT_WARN_")){
+        if(it.startsWith("COUNT_WARM_")){
             window_sizes<< Integer.valueOf(it.substring(11, it.length()))
         }
     }
@@ -1658,7 +1658,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                                 DROP TABLE IF EXISTS $resultsDistrib""")
                 tablesToDrop << resultsDistrib
                 indicatorTablesToJoin.put(distribLczTableInt, grid_column_identifier)
-                //We compute COUNT_WARN indicators
+                //We compute COUNT_WARM indicators
                 if(window_sizes){
                     String grid_lcz_primary_indexes =  postfix("grid_lcz_indexes")
                     datasource.createIndex(distribLczTableInt, grid_column_identifier)
@@ -1666,8 +1666,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                     CREATE TABLE $grid_lcz_primary_indexes as 
                     select a.$grid_column_identifier, a.id_row, a.id_col, b.LCZ_PRIMARY FROM
                     $grid as a left join $distribLczTableInt as b on a.$grid_column_identifier=b.$grid_column_identifier;""")
-                    String grid_count_warn = Geoindicators.GridIndicators.gridCountCellsWarn(datasource, grid_lcz_primary_indexes, window_sizes)
-                    indicatorTablesToJoin.put(grid_count_warn, grid_column_identifier)
+                    String grid_count_warm = Geoindicators.GridIndicators.gridCountCellsWarm(datasource, grid_lcz_primary_indexes, window_sizes)
+                    indicatorTablesToJoin.put(grid_count_warm, grid_column_identifier)
                     tablesToDrop<<grid_lcz_primary_indexes
                 }
             }
