@@ -416,7 +416,7 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
 }
 
 /**
- *  Compute the number of warn LCZ on a sliding window
+ *  Compute the number of warm LCZ on a sliding window
  *  The sliding window is defined by a step size from the center of the cells.
  *  The step size is an integer value defines the width and height (in terms of cells) of the window
  *  we are going to extract from an input grid
@@ -425,7 +425,7 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
  *  @param  window_size array of window steps. User can specify multiple window steps.
  *  @author Erwan Bocher (CNRS)
  */
-String gridCountCellsWarn(JdbcDataSource datasource, String grid_indicators, List window_size) throws Exception {
+String gridCountCellsWarm(JdbcDataSource datasource, String grid_indicators, List window_size) throws Exception {
 
     if (!grid_indicators) {
         throw new IllegalArgumentException("No grid_indicators table to compute the statistics")
@@ -450,9 +450,9 @@ String gridCountCellsWarn(JdbcDataSource datasource, String grid_indicators, Lis
 
         def queries =[:]
         window_size.toSet().sort().each {size->
-          def table_size= postfix("warn_$size")
+          def table_size= postfix("warm_$size")
          queries.put(table_size, """DROP TABLE IF EXISTS ${table_size}; CREATE TABLE ${table_size} as select a.id_grid, COUNT(b.id_grid) as count_cells_${size},
-        sum(CASE WHEN  b.LCZ_PRIMARY in (1,2,3,4,5,6,7,8,9,10,105)  THEN 1 ELSE 0 END) as count_warn_${size}
+        sum(CASE WHEN  b.LCZ_PRIMARY in (1,2,3,4,5,6,7,8,9,10,105)  THEN 1 ELSE 0 END) as count_warm_${size}
         from ${grid_indicators}  a, ${grid_indicators} b
         where
         a.id_grid != b.id_grid and (b.id_row between a.id_row-${size} and a.id_row+${size})
@@ -469,6 +469,6 @@ String gridCountCellsWarn(JdbcDataSource datasource, String grid_indicators, Lis
         datasource.dropTable(tableToJoin.keySet().toList())
         return grid_final
     }catch (SQLException e) {
-        throw new SQLException("Cannot count the number of warn LCZ on a sliding window", e)
+        throw new SQLException("Cannot count the number of warm LCZ on a sliding window", e)
     }
 }
