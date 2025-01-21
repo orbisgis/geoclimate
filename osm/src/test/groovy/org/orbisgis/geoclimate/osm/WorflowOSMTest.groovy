@@ -780,8 +780,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         //"SVF",
                                         "STREET_WIDTH" ,
                                         "IMPERVIOUS_FRACTION",
-                                        "COUNT_WARN_1",
-                                        "COUNT_WARN_4"]
+                                        "COUNT_WARM_1",
+                                        "COUNT_WARM_4"]
                                 //"lcz_lod":1
                         ], "worldpop_indicators": true
                          /*
