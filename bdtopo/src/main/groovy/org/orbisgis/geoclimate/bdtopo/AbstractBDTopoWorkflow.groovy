@@ -155,6 +155,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         //Get the out put parameters
         def outputDatasource
         def outputTables
+        Map excluded_output_db_columns=[:]
         def file_outputFolder
         def outputFileTables
         def outputSRID
@@ -173,6 +174,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 throw new Exception("The output srid must be greater than 0")
             }
             if (outputFolder) {
+                //Check if we can write in the output folder
                 def outputFiles = Geoindicators.WorkflowUtilities.buildOutputFolderParameters(outputFolder, outputWorkflowTableNames)
                 outputFileTables = outputFiles.tables
                 //Check if we can write in the output folder
@@ -192,6 +194,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 def outputDataBaseData = Geoindicators.WorkflowUtilities.buildOutputDBParameters(outputDataBase, outputDataBase.tables, outputWorkflowTableNames)
                 outputDatasource = outputDataBaseData.datasource
                 outputTables = outputDataBaseData.tables
+                outputDataBase.excluded_columns.collect{excluded_output_db_columns.put(it.key.toLowerCase(), it.value*.toUpperCase())}
             }
         }
 
@@ -1130,77 +1133,80 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @param outputTableNames name of the output tables
  * @param h2gis_tables name of H2GIS to save
  * @param id_zone id of the zone
+ * @param outputSRID srid code to reproject the data *
+ * @param reproject the output table
+ * @param excluded_columns list of columns to exclude for each table saved in a database
  * @return
  */
     def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def outputTableNames, def h2gis_tables,
-                             def id_zone, def inputSRID, def outputSRID, def reproject) throws Exception {
+                             def id_zone, def inputSRID, def outputSRID, def reproject,Map excluded_columns) throws Exception {
         Connection con = output_datasource.getConnection()
         con.setAutoCommit(true)
 
         //Export building indicators
         indicatorTableBatchExportTable(output_datasource, outputTableNames.building_indicators, id_zone, h2gis_datasource, h2gis_tables.building_indicators
-                , "", inputSRID, outputSRID, reproject)
+                , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.building_indicators))
 
 
         //Export block indicators
         indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators, id_zone, h2gis_datasource, h2gis_tables.block_indicators
-                , "where ID_RSU IS NOT NULL", inputSRID, outputSRID, reproject)
+            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.block_indicators))
 
-        //Export rsu indicators
-        indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators, id_zone, h2gis_datasource, h2gis_tables.rsu_indicators
-                , "", inputSRID, outputSRID, reproject)
+    //Export rsu indicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators, id_zone, h2gis_datasource, h2gis_tables.rsu_indicators
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_indicators))
 
-        //Export rsu lcz
-        indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.rsu_lcz
-                , "", inputSRID, outputSRID, reproject)
+    //Export rsu lcz
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.rsu_lcz
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_lcz))
 
-        //Export rsu_utrf_area
-        indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_area
-                , "", inputSRID, outputSRID, reproject)
+    //Export rsu_utrf_area
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_area
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_utrf_area))
 
-        //Export rsu_utrf_floor_area
-        indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_floor_area
-                , "", inputSRID, outputSRID, reproject)
+    //Export rsu_utrf_floor_area
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_floor_area
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_utrf_floor_area))
 
-        //Export building_utrf
-        indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf, id_zone, h2gis_datasource, h2gis_tables.building_utrf
-                , "", inputSRID, outputSRID, reproject)
+    //Export grid_indicators
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators, id_zone, h2gis_datasource, h2gis_tables.grid_indicators
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.grid_indicators))
 
-        //Export grid_indicators
-        indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators, id_zone, h2gis_datasource, h2gis_tables.grid_indicators
-                , "", inputSRID, outputSRID, reproject)
+    //Export building_utrf
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf, id_zone, h2gis_datasource, h2gis_tables.building_utrf
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.building_utrf))
 
-        //Export road_traffic
-        indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.road_traffic
-                , "", inputSRID, outputSRID, reproject)
+    //Export road_traffic
+    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.road_traffic
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.road_traffic))
 
-        //Export zone
-        abstractModelTableBatchExportTable(output_datasource, outputTableNames.zone, id_zone, h2gis_datasource, h2gis_tables.zone
-                , "", inputSRID, outputSRID, reproject)
+    //Export zone
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zone, id_zone, h2gis_datasource, h2gis_tables.zone
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.zone))
 
-        //Export building
-        abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.building
-                , "", inputSRID, outputSRID, reproject)
+    //Export building
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.building
+            , "", inputSRID, outputSRID, reproject,excluded_columns.get( outputTableNames.building))
 
         //Export road
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone, h2gis_datasource, h2gis_tables.road
-                , "", inputSRID, outputSRID, reproject)
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.road))
         //Export rail
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.rail, id_zone, h2gis_datasource, h2gis_tables.rail
-                , "", inputSRID, outputSRID, reproject)
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rail))
         //Export vegetation
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.vegetation, id_zone, h2gis_datasource, h2gis_tables.vegetation
-                , "", inputSRID, outputSRID, reproject)
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.vegetation))
         //Export water
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.water, id_zone, h2gis_datasource, h2gis_tables.water
-                , "", inputSRID, outputSRID, reproject)
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.water))
         //Export impervious
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.impervious
-                , "", inputSRID, outputSRID, reproject)
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.impervious))
 
         //Export population table
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone, h2gis_datasource, h2gis_tables.population
-                , "", inputSRID, outputSRID, reproject)
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.population))
 
 
         con.setAutoCommit(false)
@@ -1217,30 +1223,38 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @param batchSize size of the batch
  * @param filter to limit the data from H2GIS *
  * @param outputSRID srid code used to reproject the output table
+ * @param reproject the output table
+ * @param excluded_columns list of columns to exclude for each table saved in a database
  * @return
  */
     def abstractModelTableBatchExportTable(JdbcDataSource output_datasource, def output_table, def id_zone, def h2gis_datasource,
-                                           h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject) throws Exception {
+                                           h2gis_table_to_save, def filter, def inputSRID, def outputSRID, def reproject,def excluded_columns) throws Exception {
         if (output_table) {
             if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
                 if (output_datasource.hasTable(output_table)) {
                     //If the table exists we populate it with the last result
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                     int BATCH_MAX_SIZE = 100
-                    ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
+                    //We must exclude the columns to save in the database
+                    Map columnsToKeepWithType =h2gis_datasource.getColumnNamesTypes(h2gis_table_to_save)
+                    def columnNamesToSave =  columnsToKeepWithType.keySet()
+                    if(excluded_columns) {
+                        columnsToKeepWithType = columnsToKeepWithType.findAll{it-> !excluded_columns.contains(it.key)}
+                        columnNamesToSave =  columnsToKeepWithType.keySet()
+                    }
+                    ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource,columnNamesToSave)
                     if (inputRes) {
                         def outputColumns = output_datasource.getColumnNamesTypes(output_table)
                         def outputconnection = output_datasource.getConnection()
                         try {
-                            def inputColumns = inputRes.getColumnsTypes()
                             //We check if the number of columns is not the same
                             //If there is more columns in the input table we alter the output table
-                            def outPutColumnsNames = outputColumns.keySet()
-                            outPutColumnsNames.remove("gid")
-                            def diffCols = inputColumns.keySet().findAll { e -> !outPutColumnsNames*.toLowerCase().contains(e.toLowerCase()) }
+                            def outPutColumnsNames =  outputColumns.keySet()*.toUpperCase()
+                            outPutColumnsNames.remove("GID")
+                            def diffCols = columnNamesToSave.findAll { e -> !outPutColumnsNames.contains(e) }
                             def alterTable = ""
                             if (diffCols) {
-                                inputColumns.each { entry ->
+                                columnsToKeepWithType.each { entry ->
                                     if (diffCols.contains(entry.key)) {
                                         //DECFLOAT is not supported by POSTSGRESQL
                                         def dataType = entry.value.equalsIgnoreCase("decfloat") ? "FLOAT" : entry.value
@@ -1250,24 +1264,22 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                 }
                                 output_datasource.execute(alterTable.toString())
                             }
-                            def finalOutputColumns = outputColumns.keySet()
-
 
                             def insertTable = "INSERT INTO $output_table (${finalOutputColumns.join(",")}) VALUES("
 
-                            def flatList = outputColumns.inject([]) { result, iter ->
-                                result += ":${iter.key.toLowerCase()}"
+                            def flatList = outPutColumnsNames.inject([]) { result, iter ->
+                                result += ":${iter.toLowerCase()}"
                             }.join(",")
                             insertTable += flatList
                             insertTable += ")"
                             //Collect all values
-                            def ouputValues = finalOutputColumns.collectEntries { [it.toLowerCase(), null] }
+                            def ouputValues = outPutColumnsNames.collectEntries { [it.toLowerCase(), null] }
                             ouputValues.put("id_zone", id_zone)
                             outputconnection.setAutoCommit(false)
                             output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                 inputRes.eachRow { row ->
                                     //Fill the value
-                                    inputColumns.keySet().each { columnName ->
+                                    columnNamesToSave.each { columnName ->
                                         def inputValue = row.getObject(columnName)
                                         if (inputValue) {
                                             ouputValues.put(columnName.toLowerCase(), inputValue)
@@ -1288,12 +1300,16 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     }
                 } else {
                     def tmpTable = null
-                    debug "Start to export the table $h2gis_table_to_save into the table $output_table"
+                    info "Start to export the table $h2gis_table_to_save into the table $output_table"
+                    List columnNamesToSave =h2gis_datasource.getColumnNames(h2gis_table_to_save)
+                    if(excluded_columns) {
+                        columnNamesToSave = columnNamesToSave.findAll{it-> !excluded_columns.contains(it)}
+                    }
                     if (filter) {
                         if (!reproject) {
-                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true)
+                            tmpTable = Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnNamesToSave, filter).save(output_datasource, output_table, true);
                         } else {
-                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true)
+                            tmpTable = Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, outputSRID, columnNamesToSave, filter).save(output_datasource, output_table, true);
                             //Because the select query reproject doesn't contain any geometry metadata
                             output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
@@ -1307,9 +1323,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         }
                     } else {
                         if (!reproject) {
-                            tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).save(output_datasource, output_table, true)
+                            tmpTable = Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnNamesToSave, filter).save(output_datasource, output_table, true);
                         } else {
-                            tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true)
+                            tmpTable = Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, outputSRID, columnNamesToSave, filter).save(output_datasource, output_table, true);
                             //Because the select query reproject doesn't contain any geometry metadata
                             output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
@@ -1321,7 +1337,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         //Add a GID column
                         output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
                         output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString())
-                        debug "The table $h2gis_table_to_save has been exported into the table $output_table"
+                        output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
+                        info "The table $h2gis_table_to_save has been exported into the table $output_table"
                     } else {
                         warn "The table $h2gis_table_to_save hasn't been exported into the table $output_table"
                     }
@@ -1340,31 +1357,39 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @param filter to limit the data from H2GIS *
  * @param inputSRID srid code of the inputable
  * @param outputSRID srid code used to reproject the output table
+ * @param reproject true to reproject the table
+ * @param excluded_columns list of columns to exclude for each table saved in a database
  * @return
  */
     def indicatorTableBatchExportTable(JdbcDataSource output_datasource, def output_table, def id_zone, def h2gis_datasource, h2gis_table_to_save,
-                                       def filter, def inputSRID, def outputSRID, def reproject) throws Exception {
+                                       def filter, def inputSRID, def outputSRID, def reproject,def excluded_columns) throws Exception {
         if (output_table) {
             if (h2gis_table_to_save) {
                 if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
                     if (output_datasource.hasTable(output_table)) {
+                        output_datasource.execute("DELETE FROM $output_table WHERE id_zone='$id_zone'".toString())
                         //If the table exists we populate it with the last result
                         info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                         int BATCH_MAX_SIZE = 100
-                        ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource)
+                        //We must exclude the columns to save in the database
+                        Map columnsToKeepWithType =[:]
+                        if(excluded_columns) {
+                            columnsToKeepWithType = h2gis_datasource.getColumnNamesTypes(h2gis_table_to_save).findAll{it-> !excluded_columns.contains(it.key)}
+                        }
+                        def columnNamesToSave =  columnsToKeepWithType.keySet()
+                        ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource,columnNamesToSave)
                         if (inputRes) {
                             def outputColumns = output_datasource.getColumnNamesTypes(output_table)
                             outputColumns.remove("gid")
                             def outputconnection = output_datasource.getConnection()
                             try {
-                                def inputColumns = inputRes.getColumnsTypes()
                                 //We check if the number of columns is not the same
                                 //If there is more columns in the input table we alter the output table
                                 def outPutColumnsNames = outputColumns.keySet()
-                                def diffCols = inputColumns.keySet().findAll { e -> !outPutColumnsNames*.toLowerCase().contains(e.toLowerCase()) }
+                                def diffCols = columnNamesToSave.findAll { e -> !outPutColumnsNames.contains(e) }
                                 def alterTable = ""
                                 if (diffCols) {
-                                    inputColumns.each { entry ->
+                                    columnsToKeepWithType.each { entry ->
                                         if (diffCols.contains(entry.key)) {
                                             //DECFLOAT is not supported by POSTSGRESQL
                                             def dataType = entry.value.equalsIgnoreCase("decfloat") ? "FLOAT" : entry.value
@@ -1390,7 +1415,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                 output_datasource.withBatch(BATCH_MAX_SIZE, insertTable.toString()) { ps ->
                                     inputRes.eachRow { row ->
                                         //Fill the value
-                                        inputColumns.keySet().each { columnName ->
+                                        columnNamesToSave.keySet().each { columnName ->
                                             def inputValue = row.getObject(columnName)
                                             if (inputValue) {
                                                 ouputValues.put(columnName.toLowerCase(), inputValue)
@@ -1406,21 +1431,26 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                 error("Cannot save the table $output_table.\n $e")
                                 return false
                             } finally {
+                                outputconnection.setAutoCommit(true)
                                 info "The table $h2gis_table_to_save has been exported into the table $output_table"
                             }
                         }
                     } else {
                         def tmpTable = null
                         info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
+                        List columnNamesToSave =[]
+                        if(excluded_columns) {
+                            columnNamesToSave = h2gis_datasource.getColumnNames(h2gis_table_to_save).findAll{it-> !excluded_columns.contains(it)}
+                        }
                         if (filter) {
                             if (!reproject) {
-                                tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().save(output_datasource, output_table, true)
+                                tmpTable = Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnNamesToSave, filter).save(output_datasource, output_table, true)
                                 if (tmpTable) {
                                     //Workaround to update the SRID on resulset
-                                    output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);""".toString()
+                                    output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $inputSRID) USING ST_SetSRID(the_geom,$inputSRID);""".toString()
                                 }
                             } else {
-                                tmpTable = h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(outputSRID).save(output_datasource, output_table, true)
+                                tmpTable = Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, outputSRID, columnNamesToSave, filter).save(output_datasource, output_table, true)
                                 if (tmpTable) {
                                     //Workaround to update the SRID on resulset
                                     output_datasource.execute """ALTER TABLE $output_table ALTER COLUMN the_geom TYPE geometry(GEOMETRY, $outputSRID) USING ST_SetSRID(the_geom,$outputSRID);""".toString()
@@ -1428,20 +1458,21 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             }
                         } else {
                             if (!reproject) {
-                                tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).save(output_datasource, output_table, true)
+                                tmpTable = Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnNamesToSave, filter).save(output_datasource, output_table, true)
                             } else {
                                 tmpTable = h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(outputSRID).save(output_datasource, output_table, true)
                                 if (tmpTable) {
                                     //Because the select query reproject doesn't contain any geometry metadata
                                     output_datasource.execute("""ALTER TABLE $output_table 
-                            ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID) 
-                            USING ST_SetSRID(the_geom,$outputSRID);""".toString())
+                                    ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID) 
+                                    USING ST_SetSRID(the_geom,$outputSRID);""".toString())
                                 }
                             }
                         }
                         if (tmpTable) {
                             output_datasource.execute("ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone VARCHAR")
                             output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString())
+                            output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                             //Add GID column
                             output_datasource.execute("""ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""")
 
@@ -1456,7 +1487,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
     }
 
 /**
- * Method to prepare a ITable aka resulset to export table in a database
+ * Method to prepare a ITable aka resultset to export table in a database
  * @param h2gis_table_to_save
  * @param inputSRID
  * @param h2gis_datasource
@@ -1465,17 +1496,22 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @param output_datasource
  * @return
  */
-    def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID, def h2gis_datasource, def output_table, def outputSRID, def output_datasource) throws Exception {
+    def prepareTableOutput(def h2gis_table_to_save, def filter, def inputSRID, H2GIS h2gis_datasource,
+                           def output_table, def outputSRID, JdbcDataSource output_datasource, Collection columnsToKeep) throws Exception {
+        boolean hasGeometryColumn = output_datasource.hasGeometryColumn(output_table)
         def targetTableSrid = output_datasource.getSpatialTable(output_table).srid
         if (filter) {
-            if (outputSRID == 0) {
+            if(!hasGeometryColumn){
+                return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
+            }
+            else if (outputSRID == 0) {
                 if (inputSRID == targetTableSrid) {
-                    return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
+                    return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
                 } else {
                     if (targetTableSrid == 0 && inputSRID == 0) {
-                        return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getTable()
+                        return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
                     } else if (targetTableSrid != 0 && inputSRID != 0) {
-                        return h2gis_datasource.getTable(h2gis_table_to_save).filter(filter).getSpatialTable().reproject(targetTableSrid)
+                        return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, targetTableSrid, columnsToKeep,filter)
                     } else {
                         error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                         return
@@ -1483,12 +1519,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
             } else {
                 if (inputSRID == targetTableSrid) {
-                    return h2gis_datasource.getTable(h2gis_table_to_save)
+                    return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
                 } else {
                     if (targetTableSrid == 0 && inputSRID == 0) {
-                        return h2gis_datasource.getTable(h2gis_table_to_save)
+                        return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
                     } else if (targetTableSrid != 0 && inputSRID != 0) {
-                        return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
+                        return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, targetTableSrid, columnsToKeep,filter)
                     } else {
                         error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                         return
@@ -1496,14 +1532,17 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
             }
         } else {
-            if (outputSRID == 0) {
+            if(!hasGeometryColumn){
+                return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
+            }
+            else if (outputSRID == 0) {
                 if (inputSRID == targetTableSrid) {
-                    return h2gis_datasource.getTable(h2gis_table_to_save)
+                    return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
                 } else {
                     if (targetTableSrid == 0 && inputSRID == 0) {
-                        return h2gis_datasource.getTable(h2gis_table_to_save)
+                        return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
                     } else if (targetTableSrid != 0 && inputSRID != 0) {
-                        return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
+                        return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, targetTableSrid, columnsToKeep,filter)
                     } else {
                         error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                         return
@@ -1511,12 +1550,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
             } else {
                 if (inputSRID == targetTableSrid) {
-                    return h2gis_datasource.getTable(h2gis_table_to_save)
+                    return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
                 } else {
                     if (targetTableSrid == 0 && inputSRID == 0) {
-                        return h2gis_datasource.getTable(h2gis_table_to_save)
+                        return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, null, columnsToKeep,filter)
                     } else if (targetTableSrid != 0 && inputSRID != 0) {
-                        return h2gis_datasource.getSpatialTable(h2gis_table_to_save).reproject(targetTableSrid)
+                        return Geoindicators.WorkflowUtilities.getTableToSave(h2gis_datasource, h2gis_table_to_save, targetTableSrid, columnsToKeep,filter)
                     } else {
                         error("Cannot export the $h2gis_table_to_save into the table $output_table \n due to inconsistent SRID")
                         return
