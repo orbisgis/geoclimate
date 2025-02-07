@@ -724,8 +724,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = " Boutigny-sur-Essonne"
-        def nominatim = OSMTools.Utilities.getNominatimData(location)
+        def location = ["Redon"]
+        //def nominatim = OSMTools.Utilities.getNominatimData(location)
         def grid_size = 50
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
         //location=[47.215334,-1.558058,47.216646,-1.556185]
@@ -733,29 +733,18 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def location1= [47.642695,-2.777953,47.648651,-2.769413]
         def location2= [47.642723,-2.769456,47.648622,-2.761259]
 
-        H2GIS db = H2GIS.open("/tmp/mydb")
-        Geometry geom = OSMTools.Utilities.getArea(location1)
+        //Farm land pb
+        location1  = [50.957075,1.946297,50.988314,2.027321]
 
-        def lat_lon_bbox_extended = geom.getFactory().toGeometry(GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), 500))
-
-        db.execute("""
-            DROP TABLE IF EXISTS domains;
-            CREATE TABLE domains as select * from st_makegrid(ST_GEOMFROMTEXT('$lat_lon_bbox_extended', 4326), 500,500)
-        """)
-        db.save("domains", "/tmp/domains.geojson", true)
-
-        location =[]
-        db.eachRow("SELECT THE_GEOM from DOMAINS"){
-            def env = it.the_geom.getEnvelopeInternal()
-            location<<[ env.getMinY() as float,env.getMinX() as float,env.getMaxY() as float,env.getMaxX() as float]
-        }
-        //location = [location1]
-        //location = [location1, location2]
+        //location = [[47.504374,-0.479279,47.516621,-0.454495]]
 
         /* location =[ 48.84017284026897,
                     2.3061887733275785,
                     48.878115442982086,
                     2.36742047202511]*/
+
+        // Disable this if you want to compute a grid of domains
+        // location = computeDomains(location1, 500)
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
@@ -817,6 +806,32 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
          OSM.workflow(osm_parmeters)
+    }
+
+    /**
+     * Method to compute a grid of domains
+     * @param osm_zone
+     * @param distance
+     * @return
+     */
+    List computeDomains(def osm_zone, float distance){
+        H2GIS db = H2GIS.open("/tmp/mydb")
+       Geometry geom = OSMTools.Utilities.getArea(osm_zone)
+
+       def lat_lon_bbox_extended = geom.getFactory().toGeometry(GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance))
+
+       db.execute("""
+           DROP TABLE IF EXISTS domains;
+           CREATE TABLE domains as select * from st_makegrid(ST_GEOMFROMTEXT('$lat_lon_bbox_extended', 4326), 500,500)
+       """)
+       db.save("domains", "/tmp/domains.geojson", true)
+
+       def location =[]
+       db.eachRow("SELECT THE_GEOM from DOMAINS"){
+           def env = it.the_geom.getEnvelopeInternal()
+           location<<[ env.getMinY() as float,env.getMinX() as float,env.getMaxY() as float,env.getMaxX() as float]
+       }
+        return location
     }
 
     @Disabled

@@ -987,7 +987,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             def zone = dataFormated.zone
             def impervious = dataFormated.impervious
             def urban_areas = dataFormated.urban_areas
-
+            def zone_extended = dataFormated.zone_extended
 
             info "BDTOPO GIS layers formated"
 
@@ -1008,6 +1008,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 //Build the indicators
                 rsu_indicators_params.put("utrfModelName", "UTRF_BDTOPO_V2_RF_2_2.model")
                 Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(h2gis_datasource, zone,
+                        zone_extended,
                         building, road,
                         rail, vegetation,
                         water, impervious, "", "", urban_areas, "",

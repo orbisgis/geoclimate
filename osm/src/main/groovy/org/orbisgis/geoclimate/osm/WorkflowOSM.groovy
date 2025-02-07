@@ -536,7 +536,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     rsu_indicators_params.put("utrfModelName", "UTRF_OSM_RF_2_2.model")
                     rsu_indicators_params.put("buildingHeightModelName", estimateHeight)
                     Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(
-                            h2gis_datasource, utm_zone_table,utm_extended_bbox_table,
+                            h2gis_datasource, utm_zone_table, utm_extended_bbox_table,
                             buildingTableName, roadTableName,
                             railTableName, vegetationTableName,
                             hydrographicTableName, imperviousTableName,
@@ -547,7 +547,6 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             processing_parameters.prefixName)
                     results.putAll(geoIndicators)
                 }
-
                 //Extract and compute population indicators for the specified year
                 //This data can be used by the grid_indicators process
                 if (worldpop_indicators) {

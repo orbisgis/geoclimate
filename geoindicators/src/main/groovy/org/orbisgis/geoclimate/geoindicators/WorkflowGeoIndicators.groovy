@@ -943,7 +943,8 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * layers such as the hydrology, the vegetation, the roads and the rail network and the boundary of the study zone.
  * The blocks are created from the buildings that are in contact.
  *
- * @param zone The area of zone to be processed *
+ * @param zone The area of zone to be processed
+ * @param zone_extended The extended zone area
  * @param building The building table to be processed
  * @param road The road table to be processed
  * @param rail The rail table to be processed
@@ -964,7 +965,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * @return block Table name where are stored the blocks and the RSU ID
  * @return rsu Table name where are stored the RSU
  */
-Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone,  String zone_extended, String building,
+Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_extended, String building,
                           String road, String rail, String vegetation,
                           String water, String sea_land_mask, String urban_areas,
                           String rsu, double surface_vegetation,
@@ -976,10 +977,26 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone,  String zone_e
     def tablesToDrop = []
     if (!rsu) {
         // Create the RSU
-        rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone,zone_extended, road, rail,
+        rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone_extended, road, rail,
                 vegetation, water,
                 sea_land_mask, urban_areas, surface_vegetation,
                 surface_hydro, surface_urban_areas, prefixName)
+        //Clip the RSU if the zone is different than the zone_extended
+        if (zone_extended && zone != zone_extended) {
+            String rsu_tmp = postfix("rsu")
+            datasource.createSpatialIndex(rsu)
+            datasource.createSpatialIndex(zone)
+            datasource.execute("""
+            DROP TABLE IF EXISTS $rsu_tmp;
+            CREATE TABLE $rsu_tmp as
+            SELECT CAST((row_number() over()) as Integer) as id_rsu, the_geom FROM ST_EXPLODE('(
+            SELECT ST_CollectionExtract(ST_INTERSECTION(a.the_geom, b.the_geom),3) as the_geom 
+            from $rsu as a, $zone as b 
+            where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom))');
+            DROP TABLE IF EXISTS $rsu;
+            """)
+            rsu = rsu_tmp
+        }
     }
 
 
@@ -1034,7 +1051,9 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone,  String zone_e
  */
 Map getParameters() {
     return [
-            "surface_vegetation"               : 10000d, "surface_hydro": 2500d, "surface_urban_areas": 10000d,
+            "surface_vegetation"               : 10000d,
+            "surface_hydro"                    : 2500d,
+            "surface_urban_areas"              : 10000d,
             "snappingTolerance"                : 0.01d, "indicatorUse": ["LCZ", "UTRF", "TEB"],
             "mapOfWeights"                     : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                                   "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1217,7 +1236,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
         def blockIndicatorsForHeightEst
         def rsuIndicatorsForHeightEst
         // Estimate building height
-        Map estimHeight = estimateBuildingHeight(datasource, zone, zone_extended, building,
+        Map estimHeight = estimateBuildingHeight(datasource, zone,zone_extended, building,
                 road, rail, vegetation,
                 water, impervious,
                 buildingEstimateTableName,
@@ -1243,16 +1262,16 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
             //Clean the System properties that stores intermediate table names
             datasource.dropTable(getCachedTableNames())
             clearTablesCache()
-            return ["building_indicators": buildingIndicatorsForHeightEst,
-                    "block_indicators"   : blockIndicatorsForHeightEst,
-                    "rsu_indicators"     : rsuIndicatorsForHeightEst,
-                    "rsu_lcz"            : null,
-                    "zone"               : zone,
-                    "rsu_utrf_area"      : null,
-                    "rsu_utrf_floor_area": null,
-                    "building_utrf"      : null,
-                    "building"           : buildingTableName,
-                    "zone_extended"      : zone_extended,
+            return ["building_indicators"  : buildingIndicatorsForHeightEst,
+                    "block_indicators"     : blockIndicatorsForHeightEst,
+                    "rsu_indicators"       : rsuIndicatorsForHeightEst,
+                    "rsu_lcz"              : null,
+                    "rsu_utrf_area"        : null,
+                    "rsu_utrf_floor_area"  : null,
+                    "building_utrf"        : null,
+                    "building"             : buildingTableName,
+                    "zone_extended"        : zone_extended,
+                    "zone"                  : zone,
                     "nb_building_estimated": nb_building_estimated]
         }
         def buildingForGeoCalc
@@ -1260,7 +1279,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
         def rsuForGeoCalc
         // If the RSU is provided by the user, new relations between units should be performed
         if (rsuTable) {
-            Map spatialUnitsForCalc = createUnitsOfAnalysis(datasource, zone,zone_extended,
+            Map spatialUnitsForCalc = createUnitsOfAnalysis(datasource, zone, zone_extended,
                     building, road, rail,
                     vegetation,
                     water, sea_land_mask, "", rsuTable,
@@ -1285,7 +1304,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
         }
 
         //Compute Geoindicators (at all scales + typologies)
-        Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
+        Map geoIndicators = computeGeoclimateIndicators(datasource, zone_extended,
                 buildingForGeoCalc, blocksForGeoCalc,
                 rsuForGeoCalc, road, vegetation,
                 water, impervious, rail, inputParameters, prefixName)
@@ -1306,7 +1325,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
         datasource.dropTable(getCachedTableNames())
         clearTablesCache()
         //Create spatial units and relations : building, block, rsu
-        Map spatialUnits = createUnitsOfAnalysis(datasource, zone,zone_extended,
+        Map spatialUnits = createUnitsOfAnalysis(datasource, zone, zone_extended,
                 building, road,
                 rail, vegetation,
                 water, sea_land_mask, "", rsuTable,
@@ -1317,7 +1336,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
         def relationBlocks = spatialUnits.block
         rsuTable = spatialUnits.rsu
 
-        Map geoIndicators = computeGeoclimateIndicators(datasource, zone,
+        Map geoIndicators = computeGeoclimateIndicators(datasource, zone_extended,
                 relationBuildings, relationBlocks,
                 rsuTable, road, vegetation, water, impervious, rail, inputParameters, prefixName)
         if (!geoIndicators) {
@@ -1339,7 +1358,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
  *          1 integer being the number of buildings having their height estimated
  *
  */
-Map estimateBuildingHeight(JdbcDataSource datasource, String zone,String zone_extended,  String building,
+Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_extended, String building,
                            String road, String rail, String vegetation,
                            String water, String impervious,
                            String building_estimate, String sea_land_mask, String urban_areas, String rsu,
@@ -1919,14 +1938,14 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
                 // Modify columns name to postfix with "_FRACTION"
                 List sea_land_cols = datasource.getColumnNames(upperScaleAreaStatistics)
-                def alterSeaLand =""
-                if(sea_land_cols.contains("TYPE_LAND")){
-                    alterSeaLand+="ALTER TABLE ${upperScaleAreaStatistics} RENAME COLUMN TYPE_LAND TO LAND_FRACTION;"
+                def alterSeaLand = ""
+                if (sea_land_cols.contains("TYPE_LAND")) {
+                    alterSeaLand += "ALTER TABLE ${upperScaleAreaStatistics} RENAME COLUMN TYPE_LAND TO LAND_FRACTION;"
                 }
-                if(sea_land_cols.contains("TYPE_SEA")){
-                    alterSeaLand+="ALTER TABLE ${upperScaleAreaStatistics} RENAME COLUMN TYPE_SEA TO SEA_FRACTION;"
+                if (sea_land_cols.contains("TYPE_SEA")) {
+                    alterSeaLand += "ALTER TABLE ${upperScaleAreaStatistics} RENAME COLUMN TYPE_SEA TO SEA_FRACTION;"
                 }
-                datasource.execute( """ 
+                datasource.execute(""" 
                             $alterSeaLand
                             ALTER TABLE ${upperScaleAreaStatistics} DROP COLUMN THE_GEOM;""")
                 indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)

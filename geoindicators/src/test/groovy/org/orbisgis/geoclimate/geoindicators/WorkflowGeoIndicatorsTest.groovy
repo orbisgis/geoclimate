@@ -190,6 +190,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["LCZ", "UTRF", "TEB"]
         def prefixName = ""
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "", "", "", "", "",
@@ -251,6 +252,7 @@ class WorkflowGeoIndicatorsTest {
         def prefixName = ""
         def indicatorUse = ["UTRF"]
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
@@ -326,6 +328,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["UTRF", "TEB"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "", "",
@@ -367,6 +370,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["TEB"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
@@ -408,6 +412,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["LCZ", "TEB"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
@@ -449,7 +454,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["UTRF", "LCZ"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators
-                .computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                .computeAllGeoIndicators(datasource, inputTableNames.zoneTable,inputTableNames.zoneTable,
                         inputTableNames.buildingTable, inputTableNames.roadTable,
                         inputTableNames.railTable, inputTableNames.vegetationTable,
                         inputTableNames.hydrographicTable, "", "", "",
@@ -492,6 +497,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["LCZ"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",

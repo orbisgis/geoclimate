@@ -203,7 +203,8 @@ def loadV2(
             """.toString())
 
     //2- Preparation of the study area (zone_xx)
-    def zoneTable = postfix("ZONE")
+    def zoneTable = postfix("zone")
+    def zone_extended = postfix("zone_extended")
     datasource.execute("""
             DROP TABLE IF EXISTS $zoneTable;
             CREATE TABLE $zoneTable AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $commune;
@@ -325,7 +326,9 @@ def loadV2(
     return [building   : "INPUT_BUILDING", road: "INPUT_ROAD",
             rail       : "INPUT_RAIL", water: "INPUT_HYDRO",
             vegetation : "INPUT_VEGET", impervious: input_impervious,
-            urban_areas: input_urban_areas, zone: zoneTable
+            urban_areas: input_urban_areas,
+            zone: zoneTable,
+            zone_extended:zone_extended
     ]
 }
 
@@ -525,16 +528,16 @@ Map loadV3(JdbcDataSource datasource,
             """.toString())
 
     //2- Preparation of the study area (zone_xx)
+    def zoneTable = postfix("zone")
+    def zone_extended = postfix("zone_extended")
 
-    def zoneTable = postfix("ZONE")
     datasource.execute("""
             DROP TABLE IF EXISTS $zoneTable;
             CREATE TABLE $zoneTable AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $commune;
-            CREATE SPATIAL INDEX IF NOT EXISTS idx_geom_ZONE ON $zoneTable (the_geom);
             -- Create a bbox around the input commune
-            DROP TABLE IF EXISTS ZONE_EXTENDED;
-            CREATE TABLE ZONE_EXTENDED AS SELECT ST_EXPAND(the_geom, $distance) as the_geom FROM $zoneTable;
-            CREATE SPATIAL INDEX ON ZONE_EXTENDED (the_geom);
+            DROP TABLE IF EXISTS $zone_extended;
+            CREATE TABLE $zone_extended AS SELECT ST_EXPAND(the_geom, $distance) as the_geom FROM $zoneTable;
+            CREATE SPATIAL INDEX ON $zone_extended (the_geom);
                 """.toString())
 
     // 3. Prepare the Building table that are in the study area
@@ -552,7 +555,7 @@ Map loadV3(JdbcDataSource datasource,
             else a.NATURE end AS type, 
             CASE WHEN a.USAGE1 = 'Indifférencié' and a.NATURE='Indifférenciée' then 'Bâtiment'
             WHEN a.USAGE1 = 'Indifférencié' and  a.NATURE!='Indifférenciée' then a.NATURE
-            else a.USAGE1 end as main_use FROM $batiment a, ZONE_EXTENDED b 
+            else a.USAGE1 end as main_use FROM $batiment a, $zone_extended b 
             WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
             """.toString())
 
@@ -575,7 +578,7 @@ Map loadV3(JdbcDataSource datasource,
             CASE WHEN a.IMPORTANCE IN ('1', '2', '3', '4', '5', '6') THEN CAST (a.IMPORTANCE AS INTEGER) ELSE NULL END ,
             a.CL_ADMIN, a.NB_VOIES
             FROM $troncon_de_route a, 
-            ZONE_EXTENDED b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
+            $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
             and a.POS_SOL not in ('-4' , '-3' ,'-2' ,'-1');
             """.toString())
 
@@ -586,18 +589,18 @@ Map loadV3(JdbcDataSource datasource,
             AS SELECT ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.NATURE, 
             a.POS_SOL, 
             CASE WHEN a.POS_SOL in ('1', '2', '3', '4') THEN 'Pont' else null end, 
-        CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_de_voie_ferree a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
+        CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_de_voie_ferree a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """.toString())
 
     //6. Prepare the Hydrography table (from the layer "surface_hydrographique") that are in the study area (ZONE_EXTENDED)
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_HYDRO;
             CREATE TABLE INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE varchar)
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE FROM $surface_hydrographique a, ZONE_EXTENDED 
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE FROM $surface_hydrographique a, $zone_extended 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0
             and a.NATURE not in ('Conduit buse', 'Conduit forcé', 'Marais', 'Glacier névé')
             union all
-            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE  FROM $terrain_de_sport a, ZONE_EXTENDED 
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE  FROM $terrain_de_sport a, $zone_extended 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
             and NATURE = 'Bassin de natation';
             """.toString())
@@ -606,18 +609,18 @@ Map loadV3(JdbcDataSource datasource,
     datasource.execute("""
             DROP TABLE IF EXISTS INPUT_VEGET;
             CREATE TABLE INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM $zone_de_vegetation a, ZONE_EXTENDED b 
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM $zone_de_vegetation a, $zone_extended b 
             WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0
-            FROM $piste_d_aerodrome a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            FROM $piste_d_aerodrome a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NATURE = 'Piste en herbe'
              UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NAT_DETAIL, 0
-            FROM $terrain_de_sport a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            FROM $terrain_de_sport a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NAT_DETAIL in ('Terrain de football', 'Terrain de rugby')
             UNION ALL
-            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE , 0 FROM $surface_hydrographique a, ZONE_EXTENDED 
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE , 0 FROM $surface_hydrographique a, $zone_extended 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0
             and a.NATURE  in ('Marais')            ;
             """.toString())
@@ -647,13 +650,13 @@ Map loadV3(JdbcDataSource datasource,
             WHEN a.CATEGORIE ='Sport' THEN 'sport'
             WHEN a.CATEGORIE = 'Religieux' THEN 'religious'
             ELSE 'unknown' END AS TYPE
-            FROM $zone_d_activite_ou_d_interet a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            FROM $zone_d_activite_ou_d_interet a, $zone_extended b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.FICTIF='Non';
             DROP TABLE IF EXISTS $input_urban_areas;
             CREATE TABLE $input_urban_areas (THE_GEOM geometry, ID_SOURCE varchar(24),TYPE VARCHAR, id_urban INTEGER)
             AS SELECT THE_GEOM, ID, NATURE, EXPLOD_ID AS id_urban 
             FROM ST_EXPLODE('(select * from TMP_SURFACE_ACTIVITE where NATURE != ''unknown'')') ;
-            """.toString())
+            """)
 
 
     //9. Prepare the Impervious areas table (from the layers "terrain_de_sport", "CONSTRUCTION_SURFACIQUE",
@@ -665,16 +668,16 @@ Map loadV3(JdbcDataSource datasource,
             CREATE TABLE $input_impervious (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE VARCHAR, id_impervious INTEGER) AS        
             SELECT the_geom, ID,TYPE,CAST((row_number() over()) as Integer) from (      
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 'sport' as type
-            FROM $terrain_de_sport a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            FROM $terrain_de_sport a, $zone_extended b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NAT_DETAIL not in ('Terrain de football', 'Terrain de rugby')
             UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 
             'building' as type
-            FROM $construction_surfacique a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            FROM $construction_surfacique a, $zone_extended b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom) AND a.NATURE in ('Barrage','Ecluse','Dalle')
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 'transport' as type 
-            FROM $equipement_de_transport a, $zoneTable b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
+            FROM $equipement_de_transport a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
             SELECT  the_geom, ID,NATURE
             FROM TMP_SURFACE_ACTIVITE where NATURE != 'unknown'
@@ -683,7 +686,7 @@ Map loadV3(JdbcDataSource datasource,
             FROM $cimetiere
             UNION all
             SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 'transport' as type
-            FROM $piste_d_aerodrome a, $zoneTable b WHERE a.the_geom && b.the_geom AND 
+            FROM $piste_d_aerodrome a, $zone_extended b WHERE a.the_geom && b.the_geom AND 
             ST_INTERSECTS(a.the_geom, b.the_geom)
             and a.NATURE = 'Piste en dur') as foo;
             """.toString())
@@ -696,21 +699,21 @@ Map loadV3(JdbcDataSource datasource,
         datasource.execute("""
             DROP TABLE IF EXISTS $coastline;
             CREATE TABLE $coastline
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.* EXCEPT(the_geom)  FROM $limite_terre_mer a, $zoneTable
+            AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.* EXCEPT(the_geom)  FROM $limite_terre_mer a, $zone_extended
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.NIVEAU = 'Plus hautes eaux';
-            """.toString())
+            """)
     }
-
-
     //11. Clean tables
     datasource.execute("""
-            DROP TABLE IF EXISTS  ZONE_EXTENDED,TMP_SURFACE_ACTIVITE; """.toString())
+            DROP TABLE IF EXISTS TMP_SURFACE_ACTIVITE; """)
     debug('The BDTopo 3.0 data has been prepared')
     return [building   : "INPUT_BUILDING",
             road       : "INPUT_ROAD",
             rail       : "INPUT_RAIL", water: "INPUT_HYDRO",
             vegetation : "INPUT_VEGET", impervious: input_impervious,
             urban_areas: input_urban_areas,
-            coastline  : coastline, zone: zoneTable
+            coastline  : coastline,
+            zone: zoneTable,
+            zone_extended: zone_extended
     ]
 }
