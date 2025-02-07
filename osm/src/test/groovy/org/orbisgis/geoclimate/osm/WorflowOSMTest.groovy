@@ -21,11 +21,16 @@ package org.orbisgis.geoclimate.osm
 
 import groovy.json.JsonOutput
 import org.apache.commons.io.FileUtils
+import org.h2.value.Value
+import org.h2.value.ValueGeometry
+import org.h2gis.functions.spatial.create.ST_MakeGrid
+import org.h2gis.utilities.GeographyUtilities
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
+import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.geoclimate.Geoindicators
@@ -719,26 +724,36 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Nantes"
-        def nominatim = OSMTools.Utilities.getNominatimData(location)
-        def grid_size = 100
-        location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
+        def location = ["Redon"]
+        //def nominatim = OSMTools.Utilities.getNominatimData(location)
+        def grid_size = 50
+        //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
         //location=[47.215334,-1.558058,47.216646,-1.556185]
-        location = nominatim.bbox
-        //location=[51.2, 1.0, 51.4, 1.2]
+        //location = nominatim.bbox
+        def location1= [47.642695,-2.777953,47.648651,-2.769413]
+        def location2= [47.642723,-2.769456,47.648622,-2.761259]
+
+        //Farm land pb
+        location1  = [50.957075,1.946297,50.988314,2.027321]
+
+        //location = [[47.504374,-0.479279,47.516621,-0.454495]]
+
         /* location =[ 48.84017284026897,
                     2.3061887733275785,
                     48.878115442982086,
                     2.36742047202511]*/
+
+        // Disable this if you want to compute a grid of domains
+        // location = computeDomains(location1, 500)
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
                         "folder": dirFile.absolutePath,
-                        "name"  : "geoclimate_test_integration;AUTO_SERVER=TRUE;",
+                        "name"  : "geoclimate_test_integration;",
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [location],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
+                        "locations": location,//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                         "area"     : 2800,
                         //"date":"2017-12-31T19:20:00Z",
                         /*"timeout":182,
@@ -757,11 +772,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "zone"                   : "zone"]]]*/
                 ,
                 "parameters"  :
-                        ["distance"             : 0,
+                        ["distance"             : 200,
                          "rsu_indicators"       : [
-                                 "indicatorUse": ["TARGET"] //, "UTRF"]
+                                 "indicatorUse": ["LCZ"] //, "UTRF"]
 
-                         ], "grid_indicators"   : [
+                         ] , "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
                                 "indicators": [
@@ -791,6 +806,32 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
          OSM.workflow(osm_parmeters)
+    }
+
+    /**
+     * Method to compute a grid of domains
+     * @param osm_zone
+     * @param distance
+     * @return
+     */
+    List computeDomains(def osm_zone, float distance){
+        H2GIS db = H2GIS.open("/tmp/mydb")
+       Geometry geom = OSMTools.Utilities.getArea(osm_zone)
+
+       def lat_lon_bbox_extended = geom.getFactory().toGeometry(GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance))
+
+       db.execute("""
+           DROP TABLE IF EXISTS domains;
+           CREATE TABLE domains as select * from st_makegrid(ST_GEOMFROMTEXT('$lat_lon_bbox_extended', 4326), 500,500)
+       """)
+       db.save("domains", "/tmp/domains.geojson", true)
+
+       def location =[]
+       db.eachRow("SELECT THE_GEOM from DOMAINS"){
+           def env = it.the_geom.getEnvelopeInternal()
+           location<<[ env.getMinY() as float,env.getMinX() as float,env.getMaxY() as float,env.getMaxX() as float]
+       }
+        return location
     }
 
     @Disabled
@@ -1054,6 +1095,64 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue(lcz_group.count == 1)
     }
 
+
+    /**
+     * Save the geoclimate result to a PostGIS database
+     */
+    @Test
+    void osmWorkflowToPostGISExcludeColumns() {
+        String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def osm_parmeters = [
+                "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": ["Pont-de-Veyle"]],
+                "output"      : [
+                        "database":
+                                ["user"    : "orbisgis",
+                                 "password": "orbisgis",
+                                 "url"     : "jdbc:postgresql://localhost:5432/orbisgis_db",
+                                 "tables"  : [
+                                         "rsu_indicators"         : "rsu_indicators",
+                                         "rsu_lcz"                : "rsu_lcz",
+                                         "zone"                   : "zone",
+                                         "building":"building"],
+                                 "excluded_columns"  : [
+                                         "rsu_indicators"         : ["the_geom"],
+                                         "rsu_lcz"         : ["the_geom"],
+                                         "building_indicators"         : ["the_geom"]]]],
+                "parameters"  :
+                        ["distance"       : 0,
+                         rsu_indicators   : ["indicatorUse" : ["LCZ"]]
+                        ]
+        ]
+        OSM.workflow(osm_parmeters)
+        def postgis_dbProperties = [databaseName: 'orbisgis_db',
+                                    user        : 'orbisgis',
+                                    password    : 'orbisgis',
+                                    url         : 'jdbc:postgresql://localhost:5432/'
+        ]
+        POSTGIS postgis = POSTGIS.open(postgis_dbProperties);
+        if (postgis) {
+            def rsu_indicatorsTable = postgis.getTable("rsu_indicators")
+            assertNotNull(rsu_indicatorsTable)
+            assertTrue(rsu_indicatorsTable.getRowCount() > 0)
+            def rsu_lczTable = postgis.getTable("rsu_lcz")
+            assertNotNull(rsu_lczTable)
+            assertTrue(rsu_lczTable.getRowCount() > 0)
+            def zonesTable = postgis.getTable("zone")
+            assertNotNull(zonesTable)
+            assertTrue(zonesTable.getRowCount() > 0)
+        }
+    }
+
     /**
      * Create a configuration file
      * @param osmParameters
@@ -1069,5 +1168,52 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         }
         configFile.write(json)
         return configFile.absolutePath
+    }
+
+    @Disabled
+    //Use it for debug
+    @Test
+    void testMergeRsu() {
+        H2GIS h2GIS  = H2GIS.open("/tmp/database")
+
+        List domains =["/tmp/geoclimate/osm_47.642695_-2.777953_47.648651_-2.769413/",
+                       "/tmp/geoclimate/osm_47.642723_-2.769456_47.648622_-2.761259/"]
+
+        h2GIS.load("/tmp/geoclimate/osm_47.642695_-2.777953_47.648651_-2.769413/zone.fgb", "zone_a", true)
+        h2GIS.load("/tmp/geoclimate/osm_47.642695_-2.777953_47.648651_-2.769413/rsu_lcz.fgb", "rsu_a_in", true)
+        h2GIS.load("/tmp/geoclimate/osm_47.642723_-2.769456_47.648622_-2.761259/zone.fgb", "zone_b", true)
+        h2GIS.load("/tmp/geoclimate/osm_47.642723_-2.769456_47.648622_-2.761259/rsu_lcz.fgb", "rsu_b_in", true)
+
+        h2GIS.createSpatialIndex("rsu_a_in")
+        h2GIS.createSpatialIndex("rsu_b_in")
+
+        h2GIS.execute("""
+                DROP TABLE IF EXISTS rsu_a;
+                create table rsu_a as 
+                SELECT a.* FROM rsu_a_in as a, zone_a as b 
+                where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);
+                DROP TABLE IF EXISTS rsu_b;
+                create table rsu_b as 
+                SELECT a.* FROM rsu_b_in as a, zone_b as b 
+                where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom);""")
+
+        h2GIS.createSpatialIndex("rsu_a")
+        h2GIS.createSpatialIndex("rsu_b")
+
+        h2GIS.execute("""
+                DROP TABLE IF EXISTS diff_rsu;
+                create table diff_rsu as 
+                SELECT a.id_rsu as a_id_rsu, b.id_rsu as b_id_rsu, b.the_geom, b.lcz_primary FROM rsu_a as a, rsu_b as b 
+                where a.the_geom && b.the_geom and st_intersects(st_pointonsurface(a.the_geom), b.the_geom);
+                DELETE FROM RSU_A WHERE ID_RSU IN (SELECT a_id_rsu from diff_rsu );
+                DELETE FROM RSU_B WHERE ID_RSU IN (SELECT b_id_rsu from diff_rsu );
+                DROP TABLE IF EXISTS final_rsu;
+                CREATE TABLE final_rsu as (select id_rsu, the_geom, lcz_primary from rsu_a) 
+                union all (select id_rsu, the_geom, lcz_primary from rsu_b)
+                union all (select b_id_rsu, the_geom, lcz_primary from diff_rsu)
+                """)
+
+        h2GIS.save("diff_rsu","/tmp/diff_rsu.fgb", true)
+        h2GIS.save("final_rsu","/tmp/final_rsu.fgb", true)
     }
 }

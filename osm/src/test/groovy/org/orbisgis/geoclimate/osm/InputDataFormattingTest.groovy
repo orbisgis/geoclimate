@@ -288,14 +288,14 @@ class InputDataFormattingTest {
         }
         def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
 
-        def zoneToExtract = "Nantes"
+        def zoneToExtract = "Fontainebleau"
 
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
-        //zoneToExtract = [62.2, 28.2, 62.4, 28.4]
+        zoneToExtract =  [55.995,-3.56, 56, -3.4]
 
-        zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
+        //zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
 
         String formatedPlaceName = zoneToExtract.join("_").trim().split("\\s*(,|\\s)\\s*").join("_");

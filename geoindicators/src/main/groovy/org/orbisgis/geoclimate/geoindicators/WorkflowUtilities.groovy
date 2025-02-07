@@ -22,6 +22,7 @@ package org.orbisgis.geoclimate.geoindicators
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.h2gis.functions.io.utility.PRJUtil
+import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.data.jdbc.JdbcDataSource
@@ -35,7 +36,7 @@ import org.orbisgis.geoclimate.Geoindicators
  * -  check if specified output table names to save are allowed
  *
  * @param outputDBProperties properties to define the db connection
- * @param outputTables list of tables to save
+ * @param outputTables contains a list of tables to save plus a list of columns to exclude
  * @parm allowedOutputTables list of supported tables
  *
  * @return a map with the allowed tables (tables) and a connection to the database (datasource)
@@ -248,6 +249,47 @@ def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def output
     }
 }
 
+/**
+ * Method to save a table into a file
+ * @param outputTable name of the table to export
+ * @param filePath path to save the table
+ * @param h2gis_datasource connection to the database
+ * @param outputSRID srid code to reproject the outputTable.
+ * @param reproject true if the file must be reprojected
+ * @param deleteOutputData true to delete the file if exists
+ */
+def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject, def deleteOutputData, Geometry zone) {
+    if (outputTable && h2gis_datasource.hasTable(outputTable)) {
+        if (!reproject) {
+            h2gis_datasource.createSpatialIndex(outputTable)
+            List columns = h2gis_datasource.getColumnNames(outputTable)
+            columns.remove("THE_GEOM")
+            def tmp_export = postfix("export_table")
+            h2gis_datasource.execute("""
+            DROP TABLE IF EXISTS $tmp_export;
+            CREATE TABLE $tmp_export as select ${columns.join(",")}, ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}) )as the_geom 
+            FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}))
+            """)
+            h2gis_datasource.save(tmp_export, filePath, deleteOutputData)
+            h2gis_datasource.dropTable(tmp_export)
+        } else {
+            if (!h2gis_datasource.getTable(outputTable).isEmpty()) {
+                List columns = h2gis_datasource.getColumnNames(outputTable)
+                columns.remove("THE_GEOM")
+                def tmp_export = postfix("export_table")
+                h2gis_datasource.execute("""
+            DROP TABLE IF EXISTS $tmp_export;
+            CREATE TABLE $tmp_export as select ${columns.join(",")}, ST_TRANSFORM(ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zone}',${zone.getSRID()})),$outputSRID) as the_geom 
+            FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}))
+            """)
+                h2gis_datasource.save(tmp_export, filePath, deleteOutputData)
+                h2gis_datasource.dropTable(tmp_export)
+            }
+        }
+        info "${outputTable} has been saved in ${filePath}."
+    }
+}
+
 
 /**
  * Method to save a table into a CSV file
@@ -260,5 +302,27 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
     if (outputTable && h2gis_datasource.hasTable(outputTable)) {
         h2gis_datasource.save("(SELECT ID_BUILD, ID_SOURCE FROM $outputTable)", filePath, deleteOutputData)
         info "${outputTable} has been saved in ${filePath}."
+    }
+}
+
+
+/**
+ * Prepare the H2GIS table to save according : output srid, filter and columns to keep
+ * @param h2gis_datasource database
+ * @param h2gis_table_to_save table name to save
+ * @param targetTableSrid outputsrid
+ * @param columnsToKeep columns to keep
+ * @return
+ */
+def getTableToSave(H2GIS h2gis_datasource,String h2gis_table_to_save, Integer targetTableSrid,  Collection columnsToKeep, String filter){
+    if(columnsToKeep.contains("THE_GEOM)")) {
+        List columns = columnsToKeep.findAll {it -> it!="THE_GEOM"}
+        if(targetTableSrid) {
+            columns.add("ST_TRANSFORM(THE_GEOM, $targetTableSrid) as the_geom")
+        }
+        return h2gis_datasource.getSpatialTable("(SELECT ${columns.join(",")} from ${h2gis_table_to_save} ${filter?filter:""})".toString())
+    }
+    else{
+        return h2gis_datasource.getTable("(SELECT ${columnsToKeep.join(",")} from ${h2gis_table_to_save} ${filter?filter:""})".toString())
     }
 }
