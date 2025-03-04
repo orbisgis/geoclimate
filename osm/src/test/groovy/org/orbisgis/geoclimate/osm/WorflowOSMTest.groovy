@@ -719,10 +719,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Nantes"
+        def location = "Lorient"
         def nominatim = OSMTools.Utilities.getNominatimData(location)
         def grid_size = 100
-        location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
+        //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
         //location=[47.215334,-1.558058,47.216646,-1.556185]
         location = nominatim.bbox
         //location=[51.2, 1.0, 51.4, 1.2]
@@ -757,9 +757,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "zone"                   : "zone"]]]*/
                 ,
                 "parameters"  :
-                        ["distance"             : 0,
+                        ["distance"             : 500,
                          "rsu_indicators"       : [
-                                 "indicatorUse": ["TARGET"] //, "UTRF"]
+                                 "indicatorUse": ["LCZ"] //, "UTRF"]
 
                          ], "grid_indicators"   : [
                                 "x_size"    : grid_size,
@@ -779,7 +779,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "ASPECT_RATIO",
                                         //"SVF",
                                         "STREET_WIDTH" ,
-                                        "IMPERVIOUS_FRACTION"]
+                                        "IMPERVIOUS_FRACTION",
+                                        "COUNT_WARM_1",
+                                        "COUNT_WARM_4"]
                                 //"lcz_lod":1
                         ], "worldpop_indicators": true
                          /*
