@@ -647,7 +647,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" : "Compute the targuet land input",
+                "description" : "Compute the target land input",
                 "geoclimatedb": [
                         "folder": dirFile.absolutePath,
                         "name"  : "geoclimate_chain_db",
@@ -659,8 +659,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory],
                 "parameters"  :
                         [
-                                rsu_indicators: [
-                                        "indicatorUse" : ["TARGET", "LCZ"]
+                                rsu_indicators: ["indicatorUse" : ["TARGET", "LCZ"]
                                 ],"grid_indicators"   : [
                                 "x_size"    : 200,
                                 "y_size"    : 200,
@@ -725,11 +724,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = ["Redon"]
-        //def nominatim = OSMTools.Utilities.getNominatimData(location)
-        def grid_size = 50
+        //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
+        def grid_size = 200
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
         //location=[47.215334,-1.558058,47.216646,-1.556185]
-        //location = nominatim.bbox
+        //location = [nominatim.bbox]
         def location1= [47.642695,-2.777953,47.648651,-2.769413]
         def location2= [47.642723,-2.769456,47.648622,-2.761259]
 
@@ -1125,9 +1124,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "zone"                   : "zone",
                                          "building":"building"],
                                  "excluded_columns"  : [
-                                         "rsu_indicators"         : ["the_geom"],
+                                         "rsu_indicators" : ["the_geom"],
                                          "rsu_lcz"         : ["the_geom"],
-                                         "building_indicators"         : ["the_geom"]]]],
+                                         "building_indicators"  : ["the_geom"]]]],
                 "parameters"  :
                         ["distance"       : 0,
                          rsu_indicators   : ["indicatorUse" : ["LCZ"]]

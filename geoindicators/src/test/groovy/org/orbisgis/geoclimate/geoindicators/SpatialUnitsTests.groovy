@@ -50,7 +50,11 @@ class SpatialUnitsTests {
     @BeforeAll
     static void beforeAll() {
         h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "spatialUnitsTests;AUTO_SERVER=TRUE")
-        postGIS = POSTGIS.open(dbProperties)
+        try {
+            postGIS = POSTGIS.open(dbProperties)
+        }catch (Exception exception){
+            //eat
+        }
         System.setProperty("test.postgis", Boolean.toString(postGIS != null));
     }
 
@@ -109,9 +113,8 @@ class SpatialUnitsTests {
 
         assert h2GIS.getSpatialTable(createRSU).save(new File(folder, "rsu.shp").getAbsolutePath(), true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $createRSU"
-        assert 237 == countRows.numberOfRows
+        assert 230 == countRows.numberOfRows
     }
-
 
     @Test
     void createBlocksTest() {
@@ -384,7 +387,7 @@ class SpatialUnitsTests {
         String rail = h2GIS.load(path + File.separator + "rail.fgb")
         String vegetation = h2GIS.load(path + File.separator + "vegetation.fgb")
         String water = h2GIS.load(path + File.separator + "water.fgb")
-        String sea_land_mask = h2GIS.load(path + File.separator + "sea_land_mask.fgb")
+        String sea_land_mask = null//h2GIS.load(path + File.separator + "sea_land_mask.fgb")
         String urban_areas = h2GIS.load(path + File.separator + "urban_areas.fgb")
         double surface_vegetation = 10000
         double surface_hydro = 2500

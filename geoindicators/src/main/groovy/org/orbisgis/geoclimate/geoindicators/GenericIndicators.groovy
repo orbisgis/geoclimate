@@ -715,12 +715,15 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
             // Define the pieces of query according to each type of the input table
             def queryCalc = []
             def queryCaseWh = []
+            def coalesceAreaFractionColumns =[]
+            def coalesceFloorAreaFractionColumns =[]
             // For the area fractions
             if (areaTypeAndComposition) {
                 queryCaseWh += " ST_AREA($GEOMETRIC_FIELD_LOW) AS AREA "
                 areaTypeAndComposition.forEach { type, compo ->
                     queryCaseWh<< "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW) END AS AREA_${type}"
                     queryCalc << "CASE WHEN SUM(AREA)=0 THEN 0 ELSE SUM(AREA_${type})/SUM(AREA) END AS AREA_FRACTION_${type}"
+                    coalesceAreaFractionColumns << "AREA_FRACTION_${type}".toUpperCase()
                 }
             }
 
@@ -730,6 +733,7 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
                 floorAreaTypeAndComposition.forEach { type, compo ->
                     queryCaseWh << "CASE WHEN $typeFieldName='${compo.join("' OR $typeFieldName='")}' THEN ST_AREA($GEOMETRIC_FIELD_LOW)*$NB_LEV END AS FLOOR_AREA_${type}"
                     queryCalc << "CASE WHEN SUM(FLOOR_AREA) =0 THEN 0 ELSE SUM(FLOOR_AREA_${type})/SUM(FLOOR_AREA) END AS FLOOR_AREA_FRACTION_${type} "
+                    coalesceFloorAreaFractionColumns << "FLOOR_AREA_FRACTION_${type}".toUpperCase()
                 }
             }
 
@@ -750,22 +754,39 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
                                             FROM $caseWhenTab GROUP BY $idField""")
 
             // Set 0 as default value (for example if we characterize the building type in a RSU having no building...)
-            def allFinalCol = datasource.getColumnNames(outputTableWithNull)
-            allFinalCol = allFinalCol.minus([idField.toUpperCase()])
             datasource.createIndex(inputUpperTableName, idField)
             datasource.createIndex(outputTableWithNull, idField)
-            def pieceOfQuery = []
-            allFinalCol.each { col ->
-                pieceOfQuery << "COALESCE(a.$col, 0) AS $col "
+            def finalQuery = ["b.$idField"]
+            if(coalesceAreaFractionColumns) {
+                String sumColumns = coalesceAreaFractionColumns.collect { "COALESCE(a.$it, 0)" }.join("+")
+                if (coalesceAreaFractionColumns.contains("AREA_FRACTION_UNDEFINED")) {
+                    finalQuery << """CASE WHEN (${sumColumns})< 1 then 
+                    (1-(${sumColumns}))+ COALESCE(a.AREA_FRACTION_UNDEFINED,0) else  COALESCE(a.AREA_FRACTION_UNDEFINED,0) end as AREA_FRACTION_UNDEFINED"""
+                    coalesceAreaFractionColumns.remove("AREA_FRACTION_UNDEFINED")
+                }
+                if(coalesceAreaFractionColumns.contains("AREA_FRACTION_UNDEFINED_LCZ")) {
+                    finalQuery << """CASE WHEN (${sumColumns})< 1 then 
+                    (1-(${sumColumns}))+COALESCE(a.AREA_FRACTION_UNDEFINED_LCZ,0)  else  COALESCE(a.AREA_FRACTION_UNDEFINED_LCZ,0) end as AREA_FRACTION_UNDEFINED_LCZ"""
+                    coalesceAreaFractionColumns.remove("AREA_FRACTION_UNDEFINED_LCZ")
+                }
+                finalQuery<<coalesceAreaFractionColumns.collect { "COALESCE(a.$it, 0) as $it" }.join(",")
             }
-            datasource """DROP TABLE IF EXISTS $outputTableName;
-                                CREATE TABLE $outputTableName 
-                                    AS SELECT       ${!pieceOfQuery.isEmpty()?pieceOfQuery.join(",")+",":""}
-                                                    b.$idField 
-                                        FROM $outputTableWithNull a RIGHT JOIN $inputUpperTableName b
-                                        ON a.$idField = b.$idField;
-                                        """.toString()
-            datasource.execute """DROP TABLE IF EXISTS $outputTableWithNull, $caseWhenTab""".toString()
+            if(coalesceFloorAreaFractionColumns) {
+                String sumColumns = coalesceFloorAreaFractionColumns.collect { "COALESCE(a.$it, 0)" }.join("+")
+                if (coalesceFloorAreaFractionColumns.contains("FLOOR_AREA_FRACTION_UNDEFINED")) {
+                    finalQuery << """CASE WHEN (${sumColumns})< 1 then 
+                        (1-(${sumColumns})) + COALESCE(a.FLOOR_AREA_FRACTION_UNDEFINED,0) else  
+                        COALESCE(a.FLOOR_AREA_FRACTION_UNDEFINED,0) end as FLOOR_AREA_FRACTION_UNDEFINED"""
+                    coalesceFloorAreaFractionColumns.remove("FLOOR_AREA_FRACTION_UNDEFINED")
+                }
+                finalQuery<<coalesceFloorAreaFractionColumns.collect { "COALESCE(a.$it, 0) as $it" }.join(",")
+            }
+
+            datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+            CREATE TABLE $outputTableName 
+            AS SELECT ${finalQuery.join(",")} FROM $outputTableWithNull a RIGHT JOIN $inputUpperTableName b
+                         ON a.$idField = b.$idField;""")
+            datasource.execute("""DROP TABLE IF EXISTS $outputTableWithNull, $caseWhenTab""")
             return outputTableName
         } else {
             throw new SQLException("'floorAreaTypeAndComposition' or 'areaTypeAndComposition' arguments should be a Map " +

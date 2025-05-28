@@ -415,7 +415,6 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     outputSRID = srid
                 }
                 //Prepare OSM extraction from the osm_envelope_extented
-                //TODO set key values ?
                 def osm_date = ""
                 if (overpass_date) {
                     osm_date = "[date:\"$overpass_date\"]"
@@ -1165,7 +1164,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
     if (output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString())
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '${id_zone.replace("'","''")}'".toString())
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 100
@@ -1266,7 +1265,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
                 }
                 if (tmpTable) {
                     output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
-                    output_datasource.execute("UPDATE $output_table SET id_zone= '$id_zone'".toString());
+                    output_datasource.execute("UPDATE $output_table SET id_zone= '${id_zone.replace("'","''")}'".toString())
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"
                 } else {
@@ -1298,7 +1297,7 @@ def indicatorTableBatchExportTable(JdbcDataSource output_datasource, def output_
         if (h2gis_table_to_save) {
             if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
                 if (output_datasource.hasTable(output_table)) {
-                    output_datasource.execute("DELETE FROM $output_table WHERE id_zone='$id_zone'".toString())
+                    output_datasource.execute("DELETE FROM $output_table WHERE id_zone='${id_zone.replace("'","''")}'".toString())
                     //If the table exists we populate it with the last result
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                     int BATCH_MAX_SIZE = 100
@@ -1403,7 +1402,7 @@ def indicatorTableBatchExportTable(JdbcDataSource output_datasource, def output_
                     }
                     if (tmpTable) {
                         output_datasource.execute("ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone VARCHAR".toString())
-                        output_datasource.execute("UPDATE $output_table SET id_zone= ?", id_zone);
+                        output_datasource.execute("UPDATE $output_table SET id_zone=  '${id_zone.replace("'","''")}'")
                         output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                         //Add GID column
                         output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
