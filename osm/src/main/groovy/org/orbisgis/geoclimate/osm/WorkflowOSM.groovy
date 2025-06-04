@@ -325,7 +325,7 @@ Map workflow(def input) throws Exception {
         if (outputSRID && outputSRID <= 0) {
             throw new Exception("The output srid must be greater or equal than 0")
         }
-        def domainTmp = outputParameters.get("domain")
+        def domainTmp = outputParameter.get("domain")
         if (domainTmp!=null && domainTmp instanceof String && domain.toLowerCase() in["zone", "zone_extended"]) {
             domain=domainTmp.toLowerCase()
         }
