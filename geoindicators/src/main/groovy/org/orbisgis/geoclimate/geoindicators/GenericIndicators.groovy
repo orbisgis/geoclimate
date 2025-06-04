@@ -837,8 +837,6 @@ String gatherScales(JdbcDataSource datasource, String buildingTable, String bloc
         debug """ Executing the gathering of scales (to building or to RSU scale)"""
 
         if ((targetedScale.toUpperCase() == "RSU") || (targetedScale.toUpperCase() == "BUILDING")) {
-
-
             // The name of the outputTableName is constructed
             def outputTableName = prefix prefixName, BASE_NAME
 

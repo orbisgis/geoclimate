@@ -55,7 +55,8 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * @param surface_hydro A double value to select the hydrographic geometry areas.
  * Expressed in geometry unit of the vegetationTable, default 2500
  * @param surface_urban_areas A double value to select the urban  areas.
- * Expressed in geometry unit of the urban_areas table, default 10000 *
+ * Expressed in geometry unit of the urban_areas table, default 10000
+ * @param holeInscribeCircleArea area of the maximum inscribed circle to remove RSU holes
  * @param prefixName A prefix used to name the output table
  *
  * @return A database table name and the name of the column ID
@@ -63,7 +64,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
 String createTSU(JdbcDataSource datasource, String zone,
                  double area = 1f, String road, String rail, String vegetation,
                  String water, String sea_land_mask, String urban_areas,
-                 double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) throws Exception {
+                 double surface_vegetation, double surface_hydro, double surface_urban_areas, double holeInscribeCircleArea, String prefixName) throws Exception {
 
     def tablesToDrop = []
     try {
@@ -79,7 +80,7 @@ String createTSU(JdbcDataSource datasource, String zone,
 
         tablesToDrop << tsuDataPrepared
         def outputTsuTableName = Geoindicators.SpatialUnits.createTSU(datasource, tsuDataPrepared,zone,
-                area, prefixName)
+                area, holeInscribeCircleArea, prefixName)
         datasource.dropTable(tsuDataPrepared)
 
         datasource.execute("""ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;""")
@@ -285,8 +286,6 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 FROM $vegetation A, $subGraphTableNodes B
                 WHERE a.ID_VEGET=b.NODE_ID AND a.HEIGHT_CLASS= 'high' GROUP BY B.CONNECTED_COMPONENT 
                 HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""")
-
-
 
                     debug "Creating the vegetation block table..."
 
@@ -603,7 +602,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
         debug "Creating grid with H2GIS"
         datasource """
                            CREATE TABLE $outputTableName AS SELECT the_geom, id as id_grid,ID_COL, ID_ROW FROM 
-                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,$rowCol);
+                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,false, $rowCol);
                            """.toString()
     } else if (datasource instanceof POSTGIS) {
         debug "Creating grid with POSTGIS"

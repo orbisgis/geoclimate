@@ -21,9 +21,6 @@ package org.orbisgis.geoclimate.osm
 
 import groovy.json.JsonOutput
 import org.apache.commons.io.FileUtils
-import org.h2.value.Value
-import org.h2.value.ValueGeometry
-import org.h2gis.functions.spatial.create.ST_MakeGrid
 import org.h2gis.utilities.GeographyUtilities
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
@@ -227,7 +224,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "database":
                                 ["user"    : "sa",
                                  "password": "",
-                                 "url"     : "jdbc:h2://" + dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
+                                 "url"     : "h2://" + dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
                                  "tables"  : [
                                          "rsu_indicators": "rsu_indicators",
                                          "rsu_lcz"       : "rsu_lcz"]]],
@@ -269,7 +266,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "database":
                                 ["user"    : "orbisgis",
                                  "password": "orbisgis",
-                                 "url"     : "jdbc:postgresql://localhost:5432/orbisgis_db",
+                                 "url"     : "postgis://localhost:5432/orbisgis_db",
                                  "tables"  : [
                                          "rsu_indicators"         : "rsu_indicators",
                                          "rsu_lcz"                : "rsu_lcz",
@@ -380,7 +377,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 countFiles++
             }
         }
-        assertEquals(9, countFiles)
+        assertEquals(10, countFiles)
     }
 
     @Disabled
@@ -930,11 +927,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 ],
                 "input"       : [
                         "locations": [[43.726898, 7.298452, 43.727677, 7.299632]]],
-                "output"      : [
-                        "folder": ["path"  : directory,
-                                   "tables": ["building", "zone"]]],
                 "parameters"  :
-                        ["distance"    : 0,
+                        ["distance"    : 100,
                          rsu_indicators: ["indicatorUse": ["LCZ"]]
                         ]
         ]
@@ -1117,7 +1111,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "database":
                                 ["user"    : "orbisgis",
                                  "password": "orbisgis",
-                                 "url"     : "jdbc:postgresql://localhost:5432/orbisgis_db",
+                                 "url"     : "postgis://localhost:5432/orbisgis_db",
                                  "tables"  : [
                                          "rsu_indicators"         : "rsu_indicators",
                                          "rsu_lcz"                : "rsu_lcz",
@@ -1214,5 +1208,105 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         h2GIS.save("diff_rsu","/tmp/diff_rsu.fgb", true)
         h2GIS.save("final_rsu","/tmp/final_rsu.fgb", true)
+    }
+
+    @Test
+    void testClip() {
+        String directory = folder.absolutePath + File.separator + "test_building_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def bbox = [43.726898, 7.298452, 43.727677, 7.299632]
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [bbox]],
+                "output"      : [
+                        "folder": directory,
+                        "clip":true,
+                        "srid"  : 4326],
+                "parameters"  :
+                        ["distance"    : 100,
+                         rsu_indicators: ["indicatorUse": ["LCZ"]],
+                         "grid_indicators": [
+                                 "zone":false, //Compute the grid on the extended zone
+                                "x_size"    : 100,
+                                "y_size"    : 100,
+                                "indicators": ["LCZ_PRIMARY"]
+                        ]
+                        ]
+        ]
+        OSM.WorkflowOSM.workflow(osm_parmeters)
+        def folder_out = directory + File.separator + "osm_" + bbox.join("_")
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+
+        def building = "building"
+        def zone = "zone"
+        h2gis.load(folder_out+File.separator+"building.fgb", building, true)
+        h2gis.load(folder_out+File.separator+"zone.fgb", zone, true)
+        assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
+        h2gis.execute("""DROP TABLE IF EXISTS building_out;
+        CREATE TABLE building_out as SELECT a.* FROM  $building a LEFT JOIN $zone b
+                ON a.the_geom && b.the_geom and ST_INTERSECTS(a.the_geom, b.the_geom)
+                WHERE b.the_geom IS NULL;""")
+        assertEquals(0, h2gis.getRowCount("building_out"))
+        def grid_indicators = "grid_indicators"
+        h2gis.load(folder_out+File.separator+"grid_indicators.fgb", grid_indicators, true)
+        h2gis.execute("""DROP TABLE IF EXISTS grid_out;
+        CREATE TABLE grid_out as SELECT a.* FROM  $grid_indicators a LEFT JOIN $zone b
+                ON a.the_geom && b.the_geom and ST_INTERSECTS(st_centroid(a.the_geom), b.the_geom)
+                WHERE b.the_geom IS NULL;""")
+        assertEquals(8, h2gis.getRowCount("grid_out"))
+
+        h2gis.dropTable("building_out", "grid_out")
+    }
+
+    @Test
+    void testClip2() {
+        String directory = folder.absolutePath + File.separator + "test_building_height"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def bbox = [43.726898, 7.298452, 43.727677, 7.299632]
+        def osm_parmeters = [
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [bbox]],
+                "output"      : [
+                        "folder": directory,
+                        "clip":   false,
+                        "srid"  : 4326],
+                "parameters"  :
+                        ["distance"    : 100,
+                         rsu_indicators: ["indicatorUse": ["LCZ"]],
+                         "grid_indicators": [
+                                 "x_size"    : 100,
+                                 "y_size"    : 100,
+                                 "indicators": ["LCZ_PRIMARY"]
+                         ]
+                        ]
+        ]
+        OSM.WorkflowOSM.workflow(osm_parmeters)
+        def folder_out = directory + File.separator + "osm_" + bbox.join("_")
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
+
+        def building = "building"
+        def zone = "zone"
+        h2gis.load(folder_out+File.separator+"building.fgb", building, true)
+        h2gis.load(folder_out+File.separator+"zone.fgb", zone, true)
+        assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
+        h2gis.execute("""DROP TABLE IF EXISTS building_out;
+        CREATE TABLE building_out as SELECT a.* FROM  $building a LEFT JOIN $zone b
+                ON a.the_geom && b.the_geom and ST_INTERSECTS(a.the_geom, b.the_geom)
+                WHERE b.the_geom IS NULL;""")
+        assertEquals(14, h2gis.getRowCount("building_out"))
     }
 }

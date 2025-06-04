@@ -38,9 +38,9 @@
         <maven-version>3.5.0</maven-version>
 
         <!-- Dependencies versions -->
-        <junit-version>5.9.1</junit-version>
+        <junit-version>5.9.2</junit-version>
         <jts-version>1.20.0</jts-version>
-        <h2gis-version>2.2.3</h2gis-version>
+        <h2gis-version>2.2.4-SNAPSHOT</h2gis-version>
         <h2-version>2.3.232</h2-version>
         <cts-version>1.7.1</cts-version>
         <orbisdata-version>2.1.2-SNAPSHOT</orbisdata-version>
@@ -56,26 +56,25 @@
         <!-- Plugins versions -->
         <exec-maven-version>3.0.0</exec-maven-version>
         <gmaven-version>3.0.2</gmaven-version>
-        <jacoco-maven-version>0.8.7</jacoco-maven-version>
-        <maven-archetype-plugin-version>3.2.0</maven-archetype-plugin-version>
-        <maven-assembly-version>3.3.0</maven-assembly-version>
+        <jacoco-maven-version>0.8.12</jacoco-maven-version>
+        <maven-archetype-plugin-version>3.2.1</maven-archetype-plugin-version>
+        <maven-assembly-version>3.6.0</maven-assembly-version>
         <maven-bundle-version>5.1.2</maven-bundle-version>
-        <maven-clean-version>3.1.0</maven-clean-version>
-        <maven-compiler-version>3.8.1</maven-compiler-version>
-        <maven-deploy-version>3.0.0-M1</maven-deploy-version>
-        <maven-enforcer-version>3.0.0</maven-enforcer-version>
-        <maven-gpg-plugin-version>3.0.1</maven-gpg-plugin-version>
-        <maven-install-version>3.0.0-M1</maven-install-version>
-        <maven-jar-version>3.2.0</maven-jar-version>
-        <maven-javadoc-version>3.3.1</maven-javadoc-version>
-        <maven-project-info-reports-version>3.1.2</maven-project-info-reports-version>
-        <maven-release-version>3.0.0-M4</maven-release-version>
-        <maven-resources-version>3.2.0</maven-resources-version>
-        <maven-site-version>3.9.1</maven-site-version>
-        <maven-source-version>3.3.0</maven-source-version>
-        <maven-surefire-version>3.0.0-M5</maven-surefire-version>
-        <maven-surefire-report-plugin-version>3.0.0-M5</maven-surefire-report-plugin-version>
-        <version-maven-version>2.8.1</version-maven-version>
+        <maven-clean-version>3.3.2</maven-clean-version>
+        <maven-compiler-version>3.11.0</maven-compiler-version>
+        <maven-deploy-version>3.1.1</maven-deploy-version>
+        <maven-enforcer-version>3.4.1</maven-enforcer-version>
+        <maven-gpg-plugin-version>3.1.0</maven-gpg-plugin-version>
+        <maven-install-version>3.1.1</maven-install-version>
+        <maven-jar-version>3.3.0</maven-jar-version>
+        <maven-javadoc-version>3.6.2</maven-javadoc-version>
+        <maven-project-info-reports-version>3.4.5</maven-project-info-reports-version>
+        <maven-release-version>3.0.1</maven-release-version>
+        <maven-resources-version>3.3.1</maven-resources-version>
+        <maven-site-version>4.0.0-M11</maven-site-version>
+        <maven-surefire-version>3.2.2</maven-surefire-version>
+        <maven-surefire-report-plugin-version>3.2.2</maven-surefire-report-plugin-version>
+        <version-maven-version>2.16.0</version-maven-version>
 
         <!-- Extensions version -->
         <archetype-packaging-version>3.1.2</archetype-packaging-version>

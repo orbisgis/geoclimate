@@ -960,6 +960,8 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
+ * @param holeInscribeCircleArea area of the maximum inscribed circle to remove RSU holes
+ * @param clip clip the rsu with the original zone area at the end
  *
  * @return building Table name where are stored the buildings and the RSU and block ID
  * @return block Table name where are stored the blocks and the RSU ID
@@ -970,8 +972,8 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
                           String water, String sea_land_mask, String urban_areas,
                           String rsu, double surface_vegetation,
                           double surface_hydro, double surface_urban_areas,
-                          double snappingTolerance,
-                          List indicatorUse = ["LCZ", "UTRF", "TEB"], String prefixName = "") throws Exception {
+                          double snappingTolerance,double holeInscribeCircleArea,boolean clip=true,
+                          List indicatorUse = ["LCZ", "UTRF", "TEB"],  String prefixName = "") throws Exception {
     info "Create the spatial units..."
     def idRsu = "id_rsu"
     def tablesToDrop = []
@@ -980,9 +982,9 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
         rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone_extended, road, rail,
                 vegetation, water,
                 sea_land_mask, urban_areas, surface_vegetation,
-                surface_hydro, surface_urban_areas, prefixName)
-        //Clip the RSU if the zone is different than the zone_extended
-        if (zone_extended && zone != zone_extended) {
+                surface_hydro, surface_urban_areas,holeInscribeCircleArea, prefixName)
+        // Clip the RSU if the argument is set to true and if the the zone is different than the zone_extended
+        if (clip && (zone_extended && zone != zone_extended)) {
             String rsu_tmp = postfix("rsu")
             datasource.createSpatialIndex(rsu)
             datasource.createSpatialIndex(zone)
@@ -998,7 +1000,6 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
             rsu = rsu_tmp
         }
     }
-
 
     // By default, the building table is used to calculate the relations between buildings and RSU
     def inputLowerScaleBuRsu = building
@@ -1051,10 +1052,12 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
  */
 Map getParameters() {
     return [
-            "surface_vegetation"               : 10000d,
-            "surface_hydro"                    : 2500d,
-            "surface_urban_areas"              : 10000d,
-            "snappingTolerance"                : 0.01d, "indicatorUse": ["LCZ", "UTRF", "TEB"],
+            "clip"                             : true,
+            "surface_vegetation"               : 10000f,
+            "surface_hydro"                    : 2500f,
+            "surface_urban_areas"              : 10000f,
+            "surface_hole_rsu"                 : 5000f,
+            "snappingTolerance"                : 0.01f, "indicatorUse": ["LCZ", "UTRF", "TEB"],
             "mapOfWeights"                     : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                                   "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
                                                   "height_of_roughness_elements": 1, "terrain_roughness_length": 1],
@@ -1225,7 +1228,9 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
     def surface_urban_areas = inputParameters.surface_urban_areas
     def snappingTolerance = inputParameters.snappingTolerance
     def buildingHeightModelName = inputParameters.buildingHeightModelName
+    def holeInscribeCircleArea = inputParameters.surface_hole_rsu
     def indicatorUse = inputParameters.indicatorUse
+    def clipGeom = inputParameters.clip
     def nb_building_estimated = 0
     //Estimate height
     if (inputParameters.buildingHeightModelName && datasource.getRowCount(buildingEstimateTableName) > 0) {
@@ -1243,7 +1248,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                 sea_land_mask, urban_areas, rsuTable,
                 surface_vegetation, surface_hydro, surface_urban_areas,
                 snappingTolerance,
-                buildingHeightModelName, prefixName)
+                buildingHeightModelName,holeInscribeCircleArea, clipGeom, prefixName)
         if (!estimHeight) {
             throw new Exception("Cannot estimate building height")
         } else {
@@ -1257,7 +1262,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
 
         indicatorUse = inputParameters.indicatorUse
         //This is a shortcut to produce only the data
-        //TARGET indicators can be computed atthe grid scale with the input data
+        //TARGET indicators can be computed at the grid scale with the input data
         if (indicatorUse.isEmpty() || (indicatorUse.size() == 1 && indicatorUse.contains("TARGET"))) {
             //Clean the System properties that stores intermediate table names
             datasource.dropTable(getCachedTableNames())
@@ -1284,7 +1289,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                     vegetation,
                     water, sea_land_mask, "", rsuTable,
                     surface_vegetation,
-                    surface_hydro, surface_urban_areas, snappingTolerance, indicatorUse,
+                    surface_hydro, surface_urban_areas, snappingTolerance, holeInscribeCircleArea,false,indicatorUse,
                     prefixName)
             buildingForGeoCalc = spatialUnitsForCalc.building
             blocksForGeoCalc = spatialUnitsForCalc.block
@@ -1330,7 +1335,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                 rail, vegetation,
                 water, sea_land_mask, "", rsuTable,
                 surface_vegetation,
-                surface_hydro, surface_urban_areas, snappingTolerance, indicatorUse,
+                surface_hydro, surface_urban_areas, snappingTolerance,holeInscribeCircleArea,clipGeom,indicatorUse,
                 prefixName)
         def relationBuildings = spatialUnits.building
         def relationBlocks = spatialUnits.block
@@ -1363,7 +1368,8 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
                            String water, String impervious,
                            String building_estimate, String sea_land_mask, String urban_areas, String rsu,
                            double surface_vegetation, double surface_hydro, double surface_urban_areas,
-                           double snappingTolerance, String buildingHeightModelName, String prefixName = "") throws Exception {
+                           double snappingTolerance, String buildingHeightModelName,
+                           double holeInscribeCircleArea, boolean clipGeom, String prefixName = "") throws Exception {
     if (!building_estimate) {
         throw new IllegalArgumentException("To estimate the building height a table that contains the list of building to estimate must be provided")
     }
@@ -1377,7 +1383,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
     Map spatialUnits = createUnitsOfAnalysis(datasource, zone,zone_extended,
             building, road, rail, vegetation,
             water, sea_land_mask, urban_areas, rsu,
-            surface_vegetation, surface_hydro, surface_urban_areas, snappingTolerance, ["UTRF"],
+            surface_vegetation, surface_hydro, surface_urban_areas, snappingTolerance, holeInscribeCircleArea,clipGeom,["UTRF"],
             prefixName)
     def relationBuildings = spatialUnits.building
     def relationBlocks = spatialUnits.block
@@ -1412,40 +1418,42 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
                                                         WHERE a.ID_RSU IS NOT NULL;""")
 
     info "Collect building indicators to estimate the height"
-
-    def gatheredScales = Geoindicators.GenericIndicators.gatherScales(datasource,
-            estimated_building_with_indicators,
-            blockIndicatorsForHeightEst, rsuIndicatorsForHeightEst,
-            "BUILDING", ["AVG", "STD"],
-            prefixName)
-
-    def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
     int nbBuildingEstimated = 0
-    def buildEstimatedHeight
-    if (datasource.getTable(gatheredScales).isEmpty()) {
-        info "No building height to estimate"
-        datasource.execute("""DROP TABLE IF EXISTS $buildingTableName;
+    // NOTE : Only buildings in an RSU can have their height predicted because the model
+    // uses indicators calculated on several unit scales :  RSU, BLOCK, BUILDING
+    if(datasource.getRowCount(estimated_building_with_indicators)>0){
+        def gatheredScales = Geoindicators.GenericIndicators.gatherScales(datasource,
+                estimated_building_with_indicators,
+                blockIndicatorsForHeightEst, rsuIndicatorsForHeightEst,
+                "BUILDING", ["AVG", "STD"],
+                prefixName)
+
+        def buildingTableName = "BUILDING_TABLE_WITH_RSU_AND_BLOCK_ID"
+        def buildEstimatedHeight
+        if (datasource.isEmpty(gatheredScales)) {
+            info "No building height to estimate"
+            datasource.execute("""DROP TABLE IF EXISTS $buildingTableName;
                                            CREATE TABLE $buildingTableName 
                                                 AS SELECT  THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL ,
                                                     HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU from $estimated_building_with_indicators""")
 
-    } else {
-        info "Start estimating the building height"
-        //Apply RF model
-        buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                gatheredScales, buildingHeightModelName, "id_build", prefixName)
+        } else {
+            info "Start estimating the building height"
+            //Apply RF model
+            buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
+                    gatheredScales, buildingHeightModelName, "id_build", prefixName)
 
-        //Update the abstract building table
-        info "Replace the input building table by the estimated height"
+            //Update the abstract building table
+            info "Replace the input building table by the estimated height"
 
-        nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
+            nbBuildingEstimated = datasource.firstRow("select count(*) as count from $buildEstimatedHeight".toString()).count
 
-        datasource.createIndex(buildEstimatedHeight, "id_build")
+            datasource.createIndex(buildEstimatedHeight, "id_build")
 
-        def formatedBuildEstimatedHeight = "INPUT_BUILDING_REFORMATED_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def formatedBuildEstimatedHeight = "INPUT_BUILDING_REFORMATED_${UUID.randomUUID().toString().replaceAll("-", "_")}"
 
-        //Use build table indicators
-        datasource.execute """DROP TABLE IF EXISTS $formatedBuildEstimatedHeight;
+            //Use build table indicators
+            datasource.execute """DROP TABLE IF EXISTS $formatedBuildEstimatedHeight;
                                                CREATE TABLE $formatedBuildEstimatedHeight as 
                                                 SELECT  a.THE_GEOM, a.ID_BUILD,a.ID_SOURCE,
                                             CASE WHEN b.HEIGHT_ROOF IS NULL THEN a.HEIGHT_WALL ELSE 0 END AS HEIGHT_WALL ,
@@ -1454,23 +1462,32 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
                                                 from $buildingIndicatorsForHeightEst
                                             a LEFT JOIN $buildEstimatedHeight b on a.id_build=b.id_build""".toString()
 
-        //We must format only estimated buildings
-        //Apply format on the new abstract table
-        def epsg = datasource.getSrid(formatedBuildEstimatedHeight)
-        buildingTableName = formatEstimatedBuilding(datasource, formatedBuildEstimatedHeight, epsg)
-        //Drop intermediate tables
-        datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
+            //We must format only estimated buildings
+            //Apply format on the new abstract table
+            def epsg = datasource.getSrid(formatedBuildEstimatedHeight)
+            buildingTableName = formatEstimatedBuilding(datasource, formatedBuildEstimatedHeight, epsg)
+            //Drop intermediate tables
+            datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                             $formatedBuildEstimatedHeight, $buildEstimatedHeight,
                                             $gatheredScales""".toString()
 
+        }
+        return ["building"                          : buildingTableName,
+                "rsu"                               : rsuTable,
+                "building_indicators_without_height": buildingIndicatorsForHeightEst,
+                "block_indicators_without_height"   : blockIndicatorsForHeightEst,
+                "rsu_indicators_without_height"     : rsuIndicatorsForHeightEst,
+                "nb_building_estimated"             : nbBuildingEstimated]
     }
+    return [    "building"                          : building,
+                "rsu"                               : rsuTable,
+                "building_indicators_without_height": buildingIndicatorsForHeightEst,
+                "block_indicators_without_height"   : blockIndicatorsForHeightEst,
+                "rsu_indicators_without_height"     : rsuIndicatorsForHeightEst,
+                "nb_building_estimated"             : nbBuildingEstimated]
 
-    return ["building"                          : buildingTableName,
-            "rsu"                               : rsuTable,
-            "building_indicators_without_height": buildingIndicatorsForHeightEst,
-            "block_indicators_without_height"   : blockIndicatorsForHeightEst,
-            "rsu_indicators_without_height"     : rsuIndicatorsForHeightEst,
-            "nb_building_estimated"             : nbBuildingEstimated]
+
+
 }
 
 

@@ -23,6 +23,7 @@ import org.h2.tools.DeleteDbFiles
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.URIUtilities
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ITable
@@ -160,6 +161,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         def outputFileTables
         def outputSRID
         def deleteOutputData
+        String domain ="zone"
         if (outputParameters) {
             def outputDataBase = outputParameters.database
             def outputFolder = outputParameters.folder
@@ -173,6 +175,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             if (outputSRID && outputSRID <= 0) {
                 throw new Exception("The output srid must be greater than 0")
             }
+            def domainTmp = outputParameters.get("domain")
+            if (domainTmp!=null && domainTmp instanceof String && domain.toLowerCase() in["zone", "zone_extended"]) {
+                domain=domainTmp.toLowerCase()
+            }
+
             if (outputFolder) {
                 //Check if we can write in the output folder
                 def outputFiles = Geoindicators.WorkflowUtilities.buildOutputFolderParameters(outputFolder, outputWorkflowTableNames)
@@ -216,16 +223,17 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             if (formatedZone) {
                                 def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters,
                                         createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
-                                        outputTables, outputSRID, inputSRID)
+                                        outputTables, outputSRID, inputSRID, excluded_output_db_columns, domain)
                                 if (bdtopo_results) {
                                     outputTableNamesResult.putAll(bdtopo_results)
                                 }
                             }
                         }
                     } catch (Exception e) {
-                        saveLogZoneTable(h2gis_datasource, databaseFolder, location in Collection ? location.join("_") : location, e.getLocalizedMessage())
+                        String new_location =location in Collection ? location.join("_") : location
+                        saveLogZoneTable(h2gis_datasource, databaseFolder, new_location, e.getLocalizedMessage())
                         //eat the exception and process other zone
-                        warn("The zone $location has not been processed. Please check the log table to get more informations.")
+                        warn("The zone $location has not been processed. Please check the log file ${databaseFolder + File.separator + "log_zones_" + new_location + ".fgb"} to get more informations.")
                     }
                 }
                 deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
@@ -265,7 +273,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
                     def formatedZone = checkAndFormatLocations(location)
                     if (formatedZone) {
-                        def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables, outputSRID, inputSRID)
+                        def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables,
+                                outputSRID, inputSRID, excluded_output_db_columns,domain)
                         if (bdtopo_results) {
                             outputTableNamesResult.putAll(bdtopo_results)
                         }
@@ -294,25 +303,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @throws Exception
      */
     void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, String location, String message) throws Exception {
-        def logTableZones = postfix("log_zones")
-        //Create the table to log on the processed zone
-        dataSource """DROP TABLE IF EXISTS $logTableZones;
-            CREATE TABLE $logTableZones (the_geom GEOMETRY(GEOMETRY, 4326), 
-            location VARCHAR, info VARCHAR, version  VARCHAR, build_number VARCHAR);"""
-        //Find the geometry of the location
-        Geometry geom = dataSource.firstRow("SELECT st_union(st_accum(THE_GEOM)) as the_geom FROM commune").the_geom
-        if (geom == null | geom.isEmpty()) {
-            dataSource """INSERT INTO $logTableZones 
-                    VALUES(null,'$location', '$message', 
-                            '${Geoindicators.version()}',
-                            '${Geoindicators.buildNumber()}')"""
-        } else {
-            dataSource """INSERT INTO $logTableZones 
-                    VALUES(st_geomfromtext('${geom}',${geom.getSRID()}) ,'$location', '$message', 
-                            '${Geoindicators.version()}',
-                            '${Geoindicators.buildNumber()}')"""
-        }
-        dataSource.save(logTableZones, databaseFolder + File.separator + "log_zones_" + location + ".fgb", true)
+        dataSource.save("""(SELECT st_union(st_accum(THE_GEOM)) as the_geom, 
+            '${location.replace("'","''")}' as location, '${message.replace("'","''")}' as info, '${Geoindicators.version()}' as version, 
+            '${Geoindicators.buildNumber()}' as build_number FROM commune)""", databaseFolder + File.separator + "log_zones_" + location + ".fgb", true)
     }
 
     /**
@@ -554,7 +547,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         "x_size"    : 100,
                         "y_size"    : 100,
                         "output"    : "fgb",
-                        "rowCol"    : false,
+                        "rowCol"    : null, //Default to null
                         "indicators": ["BUILDING_FRACTION",
                                        "BUILDING_HEIGHT_WEIGHTED",
                                        "WATER_FRACTION",
@@ -612,7 +605,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                 "x_size"    : x_size,
                                 "y_size"    : y_size,
                                 "output"    : "fgb",
-                                "rowCol"    : false,
+                                "rowCol"    : null, //Default to null
                                 "indicators": allowedOutputIndicators
                         ]
                         def grid_output = grid_indicators.output
@@ -621,6 +614,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                 grid_indicators_tmp.output = grid_output.toLowerCase()
                             }
                         }
+                        def domainP = grid_indicators.domain
+                        if (domainP!=null && domainP in String && domainP.toLowerCase() in ["zone", "zone_extended"]) {
+                            grid_indicators_tmp.domain = domainP.toLowerCase() //Grid is computed to the zone
+                        }
+
                         def grid_rowCol = grid_indicators.rowCol
                         if (grid_rowCol && grid_rowCol in Boolean) {
                             grid_indicators_tmp.rowCol = grid_rowCol
@@ -726,8 +724,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @return
      */
     def bdtopo_processing(def location, H2GIS h2gis_datasource, def processing_parameters, def outputFolder, def outputFiles,
-                          def output_datasource, def outputTableNames, def outputSRID, def inputSRID, def deleteOutputData = true)
+                          def output_datasource, def outputTableNames, def outputSRID,
+                          def inputSRID, def deleteOutputData = true, Map excluded_columns, String domain)
             throws Exception {
+        //Add clip info
+        processing_parameters.put("domain", domain)
         //Add the GIS layers to the list of results
         def outputTableNamesResult = [:]
         def grid_indicators_params = processing_parameters.grid_indicators
@@ -797,7 +798,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
                 computeGridIndicators(h2gis_datasource, location, inputSRID, processing_parameters, res)
                 outputTableNamesResult.put(location, res)
-                saveResults(h2gis_datasource, location, res, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
+                saveResults(h2gis_datasource, location, res, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid, excluded_columns, domain)
 
             } else {
                 def tablesToMerge = ["zone"               : [],
@@ -822,7 +823,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 def results = mergeResultTables(tablesToMerge, h2gis_datasource)
                 computeGridIndicators(h2gis_datasource, location, inputSRID, processing_parameters, results)
                 outputTableNamesResult.put(location, results)
-                saveResults(h2gis_datasource, location, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid)
+                saveResults(h2gis_datasource, location, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid,excluded_columns, domain)
 
             }
         }
@@ -893,11 +894,34 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         //Compute the grid indicators
         if (grid_indicators_params) {
             info("Start computing grid_indicators")
-            def x_size = grid_indicators_params.x_size
-            def y_size = grid_indicators_params.y_size
-            Geometry geomEnv = h2gis_datasource.getExtent(results.zone)
-            String gridTableName = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, geomEnv,
-                    x_size, y_size, srid, grid_indicators_params.rowCol)
+            int x_size
+            int y_size
+            def rowCol = grid_indicators_params.rowCol
+            def grid_zone
+            if(grid_indicators_params.domain=="zone_extended") { //Must the forced due to the zone parameter
+                grid_zone = h2gis_datasource.getExtent(results.zone_extended)
+            }else if(grid_indicators_params.domain==null){
+                if(processing_parameters.domain=="zone"){
+                    grid_zone = h2gis_datasource.getExtent(results.zone)
+                }else if(processing_parameters.domain=="zone_extended"){
+                    grid_zone = h2gis_datasource.getExtent(results.zone_extended)
+                }
+            }
+            else  {
+                grid_zone = h2gis_datasource.getExtent(results.zone)
+            }
+            if(rowCol==null){
+                //Let's compute the number of row and col
+                rowCol=true
+                Envelope envGeom  = grid_zone.getEnvelopeInternal()
+                x_size=(int) Math.max(Math.round(envGeom.getWidth()/grid_indicators_params.x_size),1)
+                y_size=(int) Math.max(Math.round(envGeom.getHeight()/grid_indicators_params.y_size),1)
+            }else{
+                x_size = grid_indicators_params.x_size
+                y_size = grid_indicators_params.y_size
+            }
+            String gridTableName = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, grid_zone,
+                    x_size, y_size, srid, rowCol)
             if (gridTableName) {
                 String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, gridTableName,
                         grid_indicators_params.indicators,
@@ -941,10 +965,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @param outputTableNames
  * @param outputSRID
  * @param deleteOutputData
+ * @param data_domain domain to save the data
  * @return
  */
     def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles,
-                    def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData, def outputGrid) throws Exception {
+                    def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData, def outputGrid,
+                    Map excluded_columns, String data_domain) throws Exception {
         //Check if the user decides to reproject the output data
         def reproject = false
         if (outputSRID) {
@@ -954,11 +980,18 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         } else {
             outputSRID = srid
         }
+        Geometry outputZoneGeometry=null
+        if(data_domain=="zone") {
+            outputZoneGeometry = h2gis_datasource.getExtent(results.zone)
+        } else if(data_domain=="zone_extended") {
+            outputZoneGeometry = h2gis_datasource.getExtent(results.zone_extended)
+        }
+
         if (outputFolder && outputFiles) {
-            saveOutputFiles(h2gis_datasource, results, outputFiles, outputFolder, outputSRID, reproject, deleteOutputData, outputGrid)
+            saveOutputFiles(h2gis_datasource, results, outputFiles, outputFolder, outputSRID, reproject, deleteOutputData, outputGrid, outputZoneGeometry)
         }
         if (output_datasource) {
-            saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject)
+            saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject,excluded_columns)
         }
     }
 
@@ -1002,9 +1035,11 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             results.put("impervious", impervious)
             results.put("urban_areas", urban_areas)
             results.put("building", building)
+            results.put("zone_extended", zone_extended)
 
             //Compute the RSU indicators
             if (rsu_indicators_params && rsu_indicators_params.indicatorUse) {
+                rsu_indicators_params.clip=processing_parameters.domain=="zone_extended"?false:true
                 //Build the indicators
                 rsu_indicators_params.put("utrfModelName", "UTRF_BDTOPO_V2_RF_2_2.model")
                 Map geoIndicators = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(h2gis_datasource, zone,
@@ -1109,19 +1144,35 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
     * @param outputFolder the output folder
     * @param outputSRID srid code to reproject the result
     * @param deleteOutputData true to delete the file if exists
+     * @param outputZoneGeometry if the geometry is not null we use it to filter the output data
     * @return
     */
     def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outputFolder, def outputSRID,
-                        def reproject, def deleteOutputData, def outputGrid) throws Exception {
+                        def reproject, def deleteOutputData, def outputGrid, Geometry outputZoneGeometry) throws Exception {
+        def whereFilter =""
+        if(outputZoneGeometry) {
+            whereFilter+="""the_geom && ST_GEOMFROMTEXT('${outputZoneGeometry}',${outputZoneGeometry.getSRID()}) 
+            and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${outputZoneGeometry}',${outputZoneGeometry.getSRID()}))"""
+        }
         outputFiles.each {
-            if (it == "grid_indicators") {
+            if (it in ["grid_indicators", "grid_target"]) {
                 if (outputGrid == "fgb") {
-                    Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+                    Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject,null, deleteOutputData)
                 } else if (outputGrid == "asc") {
                     Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", outputFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
                 }
-            } else {
-                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            } else if (it in["building","road",  "rail",   "water", "vegetation",  "impervious",
+                           "urban_areas", "road_traffic","ground_acoustic",
+                           "urban_sprawl_areas", "urban_cool_areas"]) {
+                //Apply where filter
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, whereFilter?" WHERE "+whereFilter:null, deleteOutputData)
+            } else if(it in[ "building_indicators", "block_indicators","rsu_utrf_area" ,
+                             "rsu_utrf_floor_area" , "building_utrf" , "rsu_indicators" ,
+                             "rsu_lcz"] ) {
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, whereFilter ? " WHERE " + whereFilter + " and ID_RSU IS NOT NULL" : " where ID_RSU IS NOT NULL", deleteOutputData)
+
+            }  else {
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, null, deleteOutputData)
             }
         }
     }
@@ -1440,9 +1491,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     } else {
                         def tmpTable = null
                         info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
-                        List columnNamesToSave =[]
+                        List columnNamesToSave =h2gis_datasource.getColumnNames(h2gis_table_to_save)
                         if(excluded_columns) {
-                            columnNamesToSave = h2gis_datasource.getColumnNames(h2gis_table_to_save).findAll{it-> !excluded_columns.contains(it)}
+                            columnNamesToSave.removeAll(excluded_columns)
                         }
                         if (filter) {
                             if (!reproject) {

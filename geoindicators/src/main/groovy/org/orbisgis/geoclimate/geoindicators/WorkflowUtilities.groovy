@@ -233,32 +233,48 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource
  * @param filePath path to save the table
  * @param h2gis_datasource connection to the database
  * @param outputSRID srid code to reproject the outputTable.
- * @param reproject true if the file must be reprojected
+ * @param reproject true if the file must be reprojected *
+ * @param filter where filter clause
  * @param deleteOutputData true to delete the file if exists
  */
-def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject, def deleteOutputData) {
-    if (outputTable && h2gis_datasource.hasTable(outputTable)) {
-        if (!reproject) {
-            h2gis_datasource.save(outputTable, filePath, deleteOutputData)
-        } else {
-            if (!h2gis_datasource.getTable(outputTable).isEmpty()) {
-                h2gis_datasource.getSpatialTable(outputTable).reproject(outputSRID).save(filePath, deleteOutputData)
-            }
-        }
+def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject,  def filter,def deleteOutputData) {
+    if (outputTable && h2gis_datasource.hasTable(outputTable) && h2gis_datasource.getRowCount(outputTable)>0) {
+        h2gis_datasource.save(buildSelectQuery(h2gis_datasource,  outputTable, outputSRID,  reproject,   filter), filePath, deleteOutputData)
         info "${outputTable} has been saved in ${filePath}."
     }
 }
 
 /**
- * Method to save a table into a file
+ * Build a select query command
+ * @param h2gis_datasource
+ * @param outputTable
+ * @param outputSRID
+ * @param reproject
+ * @param filter
+ * @return
+ */
+String buildSelectQuery(H2GIS h2gis_datasource, def outputTable,def outputSRID, def reproject,  def filter){
+    def columns = h2gis_datasource.getColumnNames(outputTable)
+    columns.remove("THE_GEOM")
+    String geomColum = "THE_GEOM"
+    if (reproject) {
+        geomColum=  "ST_TRANSFORM(THE_GEOM, $outputSRID) as the_geom"
+    }
+    return "(SELECT ${columns?"\""+columns.join("\",\"")+"\",":""} $geomColum FROM $outputTable ${filter?filter:""})"
+}
+
+/**
+ * Method to save a table into a file and clip it with a specified area
  * @param outputTable name of the table to export
  * @param filePath path to save the table
  * @param h2gis_datasource connection to the database
  * @param outputSRID srid code to reproject the outputTable.
  * @param reproject true if the file must be reprojected
+ * @param zoneToClip the geometry to clip the input table
  * @param deleteOutputData true to delete the file if exists
  */
-def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject, def deleteOutputData, Geometry zone) {
+def saveInFileWithIntersection(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject,
+                               Geometry zoneToClip, def deleteOutputData) {
     if (outputTable && h2gis_datasource.hasTable(outputTable)) {
         if (!reproject) {
             h2gis_datasource.createSpatialIndex(outputTable)
@@ -267,8 +283,11 @@ def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def output
             def tmp_export = postfix("export_table")
             h2gis_datasource.execute("""
             DROP TABLE IF EXISTS $tmp_export;
-            CREATE TABLE $tmp_export as select ${columns.join(",")}, ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}) )as the_geom 
-            FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}))
+            CREATE TABLE $tmp_export as 
+            as select * EXCEPT(EXPLOD_ID)  from ST_EXPLODE('(
+            select ${columns.join(",")}, 
+            ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) )as the_geom 
+            FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})))')
             """)
             h2gis_datasource.save(tmp_export, filePath, deleteOutputData)
             h2gis_datasource.dropTable(tmp_export)
@@ -279,8 +298,10 @@ def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def output
                 def tmp_export = postfix("export_table")
                 h2gis_datasource.execute("""
             DROP TABLE IF EXISTS $tmp_export;
-            CREATE TABLE $tmp_export as select ${columns.join(",")}, ST_TRANSFORM(ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zone}',${zone.getSRID()})),$outputSRID) as the_geom 
-            FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zone}',${zone.getSRID()}))
+            CREATE TABLE $tmp_export as 
+            * EXCEPT(EXPLOD_ID)  from ST_EXPLODE('(
+            select ${columns.join(",")}, ST_TRANSFORM(ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})),$outputSRID) as the_geom 
+            FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})))')
             """)
                 h2gis_datasource.save(tmp_export, filePath, deleteOutputData)
                 h2gis_datasource.dropTable(tmp_export)
