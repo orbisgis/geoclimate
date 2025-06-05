@@ -688,7 +688,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 "ground_acoustic",
                 "urban_sprawl_areas",
                 "urban_cool_areas",
-                "grid_target"]
+                "grid_target",
+                "zone_extended"]
     }
 
 

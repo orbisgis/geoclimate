@@ -377,7 +377,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 countFiles++
             }
         }
-        assertEquals(10, countFiles)
+        assertEquals(8, countFiles)
     }
 
     @Disabled
@@ -506,10 +506,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def grid_file = new File("${directory + File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_fraction.asc")
         h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count == 6
-
-        assertEquals(5, h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is not null").count)
-        assertEquals(1, h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is null").count)
-    }
+        assertEquals(6, h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is not null").count)
+     }
 
     @Test
     void testLoggerZones() {
@@ -1227,13 +1225,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations": [bbox]],
                 "output"      : [
                         "folder": directory,
-                        "clip":true,
+                        "domain":"zone",
                         "srid"  : 4326],
                 "parameters"  :
                         ["distance"    : 100,
                          rsu_indicators: ["indicatorUse": ["LCZ"]],
                          "grid_indicators": [
-                                 "zone":false, //Compute the grid on the extended zone
+                                 "domain": "zone_extended", //Compute the grid on the extended zone
                                 "x_size"    : 100,
                                 "y_size"    : 100,
                                 "indicators": ["LCZ_PRIMARY"]
@@ -1260,7 +1258,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         CREATE TABLE grid_out as SELECT a.* FROM  $grid_indicators a LEFT JOIN $zone b
                 ON a.the_geom && b.the_geom and ST_INTERSECTS(st_centroid(a.the_geom), b.the_geom)
                 WHERE b.the_geom IS NULL;""")
-        assertEquals(8, h2gis.getRowCount("grid_out"))
+        assertEquals(10, h2gis.getRowCount("grid_out"))
 
         h2gis.dropTable("building_out", "grid_out")
     }
@@ -1282,7 +1280,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations": [bbox]],
                 "output"      : [
                         "folder": directory,
-                        "clip":   false,
+                        "domain":"zone_extended",
                         "srid"  : 4326],
                 "parameters"  :
                         ["distance"    : 100,

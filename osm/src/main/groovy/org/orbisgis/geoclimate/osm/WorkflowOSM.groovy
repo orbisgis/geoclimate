@@ -554,7 +554,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                 //Compute the RSU indicators
                 if (rsu_indicators_params.indicatorUse) {
-                    String estimateHeight = rsu_indic ators_params."estimateHeight" ? "BUILDING_HEIGHT_OSM_RF_2_2.model" : ""
+                    String estimateHeight = rsu_indicators_params."estimateHeight" ? "BUILDING_HEIGHT_OSM_RF_2_2.model" : ""
                     rsu_indicators_params.put("utrfModelName", "UTRF_OSM_RF_2_2.model")
                     rsu_indicators_params.put("buildingHeightModelName", estimateHeight)
                     rsu_indicators_params.clip= domain=="zone_extended"?false:true
@@ -649,9 +649,9 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     if(grid_indicators_params.domain=="zone_extended") { //Must the forced due to the zone parameter
                         grid_zone = h2gis_datasource.getExtent(utm_extended_bbox_table)
                     }else if(grid_indicators_params.domain==null){
-                        if(processing_parameters.domain=="zone"){
+                        if(domain=="zone"){
                             grid_zone = h2gis_datasource.getExtent(utm_zone_table)
-                        }else if(processing_parameters.domain=="zone_extended"){
+                        }else if(domain=="zone_extended"){
                             grid_zone = h2gis_datasource.getExtent(utm_extended_bbox_table)
                         }
                     }
@@ -659,8 +659,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         //Let's compute the number of row and col
                         rowCol=true
                         Envelope envGeom  = grid_zone.getEnvelopeInternal()
-                        x_size=(int) Math.max(Math.round(envGeom.getWidth()/grid_indicators_params.x_size),1)
-                        y_size=(int) Math.max(Math.round(envGeom.getHeight()/grid_indicators_params.y_size),1)
+                        x_size=(int) Math.max(Math.ceil(envGeom.getWidth()/grid_indicators_params.x_size),1)
+                        y_size=(int) Math.max(Math.ceil(envGeom.getHeight()/grid_indicators_params.y_size),1)
                     }else{
                         x_size = grid_indicators_params.x_size
                         y_size = grid_indicators_params.y_size
