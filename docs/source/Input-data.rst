@@ -24,6 +24,8 @@ Depending on the use of GeoClimate, the number of input GIS layers differs.
 
 Note that a GIS layer is an abstraction of reality specified by a geographic data model (geometry + attributes). It represents a single geographic subject. It consists in a set of data staged in a tabular way (rows, columns).
 
-The GIS layer have to use a metric reference spatial system. Lat/Long coordinates are not supported by the algorithms. Thus if you have Lat/Long coordinates data, you first need to reproject in a local metric system. 
+The GIS layer have to use a metric reference spatial system. Lat/Long coordinates are not supported by the algorithms. Thus if you have Lat/Long coordinates data, you first need to reproject in a local metric system.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 .. include:: _Footer.rst

@@ -13,4 +13,6 @@ the_geom POLYGON X Y dimensions Geometry
 id       INTEGER Primary Key    Unique Identifier
 ======== ======= ============== =================
 
+-------------------------------------------------
+
 .. include:: _Footer.rst

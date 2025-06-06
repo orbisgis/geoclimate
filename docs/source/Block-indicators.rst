@@ -42,7 +42,7 @@ BUILDING_DIRECTION_UNIQUENESS
 **Description**: Measures how unique the RSU main building direction is.
 
 **Method**:  
-|Length_First_Dir - Length_Second_Dir| / (Length_First_Dir + Length_Second_Dir)
+``|Length_First_Dir - Length_Second_Dir|`` / (``Length_First_Dir`` + ``Length_Second_Dir``)
 
 **Range of values**: [0, 1] — closer to 1 means more unique main building direction.
 
@@ -58,11 +58,13 @@ Difference between ``st_holes`` at block scale and sum of ``st_holes`` at buildi
 **Warning**:  
 This method does not identify nearly closed blocks (e.g., 99% closed), which could be relevant for ventilation studies.
 
-**References**:  
-- Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018).  
-  _A geoprocessing framework to compute urban indicators: The MApUCE tools chain_, Urban Climate, 24, 153-174.  
-- Tornay, N., Schoetter, R., Bonhomme, M., Faraut, S., & Masson, V. (2017).  
-  _GENIUS: A methodology to define a detailed description of buildings for urban climate and building energy consumption simulations_, Urban Climate, 20, 75-93.
+**References**:
+
+- Bocher, E., Petit, G., Bernard, J., & Palominos, S. (2018).
+  ``A geoprocessing framework to compute urban indicators: The MApUCE tools chain``, Urban Climate, 24, 153-174.
+
+- Tornay, N., Schoetter, R., Bonhomme, M., Faraut, S., & Masson, V. (2017).
+  ``GENIUS: A methodology to define a detailed description of buildings for urban climate and building energy consumption simulations``, Urban Climate, 20, 75-93.
 
 
 FLOOR_AREA
@@ -119,4 +121,5 @@ VOLUME
 
 **Method**: Sum of building volumes within the block.
 
+-----------------------------------------------------
 .. include:: _Footer.rst

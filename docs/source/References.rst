@@ -44,4 +44,6 @@ The R package used to compare various LCZ classifications :
    classifications. Journal of Open Source Software, pre-print
    https://github.com/openjournals/joss-papers/blob/joss.05445/joss.05445/10.21105.joss.05445.pdf
 
+-------------------------------------------------------------------------------------------------
+
 .. include:: _Footer.rst

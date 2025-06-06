@@ -125,4 +125,6 @@ Note that the EPSG code for the projection system here is 2154 and not
        }
    }
 
+----
+
 .. include:: _Footer.rst

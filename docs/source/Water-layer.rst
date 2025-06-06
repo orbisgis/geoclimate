@@ -58,4 +58,6 @@ List of possible values for the ``type`` column:
 - ``water``
   Any water area.
 
+-----------------
+
 .. include:: _Footer.rst

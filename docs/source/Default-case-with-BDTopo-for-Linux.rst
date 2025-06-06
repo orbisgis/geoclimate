@@ -167,4 +167,6 @@ The results of your calculations are located in you ``\tmp`` folder.
 
    Results BDTopo
 
+-----------------
+
 .. include:: _Footer.rst

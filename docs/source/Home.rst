@@ -62,4 +62,6 @@ GeoClimate is also supported by `GEOMANUM FOUNDATION <https://geomanum.org/fr>`_
     
     You are welcome to contribute, improve the documentation.
 
+-------------------------------------------------------------
+
 .. include:: _Footer.rst

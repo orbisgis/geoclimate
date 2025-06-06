@@ -72,4 +72,6 @@ Possible values for the ``surface`` column are:
 - ``water``: Surface for ferry routes using water bodies.
 - ``wood``: Wooden surface.
 
+---------------------------
+
 .. include:: _Footer.rst

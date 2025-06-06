@@ -27,4 +27,6 @@ Maxime Collombin  HEIG-VD, Suisse
 Emmanuel Renaud   Lab-STICC, CNRS, France
 ================= =======================
 
+-----------------------------------------
+
 .. include:: _Footer.rst

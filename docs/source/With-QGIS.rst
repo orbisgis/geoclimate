@@ -29,4 +29,6 @@ the page, and the style will be applied.
 
 .. figure:: ressources/show_data_tutorial/rsu_lcz_style.gif
 
+-----------------------------------------------------------
+
 .. include:: _Footer.rst

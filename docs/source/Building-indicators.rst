@@ -25,7 +25,7 @@ AREA_CONCAVITY
 
 
 COMMON_WALL_FRACTION
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 **Description**: Fraction of facade length (also called “party walls”) shared with other buildings.
 
@@ -101,5 +101,7 @@ PERIMETER_CONVEXITY
 **Description**: Degree of convexity of the building based on the perimeter.
 
 **Method**: Convex Hull perimeter
+
+---------------------------------
 
 .. include:: _Footer.rst

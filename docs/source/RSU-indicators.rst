@@ -13,7 +13,7 @@ AREA
 AREA_FRACTION_x
 ---------------
 
-**Description**: Footprint fraction within the RSU of _type x_ building. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type x_. In the following, the key is the _type x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
+**Description**: Footprint fraction within the RSU of _type \x_ building. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
 
 * "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace"],
 * "collective_housing": ["apartments", "barracks", "abbey", "dormitory", "sheltered_housing", "workers_dormitory", "condominium"],
@@ -30,7 +30,7 @@ AREA_FRACTION_x
 AREA_FRACTION_x_LCZ
 --------------------
 
-**Description**: Footprint fraction within the RSU of _type x_ building useful for determining LCZ types. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type x_. In the following, the key is the _type x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
+**Description**: Footprint fraction within the RSU of _type \x_ building useful for determining LCZ types. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
 
 * "light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
 * "commercial_lcz": ["commercial", "shop", "retail", "port", "exhibition_centre", "cinema"],
@@ -172,10 +172,10 @@ EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH
 - Stewart, Ian D., and Tim R. Oke. "Local climate zones for urban temperature studies." Bulletin of the American Meteorological Society 93, no. 12 (2012): 1879-1900.
 - Hanna, Steven R., and Rex E. Britter. Wind flow and vapor cloud dispersion at industrial and urban sites. Vol. 7. John Wiley & Sons, 2010.
 
-FLOOR_AREA_FRACTION_X
----------------------
+'FLOOR_AREA_FRACTION_X'
+-----------------------
 
-**Description**: Footprint fraction within the RSU of _type x_ building. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type x_. In the following, the key is the _type x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
+**Description**: Footprint fraction within the RSU of _type \x_ building. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
 
 * "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace"],
 * "collective_housing": ["apartments", "barracks", "abbey", "dormitory", "sheltered_housing", "workers_dormitory", "condominium"],
@@ -192,7 +192,7 @@ FLOOR_AREA_FRACTION_X
 FLOOR_AREA_FRACTION_X_LCZ
 -------------------------
 
-**Description**: Footprint fraction within the RSU of _type x_ building useful for LCZ determining. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type x_. In the following, the key is the _type x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
+**Description**: Footprint fraction within the RSU of _type \x_ building useful for LCZ determining. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
 
 * "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace"],
 * "collective_housing": ["apartments", "barracks", "abbey", "dormitory", "sheltered_housing", "workers_dormitory", "condominium"],
@@ -214,14 +214,14 @@ FREE_EXTERNAL_FACADE_DENSITY
 **Method**: ``SUM((1 - Bu_Contiguity) * Bu_TotalFacadeLength * HEIGHT_WALL) / RSU_Area``
 
 GEOM_AVG_HEIGHT_ROOF
--------------------
+--------------------
 
 **Description**: RSU geometric mean of the building roof heights.
 
 **Method**: ``EXP(SUM(LOG(Bu_ROOF_HEIGHT)) / NB_Building)``
 
 GROUND_LINEAR_ROAD_DENSITY
--------------------------
+--------------------------
 
 **Description**: Road linear density, having a ZINDEX = 0, within the RSU.
 
@@ -249,7 +249,7 @@ HIGH_VEGETATION_FRACTION_LCZ
 **Method**: ``SUM(High_veg_Area without superimposition + High_veg_Area superimposing all other layers) / RSU_Area``
 
 HIGH_VEGETATION_IMPERVIOUS_FRACTION_URB
-----------------------------------------
+---------------------------------------
 
 **Description**: Fraction of high vegetation covering impervious layer such as defined for the UTRF classification.
 
@@ -319,7 +319,7 @@ PERVIOUS_FRACTION_LCZ
 **Method**: ``SUM(Low_veg_Area with and without high vegetation superimposition + Water_Area with and without high vegetation superimposition + High_veg_Area without superimposition) / RSU_Area``
 
 PROJECTED_FACADE_AREA_DISTRIBUTION_Hx_y_Dw_z
----------------------------------------------
+--------------------------------------------
 
 **Description**: Distribution of projected facade area within a RSU per vertical layer (the height being from ``x`` to ``y``) and per direction of analysis (ie. wind or sun direction - the angle range being from ``w`` to ``z`` within the range [0, 180[°).
 
@@ -407,5 +407,7 @@ X_Y_FRACTION
 **Description**: Fraction of the X input layer within the RSU which superimposed the Y input layer (note that the vegetation layer is split into a low_vegetation layer and a high_vegetation layer). Superimposed layer fraction are calculated when they are physically relevant (e.g. high_vegetation above impervious). By default, superimposition is considered only between high_vegetation and all other layers and otherwise intersected layers.
 
 **Method**: ``SUM(X_Area superimposing Y) / RSU_Area``
+
+------------------------------------------------------
 
 .. include:: _Footer.rst

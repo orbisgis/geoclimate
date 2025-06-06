@@ -145,4 +145,6 @@ The default .sld file format can be downloaded at `this address <https://github.
      - LCZ G: Water
      - ``#6d67fd``
 
+------------------
+
 .. include:: _Footer.rst
