@@ -1,0 +1,4 @@
+/* Remove the toctree display in the page body (but keeps it in the sidebar) */
+div.toctree-wrapper {
+  display: none;
+}
