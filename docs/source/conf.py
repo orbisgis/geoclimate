@@ -45,7 +45,6 @@ html_theme = 'sphinx_rtd_theme'
 templates_path = ['_templates']
 html_static_path = ['_static']
 html_css_files = ['custom.css']
-html_extra_path = ['_static/footer.html']
 
 
 # Limiter la profondeur du menu latéral aux seuls titres de niveau 1
