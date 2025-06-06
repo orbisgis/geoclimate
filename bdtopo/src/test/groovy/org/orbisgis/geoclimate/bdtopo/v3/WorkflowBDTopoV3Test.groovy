@@ -19,10 +19,11 @@
  */
 package org.orbisgis.geoclimate.bdtopo.v3
 
-
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
 import org.orbisgis.data.H2GIS
+import org.orbisgis.geoclimate.bdtopo.BDTopo
 import org.orbisgis.geoclimate.bdtopo.WorkflowAbstractTest
 
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -133,9 +134,66 @@ class WorkflowBDTopoV3Test extends WorkflowAbstractTest {
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM urban_areas where type is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM urban_areas where ST_ISEMPTY(THE_GEOM)=false OR THE_GEOM IS NOT NULL").count)
 
-
+        h2GIS.deleteClose()
     }
 
+    @Test
+    void testClip2() {
+        String dataFolder = getDataFolderPath()
+        def bbox = [ 6359905.15, 663566.1107794361, 6360305.15, 663966.1107794361 ]
+        def bdTopoParameters = [
+                "description" : "Clip option test",
+                "geoclimatedb": [
+                        "folder": getDBFolderPath(),
+                        "name"  : "testclip2;AUTO_SERVER=TRUE",
+                        "delete": false
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [bbox]],
+                "output"      : [
+                        "folder": ["path": getDBFolderPath()],
+                        "domain":"zone_extended"],
+                "parameters"  :
+                        ["distance"        : 100,
+                         rsu_indicators    : [
+                                 "indicatorUse": ["LCZ", "TEB", "UTRF"]]
+                         ,
+                         "grid_indicators" : [
+                                 "x_size"    : 100,
+                                 "y_size"    : 100,
+                                 "indicators": ["WATER_FRACTION"]
+                                 ,"domain":"zone_extended"
+                         ],
+                         "road_traffic"    : true,
+                         "noise_indicators": [
+                                 "ground_acoustic": true
+                         ]]
+        ]
+        BDTopo.workflow(bdTopoParameters, getVersion())
+
+        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testclip2;AUTO_SERVER=TRUE")
+        def building = "building"
+        def zone = "zone"
+        h2gis.load(getDBFolderPath() + File.separator + "bdtopo_" + getVersion() + "_" + bbox.join("_") + File.separator +"building.fgb", building, true)
+        h2gis.load(getDBFolderPath() + File.separator + "bdtopo_" + getVersion() + "_" + bbox.join("_") + File.separator +"zone.fgb", zone, true)
+
+        assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
+        h2gis.execute("""DROP TABLE IF EXISTS building_out;
+        CREATE TABLE building_out as SELECT a.* FROM  $building a LEFT JOIN $zone b
+                ON a.the_geom && b.the_geom and ST_INTERSECTS(a.the_geom, b.the_geom)
+                WHERE b.the_geom IS NULL;""")
+        assertEquals(12, h2gis.getRowCount("building_out"))
+        def grid_indicators = "grid_indicators"
+        h2gis.load(getDBFolderPath() + File.separator + "bdtopo_" + getVersion() + "_" + bbox.join("_") + File.separator +"grid_indicators.fgb", grid_indicators, true)
+        h2gis.execute("""DROP TABLE IF EXISTS grid_out;
+        CREATE TABLE grid_out as SELECT a.* FROM  $grid_indicators a LEFT JOIN $zone b
+                ON a.the_geom && b.the_geom and ST_INTERSECTS(st_centroid(a.the_geom), b.the_geom)
+                WHERE b.the_geom IS NULL;""")
+        assertEquals(20, h2gis.getRowCount("grid_out"))
+
+        h2gis.dropTable("building_out", "grid_out")
+    }
 
     @Override
     ArrayList getFileNames() {

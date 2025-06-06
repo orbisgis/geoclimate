@@ -617,7 +617,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": ["Pont-de-Veyle"]],
+                        "locations": ["Pont-de-Veyle"]
+                        ],
                 "output"      : [
                         "folder": directory],
                 "parameters"  :

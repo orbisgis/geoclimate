@@ -21,14 +21,7 @@ package org.orbisgis.geoclimate.geoindicators
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import org.locationtech.jts.algorithm.construct.LargestEmptyCircle
-import org.locationtech.jts.algorithm.construct.MaximumInscribedCircle
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryCollection
-import org.locationtech.jts.geom.LinearRing
-import org.locationtech.jts.geom.MultiPolygon
-import org.locationtech.jts.geom.Polygon
+import org.orbisgis.data.H2GIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
