@@ -40,4 +40,6 @@ Set in your pom the following information
             </repository>
     </repositories>
 
+-------------------
+
 .. include:: _Footer.rst

@@ -67,4 +67,6 @@ More information on how and why use DBeaver `here <With-Dbeaver.html>`__
 
 More information on how and why use QGis `here <With-QGIS.html>`__
 
+------------------------------------------------------------------
+
 .. include:: _Footer.rst

@@ -59,4 +59,6 @@ List of all possible values for the ``type`` column:
 - ``power``
   Area dedicated to power generation and distribution.
 
+------------------------------------------------------
+
 .. include:: _Footer.rst

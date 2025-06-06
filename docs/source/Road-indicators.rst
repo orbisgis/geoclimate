@@ -45,4 +45,6 @@ The 16 resulting indicators are stored in the ``road_indicators`` table:
 - The heavy vehicle speed for **evening**
 - The slope (in %) of the road section
 
+--------------------------------------
+
 .. include:: _Footer.rst

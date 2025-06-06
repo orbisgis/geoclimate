@@ -15,4 +15,6 @@ If you use GeoClimate with GroovyConsole take care to set the good repository an
 
 **WARNING: adapt the version to the version of your choice**
 
+------------------------------------------------------------
+
 .. include:: _Footer.rst

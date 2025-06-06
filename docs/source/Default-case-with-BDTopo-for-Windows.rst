@@ -43,7 +43,7 @@ For each layer, the ‘.dbf’, ‘.shp’, ‘.shx’ and ‘.shp’ formats ar
 needed.
 
 Create a subfolder (for instance
-C::raw-latex:`\mydirectory`:raw-latex:`\Geoclimate`:raw-latex:`\BD`\_TOPO_v2)
+C:ST_SVF\mydirectory\\Geoclimate\\BD\\_TOPO_v2)
 and place your BD Topo 2.2 data in this folder.
 
 Create and understand a configuration file
@@ -165,5 +165,7 @@ The results of your calculations are located in you ``C:\temp`` folder.
    :alt: Results BDTopo
 
    Results BDTopo
+
+-----------------
 
 .. include:: _Footer.rst

@@ -18,4 +18,6 @@ Geoclimate performs indicator computation at three spatial unit scales, a spatia
 
 Overall, more than **100 urban indicators** are currently calculated (e.g. compactness and road distance at building scale, volume at block scale, building fraction, mean sky view factor at RSU scale, ...). Note that Geoclimate has first been developed for climate studies but many indicators could also be useful to analyze landscape ecology, land use, habitat conservation planning or any environmental or territory applications.
 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 .. include:: _Footer.rst

@@ -64,4 +64,6 @@ Supported values are:
 - ``scientific``
 - ``test``
 
+----------
+
 .. include:: _Footer.rst

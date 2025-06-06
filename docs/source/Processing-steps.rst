@@ -51,4 +51,6 @@ The rasterization process creates a grid based on the bounding box of the zone l
 
 Figure 2. Processing steps to aggregate indicators at grid scale
 
+----------------------------------------------------------------
+
 .. include:: _Footer.rst

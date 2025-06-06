@@ -63,4 +63,6 @@ List of possible values for the ``type`` column:
 - ``sugar_cane``: Land where sugar cane is grown
   *(See: https://wiki.openstreetmap.org/wiki/Tag:landuse=farmland)*
 
+-------------------------------------------------------------------
+
 .. include:: _Footer.rst

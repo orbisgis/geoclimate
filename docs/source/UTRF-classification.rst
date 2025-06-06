@@ -184,5 +184,6 @@ The building typology is aggregated at RSU scale based on building floor area fr
      - VARCHAR
      - Fraction of type "PSC"
 
+-----------------------------
 
 .. include:: _Footer.rst

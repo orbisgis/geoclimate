@@ -99,4 +99,6 @@ The LCZ are used to calculate the UCP from the
 `W2W <https://github.com/matthiasdemuzere/w2w#readme>`__ Python project.
 The input data of the W2W project is the LCZ calculated by WUDAPT.
 
+------------------------------------------------------------------
+
 .. include:: _Footer.rst

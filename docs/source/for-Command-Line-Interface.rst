@@ -9,4 +9,6 @@ Go to
 to download it. This version contains all libraries and it’s ready to
 run the command line interface.
 
+-------------------------------
+
 .. include:: _Footer.rst

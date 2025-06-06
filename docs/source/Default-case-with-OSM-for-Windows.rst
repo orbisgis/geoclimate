@@ -148,4 +148,6 @@ The results of your calculations are located in you ``C:\temp`` folder.
 
    OSM results
 
+--------------
+
 .. include:: _Footer.rst

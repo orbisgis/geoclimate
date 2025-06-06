@@ -56,4 +56,6 @@ The indicators calculated at RSU scale suffer from one problem: the calculation 
 
 To overcome this issue, the indicators can be calculated using a regular rectangular grid using a specific script. This specific script uses specific algorithms for indicator calculation, thus avoiding the problem raised by buildings located on borders in the default algorithm. The limitation is that this calculation is only limited to a given number of indicators/classifications. The exhaustive list is given at the `grid indicator output page <https://github.com/orbisgis/geoclimate/wiki/Grid-indicators>`_.
 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 .. include:: _Footer.rst
