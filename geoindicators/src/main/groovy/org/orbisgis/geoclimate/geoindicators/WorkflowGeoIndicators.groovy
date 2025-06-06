@@ -1644,6 +1644,16 @@ String rasterizeIndicators(JdbcDataSource datasource,
     def grid_column_identifier = "id_grid"
     def indicatorTablesToJoin = [:]
     indicatorTablesToJoin.put(grid, grid_column_identifier)
+
+    //We check if the COUNT_WARM indicators must be computed.
+    //If yes we collect all window sizes
+    def window_sizes=[]
+    list_indicators_upper.each{
+        if(it.startsWith("COUNT_WARM_")){
+            window_sizes<< Integer.valueOf(it.substring(11, it.length()))
+        }
+    }
+
     // Needed for intermediate calculations...
     def tablesToJoinForWidth = [:]
 
@@ -1652,17 +1662,17 @@ String rasterizeIndicators(JdbcDataSource datasource,
     /*
     * Make aggregation process with previous grid and current rsu lcz
     */
-    if (list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY", "URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES"]) && rsu_lcz) {
+    if ((list_indicators_upper.intersect(["LCZ_FRACTION", "LCZ_PRIMARY", "URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES"])|| window_sizes) && rsu_lcz)  {
         def indicatorName = "LCZ_PRIMARY"
-        String upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(
+        String lczUpperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(
                 datasource, grid, grid_column_identifier,
                 rsu_lcz, indicatorName, indicatorName,
                 false, "lcz")
-        if (upperScaleAreaStatistics) {
-            indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
+        if (lczUpperScaleAreaStatistics) {
+            indicatorTablesToJoin.put(lczUpperScaleAreaStatistics, grid_column_identifier)
             if (list_indicators_upper.contains("LCZ_PRIMARY")) {
                 def resultsDistrib = Geoindicators.GenericIndicators.distributionCharacterization(datasource,
-                        upperScaleAreaStatistics, upperScaleAreaStatistics, grid_column_identifier,
+                        lczUpperScaleAreaStatistics, lczUpperScaleAreaStatistics, grid_column_identifier,
                         ["equality", "uniqueness"],
                         "GREATEST", true, true,
                         "lcz")
@@ -1690,17 +1700,28 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 }
                 def distribLczTableInt = postfix "distribLczTableInt"
 
-                datasource """  DROP TABLE IF EXISTS $distribLczTableInt;
+                datasource.execute("""  DROP TABLE IF EXISTS $distribLczTableInt;
                                 CREATE TABLE $distribLczTableInt
                                         AS SELECT   $grid_column_identifier, $casewhenQuery1 null$parenthesis AS LCZ_PRIMARY,
                                                     $casewhenQuery2 null$parenthesis AS LCZ_SECONDARY, 
                                                     MIN_DISTANCE, LCZ_UNIQUENESS_VALUE, LCZ_EQUALITY_VALUE 
                                         FROM $resultsDistrib;
-                                DROP TABLE IF EXISTS $resultsDistrib""".toString()
+                                DROP TABLE IF EXISTS $resultsDistrib""")
                 tablesToDrop << resultsDistrib
                 indicatorTablesToJoin.put(distribLczTableInt, grid_column_identifier)
+                //We compute COUNT_WARM indicators
+                if(window_sizes){
+                    String grid_lcz_primary_indexes =  postfix("grid_lcz_indexes")
+                    datasource.createIndex(distribLczTableInt, grid_column_identifier)
+                    datasource.execute("""DROP TABLE IF EXISTS ${grid_lcz_primary_indexes};
+                    CREATE TABLE $grid_lcz_primary_indexes as 
+                    select a.$grid_column_identifier, a.id_row, a.id_col, b.LCZ_PRIMARY FROM
+                    $grid as a left join $distribLczTableInt as b on a.$grid_column_identifier=b.$grid_column_identifier;""")
+                    String grid_count_warm = Geoindicators.GridIndicators.gridCountCellsWarm(datasource, grid_lcz_primary_indexes, window_sizes)
+                    indicatorTablesToJoin.put(grid_count_warm, grid_column_identifier)
+                    tablesToDrop<<grid_lcz_primary_indexes
+                }
             }
-
         } else {
             info "Cannot aggregate the LCZ at grid scale"
         }
@@ -2032,7 +2053,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     //Join all indicators at grid scale
-    def joinGrids = Geoindicators.DataUtils.joinTables(datasource, indicatorTablesToJoin, grid_indicators_table)
+    Geoindicators.DataUtils.joinTables(datasource, indicatorTablesToJoin, grid_indicators_table)
 
     //Execute commands
     datasource.execute(sqlUpdateCommand.join(" "))
@@ -2047,6 +2068,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     return grid_indicators_table
 }
+
+
 
 /**
  * Method to cut the building with a grid or any other table
