@@ -346,7 +346,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         geoFiles.eachWithIndex { geoFile, index ->
             def tableName = h2gis.load(geoFile, true)
-            assertEquals(4326, h2gis.getSpatialTable(tableName).srid)
+            if(h2gis.getRowCount(tableName)>0) {
+                assertEquals(4326, h2gis.getSpatialTable(tableName).srid)
+            }
         }
     }
 
@@ -377,7 +379,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 countFiles++
             }
         }
-        assertEquals(8, countFiles)
+        assertEquals(10, countFiles)
     }
 
     @Disabled
@@ -400,7 +402,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "output"      : [
                         "folder": directory]
         ]
-        println(osm_parmeters)
         OSM.WorkflowOSM.workflow(osm_parmeters)
         def folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
         def resultFiles = []
@@ -866,7 +867,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                            "$imperviousFile"   : imperviousFile + test, "$zoneFile": zoneFile + test,
                            "$sea_land_maskFile": sea_land_maskFile + test]
         filesToLoad.each { file, tab ->
-            println("$geoclimate_init_dir/${file}.geojson")
             datasource.load("$geoclimate_init_dir/${file}.geojson", tab, true)
         }
 

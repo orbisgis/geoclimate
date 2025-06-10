@@ -236,7 +236,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         warn("The zone $location has not been processed. Please check the log file ${databaseFolder + File.separator + "log_zones_" + new_location + ".fgb"} to get more informations.")
                     }
                 }
-                deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
+                if(delete_h2gis){
+                    h2gis_datasource.deleteClose()
+                }
                 return outputTableNamesResult
             } else {
                 throw new Exception("Cannot find any data to process from the folder $inputFolder".toString())
@@ -404,25 +406,6 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         }
     }
 
-    /**
-     *
-     * Method to delete the local H2GIS database used by the workflow
-     * @param delete
-     * @param h2GIS
-     * @return
-     */
-    def deleteH2GISDb(def delete, Connection connection, def dbFolder, def dbName) throws Exception {
-        if (delete) {
-            if (connection) {
-                connection.close()
-                DeleteDbFiles.execute(dbFolder, dbName, true)
-                debug "The local H2GIS database : ${dbName} has been deleted"
-            } else {
-                throw new Exception("Cannot delete the local H2GIS database : ${dbName} ".toString())
-            }
-        }
-    }
-
 /**
  * This method is used to create a main folder for each location.
  * This folder is used to store all results and can contain subfolders.
@@ -473,7 +456,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
         if (processing_parameters) {
             def distanceP = processing_parameters.distance
-            if (distanceP && distanceP in Number) {
+            if (distanceP!=null && distanceP in Number) {
                 defaultParameters.distance = distanceP
             }
 
@@ -969,7 +952,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @param data_domain domain to save the data
  * @return
  */
-    def saveResults(def h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles,
+    def saveResults(H2GIS h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles,
                     def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData, def outputGrid,
                     Map excluded_columns, String data_domain) throws Exception {
         //Check if the user decides to reproject the output data
@@ -983,7 +966,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         }
         Geometry outputZoneGeometry=null
         if(data_domain=="zone") {
-            outputZoneGeometry = h2gis_datasource.getExtent(results.zone)
+            outputZoneGeometry = h2gis_datasource.firstRow("select st_union(st_accum(THE_GEOM)) as the_geom from $results.zone".toString()).the_geom
         } else if(data_domain=="zone_extended") {
             outputZoneGeometry = h2gis_datasource.getExtent(results.zone_extended)
         }

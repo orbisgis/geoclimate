@@ -260,7 +260,6 @@ class SpatialUnitsTests {
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
         """.toString())
         String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0)
-        h2GIS.save(sprawl_areas, "/tmp/sprawl.fgb", true)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(81, h2GIS.firstRow("select st_union(st_accum(the_geom)) as the_geom from $sprawl_areas".toString()).the_geom.getArea())
     }
@@ -361,8 +360,6 @@ class SpatialUnitsTests {
         String path = "/home/ebocher/Autres/data/geoclimate/uhi_lcz/Angers/"
         String grid_scales = h2GIS.load("${path}grid_indicators.geojson")
         String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 100)
-        h2GIS.save(sprawl_areas, "/tmp/sprawl_areas_indic.fgb", true)
-        h2GIS.save(grid_scales, "/tmp/grid_indicators.fgb", true)
         String distances = Geoindicators.GridIndicators.gridDistances(h2GIS, sprawl_areas, grid_scales, "id_grid")
         h2GIS.save(distances, "/tmp/distances.fgb", true)
 

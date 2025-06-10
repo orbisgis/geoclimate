@@ -238,7 +238,7 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource
  * @param deleteOutputData true to delete the file if exists
  */
 def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject,  def filter,def deleteOutputData) {
-    if (outputTable && h2gis_datasource.hasTable(outputTable) && h2gis_datasource.getRowCount(outputTable)>0) {
+    if (outputTable && h2gis_datasource.hasTable(outputTable)){
         h2gis_datasource.save(buildSelectQuery(h2gis_datasource,  outputTable, outputSRID,  reproject,   filter), filePath, deleteOutputData)
         info "${outputTable} has been saved in ${filePath}."
     }

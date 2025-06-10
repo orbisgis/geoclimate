@@ -216,9 +216,10 @@ def loadV2(
                 """)
 
     // 3. Prepare the Building table (from the layers "BATI_INDIFFERENCIE", "BATI_INDUSTRIEL" and "BATI_REMARQUABLE") that are in the study area (ZONE_BUFFER)
+    def INPUT_BUILDING = postfix("INPUT_BUILDING")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_BUILDING;
-            CREATE TABLE INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL FLOAT, TYPE varchar, MAIN_USE varchar, HEIGHT_ROOF FLOAT)
+            DROP TABLE IF EXISTS $INPUT_BUILDING;
+            CREATE TABLE $INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL FLOAT, TYPE varchar, MAIN_USE varchar, HEIGHT_ROOF FLOAT)
             AS 
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.HAUTEUR, 'Résidentiel' , null, null FROM $bati_indifferencie a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.HAUTEUR>=0
             union all
@@ -232,9 +233,10 @@ def loadV2(
             """)
 
     //4. Prepare the Road table (from the layer "ROUTE") that are in the study area (ZONE_BUFFER)
+    def INPUT_ROAD = postfix("INPUT_ROAD")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_ROAD;
-            CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, ZINDEX integer, CROSSING varchar,
+            DROP TABLE IF EXISTS $INPUT_ROAD;
+            CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, TYPE varchar, ZINDEX integer, CROSSING varchar,
              DIRECTION varchar,  RANK INTEGER, ADMIN_SCALE VARCHAR, NB_VOIES INTEGER)
             AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.LARGEUR, a.NATURE, 
             a.POS_SOL, a.FRANCHISST, a.SENS , 
@@ -244,25 +246,28 @@ def loadV2(
             """)
 
     //5. Prepare the Rail table (from the layer "TRONCON_VOIE_FERREE") that are in the study area (ZONE)
+    def INPUT_RAIL = postfix("INPUT_RAIL")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_RAIL;
-            CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
+            DROP TABLE IF EXISTS $INPUT_RAIL;
+            CREATE TABLE $INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
             AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, a.POS_SOL, a.FRANCHISST, 
             CASE WHEN a.NB_VOIES = 0 THEN 1.435 ELSE 1.435 * a.NB_VOIES END FROM $troncon_voie_ferree a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0;
             """)
 
 
     //6. Prepare the Hydrography table (from the layer "SURFACE_EAU") that are in the study area (ZONE_EXTENDED)
+    def INPUT_HYDRO = postfix("INPUT_HYDRO")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_HYDRO;
-            CREATE TABLE INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE VARCHAR)
+            DROP TABLE IF EXISTS $INPUT_HYDRO;
+            CREATE TABLE $INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE VARCHAR)
             AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE   FROM $surface_eau a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
             """)
 
     //7. Prepare the Vegetation table (from the layer "ZONE_VEGETATION") that are in the study area (ZONE_EXTENDED)
+    def INPUT_VEGET = postfix("INPUT_VEGET")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_VEGET;
-            CREATE TABLE INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
+            DROP TABLE IF EXISTS $INPUT_VEGET;
+            CREATE TABLE $INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
             AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM $zone_vegetation a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0
@@ -323,9 +328,9 @@ def loadV2(
     datasource.execute("""
             DROP TABLE IF EXISTS  TMP_SURFACE_ACTIVITE; """)
     debug('The BDTopo data has been prepared')
-    return [building   : "INPUT_BUILDING", road: "INPUT_ROAD",
-            rail       : "INPUT_RAIL", water: "INPUT_HYDRO",
-            vegetation : "INPUT_VEGET", impervious: input_impervious,
+    return [building   : INPUT_BUILDING, road: INPUT_ROAD,
+            rail       : INPUT_RAIL, water: INPUT_HYDRO,
+            vegetation : INPUT_VEGET, impervious: input_impervious,
             urban_areas: input_urban_areas,
             zone: zoneTable,
             zone_extended:zone_extended
@@ -530,7 +535,6 @@ Map loadV3(JdbcDataSource datasource,
     //2- Preparation of the study area (zone_xx)
     def zoneTable = postfix("zone")
     def zone_extended = postfix("zone_extended")
-
     datasource.execute("""
             DROP TABLE IF EXISTS $zoneTable;
             CREATE TABLE $zoneTable AS SELECT ST_FORCE2D(the_geom) as the_geom, CODE_INSEE AS ID_ZONE  FROM $commune;
@@ -541,9 +545,10 @@ Map loadV3(JdbcDataSource datasource,
                 """)
 
     // 3. Prepare the Building table that are in the study area
+    def INPUT_BUILDING = postfix("INPUT_BUILDING")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_BUILDING;
-            CREATE TABLE INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL float, HEIGHT_ROOF float, TYPE varchar, MAIN_USE varchar)
+            DROP TABLE IF EXISTS $INPUT_BUILDING;
+            CREATE TABLE $INPUT_BUILDING (THE_GEOM geometry, ID_SOURCE varchar(24), HEIGHT_WALL float, HEIGHT_ROOF float, TYPE varchar, MAIN_USE varchar)
             AS 
             SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, 
             a.ID, a.HAUTEUR, 
@@ -560,9 +565,10 @@ Map loadV3(JdbcDataSource datasource,
             """)
 
     //4. Prepare the Road table (from the layer "troncon_de_route") that are in the study area (ZONE_BUFFER)
+    def INPUT_ROAD = postfix("INPUT_ROAD")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_ROAD;
-            CREATE TABLE INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, 
+            DROP TABLE IF EXISTS $INPUT_ROAD;
+            CREATE TABLE $INPUT_ROAD (THE_GEOM geometry, ID_SOURCE varchar(24), WIDTH DOUBLE PRECISION, 
             TYPE varchar,  ZINDEX integer, CROSSING varchar, DIRECTION varchar,
             RANK INTEGER, ADMIN_SCALE VARCHAR, NB_VOIES INTEGER)
             AS SELECT  ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.LARGEUR, 
@@ -583,9 +589,10 @@ Map loadV3(JdbcDataSource datasource,
             """)
 
     //5. Prepare the Rail table (from the layer "troncon_de_voie_ferree") that are in the study area (ZONE)
+    def INPUT_RAIL = postfix("INPUT_RAIL")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_RAIL;
-            CREATE TABLE INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
+            DROP TABLE IF EXISTS $INPUT_RAIL;
+            CREATE TABLE $INPUT_RAIL (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer, CROSSING varchar, WIDTH DOUBLE PRECISION)
             AS SELECT ST_FORCE2D(a.THE_GEOM) as the_geom, a.ID, a.NATURE, 
             a.POS_SOL, 
             CASE WHEN a.POS_SOL in ('1', '2', '3', '4') THEN 'Pont' else null end, 
@@ -593,9 +600,10 @@ Map loadV3(JdbcDataSource datasource,
             """)
 
     //6. Prepare the Hydrography table (from the layer "surface_hydrographique") that are in the study area (ZONE_EXTENDED)
+    def INPUT_HYDRO = postfix("INPUT_HYDRO")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_HYDRO;
-            CREATE TABLE INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE varchar)
+            DROP TABLE IF EXISTS $INPUT_HYDRO;
+            CREATE TABLE $INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE varchar)
             AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE FROM $surface_hydrographique a, $zone_extended 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0
             and a.NATURE not in ('Conduit buse', 'Conduit forcé', 'Marais', 'Glacier névé')
@@ -606,9 +614,10 @@ Map loadV3(JdbcDataSource datasource,
             """)
 
     //7. Prepare the Vegetation table (from the layers "zone_de_vegetation", "piste_d_aerodrome", "terrain_de_sport") that are in the study area (ZONE_EXTENDED)
+    def INPUT_VEGET = postfix("INPUT_VEGET")
     datasource.execute("""
-            DROP TABLE IF EXISTS INPUT_VEGET;
-            CREATE TABLE INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
+            DROP TABLE IF EXISTS $INPUT_VEGET;
+            CREATE TABLE $INPUT_VEGET (THE_GEOM geometry, ID_SOURCE varchar(24), TYPE varchar, ZINDEX integer)
             AS SELECT ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, a.NATURE, 0 FROM $zone_de_vegetation a, $zone_extended b 
             WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom)
             UNION all
@@ -707,10 +716,11 @@ Map loadV3(JdbcDataSource datasource,
     datasource.execute("""
             DROP TABLE IF EXISTS TMP_SURFACE_ACTIVITE; """)
     debug('The BDTopo 3.0 data has been prepared')
-    return [building   : "INPUT_BUILDING",
-            road       : "INPUT_ROAD",
-            rail       : "INPUT_RAIL", water: "INPUT_HYDRO",
-            vegetation : "INPUT_VEGET", impervious: input_impervious,
+    return [building   : INPUT_BUILDING,
+            road       : INPUT_ROAD,
+            rail       : INPUT_RAIL,
+            water: INPUT_HYDRO,
+            vegetation : INPUT_VEGET, impervious: input_impervious,
             urban_areas: input_urban_areas,
             coastline  : coastline,
             zone: zoneTable,

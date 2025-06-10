@@ -88,7 +88,6 @@ class GridIndicatorsTests {
             from $grid_scale
             group by ID_ROW_LOD_${i}, ID_COL_LOD_${i};
             """.toString())
-            h2GIS.save(grid_lod, "/tmp/grid_lod_${i}.fgb", true)
             h2GIS.dropTable(grid_lod)
         }
     }

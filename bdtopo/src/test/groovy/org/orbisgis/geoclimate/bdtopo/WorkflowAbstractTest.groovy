@@ -162,6 +162,8 @@ abstract class WorkflowAbstractTest {
 
         //Test grid_indicators
         assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators} where water_fraction>0").count > 0
+
+        h2gis.deleteClose()
     }
 
     @Test
@@ -215,6 +217,7 @@ abstract class WorkflowAbstractTest {
             assertTrue(grid_file.exists())
             h2gis.load(grid_file.absolutePath, "grid_indicators_file", true)
             assertEquals(4326, h2gis.getSpatialTable("grid_indicators_file").srid)
+            h2gis.deleteClose()
         }
     }
 
@@ -347,7 +350,7 @@ abstract class WorkflowAbstractTest {
                 "geoclimatedb": [
                         "folder": getDBFolderPath(),
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete": false
+                        "delete": true
                 ],
                 "input"       : [
                         "folder"   : dataFolder,
@@ -436,6 +439,7 @@ abstract class WorkflowAbstractTest {
         //Test road
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where TYPE is not null;""".toString()).count > 0)
         assertTrue(h2gis.firstRow("""SELECT count(*) as count from ${tableNames.road} where WIDTH is not null or WIDTH>0 ;""".toString()).count > 0)
+        h2gis.deleteClose()
     }
 
     @Test
@@ -446,7 +450,7 @@ abstract class WorkflowAbstractTest {
                 "description" : "Full workflow configuration file",
                 "geoclimatedb": [
                         "folder": getDBFolderPath(),
-                        "name"  : "testFormatedData",
+                        "name"  : "testTarget",
                         "delete": false
                 ],
                 "input"       : [
@@ -466,9 +470,10 @@ abstract class WorkflowAbstractTest {
         assertNotNull(process)
         def tableNames = process.values()
         def targetGrid = tableNames.grid_target[0]
-        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testFormatedData")
+        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testTarget")
         assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
         where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
+        h2gis.deleteClose()
     }
 
     @Test
@@ -479,7 +484,7 @@ abstract class WorkflowAbstractTest {
                 "description" : "Full workflow configuration file",
                 "geoclimatedb": [
                         "folder": getDBFolderPath(),
-                        "name"  : "testFormatedData",
+                        "name"  : "testTargetGridSize",
                         "delete": false
                 ],
                 "input"       : [
@@ -503,11 +508,12 @@ abstract class WorkflowAbstractTest {
         assertNotNull(process)
         def tableNames = process.values()
         def targetGrid = tableNames.grid_target[0]
-        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testFormatedData")
+        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testTargetGridSize")
         assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
         where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
         def gridIndicators = tableNames.grid_indicators[0]
         assertTrue(h2gis.getColumnNames(gridIndicators).contains("LCZ_PRIMARY"))
+        h2gis.deleteClose()
     }
 
     @Test
@@ -566,6 +572,7 @@ abstract class WorkflowAbstractTest {
         assertEquals(20, h2gis.getRowCount("grid_out"))
 
         h2gis.dropTable("building_out", "grid_out")
+        h2gis.deleteClose()
     }
 
 }

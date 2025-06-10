@@ -365,14 +365,7 @@ Map workflow(def input) throws Exception {
                 overpass_timeout, overpass_maxsize, osm_date, databaseFolder,
                 excluded_output_db_columns, domain)
         if (delete_h2gis) {
-            def localCon = h2gis_datasource.getConnection()
-            if (localCon) {
-                localCon.close()
-                DeleteDbFiles.execute(databaseFolder, databaseName, true)
-                debug "The local H2GIS database : ${databasePath} has been deleted"
-            } else {
-                throw new Exception("Cannot delete the local H2GIS database : ${databasePath}".toString())
-            }
+           h2gis_datasource.deleteClose()
         }
         return osmprocessing
 
@@ -549,7 +542,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 if(domain =="zone_extended") {
                     outputZoneGeometry = h2gis_datasource.getExtent(utm_extended_bbox_table)
                 }else{
-                    outputZoneGeometry = h2gis_datasource.getExtent(utm_zone_table)
+                    outputZoneGeometry = h2gis_datasource.firstRow("select st_union(st_accum(the_geom)) as the_geom from $utm_zone_table").the_geom
                 }
 
                 //Compute the RSU indicators
@@ -851,9 +844,10 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
 
     if (processing_parameters) {
         def distanceP = processing_parameters.distance
-        if (distanceP && distanceP in Number) {
+        if (distanceP!=null && distanceP in Number) {
             defaultParameters.distance = distanceP
         }
+
         def prefixNameP = processing_parameters.prefixName
         if (prefixNameP && prefixNameP in String) {
             defaultParameters.prefixName = prefixNameP

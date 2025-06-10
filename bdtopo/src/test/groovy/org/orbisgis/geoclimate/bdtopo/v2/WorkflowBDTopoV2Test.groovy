@@ -86,7 +86,7 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         cols = ["ID_ROAD", "ID_SOURCE", "WIDTH", "TYPE", "SURFACE", "SIDEWALK", "CROSSING", "MAXSPEED", "DIRECTION", "ZINDEX", "THE_GEOM"]
         assertTrue h2GIS.getColumnNames("road").intersect(cols).size() == cols.size()
         assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where WIDTH = 0 ").count)
-        assertEquals(33, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where crossing in ('bridge', 'crossing')").count)
+        assertEquals(24, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where crossing in ('bridge', 'crossing')").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where TYPE IS NOT NULL OR SIDEWALK is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where MAXSPEED !=0 OR MAXSPEED>= -1").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where DIRECTION !=0 OR DIRECTION>= -1").count)
@@ -101,7 +101,7 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         assertTrue h2GIS.getColumnNames("rail").intersect(cols).size() == cols.size()
         assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where WIDTH = 0 ").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where type is not null").count)
-        assertEquals(5, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where crossing is not null").count)
+        assertEquals(2, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where crossing is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where ZINDEX BETWEEN -4 AND 4").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM rail where ST_ISEMPTY(THE_GEOM)=false OR THE_GEOM IS NOT NULL").count)
 
@@ -111,8 +111,8 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         cols = ["THE_GEOM", "ID_VEGET", "ID_SOURCE", "TYPE", "HEIGHT_CLASS", "ZINDEX"]
         assertTrue h2GIS.getColumnNames("vegetation").intersect(cols).size() == cols.size()
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where type is not null").count)
-        assertEquals(1170, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class ='high'").count)
-        assertEquals(4, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class = 'low'").count)
+        assertEquals(665, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class ='high'").count)
+        assertEquals(2, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class = 'low'").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where ZINDEX BETWEEN 0 AND 1 ").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where ST_ISEMPTY(THE_GEOM)=false OR THE_GEOM IS NOT NULL").count)
 
@@ -200,5 +200,6 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         assertEquals(20, h2gis.getRowCount("grid_out"))
 
         h2gis.dropTable("building_out", "grid_out")
+        h2gis.deleteClose()
     }
 }

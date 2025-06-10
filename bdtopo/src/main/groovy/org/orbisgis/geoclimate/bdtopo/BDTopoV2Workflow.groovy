@@ -52,7 +52,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
         DataSource ds = dataSourceFactory.createDataSource(props)
         sourceConnection = ds.getConnection()
     } catch (SQLException e) {
-        throw new SQLException("Cannot connect to the database to import the data ")
+        throw new Exception("Cannot connect to the database to import the data ", e)
     }
     if (sourceConnection == null) {
         throw new Exception("Cannot connect to the database to import the data ")
@@ -214,6 +214,7 @@ Integer loadDataFromPostGIS(Object input_database_properties, Object code, Objec
     } else {
         throw new Exception("Cannot find any commune with the insee code : $code".toString())
     }
+    return false
 }
 
 @Override
@@ -270,7 +271,6 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
             importPreprocess.rail,
             zone_extended)
 
-
     //Format vegetation
     def finalVeget = BDTopo.InputDataFormatting.formatVegetationLayer(datasource,
             importPreprocess.vegetation,
@@ -286,7 +286,6 @@ Map formatLayers(JdbcDataSource datasource, Map layers, float distance, float hL
     return ["building"  : finalBuildings, "road": finalRoads, "rail": finalRails, "water": finalHydro,
             "vegetation": finalVeget, "impervious": finalImpervious, "urban_areas": urbanAreas, "zone": zoneTable,
             "zone_extended":zone_extended]
-
 }
 
 @Override
