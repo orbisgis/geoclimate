@@ -1,0 +1,15 @@
+/* Remove the toctree display in the page body (but keeps it in the sidebar) */
+div.toctree-wrapper {
+  display: none;
+}
+
+/* Sidebar header (and topbar for mobile) */
+.wy-side-nav-search, .wy-nav-top {
+  background: #ffffff;
+}
+
+/* Add a shadow at the navbar's right */
+.wy-nav-side {
+  box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
