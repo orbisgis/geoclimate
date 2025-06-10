@@ -1,0 +1,129 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, CNRS-Lab-STICC
+# This file is distributed under the same license as the Geoclimate package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Geoclimate \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-06 16:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../Processing-steps.rst:2
+msgid "Processing steps"
+msgstr ""
+
+#: ../../Processing-steps.rst:4
+msgid "To compute the whole indicators and classifications, GeoClimate uses the concept of Workflow to chain a set of spatial analysis and statistical processes. By default, the indicators are calculated at the TU scale (cf. subsection *Default TU scale calculation*) but optionally the user may aggregate indicators spatially at the scale of a grid of rectangular meshes (cf. subsection *Spatial aggregation using a regular grid*)."
+msgstr ""
+
+#: ../../Processing-steps.rst:7
+msgid "Default TU scale calculation"
+msgstr ""
+
+#: ../../Processing-steps.rst:9
+msgid "The Workflow is organized in 3 steps (Figure 1). Note that each step or each process within a step can be run individually (cf. `section Coding implementation <Coding-implementation.html>`_). Note also that you can use the workflow even though you do not provide all input data. Partitioning and indicators calculations will be limited to the supplied data."
+msgstr ""
+
+#: ../../Processing-steps.rst:11
+msgid "**1. New spatial units creation**"
+msgstr ""
+
+#: ../../Processing-steps.rst:13
+msgid "The first step of the GeoClimate chain concerns the construction of two new spatial units (block and RSU)."
+msgstr ""
+
+#: ../../Processing-steps.rst:15
+msgid "A block is defined as an aggregation of buildings that are in contact,"
+msgstr ""
+
+#: ../../Processing-steps.rst:16
+msgid "A RSU (Reference Spatial Unit), being the elementary unit to characterize all the characteristics of a piece of land (not only related to buildings but also to vegetation, water, sea, etc.) plus the urban functions (commercial, industrial, military, residential...). In the default case described here, Topographical Spatial Units (TSU) are used and they are defined as a continuous and homogeneous way to divide the space using topographic constraints based on road and railway center lines, vegetation, water and sea surface boundaries, administrative boundaries and urban function areas."
+msgstr ""
+
+#: ../../Processing-steps.rst:18
+msgid "The construction of the TSU is a key process in GeoClimate. First, a planar graph is built using all input geometries. The planar graph is then traversed to generate new polygons. Only 2D is considered for partitioning, therefore underground elements (such as tunnels), or overground (such as bridges) are excluded from the input. Water and vegetation surfaces are also excluded from the input data when they are smaller than a certain threshold, set by default to 2,500 m² for water and 10,000 m² for vegetation. Urban functions are described in the urban areas layer. As for water features, geometries with a surface area greater than 10,000 m² are excluded."
+msgstr ""
+
+#: ../../Processing-steps.rst:20
+msgid "**2. Compute spatial indicators**"
+msgstr ""
+
+#: ../../Processing-steps.rst:22
+msgid "The spatial indicators are computed at three scales: building, block and RSU."
+msgstr ""
+
+#: ../../Processing-steps.rst:24
+msgid "Buildings are characterized by their location in a geographical space (e.g. distance to the nearest road, average distance to other buildings, number of building neighbors...),"
+msgstr ""
+
+#: ../../Processing-steps.rst:25
+msgid "Building and blocks are characterized by morphological indicators (e.g. a form factor),"
+msgstr ""
+
+#: ../../Processing-steps.rst:26
+msgid "RSU are characterized by fraction of land type (e.g. vegetation, water, impervious fractions...) and specific climate-oriented indicators (e.g. aspect ratio, mean sky view factor...)."
+msgstr ""
+
+#: ../../Processing-steps.rst:28
+msgid "Some of the building indicators are also aggregated at block scale (e.g. mean block height) and some of the building and block indicators are aggregated at RSU scale (e.g. mean number of neighbors per building, mean building height...). At the end, more than 100 indicators are calculated."
+msgstr ""
+
+#: ../../Processing-steps.rst:30
+msgid "**3. Apply classifications**"
+msgstr ""
+
+#: ../../Processing-steps.rst:32
+msgid "Classifications use the spatial indicators at the three scales and specific statistical model/algorithms to set:"
+msgstr ""
+
+#: ../../Processing-steps.rst:34
+msgid "The typology of a building based on an architectural approach (Urban Typology by Random Forest - UTRF) such as defined in `Bocher et al. (2017) <https://hal.archives-ouvertes.fr/hal-01730717v2>`_, which is then aggregated at RSU scale"
+msgstr ""
+
+#: ../../Processing-steps.rst:35
+msgid "The typology of a RSU based on the Local Climate Zones definition (`Stewart et Oke, 2012 <https://journals.ametsoc.org/view/journals/bams/93/12/bams-d-11-00019.1.xml?tab_body=pdf>`_)"
+msgstr ""
+
+#: ../../Processing-steps.rst:37
+msgid "GeoClimate main processing steps"
+msgstr ""
+
+#: ../../Processing-steps.rst:40
+msgid "Figure 1. Main GeoClimate processing steps"
+msgstr ""
+
+#: ../../Processing-steps.rst:43
+msgid "Spatial aggregation using a regular grid"
+msgstr ""
+
+#: ../../Processing-steps.rst:45
+msgid "GeoClimate integrates a \"rasterization\" of the indicators and of the classifications which can be done directly from the input data sources (if the LCZ classification is not needed) or after applications of the chain defined above (if the LCZ classification is needed)."
+msgstr ""
+
+#: ../../Processing-steps.rst:47
+msgid "The rasterization process creates a grid based on the bounding box of the zone layer. The grid is intersected with a set of input data given to a spatial aggregating function that computes the square cell fraction of each input data and the building height which is a footprint area weighted mean height (Figure 2)."
+msgstr ""
+
+#: ../../Processing-steps.rst:49
+msgid "GeoClimate grid processing"
+msgstr ""
+
+#: ../../Processing-steps.rst:52
+msgid "Figure 2. Processing steps to aggregate indicators at grid scale"
+msgstr ""
+
+#: ../../_Footer.rst:1
+msgid "**GeoClimate - documentation 2020 - 2024** - |cc-logo| This work is licensed under a `Creative Commons Attribution-ShareAlike 4.0 International License <http://creativecommons.org/licenses/by-sa/4.0/>`_."
+msgstr ""
+
+#: ../../_Footer.rst:4
+msgid "Creative Commons License"
+msgstr ""

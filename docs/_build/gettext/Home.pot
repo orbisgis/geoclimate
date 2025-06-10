@@ -1,0 +1,137 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, CNRS-Lab-STICC
+# This file is distributed under the same license as the Geoclimate package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Geoclimate \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-06 16:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../Home.rst:3
+msgid "Welcome to the GeoClimate wiki documentation!"
+msgstr ""
+
+#: ../../Home.rst:5
+msgid "GeoClimate is an open‑source geospatial toolbox to compute a set of climate‑related parameters describing a territory (morphological indicators such as Sky View Factor, urban classifications such as Local Climate Zones, etc.)."
+msgstr ""
+
+#: ../../Home.rst:7
+msgid "GeoClimate uses vector‑based inputs. Specific workflows have been developed to automatically use `OpenStreetMap <https://www.openstreetmap.org>`_ and the French `BD Topo 2.2 and 3.0 versions <https://ign.fr/>`_ databases, but the algorithms are data‑independent, thus allowing the user to connect any vector‑based dataset."
+msgstr ""
+
+#: ../../Home.rst:11
+msgid "GeoClimate is developed in the `Groovy <https://groovy-lang.org/>`_ language."
+msgstr ""
+
+#: ../../Home.rst:13
+msgid "**Note :**"
+msgstr ""
+
+#: ../../Home.rst:15
+msgid "**The documentation is inline with the current GeoClimate code source.**"
+msgstr ""
+
+#: ../../Home.rst:17
+msgid "**If you are using a released version of GeoClimate please read the documentation packaged with the version you are using.**"
+msgstr ""
+
+#: ../../Home.rst:21
+msgid "Open‑source philosophy"
+msgstr ""
+
+#: ../../Home.rst:23
+msgid "It can be freely used either for research and education, as well as by experts in a professional use."
+msgstr ""
+
+#: ../../Home.rst:25
+msgid "GeoClimate is distributed under the `LGPL 3 <https://www.gnu.org/licenses/lgpl-3.0.en.html>`_ license by the DECIDE GIS team of the Lab‑STICC (CNRS)."
+msgstr ""
+
+#: ../../Home.rst:27
+msgid "You are welcome: * to contribute to GeoClimate please visit the code source repository: https://github.com/orbisgis/geoclimate * to contact members of the team, use the email info@orbisgis.org or report an issue: https://github.com/orbisgis/geoclimate/issues"
+msgstr ""
+
+#: ../../Home.rst:32
+msgid "Contributing"
+msgstr ""
+
+#: ../../Home.rst:34
+msgid "For legal reasons, contributors are asked to provide a contributor license agreement (CLA)."
+msgstr ""
+
+#: ../../Home.rst:36
+msgid "The message needs to include the following statement:"
+msgstr ""
+
+#: ../../Home.rst:38
+msgid "\"I wrote the code, it's mine, and I'm contributing it to GeoClimate for distribution licensed under the `LGPL 3.0 <http://www.gnu.org/copyleft/lgpl.html>`_.\""
+msgstr ""
+
+#: ../../Home.rst:40
+msgid "If you want to contribute, send a PR on GitHub and refer the CLA in your message."
+msgstr ""
+
+#: ../../Home.rst:43
+msgid "Fundings"
+msgstr ""
+
+#: ../../Home.rst:45
+msgid "The GeoClimate library has been originally developed within the following research projects:"
+msgstr ""
+
+#: ../../Home.rst:47
+msgid "`URCLIM <http://jpi-climate.eu/nl/25223460-URCLIM.html>`_ (2017–2021), part of ERA4CS, a project initiated by JPI Climate and co‑funded by the European Union under grant agreement No 690462"
+msgstr ""
+
+#: ../../Home.rst:48
+msgid "PAENDORA (2017–2021), funded by `ADEME <https://www.ademe.fr/>`_"
+msgstr ""
+
+#: ../../Home.rst:49
+msgid "PAENDORA2 (Pour la gestion du confort estival : Données, Outils et Recherche‑Action) (2022–2025), funded by `ADEME <https://www.ademe.fr/>`_"
+msgstr ""
+
+#: ../../Home.rst:50
+msgid "`CENSE <https://anr.fr/Projet-ANR-16-CE22-0012>`_ (2017–2021), funded by `ANR <https://anr.fr>`_"
+msgstr ""
+
+#: ../../Home.rst:51
+msgid "Chaire GeoTERA (2020), funded by `SNCF Réseau <https://www.sncf-reseau.com>`_ on behalf of the foundation `Université Bretagne Sud <https://www.univ-ubs.fr>`_"
+msgstr ""
+
+#: ../../Home.rst:52
+msgid "`DEODE <https://www.ecmwf.int/en/about/what-we-do/environmental-services-and-future-vision/destination-earth>`_ (2022–2024), funded by the `ECMWF <https://www.ecmwf.int/>`_"
+msgstr ""
+
+#: ../../Home.rst:54
+msgid "GeoClimate is also supported by `GEOMANUM FOUNDATION <https://geomanum.org/fr>`_ (2022–2024)."
+msgstr ""
+
+#: ../../Home.rst:59
+msgid "The official documentation is available in English only."
+msgstr ""
+
+#: ../../Home.rst:61
+msgid "If you observe some mistakes or errors, please contact us at info@orbisgis.org or report an issue on GitHub."
+msgstr ""
+
+#: ../../Home.rst:63
+msgid "You are welcome to contribute, improve the documentation."
+msgstr ""
+
+#: ../../_Footer.rst:1
+msgid "**GeoClimate - documentation 2020 - 2024** - |cc-logo| This work is licensed under a `Creative Commons Attribution-ShareAlike 4.0 International License <http://creativecommons.org/licenses/by-sa/4.0/>`_."
+msgstr ""
+
+#: ../../_Footer.rst:4
+msgid "Creative Commons License"
+msgstr ""

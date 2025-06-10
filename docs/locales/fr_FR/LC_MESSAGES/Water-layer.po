@@ -1,0 +1,190 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, CNRS-Lab-STICC
+# This file is distributed under the same license as the Geoclimate package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Geoclimate \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-06 16:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: fr_FR\n"
+"Language-Team: fr_FR <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../Water-layer.rst:2
+msgid "Water Layer"
+msgstr ""
+
+#: ../../Water-layer.rst:4
+msgid "The water layer represents any kind of surface (river, sea, lake, etc.)."
+msgstr ""
+
+#: ../../Water-layer.rst:7
+msgid "Name"
+msgstr ""
+
+#: ../../Water-layer.rst:7
+msgid "Type"
+msgstr ""
+
+#: ../../Water-layer.rst:7
+msgid "Constraints"
+msgstr ""
+
+#: ../../Water-layer.rst:7
+msgid "Definition"
+msgstr ""
+
+#: ../../Water-layer.rst:9
+msgid "the_geom"
+msgstr ""
+
+#: ../../Water-layer.rst:9
+msgid "POLYGON"
+msgstr ""
+
+#: ../../Water-layer.rst:9
+msgid "X Y dimensions"
+msgstr ""
+
+#: ../../Water-layer.rst:9
+msgid "Geometry"
+msgstr ""
+
+#: ../../Water-layer.rst:11
+msgid "id_water"
+msgstr ""
+
+#: ../../Water-layer.rst:11 ../../Water-layer.rst:17
+msgid "INTEGER"
+msgstr ""
+
+#: ../../Water-layer.rst:11
+msgid "Primary Key"
+msgstr ""
+
+#: ../../Water-layer.rst:11
+msgid "Unique Identifier"
+msgstr ""
+
+#: ../../Water-layer.rst:13
+msgid "id_source"
+msgstr ""
+
+#: ../../Water-layer.rst:13 ../../Water-layer.rst:15
+msgid "VARCHAR"
+msgstr ""
+
+#: ../../Water-layer.rst:13
+msgid "*not null*"
+msgstr ""
+
+#: ../../Water-layer.rst:13
+msgid "Identifier of the feature from the input datasource"
+msgstr ""
+
+#: ../../Water-layer.rst:15
+msgid "type"
+msgstr ""
+
+#: ../../Water-layer.rst:15
+msgid "not null; value must be in the [type list]_"
+msgstr ""
+
+#: ../../Water-layer.rst:15
+msgid "Type of water"
+msgstr ""
+
+#: ../../Water-layer.rst:17
+msgid "zindex"
+msgstr ""
+
+#: ../../Water-layer.rst:17
+msgid "not null; ≥ 0; ≤ 1"
+msgstr ""
+
+#: ../../Water-layer.rst:17
+msgid "Defines position relative to ground: 0 = on ground, 1 = above ground"
+msgstr ""
+
+#: ../../Water-layer.rst:23
+msgid "Type Column Values"
+msgstr ""
+
+#: ../../Water-layer.rst:25
+msgid "List of possible values for the ``type`` column:"
+msgstr ""
+
+#: ../../Water-layer.rst:27
+msgid ""
+"``aqueduct`` A watercourse constructed to carry water from a source to a "
+"distribution point far away."
+msgstr ""
+
+#: ../../Water-layer.rst:30
+msgid ""
+"``canal`` An artificial open flow waterway used to carry useful water for"
+" transportation, waterpower, or irrigation. *(See: "
+"https://wiki.openstreetmap.org/wiki/Tag:waterway%3Dcanal)*"
+msgstr ""
+
+#: ../../Water-layer.rst:34
+msgid ""
+"``bay`` An inlet of a sea or lake mostly surrounded by land. *(See: "
+"https://wiki.openstreetmap.org/wiki/Tag:natural%3Dbay)*"
+msgstr ""
+
+#: ../../Water-layer.rst:38
+msgid ""
+"``lake`` A large body of water localized in a basin surrounded by dry "
+"land. *(See: https://wiki.openstreetmap.org/wiki/FR:Tag:natural%3Dwater)*"
+msgstr ""
+
+#: ../../Water-layer.rst:42
+msgid ""
+"``lagoon`` A shallow body of water separated from a larger body of water "
+"by a narrow landform such as reefs or barrier islands. *(See: "
+"https://wiki.openstreetmap.org/wiki/Tag:natural=tree)*"
+msgstr ""
+
+#: ../../Water-layer.rst:46
+msgid ""
+"``mangrove`` Water part of a mangrove (see vegetation layer). *(See: "
+"https://wiki.openstreetmap.org/wiki/Tag:natural=tree)*"
+msgstr ""
+
+#: ../../Water-layer.rst:50
+msgid ""
+"``pond`` A small area of fresh water. *(See: "
+"https://wiki.openstreetmap.org/wiki/Tag:natural=tree)*"
+msgstr ""
+
+#: ../../Water-layer.rst:54
+msgid ""
+"``basin`` An area artificially graded to hold water. *(See: "
+"https://wiki.openstreetmap.org/wiki/Key%3Abasin)*"
+msgstr ""
+
+#: ../../Water-layer.rst:58
+msgid "``water`` Any water area."
+msgstr ""
+
+#: ../../_Footer.rst:1
+msgid ""
+"**GeoClimate - documentation 2020 - 2024** - |cc-logo| This work is "
+"licensed under a `Creative Commons Attribution-ShareAlike 4.0 "
+"International License <http://creativecommons.org/licenses/by-sa/4.0/>`_."
+msgstr ""
+
+#: ../../_Footer.rst:4
+msgid "Creative Commons License"
+msgstr ""
+

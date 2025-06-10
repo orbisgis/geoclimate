@@ -1,0 +1,65 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, CNRS-Lab-STICC
+# This file is distributed under the same license as the Geoclimate package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Geoclimate \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-06 16:36+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en_US\n"
+"Language-Team: en_US <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../README.md:1
+msgid "Geoclimate"
+msgstr ""
+
+#: ../../README.md:3
+msgid "[![GitHub](https://img.shields.io/github/license/orbisgis/h2gis.svg)](https://github.com/orbisgis/geoclimate/blob/master/LICENSE.md)"
+msgstr ""
+
+#: ../../README.md:3
+msgid "GitHub"
+msgstr ""
+
+#: ../../README.md:5
+msgid "**A geospatial processing toolbox for environmental and climate studies**"
+msgstr ""
+
+#: ../../README.md:7
+msgid "![bandeau_geoclimate](source/_static/images/bandeau_geoclimate.png)"
+msgstr ""
+
+#: ../../README.md:7
+msgid "bandeau_geoclimate"
+msgstr ""
+
+#: ../../README.md:9
+msgid ""
+"GeoClimate documentation is available at "
+"https://github.com/orbisgis/geoclimate/wiki"
+msgstr ""
+
+#: ../../README.md:11
+msgid "**Note :**"
+msgstr ""
+
+#: ../../README.md:13
+msgid "**The documentation is inline with the current GeoClimate code source.**"
+msgstr ""
+
+#: ../../README.md:15
+msgid ""
+"**If you are using a released version of GeoClimate please read the "
+"documentation packaged with the version you are using.**"
+msgstr ""
+

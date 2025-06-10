@@ -1,0 +1,49 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, CNRS-Lab-STICC
+# This file is distributed under the same license as the Geoclimate package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Geoclimate \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-06 16:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en_US\n"
+"Language-Team: en_US <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../for-Command-Line-Interface.rst:2
+msgid "For command line interface"
+msgstr ""
+
+#: ../../for-Command-Line-Interface.rst:4
+msgid ""
+"A GeoClimate package is compiled and publish after every change on the "
+"code source on our Jenkins build."
+msgstr ""
+
+#: ../../for-Command-Line-Interface.rst:7
+msgid ""
+"Go to `geoclimate-1.0.0-SNAPSHOT-jar-with-dependencies `__ to download "
+"it. This version contains all libraries and it’s ready to run the command"
+" line interface."
+msgstr ""
+
+#: ../../_Footer.rst:1
+msgid ""
+"**GeoClimate - documentation 2020 - 2024** - |cc-logo| This work is "
+"licensed under a `Creative Commons Attribution-ShareAlike 4.0 "
+"International License <http://creativecommons.org/licenses/by-sa/4.0/>`_."
+msgstr ""
+
+#: ../../_Footer.rst:4
+msgid "Creative Commons License"
+msgstr ""
+

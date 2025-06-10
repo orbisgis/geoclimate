@@ -1,0 +1,156 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, CNRS-Lab-STICC
+# This file is distributed under the same license as the Geoclimate package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Geoclimate \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-06 16:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../Zone-layer.rst:2
+msgid "Zone layer"
+msgstr ""
+
+#: ../../Zone-layer.rst:4
+msgid "The zone layer represents the studied area. Only one geometry is expected. The zone layer provides additional informations on the data processed."
+msgstr ""
+
+#: ../../Zone-layer.rst:9
+msgid "Name"
+msgstr ""
+
+#: ../../Zone-layer.rst:9
+msgid "Type"
+msgstr ""
+
+#: ../../Zone-layer.rst:9
+msgid "Constraints"
+msgstr ""
+
+#: ../../Zone-layer.rst:9
+msgid "Definition"
+msgstr ""
+
+#: ../../Zone-layer.rst:11
+msgid "the_geom"
+msgstr ""
+
+#: ../../Zone-layer.rst:11
+msgid "POLYGON"
+msgstr ""
+
+#: ../../Zone-layer.rst:11
+msgid "X Y dimension"
+msgstr ""
+
+#: ../../Zone-layer.rst:11
+msgid "Geometry"
+msgstr ""
+
+#: ../../Zone-layer.rst:13
+msgid "id_zone"
+msgstr ""
+
+#: ../../Zone-layer.rst:13
+#: ../../Zone-layer.rst:25
+#: ../../Zone-layer.rst:27
+#: ../../Zone-layer.rst:29
+msgid "VARCHAR"
+msgstr ""
+
+#: ../../Zone-layer.rst:13
+msgid "*not null*"
+msgstr ""
+
+#: ../../Zone-layer.rst:13
+msgid "Identifier of the zone area"
+msgstr ""
+
+#: ../../Zone-layer.rst:15
+msgid "nb_estimated_building"
+msgstr ""
+
+#: ../../Zone-layer.rst:15
+#: ../../Zone-layer.rst:17
+#: ../../Zone-layer.rst:19
+#: ../../Zone-layer.rst:21
+#: ../../Zone-layer.rst:23
+msgid "INTEGER"
+msgstr ""
+
+#: ../../Zone-layer.rst:15
+msgid "Number of buildings with a height estimated"
+msgstr ""
+
+#: ../../Zone-layer.rst:17
+msgid "nb_building"
+msgstr ""
+
+#: ../../Zone-layer.rst:17
+msgid "Number of buildings computed"
+msgstr ""
+
+#: ../../Zone-layer.rst:19
+msgid "nb_block"
+msgstr ""
+
+#: ../../Zone-layer.rst:19
+msgid "Number of blocks computed"
+msgstr ""
+
+#: ../../Zone-layer.rst:21
+msgid "nb_rsu"
+msgstr ""
+
+#: ../../Zone-layer.rst:21
+msgid "Number of RSU computed"
+msgstr ""
+
+#: ../../Zone-layer.rst:23
+msgid "computation_time"
+msgstr ""
+
+#: ../../Zone-layer.rst:23
+msgid "Duration in seconds to run all processes"
+msgstr ""
+
+#: ../../Zone-layer.rst:25
+msgid "last_update"
+msgstr ""
+
+#: ../../Zone-layer.rst:25
+msgid "System current date when the processes are executed"
+msgstr ""
+
+#: ../../Zone-layer.rst:27
+msgid "version"
+msgstr ""
+
+#: ../../Zone-layer.rst:27
+msgid "Current GeoClimate version"
+msgstr ""
+
+#: ../../Zone-layer.rst:29
+msgid "build_number"
+msgstr ""
+
+#: ../../Zone-layer.rst:29
+msgid "Current GeoClimate build number"
+msgstr ""
+
+#: ../../_Footer.rst:1
+msgid "**GeoClimate - documentation 2020 - 2024** - |cc-logo| This work is licensed under a `Creative Commons Attribution-ShareAlike 4.0 International License <http://creativecommons.org/licenses/by-sa/4.0/>`_."
+msgstr ""
+
+#: ../../_Footer.rst:4
+msgid "Creative Commons License"
+msgstr ""

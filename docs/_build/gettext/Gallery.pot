@@ -1,0 +1,90 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, CNRS-Lab-STICC
+# This file is distributed under the same license as the Geoclimate package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Geoclimate \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-06 16:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../../Gallery.rst:2
+msgid "Gallery"
+msgstr ""
+
+#: ../../Gallery.rst:5
+msgid "Local Climate Zones"
+msgstr ""
+
+#: ../../Gallery.rst:18
+msgid "Angers city - FR (EPSG 4326)"
+msgstr ""
+
+#: ../../Gallery.rst:19
+msgid "Reading city - UK (EPSG 3857)"
+msgstr ""
+
+#: ../../Gallery.rst:26
+msgid "Utrecht city - NL (EPSG 3857)"
+msgstr ""
+
+#: ../../Gallery.rst:27
+msgid "Washington D.C - USA (EPSG 3857)"
+msgstr ""
+
+#: ../../Gallery.rst:30
+#: ../../Gallery.rst:71
+msgid "Legend"
+msgstr ""
+
+#: ../../Gallery.rst:36
+msgid "Fractions at grid scale"
+msgstr ""
+
+#: ../../Gallery.rst:38
+msgid "Topographic feature fractions on a 10 x 10 km domain and 1 x 1 km square cell for the city of `Angers <https://www.openstreetmap.org/search?query=angers#map=13/47.4819/-0.5845>`_."
+msgstr ""
+
+#: ../../Gallery.rst:46
+msgid "Local Climate zone fractions on a 10 x 10 km domain and 1 x 1 km square cell for the city of `Angers <https://www.openstreetmap.org/search?query=angers#map=13/47.4819/-0.5845>`_."
+msgstr ""
+
+#: ../../Gallery.rst:60
+msgid "Urban typologies"
+msgstr ""
+
+#: ../../Gallery.rst:62
+msgid "**Toulouse city - FR (EPSG 3857)**"
+msgstr ""
+
+#: ../../Gallery.rst:69
+msgid "With building area indicator"
+msgstr ""
+
+#: ../../Gallery.rst:70
+msgid "With building floor area indicator"
+msgstr ""
+
+#: ../../Gallery.rst:82
+msgid "/home/mael/Documents/forks/geoclimate/docs/source/Gallery.rst:38: ERROR: Error in \"image\" directive: invalid option value: (option: \"height\"; value: '300px ') not a positive measure of one of the following units: \"em\" \"ex\" \"px\" \"in\" \"cm\" \"mm\" \"pt\" \"pc\" \"\"."
+msgstr ""
+
+#: ../../Gallery.rst:92
+msgid "/home/mael/Documents/forks/geoclimate/docs/source/Gallery.rst:45: ERROR: Error in \"image\" directive: invalid option value: (option: \"height\"; value: '300px ') not a positive measure of one of the following units: \"em\" \"ex\" \"px\" \"in\" \"cm\" \"mm\" \"pt\" \"pc\" \"\"."
+msgstr ""
+
+#: ../../_Footer.rst:1
+msgid "**GeoClimate - documentation 2020 - 2024** - |cc-logo| This work is licensed under a `Creative Commons Attribution-ShareAlike 4.0 International License <http://creativecommons.org/licenses/by-sa/4.0/>`_."
+msgstr ""
+
+#: ../../_Footer.rst:4
+msgid "Creative Commons License"
+msgstr ""

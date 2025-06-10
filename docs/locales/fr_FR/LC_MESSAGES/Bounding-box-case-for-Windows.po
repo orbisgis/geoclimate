@@ -1,0 +1,104 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, CNRS-Lab-STICC
+# This file is distributed under the same license as the Geoclimate package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Geoclimate \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-06 16:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: fr_FR\n"
+"Language-Team: fr_FR <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.11.0\n"
+
+#: ../../Bounding-box-case-for-Windows.rst:2
+msgid "Bounding box case"
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:4
+msgid ""
+"**The default cases for OSM and BDTOPO v2.2 are presented in other pages."
+" Please make sure that the default cases are running on your computer "
+"before using the bounding box method.**"
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:8
+msgid ""
+"In the default case, the area of interest is specified using a city name."
+" You also have the possibility to calculate all the GeoClimate outputs "
+"inside a given rectangle (i.e. a bounding box)."
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:12
+msgid ""
+"The only difference with the default case is that geographic coordinates "
+"replace the city name. All the other elements of the configuration file "
+"remain unchanged."
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:16
+msgid ""
+"The coordinates of the bounding box are expressed as [minY, minX, maxY, "
+"maxX]."
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:20
+msgid "Bounding box method with OSM"
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:22
+msgid ""
+"A bounding box has been determined for the city of Pont-de-Veyle, with "
+"the following coordinates : 46.257330,4.870033,46.269970,4.905224"
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:25
+msgid "The configuration file below uses this bounding box method with OSM."
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:66
+msgid ""
+"In order to determine the coordinates of your bounding box, you can use "
+"the `bboxfinder <http://bboxfinder.com>`__ website. Make sure your "
+"coordinates are in latitude / longitude (“Lat / Lon”) format. You can "
+"choose the coordinates options on the bottom right of the bboxfinder "
+"website."
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:73
+msgid "Bounding box method with BDTOPO v2.2"
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:75
+msgid "The configuration file below uses a bounding box method with BDTOPO v2.2."
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:78
+msgid "This bounding box represents the envelope of the city of Redon."
+msgstr ""
+
+#: ../../Bounding-box-case-for-Windows.rst:80
+msgid ""
+"Note that the EPSG code for the projection system here is 2154 and not "
+"“Lat / Lon” anymore."
+msgstr ""
+
+#: ../../_Footer.rst:1
+msgid ""
+"**GeoClimate - documentation 2020 - 2024** - |cc-logo| This work is "
+"licensed under a `Creative Commons Attribution-ShareAlike 4.0 "
+"International License <http://creativecommons.org/licenses/by-sa/4.0/>`_."
+msgstr ""
+
+#: ../../_Footer.rst:4
+msgid "Creative Commons License"
+msgstr ""
+
