@@ -27,7 +27,7 @@ select “From a file” and click on the button below with “…” and select
 your file. Finally, click on the “load style” button at the bottom of
 the page, and the style will be applied.
 
-.. figure:: source/ressources/show_data_tutorial/rsu_lcz_style.gif
+.. figure:: ressources/show_data_tutorial/rsu_lcz_style.gif
 
 -----------------------------------------------------------
 
