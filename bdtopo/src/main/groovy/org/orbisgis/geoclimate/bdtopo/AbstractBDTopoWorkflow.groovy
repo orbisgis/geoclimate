@@ -560,7 +560,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                    "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO",
                                                    "SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS", "URBAN_SPRAWL_AREAS",
                                                    "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES", "STREET_WIDTH"]
-                    def allowedOutputIndicators = allowed_grid_indicators.intersect(list_indicators*.toUpperCase())
+                    def allowedOutputIndicators = list_indicators.findAll{
+                        it.startsWith("COUNT_WARM_") || allowed_grid_indicators.contains(it)
+                    }
                     if (allowedOutputIndicators) {
                         //Update the RSU indicators list according the grid indicators
                         list_indicators.each { val ->

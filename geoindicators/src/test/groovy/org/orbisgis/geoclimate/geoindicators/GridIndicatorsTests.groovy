@@ -9,6 +9,7 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertThrows
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
@@ -119,5 +120,42 @@ class GridIndicatorsTests {
         """.toString())
         String grid_distances = Geoindicators.GridIndicators.gridDistances(h2GIS, "polygons", "grid", "id")
         assertEquals(12, h2GIS.firstRow("select count(*) as count from $grid_distances where distance =0.5".toString()).count)
+    }
+
+    @Test
+    void gridCountCellsWarmTest1() {
+        h2GIS.execute("""
+        --Grid with random values between 1 and 5 (Urban LCZ)
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE grid AS SELECT  * EXCEPT(ID), id as id_grid, CEIL(RANDOM() * 10) AS lcz_primary FROM 
+        ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
+        
+        --Add some vegetation cells
+        UPDATE grid SET lcz_primary= 102 WHERE id_row = 2 AND id_col = 2;
+        UPDATE grid SET lcz_primary= 102 WHERE id_row>3 and id_row<6 AND id_col>3 and id_col<6;
+        """)
+        h2GIS.save("grid", "/tmp/grid.fgb", true)
+        String grid_stats = Geoindicators.GridIndicators.gridCountCellsWarm(h2GIS, "grid", [1])
+
+        def expectedValues = [72: [count_cells_1: 3, count_warm_1: 3],
+                              40: [count_cells_1: 8, count_warm_1: 5],
+                              1: [count_cells_1: 5, count_warm_1: 4]]
+
+        expectedValues.each { it ->
+            def values = it.value
+            def valuesRes = h2GIS.rows("SELECT count_cells_1, count_warm_1 from $grid_stats where id_grid = ${it.key}")
+            assertEquals(values.count_cells_1, valuesRes.count_cells_1[0])
+            assertEquals(values.count_warm_1, valuesRes.count_warm_1[0])
+        }
+    }
+
+    @Test
+    void gridCountCellsWarmTest2() {
+        assertThrows(Exception.class, () -> Geoindicators.GridIndicators.gridCountCellsWarm(h2GIS, "grid", [-1, 2, 3, 4]))
+    }
+
+    @Test
+    void gridCountCellsWarmTest3() {
+        assertThrows(Exception.class, () -> Geoindicators.GridIndicators.gridCountCellsWarm(h2GIS, "grid", [5, 2, 3, 50]))
     }
 }

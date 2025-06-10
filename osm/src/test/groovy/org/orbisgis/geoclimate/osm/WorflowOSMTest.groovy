@@ -790,7 +790,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "ASPECT_RATIO",
                                         //"SVF",
                                         "STREET_WIDTH" ,
-                                        "IMPERVIOUS_FRACTION"]
+                                        "IMPERVIOUS_FRACTION",
+                                        "COUNT_WARM_1",
+                                        "COUNT_WARM_4"]
                                 //"lcz_lod":1
                         ], "worldpop_indicators": true
                          /*

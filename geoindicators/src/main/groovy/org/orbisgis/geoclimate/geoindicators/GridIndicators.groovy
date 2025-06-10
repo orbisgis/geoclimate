@@ -272,7 +272,7 @@ String multiscaleLCZGrid(JdbcDataSource datasource, String grid_indicators, Stri
         }
         return tableLevelToJoin
     } catch (SQLException e) {
-        throw new SQLException("", e)
+        throw new SQLException("Cannot aggregate the LCZ_PRIMARY indicators to new grid levels", e)
     } finally {
         datasource.dropTable(tablesToDrop)
     }
@@ -407,5 +407,63 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
         datasource.execute("""CREATE TABLE $grid_target (FID INT, ID_COL INT, ID_ROW INT, THE_GEOM GEOMETRY,
         "roof" VARCHAR, "road" VARCHAR, "watr" VARCHAR, "conc" VARCHAR,
         "Veg" VARCHAR, "dry" VARCHAR, "irr" VARCHAR , "H" VARCHAR, "W" VARCHAR)""")
+    }
+}
+
+/**
+ *  Compute the number of warm LCZ on a sliding window
+ *  The sliding window is defined by a step size from the center of the cells.
+ *  The step size is an integer value defines the width and height (in terms of cells) of the window
+ *  we are going to extract from an input grid
+ *  @param datasource connection to the database
+ *  @param grid_indicators input grid
+ *  @param  window_size array of window steps. User can specify multiple window steps.
+ *  @author Erwan Bocher (CNRS)
+ */
+String gridCountCellsWarm(JdbcDataSource datasource, String grid_indicators, List window_size) throws Exception {
+
+    if (!grid_indicators) {
+        throw new IllegalArgumentException("No grid_indicators table to compute the statistics")
+    }
+
+    if(!window_size){
+        throw new IllegalArgumentException("Please provide at least one window size")
+    }
+
+
+    if(window_size.min()<1){
+        throw new IllegalArgumentException("The window sizes must be greater or equal than 1 cell")
+    }
+
+    if(window_size.max()>=10){
+        throw new IllegalArgumentException("The window sizes must be less or equal than 100 cells")
+    }
+    try {
+        datasource.createIndex(grid_indicators, "id_grid")
+        datasource.createIndex(grid_indicators, "id_row")
+        datasource.createIndex(grid_indicators, "id_col")
+
+        def queries =[:]
+        window_size.toSet().sort().each {size->
+          def table_size= postfix("warm_$size")
+         queries.put(table_size, """DROP TABLE IF EXISTS ${table_size}; CREATE TABLE ${table_size} as select a.id_grid, COUNT(b.id_grid) as count_cells_${size},
+        sum(CASE WHEN  b.LCZ_PRIMARY in (1,2,3,4,5,6,7,8,9,10,105)  THEN 1 ELSE 0 END) as count_warm_${size}
+        from ${grid_indicators}  a, ${grid_indicators} b
+        where
+        a.id_grid != b.id_grid and (b.id_row between a.id_row-${size} and a.id_row+${size})
+        and (b.id_col between a.id_col-${size} and a.id_col+${size})
+        group by a.id_grid;""")
+        }
+        datasource.execute(queries.values().join("\n"))
+        def grid_final = postfix("grid_indicators")
+        def tableToJoin =[:]
+        queries.keySet().each {it->
+            tableToJoin.put(it,"id_grid")
+        }
+        Geoindicators.DataUtils.joinTables(datasource, tableToJoin, grid_final)
+        datasource.dropTable(tableToJoin.keySet().toList())
+        return grid_final
+    }catch (SQLException e) {
+        throw new SQLException("Cannot count the number of warm LCZ on a sliding window", e)
     }
 }
