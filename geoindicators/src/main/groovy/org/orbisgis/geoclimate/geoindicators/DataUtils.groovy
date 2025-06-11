@@ -21,6 +21,7 @@ package org.orbisgis.geoclimate.geoindicators
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
+import org.orbisgis.data.H2GIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 

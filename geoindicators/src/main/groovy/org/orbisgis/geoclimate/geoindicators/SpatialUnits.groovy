@@ -39,11 +39,10 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
 /**
  * This process is used to create the Topographical Spatial Units used reference spatial units (RSU)
  *
- * @param inputzone The zone table to keep the RSU inside
- * Default value is empty so all RSU are kept.
- * @param prefixName A prefix used to name the output table
- * @param datasource A connection to a database
  *
+ * @param datasource A connection to a database
+ * @param zone The zone table to keep the RSU inside
+ * Default value is empty so all RSU are kept.
  * @param area TSU less or equals than area are removed, default 1d
  * @param road The road table to be processed
  * @param rail The rail table to be processed
@@ -57,18 +56,19 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * Expressed in geometry unit of the vegetationTable, default 2500
  * @param surface_urban_areas A double value to select the urban  areas.
  * Expressed in geometry unit of the urban_areas table, default 10000
+ * @param holeInscribeCircleArea area of the maximum inscribed circle to remove RSU holes
+ * @param prefixName A prefix used to name the output table
  *
  * @return A database table name and the name of the column ID
  */
 String createTSU(JdbcDataSource datasource, String zone,
                  double area = 1f, String road, String rail, String vegetation,
                  String water, String sea_land_mask, String urban_areas,
-                 double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) throws Exception {
+                 double surface_vegetation, double surface_hydro, double surface_urban_areas, double holeInscribeCircleArea, String prefixName) throws Exception {
 
     def tablesToDrop = []
     try {
         def BASE_NAME = "rsu"
-
         debug "Creating the reference spatial units"
         // The name of the outputTableName is constructed
         def outputTableName = prefix prefixName, BASE_NAME
@@ -79,8 +79,8 @@ String createTSU(JdbcDataSource datasource, String zone,
                 vegetation, water, sea_land_mask, urban_areas, surface_vegetation, surface_hydro, surface_urban_areas, prefixName)
 
         tablesToDrop << tsuDataPrepared
-        def outputTsuTableName = Geoindicators.SpatialUnits.createTSU(datasource, tsuDataPrepared, zone,
-                area, prefixName)
+        def outputTsuTableName = Geoindicators.SpatialUnits.createTSU(datasource, tsuDataPrepared,zone,
+                area, holeInscribeCircleArea, prefixName)
         datasource.dropTable(tsuDataPrepared)
 
         datasource.execute("""ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;""")
@@ -99,15 +99,15 @@ String createTSU(JdbcDataSource datasource, String zone,
  * This process is used to create the Topographical Spatial Units (TSU)
  *
  * @param inputTableName The input spatial table to be processed
- * @param inputzone The zone table to keep the TSU inside
+ * @param zone The zone table to keep the TSU inside
  * Default value is empty so all TSU are kept.
  * @param prefixName A prefix used to name the output table
  * @param datasource A connection to a database
  * @param area TSU less or equals than area are removed
  * @return A database table name and the name of the column ID
  */
-String createTSU(JdbcDataSource datasource, String inputTableName, String inputzone,
-                 double area = 1d, String prefixName) throws Exception {
+String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
+                 double area = 1d, double holeInscribeCircleArea = 5000, String prefixName) throws Exception {
     def COLUMN_ID_NAME = "id_rsu"
     def BASE_NAME = "tsu"
 
@@ -123,51 +123,74 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
     if (area <= 0) {
         throw new IllegalArgumentException("The area value to filter the TSU must be greater to 0")
     }
-    if (inputzone) {
-        //Clip the geometry
-        datasource.createSpatialIndex(inputTableName)
-        datasource.createSpatialIndex(inputzone)
-
-        String cut_lines = postfix("cut_lines")
-        datasource.execute("""DROP TABLE IF EXISTS $cut_lines;        
-        CREATE TABLE $cut_lines as SELECT ST_INTERSECTION(a.the_geom, b.the_geom) as the_geom from
-           $inputTableName as a, $inputzone as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom); 
-        """.toString())
-
+    if (zone) {
+        datasource.createSpatialIndex(zone)
         //Create the polygons from the TSU lines
         String polygons = postfix("polygons")
         datasource.execute(""" DROP TABLE IF EXISTS $polygons;
         CREATE TABLE $polygons as 
-        SELECT
-        ST_SETSRID(st_makevalid(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2)), $epsg) AS the_geom FROM 
+        SELECT CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME,
+        ST_BUFFER(ST_BUFFER(the_geom,-0.01, 'quad_segs=2 endcap=flat  join=mitre'),0.01, 'quad_segs=2 endcap=flat join=mitre') AS the_geom FROM 
         ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
-                                FROM $cut_lines)')
-        """.toString())
+                                FROM $inputTableName)')
+        """)
+        datasource.createSpatialIndex(polygons)
+        datasource.createIndex(polygons, COLUMN_ID_NAME)
+        //Get a list of polygons that are in another polygons
+        String inside_polygons = postfix("inside_polygons")
+        datasource.execute("""
+        drop table if exists $inside_polygons;
+        create table $inside_polygons as
+        select a.the_geom, st_area(ST_MAKEPOLYGON(ST_EXTERIORRING(b.the_geom))) as area,  a.$COLUMN_ID_NAME as hole_$COLUMN_ID_NAME, 1 AS inside, b.$COLUMN_ID_NAME as parent_$COLUMN_ID_NAME from $polygons as a, $polygons as b where
+        a.the_geom && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), ST_MAKEPOLYGON(ST_EXTERIORRING(b.the_geom)))
+        AND a.$COLUMN_ID_NAME <> b.$COLUMN_ID_NAME and st_area(ST_MaximumInscribedCircle(a.the_geom))<5000
+        """)
+        String filter_pols = postfix("filter_pols")
+        datasource.execute("""
+        DROP TABLE IF EXISTS $filter_pols;
+        CREATE TABLE $filter_pols as
+        SELECT distinct on (hole_$COLUMN_ID_NAME) hole_$COLUMN_ID_NAME,
+        parent_$COLUMN_ID_NAME, area, the_geom from  $inside_polygons 
+        order by area asc, hole_$COLUMN_ID_NAME ;""")
+        datasource.createIndex(filter_pols, "parent_$COLUMN_ID_NAME")
+        String tsu_cleaned = postfix("tsu_cleaned")
+        datasource.execute("""
+        DROP TABLE IF EXISTS $tsu_cleaned;
+        CREATE TABLE $tsu_cleaned as 
+        select CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME, the_geom from ST_EXPLODE('(
+        SELECT st_snaptoself(ST_UNION(ST_ACCUM(st_buffer(the_geom,0.01))),0.01) as the_geom
+        FROM (
+        select the_geom, $COLUMN_ID_NAME from $polygons where $COLUMN_ID_NAME 
+        not in (select distinct  hole_$COLUMN_ID_NAME from $filter_pols)
+        UNION ALL        
+        SELECT ST_ACCUM(THE_GEOM), parent_$COLUMN_ID_NAME AS ID_RSU FROM $filter_pols 
+        group by parent_$COLUMN_ID_NAME) GROUP BY $COLUMN_ID_NAME  )') WHERE ST_DIMENSION(THE_GEOM)=2     
+        """)
+        datasource.execute("ALTER TABLE $tsu_cleaned RENAME TO $outputTableName")
+        datasource.dropTable(polygons, tsu_cleaned, inside_polygons,filter_pols)
 
-        datasource.execute("""DROP TABLE IF EXISTS $outputTableName;        
-        CREATE TABLE $outputTableName as 
-        select   CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME,  the_geom from 
-        st_explode('$polygons') where st_area(the_geom) > $area;
-        DROP TABLE IF EXISTS $cut_lines, $polygons""".toString())
     } else {
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName AS 
-                        SELECT EXPLOD_ID AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2), $epsg) AS the_geom 
+                        SELECT CAST((row_number() over()) as Integer)  AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
                                 SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
+
     }
 
     debug "Reference spatial units table created"
     return outputTableName
 }
 
+
 /**
  * This process is used to prepare the input abstract model
  * in order to compute the Topographical Spatial Units (TSU)
  *
  * @param zone The area of zone to be processed
+ * @param zone_extended the extended zone defined by the user to avoid border errors
  * @param road The road table to be processed
  * @param rail The rail table to be processed
  * @param vegetation The vegetation table to be processed
@@ -187,9 +210,9 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String inputz
 String prepareTSUData(JdbcDataSource datasource, String zone, String road, String rail,
                       String vegetation, String water, String sea_land_mask, String urban_areas,
                       double surface_vegetation, double surface_hydro,
-                      double surface_urban_areas, String prefixName = "unified_abstract_model")
+                      double surface_urban_areas,
+                      String prefixName = "unified_abstract_model")
         throws Exception {
-
     if (surface_vegetation <= 100) {
         throw new IllegalArgumentException("The surface of vegetation must be greater or equal than 100 m²")
     }
@@ -214,9 +237,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
         def queryCreateOutputTable = [:]
         def dropTableList = []
-
-        def numberZone = datasource.firstRow("SELECT COUNT(*) AS nb FROM $zone".toString()).nb
-
+        def numberZone =numberZone=datasource.firstRow("SELECT COUNT(*) AS nb FROM $zone".toString()).nb
         if (numberZone == 1) {
             def epsg = datasource.getSrid(zone)
             //Add the land mask
@@ -234,7 +255,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     def subGraphBlocksLow = postfix "subgraphblocks_low"
                     def subGraphBlocksHigh = postfix "subgraphblocks_high"
 
-                    datasource "DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocksLow, $subGraphBlocksHigh".toString()
+                    datasource.execute("DROP TABLE IF EXISTS   $vegetation_tmp, $vegetation_graph, $subGraphTableNodes, $subGraphTableEdges, $subGraphBlocksLow, $subGraphBlocksHigh")
 
                     datasource.createIndex(vegetation, "ID_VEGET")
                     datasource.createSpatialIndex(vegetation, "THE_GEOM")
@@ -249,33 +270,33 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     //Recherche des clusters
                     getConnectedComponents(datasource.getConnection(), vegetation_graph, "undirected")
 
-                    //Unify water geometries that share a boundary
+                    //Unify vegetation geometries that share a boundary
                     debug "Merging spatial clusters..."
                     //Processing low vegetation
-                    datasource """
-                CREATE INDEX ON $subGraphTableNodes (NODE_ID);
-                CREATE TABLE $subGraphBlocksLow AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
-                FROM $vegetation A, $subGraphTableNodes B
-                WHERE a.ID_VEGET=b.NODE_ID AND a.HEIGHT_CLASS= 'low' GROUP BY B.CONNECTED_COMPONENT 
-                HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
+                    datasource.execute("""
+                    CREATE INDEX ON $subGraphTableNodes (NODE_ID);
+                    CREATE TABLE $subGraphBlocksLow AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
+                    FROM $vegetation A, $subGraphTableNodes B
+                    WHERE a.ID_VEGET=b.NODE_ID AND a.HEIGHT_CLASS= 'low' GROUP BY B.CONNECTED_COMPONENT 
+                    HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""")
 
                     //Processing high vegetation
-                    datasource """
+                    datasource.execute("""
                 CREATE TABLE $subGraphBlocksHigh AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                 FROM $vegetation A, $subGraphTableNodes B
                 WHERE a.ID_VEGET=b.NODE_ID AND a.HEIGHT_CLASS= 'high' GROUP BY B.CONNECTED_COMPONENT 
-                HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""".toString()
+                HAVING SUM(st_area(A.THE_GEOM)) >= $surface_vegetation;""")
 
                     debug "Creating the vegetation block table..."
 
-                    datasource """DROP TABLE IF EXISTS $vegetation_tmp; 
-                CREATE TABLE $vegetation_tmp (THE_GEOM GEOMETRY) 
-                AS SELECT the_geom FROM $subGraphBlocksLow
-                UNION ALL SELECT the_geom FROM $subGraphBlocksHigh
-                UNION ALL SELECT  ST_ToMultiLine(a.the_geom) as the_geom FROM $vegetation a 
-                LEFT JOIN $subGraphTableNodes b ON a.ID_VEGET = b.NODE_ID WHERE b.NODE_ID IS NULL 
-                AND st_area(a.the_geom)>=$surface_vegetation;
-                DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocksLow, $subGraphBlocksHigh;""".toString()
+                    datasource.execute("""DROP TABLE IF EXISTS $vegetation_tmp; 
+                    CREATE TABLE $vegetation_tmp (THE_GEOM GEOMETRY) 
+                    AS SELECT ST_ToMultiLine(the_geom) FROM $subGraphBlocksLow
+                    UNION ALL SELECT ST_ToMultiLine(the_geom) FROM $subGraphBlocksHigh
+                    UNION ALL SELECT  ST_ToMultiLine(ST_REMOVEHOLES(a.the_geom)) as the_geom FROM $vegetation a 
+                    LEFT JOIN $subGraphTableNodes b ON a.ID_VEGET = b.NODE_ID WHERE b.NODE_ID IS NULL 
+                    AND st_area(a.the_geom)>=$surface_vegetation;
+                    DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $vegetation_graph, $subGraphBlocksLow, $subGraphBlocksHigh;""")
                     queryCreateOutputTable += [vegetation_tmp: "(SELECT the_geom FROM $vegetation_tmp)"]
                     dropTableList.addAll([vegetation_tmp])
                 }
@@ -295,13 +316,12 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                     datasource.createIndex(water, "ID_WATER")
                     datasource.createSpatialIndex(water, "THE_GEOM")
-                    datasource.execute """          
-                   CREATE TABLE $water_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                   SELECT CAST((row_number() over()) as Integer), a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
-                   FROM $water  AS a, $water AS b 
-                   WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
-                   AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0;
-                   """.toString()
+                    datasource.execute("""          
+                    CREATE TABLE $water_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
+                    SELECT CAST((row_number() over()) as Integer), a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
+                    FROM $water  AS a, $water AS b 
+                    WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
+                    AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0;""")
 
                     //Recherche des clusters
                     getConnectedComponents(datasource.getConnection(), water_graph, "undirected")
@@ -309,20 +329,21 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     //Unify water geometries that share a boundary
                     debug "Merging spatial clusters..."
 
-                    datasource """
-                CREATE INDEX ON $subGraphTableNodes (NODE_ID);
-                CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
-                FROM $water A, $subGraphTableNodes B
-                WHERE a.ID_WATER=b.NODE_ID GROUP BY B.CONNECTED_COMPONENT 
-                HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;""".toString()
+                    datasource.execute( """
+                    CREATE INDEX ON $subGraphTableNodes (NODE_ID);
+                    CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(ST_REMOVEHOLES(A.THE_GEOM)))) AS THE_GEOM
+                    FROM $water A, $subGraphTableNodes B
+                    WHERE a.ID_WATER=b.NODE_ID 
+                    GROUP BY B.CONNECTED_COMPONENT 
+                    HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;""")
                     debug "Creating the water block table..."
-                    datasource """DROP TABLE IF EXISTS $hydrographic_tmp; 
-                CREATE TABLE $hydrographic_tmp (THE_GEOM GEOMETRY) 
-                AS SELECT the_geom FROM $subGraphBlocks
-                UNION ALL SELECT ST_ToMultiLine(a.the_geom) as the_geom  FROM $water a 
-                LEFT JOIN $subGraphTableNodes b ON a.ID_WATER = b.NODE_ID WHERE b.NODE_ID IS NULL and 
-                st_area(a.the_geom)>=$surface_hydro;
-                DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph, $subGraphBlocks ;""".toString()
+                    datasource.execute("""DROP TABLE IF EXISTS $hydrographic_tmp; 
+                    CREATE TABLE $hydrographic_tmp (THE_GEOM GEOMETRY) 
+                    AS SELECT the_geom FROM $subGraphBlocks
+                    UNION ALL SELECT ST_ToMultiLine(ST_REMOVEHOLES(a.the_geom)) as the_geom  FROM $water a 
+                    LEFT JOIN $subGraphTableNodes b ON a.ID_WATER = b.NODE_ID WHERE b.NODE_ID IS NULL  
+                    AND st_area(a.the_geom)>=$surface_hydro;
+                    DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph, $subGraphBlocks ;""")
 
                     queryCreateOutputTable += [hydrographic_tmp: "(SELECT the_geom FROM $hydrographic_tmp)"]
                     dropTableList.addAll([hydrographic_tmp])
@@ -581,7 +602,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
         debug "Creating grid with H2GIS"
         datasource """
                            CREATE TABLE $outputTableName AS SELECT the_geom, id as id_grid,ID_COL, ID_ROW FROM 
-                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,$rowCol);
+                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,false, $rowCol);
                            """.toString()
     } else if (datasource instanceof POSTGIS) {
         debug "Creating grid with POSTGIS"
@@ -730,7 +751,6 @@ String inversePolygonsLayer(JdbcDataSource datasource, String input_polygons, St
     """.toString())
     return outputTableName
 }
-
 
 /**
  * This methods allows to extract the cool area geometries inside a set of geometries,

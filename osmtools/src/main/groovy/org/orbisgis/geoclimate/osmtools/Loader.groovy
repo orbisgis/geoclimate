@@ -189,7 +189,7 @@ String extract(String overpassQuery) throws Exception {
     if (!overpassQuery) {
         throw new Exception("The query should not be null or empty.")
     }
-    def bboxUrl = OSMTools.Utilities.utf8ToUrl(overpassQuery);
+    def bboxUrl = OSMTools.Utilities.utf8ToUrl(overpassQuery)
     //hash the query to cache it
     def queryHash = bboxUrl.digest('SHA-256')
     def outputOSMFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "${queryHash}.osm")
