@@ -223,7 +223,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             if (formatedZone) {
                                 def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters,
                                         createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
-                                        outputTables, outputSRID, inputSRID, excluded_output_db_columns, domain)
+                                        outputTables, outputSRID, inputSRID, true, excluded_output_db_columns, domain)
                                 if (bdtopo_results) {
                                     outputTableNamesResult.putAll(bdtopo_results)
                                 }
@@ -276,7 +276,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     def formatedZone = checkAndFormatLocations(location)
                     if (formatedZone) {
                         def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables,
-                                outputSRID, inputSRID, excluded_output_db_columns,domain)
+                                outputSRID, inputSRID, true, excluded_output_db_columns,domain)
                         if (bdtopo_results) {
                             outputTableNamesResult.putAll(bdtopo_results)
                         }

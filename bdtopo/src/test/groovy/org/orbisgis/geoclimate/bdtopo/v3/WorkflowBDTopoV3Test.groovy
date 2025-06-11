@@ -27,6 +27,7 @@ import org.orbisgis.geoclimate.bdtopo.BDTopo
 import org.orbisgis.geoclimate.bdtopo.WorkflowAbstractTest
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class WorkflowBDTopoV3Test extends WorkflowAbstractTest {
@@ -55,10 +56,31 @@ class WorkflowBDTopoV3Test extends WorkflowAbstractTest {
         return "12174"
     }
 
-    @Override
-    void checkFormatData() {
-        Map resultFiles = getResultFiles(folder.absolutePath)
-        H2GIS h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "bdtopo_${getVersion()}_format")
+    @Test
+    void testFormatData() {
+        String dataFolder = getDataFolderPath()
+        String outputFolder = getDBFolderPath()+"bdtopo_"+getInseeCode()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": outputFolder,
+                        "name"  : "testFormatedData_${getInseeCode()};AUTO_SERVER=TRUE",
+                        "delete": true
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": outputFolder]],
+                "parameters"  :
+                        ["distance": 0]
+        ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+
+        Map resultFiles = getResultFiles(outputFolder)
+        H2GIS h2GIS = H2GIS.open(outputFolder + File.separator + "testFormatedData_${getInseeCode()};AUTO_SERVER=TRUE")
         resultFiles.each {
             h2GIS.load(it.value, it.key, true)
         }
@@ -77,7 +99,7 @@ class WorkflowBDTopoV3Test extends WorkflowAbstractTest {
         cols = ["ID_ROAD", "ID_SOURCE", "WIDTH", "TYPE", "SURFACE", "SIDEWALK", "CROSSING", "MAXSPEED", "DIRECTION", "ZINDEX", "THE_GEOM"]
         assertTrue h2GIS.getColumnNames("road").intersect(cols).size() == cols.size()
         assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where WIDTH = 0 ").count)
-        assertEquals(24, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where crossing is not null").count)
+        assertEquals(22, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where crossing is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where TYPE IS NOT NULL OR SIDEWALK is not null").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where MAXSPEED !=0 OR MAXSPEED>= -1").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM road where DIRECTION !=0 OR DIRECTION>= -1").count)
@@ -102,7 +124,7 @@ class WorkflowBDTopoV3Test extends WorkflowAbstractTest {
         cols = ["THE_GEOM", "ID_VEGET", "ID_SOURCE", "TYPE", "HEIGHT_CLASS", "ZINDEX"]
         assertTrue h2GIS.getColumnNames("vegetation").intersect(cols).size() == cols.size()
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where type is not null").count)
-        assertEquals(665, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class ='high'").count)
+        assertEquals(670, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class ='high'").count)
         assertEquals(2, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where height_class = 'low'").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where ZINDEX BETWEEN 0 AND 1 ").count)
         assertEquals(count, h2GIS.firstRow("SELECT COUNT(*) as count FROM vegetation where ST_ISEMPTY(THE_GEOM)=false OR THE_GEOM IS NOT NULL").count)

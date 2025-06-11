@@ -27,6 +27,7 @@ import org.orbisgis.geoclimate.bdtopo.BDTopo
 import org.orbisgis.geoclimate.bdtopo.WorkflowAbstractTest
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
@@ -64,10 +65,30 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
         return "12174"
     }
 
-    @Override
-    void checkFormatData() {
-        Map resultFiles = getResultFiles(folder.absolutePath)
-        H2GIS h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "bdtopo_${getVersion()}_format")
+    @Test
+    void testFormatData() {
+        String dataFolder = getDataFolderPath()
+        String outputFolder = getDBFolderPath()+"bdtopo_"+getInseeCode()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": outputFolder,
+                        "name"  : "testFormatedData_${getInseeCode()};AUTO_SERVER=TRUE",
+                        "delete": false
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations": [getInseeCode()]],
+                "output"      : [
+                        "folder": ["path": outputFolder]],
+                "parameters"  :
+                        ["distance": 0]
+        ]
+
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+        assertNotNull(process)
+        Map resultFiles = getResultFiles(outputFolder)
+        H2GIS h2GIS = H2GIS.open(outputFolder + File.separator + "testFormatedData_${getInseeCode()};AUTO_SERVER=TRUE")
         resultFiles.each {
             h2GIS.load(it.value, it.key, true)
         }

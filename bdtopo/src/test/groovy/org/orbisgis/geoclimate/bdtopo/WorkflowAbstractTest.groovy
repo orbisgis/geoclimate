@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.*
 
 abstract class WorkflowAbstractTest {
 
-
     /**
      * Get the version of the workflow
      * @return
@@ -53,7 +52,6 @@ abstract class WorkflowAbstractTest {
      */
     abstract String getInseeCode()
 
-    abstract void checkFormatData();
 
 
     /**
@@ -370,29 +368,6 @@ abstract class WorkflowAbstractTest {
         assertThrows(Exception.class, () -> BDTopo.workflow(bdTopoParameters, getVersion()))
     }
 
-    @Test
-    void testFormatData() {
-        String dataFolder = getDataFolderPath()
-        def bdTopoParameters = [
-                "description" : "Full workflow configuration file",
-                "geoclimatedb": [
-                        "folder": getDBFolderPath(),
-                        "name"  : "testFormatedData;AUTO_SERVER=TRUE",
-                        "delete": true
-                ],
-                "input"       : [
-                        "folder"   : dataFolder,
-                        "locations": [getInseeCode()]],
-                "output"      : [
-                        "folder": ["path": getDBFolderPath()]],
-                "parameters"  :
-                        ["distance": 0]
-        ]
-
-        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
-        assertNotNull(process)
-        checkFormatData()
-    }
 
     @Test
     void testOnlyFormatData() {
