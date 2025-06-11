@@ -49,10 +49,10 @@ class WorkflowAbstractTest {
                            boolean saveResults, boolean svfSimplified = false, def indicatorUse,
                            String prefixName = "", boolean onlySea = false) {
         //Create spatial units and relations : building, block, rsu
-        Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis(datasource, zone, buildingTableName,
+        Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis(datasource, zone, zone,buildingTableName,
                 roadTableName, railTableName, vegetationTableName,
                 hydrographicTableName, sealandmaskTableName, urban_areas, "", 10000,
-                2500, 10000, 0.01, indicatorUse, prefixName)
+                2500, 10000, 0.01,5000, true, indicatorUse,prefixName)
 
         String relationBuildings = spatialUnits.building
         String relationBlocks = spatialUnits.block

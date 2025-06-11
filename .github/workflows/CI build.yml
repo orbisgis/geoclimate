@@ -21,11 +21,11 @@ jobs:
         uses: actions/checkout@v2
 
       # Setup the jdk using version 11 of adoptOpenJDK
-      - name: Setup java 11 using adoptOpenJDK
+      - name: Setup java 11 using Adoptium Temurin
         uses: actions/setup-java@v2
         with:
-          distribution: adopt
-          java-version: 11
+          distribution: 'temurin'
+          java-version: '11'
 
       # Set up the postgis database
       - name: Postigs install

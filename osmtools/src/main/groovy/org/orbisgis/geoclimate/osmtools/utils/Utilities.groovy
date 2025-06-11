@@ -51,12 +51,35 @@ Map getNominatimData(def placeName) throws Exception {
     if (!placeName) {
         throw new Exception("The place name should not be null or empty.")
     }
-    def outputOSMFile = File.createTempFile("nominatim_osm", ".geojson")
-    if (!executeNominatimQuery(placeName, outputOSMFile)) {
-        if (!outputOSMFile.delete()) {
-            warn "Unable to delete the file '$outputOSMFile'."
+    def  nominatimQ = "nomination_"+Utilities.utf8ToUrl(placeName)
+    //hash the query to cache it
+    def queryHash = nominatimQ.digest('SHA-256')
+    def outputOSMFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "${queryHash}.geojson")
+    def nominatimFilePath = outputOSMFile.absolutePath
+
+    if (outputOSMFile.exists()) {
+        if (outputOSMFile.length() == 0) {
+            outputOSMFile.delete()
+            if (outputOSMFile.createNewFile()) {
+                if (!executeNominatimQuery(placeName, outputOSMFile)) {
+                    if (!outputOSMFile.delete()) {
+                        warn "Unable to delete the file '$outputOSMFile'."
+                    }
+                    throw new Exception("Unable to execute the Nominatim query.")
+                }
+            }
+        } else {
+            debug "\nThe cached Nomination file ${nominatimFilePath} will be re-used for the query :  \n$nominatimQ."
         }
-        throw new Exception("Unable to execute the Nominatim query.")
+    } else {
+        if (outputOSMFile.createNewFile()) {
+            if (!executeNominatimQuery(placeName, outputOSMFile)) {
+                if (!outputOSMFile.delete()) {
+                    warn "Unable to delete the file '$outputOSMFile'."
+                }
+                throw new Exception("Unable to execute the Nominatim query.")
+            }
+        }
     }
 
     def jsonRoot = new JsonSlurper().parse(outputOSMFile)
@@ -158,7 +181,6 @@ static List createBBox(def lat, def lon, float distance) {
  * @return a New geometry.
  */
 static Geometry getArea(def location) {
-    Geometry geom
     if (location in Collection) {
         return OSMTools.Utilities.geometryFromValues(location)
     } else if (location instanceof String) {

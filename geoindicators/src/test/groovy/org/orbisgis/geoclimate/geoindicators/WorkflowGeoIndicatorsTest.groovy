@@ -190,17 +190,19 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["LCZ", "UTRF", "TEB"]
         def prefixName = ""
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "", "", "", "", "",
                 ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
 
         datasource.save(geoIndicatorsCompute_i.rsu_indicators, "/tmp/rsu.geojson", true)
+
+        datasource.save(geoIndicatorsCompute_i.building_indicators, "/tmp/building_indicators.geojson", true)
         assertNotNull(geoIndicatorsCompute_i)
         checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
         assertEquals(listUrbTyp.Bu.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.building_indicators).sort())
         assertEquals(listUrbTyp.Bl.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.block_indicators).sort())
-
 
         List expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + indicatorUse.collect { listNames[it] }).flatten()
@@ -226,19 +228,21 @@ class WorkflowGeoIndicatorsTest {
 
         // Test that the sum of all building fractions is 100% for both LCZ and TEB building types
         if (listBuildTypTeb) {
+            datasource.save("(select ${listBuildTypTeb.join("+")} AS SUM_FRAC, the_geom FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1 )", "/tmp/test.geojson", true)
             def sum_afrac_teb = datasource.firstRow("SELECT AVG(${listBuildTypTeb.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
             assertEquals sum_afrac_teb.SUM_FRAC, 1.0, 0.01
-        }
+
+         }
         if (listBuildTypLcz) {
-            def sum_afrac_lcz = datasource.firstRow("SELECT AVG(${listBuildTypLcz.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
+           def sum_afrac_lcz = datasource.firstRow("SELECT AVG(${listBuildTypLcz.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
             assertEquals sum_afrac_lcz.SUM_FRAC, 1.0, 0.01
         }
         if (listFloorBuildTypLcz) {
-            def sum_fafrac_lcz = datasource.firstRow("SELECT AVG(${listFloorBuildTypLcz.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
+            def sum_fafrac_lcz = datasource.firstRow("SELECT AVG(${listFloorBuildTypLcz.join("+")}/st_area(the_geom)) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
             assertEquals sum_fafrac_lcz.SUM_FRAC, 1.0, 0.01
         }
         if (listFloorBuildTypTeb) {
-            def sum_fafrac_teb = datasource.firstRow("SELECT AVG(${listFloorBuildTypTeb.join("+")}) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
+            def sum_fafrac_teb = datasource.firstRow("SELECT AVG(${listFloorBuildTypTeb.join("+")}/st_area(the_geom)) AS SUM_FRAC FROM ${"$geoIndicatorsCompute_i.rsu_indicators"} WHERE BUILDING_DIRECTION_UNIQUENESS <> -1")
             assertEquals sum_fafrac_teb.SUM_FRAC, 1.0, 0.01
         }
     }
@@ -251,6 +255,7 @@ class WorkflowGeoIndicatorsTest {
         def prefixName = ""
         def indicatorUse = ["UTRF"]
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
@@ -326,6 +331,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["UTRF", "TEB"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "", "",
@@ -367,6 +373,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["TEB"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
@@ -408,6 +415,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["LCZ", "TEB"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
@@ -449,7 +457,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["UTRF", "LCZ"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators
-                .computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                .computeAllGeoIndicators(datasource, inputTableNames.zoneTable,inputTableNames.zoneTable,
                         inputTableNames.buildingTable, inputTableNames.roadTable,
                         inputTableNames.railTable, inputTableNames.vegetationTable,
                         inputTableNames.hydrographicTable, "", "", "",
@@ -492,6 +500,7 @@ class WorkflowGeoIndicatorsTest {
         def indicatorUse = ["LCZ"]
 
         Map geoIndicatorsCompute_i = Geoindicators.WorkflowGeoIndicators.computeAllGeoIndicators(datasource, inputTableNames.zoneTable,
+                inputTableNames.zoneTable,
                 inputTableNames.buildingTable, inputTableNames.roadTable,
                 inputTableNames.railTable, inputTableNames.vegetationTable,
                 inputTableNames.hydrographicTable, "",
@@ -570,15 +579,15 @@ class WorkflowGeoIndicatorsTest {
     def checkRSUIndicators(def datasource, def rsuIndicatorsTableName) {
         //Check road_fraction > 0
         def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
-        assertEquals(176, countResult.count)
+        assertEquals(407, countResult.count)
 
         //Check building_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE BUILDING_FRACTION>0".toString())
-        assertEquals(73, countResult.count)
+        assertEquals(128, countResult.count)
 
         //Check high_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_fraction>0".toString())
-        assertEquals(24, countResult.count)
+        assertEquals(59, countResult.count)
 
         //Check high_vegetation_water_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
@@ -586,15 +595,15 @@ class WorkflowGeoIndicatorsTest {
 
         //Check high_vegetation_building_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_building_fraction>0".toString())
-        assertEquals(1, countResult.count)
+        assertEquals(2, countResult.count)
 
         //Check high_vegetation_low_vegetation_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_low_vegetation_fraction>0".toString())
-        assertEquals(0, countResult.count)
+        assertEquals(1, countResult.count)
 
         //Check high_vegetation_road_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_road_fraction>0".toString())
-        assertEquals(20, countResult.count)
+        assertEquals(55, countResult.count)
 
         //Check high_vegetation_impervious_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_impervious_fraction>0".toString())
@@ -602,11 +611,11 @@ class WorkflowGeoIndicatorsTest {
 
         //Check water_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE water_fraction>0".toString())
-        assertEquals(2, countResult.count)
+        assertEquals(5, countResult.count)
 
         //Check low_vegetation_fraction > 0.001
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0.001".toString())
-        assertEquals(49, countResult.count)
+        assertEquals(104, countResult.count)
 
         //Check impervious_fraction > 0
         countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())

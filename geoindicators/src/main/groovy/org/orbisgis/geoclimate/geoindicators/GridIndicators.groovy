@@ -390,14 +390,9 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
                             CASE WHEN BUILDING_FRACTION>0.75 THEN 0.75 ELSE BUILDING_FRACTION END AS "roof",
                             ROAD_FRACTION AS "road",
                             WATER_FRACTION AS "watr",
-                            IMPERVIOUS_FRACTION AS "conc",
-                            HIGH_VEGETATION_FRACTION AS "Veg",
-                            CASE WHEN (
-                            BUILDING_FRACTION+ROAD_FRACTION+WATER_FRACTION+IMPERVIOUS_FRACTION+high_vegetation_FRACTION+LOW_vegetation_FRACTION < 1)
-                            THEN
-                            (1- (BUILDING_FRACTION+ROAD_FRACTION+WATER_FRACTION+IMPERVIOUS_FRACTION+high_vegetation_FRACTION))
-                            ELSE 
-                            LOW_VEGETATION_FRACTION END AS "dry",
+                            IMPERVIOUS_FRACTION + UNDEFINED_FRACTION AS "conc",
+                            HIGH_VEGETATION_FRACTION AS "Veg",                            
+                            LOW_VEGETATION_FRACTION  AS "dry",
                             0  AS "irr",
                             AVG_HEIGHT_ROOF_AREA_WEIGHTED AS "H",
                             CASE WHEN

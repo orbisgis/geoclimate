@@ -50,7 +50,11 @@ class SpatialUnitsTests {
     @BeforeAll
     static void beforeAll() {
         h2GIS = H2GIS.open(folder.getAbsolutePath() + File.separator + "spatialUnitsTests;AUTO_SERVER=TRUE")
-        postGIS = POSTGIS.open(dbProperties)
+        try {
+            postGIS = POSTGIS.open(dbProperties)
+        }catch (Exception exception){
+            //eat
+        }
         System.setProperty("test.postgis", Boolean.toString(postGIS != null));
     }
 
@@ -104,14 +108,13 @@ class SpatialUnitsTests {
         def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_test",
                 'road_test', 'rail_test',
                 'veget_test', 'hydro_test',
-                "", "", 10000, 2500, 10000, "block")
+                "", "", 10000, 2500, 10000,5000, "block")
         assert createRSU
 
         assert h2GIS.getSpatialTable(createRSU).save(new File(folder, "rsu.shp").getAbsolutePath(), true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $createRSU"
-        assert 237 == countRows.numberOfRows
+        assert 230 == countRows.numberOfRows
     }
-
 
     @Test
     void createBlocksTest() {
@@ -257,7 +260,6 @@ class SpatialUnitsTests {
         ST_MakeGrid('POLYGON((0 0, 9 0, 9 9, 0 0))'::GEOMETRY, 1, 1);
         """.toString())
         String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 0)
-        h2GIS.save(sprawl_areas, "/tmp/sprawl.fgb", true)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(81, h2GIS.firstRow("select st_union(st_accum(the_geom)) as the_geom from $sprawl_areas".toString()).the_geom.getArea())
     }
@@ -358,8 +360,6 @@ class SpatialUnitsTests {
         String path = "/home/ebocher/Autres/data/geoclimate/uhi_lcz/Angers/"
         String grid_scales = h2GIS.load("${path}grid_indicators.geojson")
         String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 100)
-        h2GIS.save(sprawl_areas, "/tmp/sprawl_areas_indic.fgb", true)
-        h2GIS.save(grid_scales, "/tmp/grid_indicators.fgb", true)
         String distances = Geoindicators.GridIndicators.gridDistances(h2GIS, sprawl_areas, grid_scales, "id_grid")
         h2GIS.save(distances, "/tmp/distances.fgb", true)
 
@@ -384,7 +384,7 @@ class SpatialUnitsTests {
         String rail = h2GIS.load(path + File.separator + "rail.fgb")
         String vegetation = h2GIS.load(path + File.separator + "vegetation.fgb")
         String water = h2GIS.load(path + File.separator + "water.fgb")
-        String sea_land_mask = h2GIS.load(path + File.separator + "sea_land_mask.fgb")
+        String sea_land_mask = null//h2GIS.load(path + File.separator + "sea_land_mask.fgb")
         String urban_areas = h2GIS.load(path + File.separator + "urban_areas.fgb")
         double surface_vegetation = 10000
         double surface_hydro = 2500
