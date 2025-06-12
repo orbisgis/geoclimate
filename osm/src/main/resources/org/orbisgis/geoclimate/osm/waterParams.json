@@ -17,6 +17,7 @@
     "seamark:type",
     "water",
     "waterway",
-    "landuse"
+    "landuse",
+    "intermittent"
   ]
 }

@@ -607,25 +607,25 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
     debug('Hydro transformation starts')
     def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_water serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_water serial, ID_SOURCE VARCHAR, TYPE VARCHAR, INTERMITTENT BOOLEAN DEFAULT FALSE, ZINDEX INTEGER);""".toString()
 
     if (water) {
         if (datasource.getRowCount(water) > 0) {
             String query
             if (zone) {
                 datasource.createSpatialIndex(water, "the_geom")
-                query = "select id ,  st_intersection(a.the_geom, b.the_geom) as the_geom" +
-                        ", a.\"natural\", a.\"layer\"" +
-                        " FROM " +
-                        "$water AS a, $zone AS b " +
-                        "WHERE " +
-                        "a.the_geom && b.the_geom "
+                query = """select id ,  st_intersection(a.the_geom, b.the_geom) as the_geom
+                        , a.\"natural\", a.\"layer\",  a.\"intermittent\"
+                         FROM 
+                        $water AS a, $zone AS b 
+                        WHERE 
+                        a.the_geom && b.the_geom """
                 if (datasource.getColumnNames(water).contains("seamark:type")) {
                     query += " and (a.\"seamark:type\" is null or a.\"seamark:type\" in ('harbour_basin', 'harbour'))"
                 }
 
             } else {
-                query = "select id,  the_geom, \"natural\", \"layer\" FROM $water "
+                query = "select id,  the_geom, \"natural\", \"layer\", \"intermittent\" FROM $water "
                 if (datasource.getColumnNames(water).contains("seamark:type")) {
                     query += " where \"seamark:type\" is null"
                 }
@@ -635,12 +635,13 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                 datasource.eachRow(query) { row ->
                     def water_type = row.natural in ['bay', 'strait'] ? 'sea' : 'water'
                     def zIndex = getZIndex(row.'layer')
+                    def intermittent = row.'intermittent'
                     Geometry geom = row.the_geom
                     int epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
                         if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})".toString()
+                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}',  '${water_type}', ${(intermittent && intermittent ==  "yes")} ,${zIndex})".toString()
                         }
                     }
                 }
