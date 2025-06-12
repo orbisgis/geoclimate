@@ -35,13 +35,13 @@ import static org.orbisgis.geoclimate.osmtools.utils.OSMElement.*
 /** Default SRID */
 @Field DEFAULT_SRID = 4326
 
+
 /**
  * This process extracts OSM data file and load it in a database using an area
  * The area must be a JTS envelope
  *
  * @param datasource A connexion to a DB to load the OSM file
  * @param filterArea Filtering area as envelope
- * @param distance to expand the envelope of the query box. Default is 0
  *
  * @return The name of the tables that contains the geometry representation of the extracted area (outputZoneTable) and
  * its envelope (outputZoneEnvelopeTable)
@@ -49,7 +49,42 @@ import static org.orbisgis.geoclimate.osmtools.utils.OSMElement.*
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) throws Exception {
+Map fromArea(JdbcDataSource datasource, Object filterArea) throws Exception {
+    return fromArea(datasource, filterArea, 0, false)
+}
+
+/**
+ * This process extracts OSM data file and load it in a database using an area
+ * The area must be a JTS envelope
+ *
+ * @param datasource A connexion to a DB to load the OSM file
+ * @param filterArea Filtering area as envelope
+ * @param distance to expand the envelope of the query box.
+ *
+ * @return The name of the tables that contains the geometry representation of the extracted area (outputZoneTable) and
+ * its envelope (outputZoneEnvelopeTable)
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ */
+Map fromArea(JdbcDataSource datasource, Object filterArea, float distance) throws Exception {
+    return fromArea(datasource, filterArea, distance, false)
+}
+/**
+ * This process extracts OSM data file and load it in a database using an area
+ * The area must be a JTS envelope
+ *
+ * @param datasource A connexion to a DB to load the OSM file
+ * @param filterArea Filtering area as envelope
+ * @param distance to expand the envelope of the query box.
+ * @param allData true to download all OSM data
+ *
+ * @return The name of the tables that contains the geometry representation of the extracted area (outputZoneTable) and
+ * its envelope (outputZoneEnvelopeTable)
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ */
+Map fromArea(JdbcDataSource datasource, Object filterArea, float distance, boolean allData) throws Exception {
     if (!datasource) {
         throw new Exception("No datasource provided.")
     }
@@ -86,7 +121,12 @@ Map fromArea(JdbcDataSource datasource, Object filterArea, float distance = 0) t
                     INSERT INTO $outputZoneEnvelopeTable VALUES 
                     (ST_GEOMFROMTEXT('$geomEnv',$epsg));""".toString()
 
-    def query = OSMTools.Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
+    def query
+    if(allData){
+        query =  OSMTools.Utilities.buildOSMQueryWithAllData(geomEnv.getEnvelopeInternal(), [], NODE, WAY, RELATION)
+    }else {
+        query = OSMTools.Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
+    }
     def extract = extract(query)
     if (extract) {
         info "Downloading OSM data from the area $filterArea"

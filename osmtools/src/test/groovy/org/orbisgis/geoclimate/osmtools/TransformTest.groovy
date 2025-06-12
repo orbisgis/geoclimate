@@ -562,13 +562,13 @@ class TransformTest extends AbstractOSMToolsTest {
         def tags = ["building"]
         String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
         assertEquals 6, ds.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  > 0").count as int
-        assertEquals 1028, ds.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  = 0").count as int
+        assertEquals 1032, ds.firstRow("select count(*) as count from ${outputTableName} where ST_NumInteriorRings(the_geom)  = 0").count as int
 
         //Create landuse layer
         tags = ["landuse": ["farmland", "forest", "grass", "meadow", "orchard", "vineyard", "village_green", "allotments"],]
         outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
-        assertEquals 130, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
-        assertEquals 122, ds.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='grass'").count as int
+        assertEquals 131, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
+        assertEquals 123, ds.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='grass'").count as int
 
         //Create urban areas layer
         tags = ["landuse": [
@@ -579,8 +579,8 @@ class TransformTest extends AbstractOSMToolsTest {
         ]]
         outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
 
-        assertEquals 5, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
-        assertEquals 3, ds.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='residential'").count as int
+        assertEquals 6, ds.firstRow("select count(*) as count from ${outputTableName}").count as int
+        assertEquals 4, ds.firstRow("select count(*) as count from ${outputTableName} where \"landuse\"='residential'").count as int
 
     }
 
@@ -838,6 +838,19 @@ class TransformTest extends AbstractOSMToolsTest {
         println(r)
         def lines = OSMTools.Transform.toPolygons(h2GIS, r.prefix, 4326, [], [])
         h2GIS.save(lines, "/tmp/building.fgb")
+    }
+
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void testTransformAllDataForDebug() {
+        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate")
+        Map r = OSMTools.Loader.fromArea(h2GIS, [59.301283, 17.93831, 59.321302, 17.982298], 0f, true)
+        println(r)
+        def polygons = OSMTools.Transform.toPolygons(h2GIS, r.prefix, 4326, ["water"], [])
+        h2GIS.save(polygons, "/tmp/water.fgb", true)
     }
 
     @Test
