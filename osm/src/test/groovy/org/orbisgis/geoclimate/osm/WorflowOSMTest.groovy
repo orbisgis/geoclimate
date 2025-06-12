@@ -709,7 +709,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is not null".toString()).count > 0
         assertTrue h2gis.firstRow("select count(*) as count from $ground_acoustic where layer in ('road', 'building')".toString()).count == 0
         assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where layer = 'water'".toString()).size() == 1
-
     }
 
     @Disabled
@@ -720,8 +719,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = ["Redon"]
-        location = [59.301283, 17.93831, 59.321302, 17.982298]
+        def location = "Redon"
+        //location = [64.34303, -111.025119, 64.478563, -110.673213]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 200
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]

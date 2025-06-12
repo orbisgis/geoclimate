@@ -92,12 +92,12 @@ class InputDataFormattingTest {
         assertNotNull h2GIS.getTable(buiding_imp).save(new File(folder, "osm_building_formated_type.shp").absolutePath, true)
         def rows = h2GIS.rows("select type from ${buiding_imp} where id_build=158 or id_build=982".toString())
         assertEquals(2, rows.size())
-        assertTrue(rows.type == ['residential', 'building'])
+        assertTrue(rows.type == ['residential', 'undefined'])
 
         rows = h2GIS.rows("select type from ${buiding_imp} where id_build=881 or id_build=484 or id_build=610".toString())
 
         assertEquals(3, rows.size())
-        assertTrue(rows.type == ['industrial', 'building', 'industrial'])
+        assertTrue(rows.type == ['industrial', 'undefined', 'industrial'])
 
 
         //Roads

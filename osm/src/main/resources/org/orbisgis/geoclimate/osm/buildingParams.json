@@ -45,6 +45,7 @@
   ],
   "level": {
     "building": 1,
+    "undefined": 1,
     "house": 1,
     "detached": 1,
     "residential": 1,
@@ -1339,7 +1340,7 @@
         "water_tower"
       ]
     },
-    "building": {
+    "undefined": {
       "building": [
         "yes"
       ]

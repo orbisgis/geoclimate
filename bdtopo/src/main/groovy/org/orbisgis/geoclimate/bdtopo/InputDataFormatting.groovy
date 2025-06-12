@@ -96,12 +96,13 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                      "Sportif"                           : ["sport": "sport"],
                      "Annexe"                            : ["annex": "building"],
                      "Industriel, agricole ou commercial": ["commercial": "commercial"],
-                     "Bâtiment"                          : ["building": "building"],
+                     "Bâtiment"                          : ["undefined": "undefined"],
                      "Industrie lourde"                  : ["industrial": "industrial"]
                     ]
 
             def building_type_level = [
                     "building"                  : 1,
+                    "undefined"                 : 1,
                     "house"                     : 1,
                     "detached"                  : 1,
                     "residential"               : 1,
@@ -309,7 +310,7 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                         max(b.type) as type, 
                         max(b.type) as main_use, a.id_build FROM $outputTableName a, $urban_areas b 
                         WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) 
-                        AND  a.TYPE ='building' AND b.TYPE != 'unknown'
+                        AND  a.TYPE in ('building', 'undefined') AND b.TYPE != 'unknown'
                          group by a.id_build""".toString()
 
                 datasource.createIndex(buildinType, "id_build")

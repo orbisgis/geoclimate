@@ -211,7 +211,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.execute """DROP TABLE IF EXISTS $urbanAreasPart, $buildinType ;
             CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part 
                         FROM $outputTableName a, $triangles b 
-                        WHERE a.the_geom && b.the_geom and st_intersects(st_buffer(a.the_geom, 0), b.the_geom) AND  a.TYPE ='building';   
+                        WHERE a.the_geom && b.the_geom and st_intersects(st_buffer(a.the_geom, 0), b.the_geom) AND  a.TYPE in ('building', 'undefined');   
             CREATE INDEX ON $urbanAreasPart(id_build);                     
             create table $buildinType as select 
             MAX(part) FILTER (WHERE type = 'residential') as "residential",
@@ -234,7 +234,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
 
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow("SELECT * FROM $buildinType".toString()) { row ->
-                        def new_type = "building"
+                        def new_type = "undefined"
                         def id_build_ = row.id_build
                         def mapTypes = row.toRowResult()
                         mapTypes.remove("ID_BUILD")
