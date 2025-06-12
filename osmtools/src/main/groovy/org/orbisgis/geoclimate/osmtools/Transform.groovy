@@ -300,7 +300,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
     }
     datasource """
                 CREATE TABLE $waysPolygonTmp AS
-                    SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), $epsgCode) AS the_geom, id_way
+                    SELECT ST_BUFFER(ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), $epsgCode),0) AS the_geom, id_way
                     FROM(
                         SELECT(
                             SELECT ST_ACCUM(the_geom) AS the_geom
@@ -537,21 +537,22 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
 
     debug "Build all polygon relations"
     def relationsMpHoles = postfix "RELATIONS_MP_HOLES"
-    datasource """
+    datasource.execute( """
                 CREATE SPATIAL INDEX ON $relationsPolygonsOuterExploded (the_geom);
                 CREATE SPATIAL INDEX ON $relationsPolygonsInnerExploded (the_geom);
                 CREATE INDEX ON $relationsPolygonsOuterExploded(id_relation);
                 CREATE INDEX ON $relationsPolygonsInnerExploded(id_relation);       
                 DROP TABLE IF EXISTS $relationsMpHoles;
                 CREATE TABLE $relationsMpHoles AS 
-                    SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.the_geom), ST_ToMultiLine(ST_ACCUM(b.the_geom))) AS the_geom, a.ID_RELATION
+                    SELECT ST_BUFFER(ST_MAKEPOLYGON(ST_EXTERIORRING(a.the_geom), 
+                    ST_ToMultiLine(ST_ACCUM(b.the_geom))),0) AS the_geom, a.ID_RELATION
                     FROM $relationsPolygonsOuterExploded AS a 
                     LEFT JOIN $relationsPolygonsInnerExploded AS b 
                     ON( a.ID_RELATION=b.ID_RELATION and  a.the_geom && b.the_geom 
                     AND st_intersects(a.the_geom, st_pointonsurface(b.the_geom)))
                     GROUP BY a.the_geom, a.id_relation;
                 CREATE INDEX ON $relationsMpHoles(id_relation);
-        """.toString()
+        """)
 
     //select the column to keep
     def columnsSelector = OSMTools.TransformUtils.getColumnSelector(osmTableTag, tags, columnsToKeep)
@@ -574,7 +575,7 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
         query += " AND b.TAG_KEY IN ('${columnsToKeep.join("','")}') "
     }
     query += " GROUP BY  a.the_geom, a.id_relation;"
-    datasource.execute(query.toString())
+    datasource.execute(query)
 
     if (geometry) {
         def query_out = """DROP TABLE IF EXISTS $outputTableName;
