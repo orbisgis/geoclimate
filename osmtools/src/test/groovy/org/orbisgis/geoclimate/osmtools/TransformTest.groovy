@@ -840,6 +840,19 @@ class TransformTest extends AbstractOSMToolsTest {
         h2GIS.save(lines, "/tmp/building.fgb")
     }
 
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void testTransformAllDataForDebug() {
+        H2GIS h2GIS = H2GIS.open("/tmp/geoclimate")
+        Map r = OSMTools.Loader.fromArea(h2GIS, [59.301283, 17.93831, 59.321302, 17.982298], 0f, true)
+        println(r)
+        def polygons = OSMTools.Transform.toPolygons(h2GIS, r.prefix, 4326, ["water"], [])
+        h2GIS.save(polygons, "/tmp/water.fgb", true)
+    }
+
     @Test
     void buildGISLayersTest2() {
         def prefix = "OSM_WATER"

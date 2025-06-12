@@ -360,15 +360,18 @@ Map workflow(def input) throws Exception {
         if (!h2gis_datasource) {
             throw new Exception("Cannot load the local H2GIS database to run Geoclimate")
         }
+        try {
         Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters, locations.findAll { it }, file_outputFolder, outputFileTables,
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, osm_size_area,
                 overpass_timeout, overpass_maxsize, osm_date, databaseFolder,
                 excluded_output_db_columns, domain)
         if (delete_h2gis) {
-           h2gis_datasource.deleteClose()
+                h2gis_datasource.deleteClose()
         }
-        return osmprocessing
-
+            return osmprocessing
+        }catch (Exception ex){
+            throw new Exception("Invalid  OSM area from $locations.\n" + ex.getMessage().toString())
+        }
     } else {
         throw new Exception("Invalid  OSM area from $locations".toString())
     }
@@ -404,6 +407,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
     int nbAreas = id_zones.size()
     info "$nbAreas osm areas will be processed"
     id_zones.each { id_zone ->
+        if(!(id_zone in String) && !(id_zone in Collection)){
+            throw new Exception("The location value must be a text or a collection of coordinates. " +
+                    "Invalid location : $id_zone".toString())
+        }
         //Store the current OSM zone can be null
         Geometry osm_zone_geometry = null
         try {
@@ -721,7 +728,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
  * @param message
  * @throws Exception
  */
-void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, String id_zone, Geometry osm_geometry, String message) throws Exception {
+void saveLogZoneTable(JdbcDataSource dataSource, String databaseFolder, def id_zone, Geometry osm_geometry, String message) throws Exception {
     def logTableZones = postfix("log_zones")
     //Create the table to log on the processed zone
     dataSource.execute("""DROP TABLE IF EXISTS $logTableZones;
