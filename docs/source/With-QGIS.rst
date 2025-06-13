@@ -7,7 +7,7 @@ You can display the generated database with **QGIS**. To do this:
 - Open the folder that contains the outputs.
 - Drag and drop the content of the output folder into QGIS.
 
-.. figure:: ressources/show_data_tutorial/import.gif
+.. figure:: /_static/other/show_data_tutorial/import.gif
 
 Tweak the Displayed Layers
 --------------------------
@@ -15,7 +15,7 @@ Tweak the Displayed Layers
 To manage which layers are displayed, you can check or uncheck the boxes next to each layer on the left panel to show or hide them.
 You can also change the order of the layers by rearranging them in the **Layers** panel.
 
-.. figure:: ressources/show_data_tutorial/layers_manipulation.gif
+.. figure:: /_static/other/show_data_tutorial/layers_manipulation.gif
 
 Apply Style to the RSU_LCZ Layer
 --------------------------------
@@ -31,7 +31,7 @@ To apply it:
 5. Click the `...` button, browse to your `.sld` file, and select it.
 6. Click the **Load Style** button at the bottom to apply the style.
 
-.. figure:: ressources/show_data_tutorial/rsu_lcz_style.gif
+.. figure:: /_static/other/show_data_tutorial/rsu_lcz_style.gif
 
 -----------------------------------------------------------
 

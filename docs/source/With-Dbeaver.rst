@@ -8,12 +8,12 @@ You can view the generated database using **DBeaver**. To do this:
 - Set the username to `sa` and leave the password field empty.
 - Click **Finish** to establish the connection and browse the database.
 
-.. figure:: ressources/show_data_tutorial/create_connexion.gif
+.. figure:: /_static/other/show_data_tutorial/create_connexion.gif
 
 Now, you can display the content of every table in the database.
 If you click on a cell that contains a geometry, it will be displayed on an **OpenStreetMap** background, as shown in the picture below.
 
-.. figure:: ressources/show_data_tutorial/geometry_dbeaver.png
+.. figure:: /_static/other/show_data_tutorial/geometry_dbeaver.png
 
 --------------------------------------------------------------
 
