@@ -125,8 +125,11 @@ class InputDataFormattingTest {
         //Hydrography
         String water = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water)
         assertNotNull h2GIS.getTable(water).save(new File(folder, "osm_hydro_formated.shp").absolutePath, true)
-        assertEquals 10, h2GIS.getTable(water).rowCount
+        def waterCount = h2GIS.getTable(water).rowCount
+        assertEquals 10, waterCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${water} where type = 'sea'").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${water} where INTERMITTENT is not null").count == waterCount
+
 
         //Impervious surfaces
         String impervious = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious)
@@ -293,7 +296,7 @@ class InputDataFormattingTest {
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
-        zoneToExtract =  [59.298500, 17.900505, 59.330037, 17.976036]
+        zoneToExtract =  [34.040712,7.779007,34.179998,8.035126]
 
         //zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
