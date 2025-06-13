@@ -6,7 +6,7 @@
 
 ![bandeau_geoclimate](source/_static/images/bandeau_geoclimate.png)
 
-GeoClimate documentation is available at https://github.com/orbisgis/geoclimate/wiki
+GeoClimate documentation is available at https://geoclimate.readthedocs.io/en/latest/
 
 **Note :**
 
