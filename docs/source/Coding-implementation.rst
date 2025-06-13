@@ -40,7 +40,7 @@ GeoClimate is organized in 3 modules (Figure 1).
 - BDTopo_V2 module follows the same logic as the OSM module except that
   it is dedicated to version 2.2 of the `IGN BDTopo database <https://www.ign.fr/>`_.
 
-.. figure:: https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/geoclimate_implementation.png
+.. figure:: /_static/images/geoclimate_implementation.png
    :alt: Figure 1. The GeoClimate modules
 
    Figure 1. The GeoClimate modules

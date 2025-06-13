@@ -1,33 +1,37 @@
-Display output with QGIS
+Display Output with QGIS
 ========================
 
-You can display the generated database with Dbeaver. To do this : - Open
-QGIS - Open the folder that contains the outputs - Open the folder that
-contains the output and drag and drop its content into qgis
+You can display the generated database with **QGIS**. To do this:
 
-.. figure:: ressources/show_data_tutorial/import.gif
+- Open QGIS.
+- Open the folder that contains the outputs.
+- Drag and drop the content of the output folder into QGIS.
 
-Tweak the displayed layers
+.. figure:: /_static/other/show_data_tutorial/import.gif
+
+Tweak the Displayed Layers
 --------------------------
 
-To change the layers displayed, you anc, on the left, check or uncheck
-boxes of each layers to display or hide them. You can also change the
-order of the layers by changing where is the layer in the layers’
-hierarchy.
+To manage which layers are displayed, you can check or uncheck the boxes next to each layer on the left panel to show or hide them.
+You can also change the order of the layers by rearranging them in the **Layers** panel.
 
-.. figure:: ressources/show_data_tutorial/layers_manipulation.gif
+.. figure:: /_static/other/show_data_tutorial/layers_manipulation.gif
 
-If you want to display well the RSU_LCZ layer, we recommend to apply the
-style
-`rsu_lcz_primary.sld `__
-on it. To apply it, download the file, and then on the layer, righ
-click, then go in “properties”, click on the button “style” at the
-popup’s bottom and then click on “Load style”. Then in as a load style
-select “From a file” and click on the button below with “…” and select
-your file. Finally, click on the “load style” button at the bottom of
-the page, and the style will be applied.
+Apply Style to the RSU_LCZ Layer
+--------------------------------
 
-.. figure:: ressources/show_data_tutorial/rsu_lcz_style.gif
+To properly display the `RSU_LCZ` layer, we recommend applying the following style file `rsu_lcz_primary.sld <_static/other/rsu_lcz_primary.sld>`__
+
+To apply it:
+
+1. Download the `.sld` style file using the link above.
+2. In QGIS, right-click on the `RSU_LCZ` layer and select **Properties**.
+3. At the bottom of the popup, click the **Style** button, then choose **Load Style**.
+4. In the "Load Style" dialog, select **From a file**.
+5. Click the `...` button, browse to your `.sld` file, and select it.
+6. Click the **Load Style** button at the bottom to apply the style.
+
+.. figure:: /_static/other/show_data_tutorial/rsu_lcz_style.gif
 
 -----------------------------------------------------------
 

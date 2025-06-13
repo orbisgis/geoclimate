@@ -19,7 +19,7 @@ First, make sure Java (version 11 minimum) is installed in your
 computer.
 
 You need to download Geoclimate.jar
-`here <https://github.com/orbisgis/geoclimate/wiki/Download#geoclimate-for-command-line-interface>`__.
+`here <Download.html#geoclimate-for-command-line-interface>`__.
 
 Rename the downloaded file as “Geoclimate.jar”.
 
@@ -126,7 +126,7 @@ of Geoclimate :
 
 ``java -jar Geoclimate.jar -h``
 
-.. figure:: https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/geoclimate_cli_windows.png
+.. figure:: /_static/images/geoclimate_cli_windows.png
    :alt: Geoclimate CLI
 
    Geoclimate CLI
@@ -143,7 +143,7 @@ If everything runs well, you will obtain a message :
 
 The results of your calculations are located in you ``C:\temp`` folder.
 
-.. figure:: https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/results_osm_windows.png
+.. figure:: /_static/images/results_osm_windows.png
    :alt: OSM results
 
    OSM results
