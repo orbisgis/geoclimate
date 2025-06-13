@@ -373,17 +373,35 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
  * @param datasource input database
  * @param gridTable input grid_indicators
  * @param resolution grid resolution in meters
- * @return a grid formated
+ * @return a grid formated plus the raw target grid
  *
  * @author Erwan Bocher, CNRS
  */
-String formatGrid4Target(JdbcDataSource datasource, String gridTable, float resolution) {
+Map formatGrid4Target(JdbcDataSource datasource, String gridTable, float resolution) throws Exception{
     //Format target landcover
+    def grid_target_formated = postfix("grid_target_formated")
     def grid_target = postfix("grid_target")
     try {
         datasource.execute("""
                             DROP TABLE IF EXISTS ${grid_target};
                             CREATE TABLE ${grid_target} as SELECT
+                            THE_GEOM,
+                            ID_COL, ID_ROW,
+                            CAST(row_number() over(ORDER BY ID_ROW DESC) as integer) as "FID",
+                            BUILDING_FRACTION  AS "roof",
+                            ROAD_FRACTION AS "road",
+                            WATER_FRACTION AS "watr",
+                            IMPERVIOUS_FRACTION + UNDEFINED_FRACTION AS "conc",
+                            HIGH_VEGETATION_FRACTION AS "Veg",                            
+                            LOW_VEGETATION_FRACTION  AS "dry",
+                            0  AS "irr",
+                            AVG_HEIGHT_ROOF_AREA_WEIGHTED AS "H",                            
+                            STREET_WIDTH AS "W"
+                            FROM ${gridTable} 
+                            """)
+        datasource.execute("""
+                            DROP TABLE IF EXISTS ${grid_target_formated};
+                            CREATE TABLE ${grid_target_formated} as SELECT
                             THE_GEOM,
                             ID_COL, ID_ROW,
                             CAST(row_number() over(ORDER BY ID_ROW DESC) as integer) as "FID",
@@ -401,7 +419,7 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
                             ELSE STREET_WIDTH END AS "W"
                             FROM ${gridTable} 
                             """)
-        return grid_target
+        return [grid_target_formated:grid_target_formated, grid_target:grid_target]
     }catch (SQLException e){
         //We create an empty table
         datasource.execute("""CREATE TABLE $grid_target (FID INT, ID_COL INT, ID_ROW INT, THE_GEOM GEOMETRY,
