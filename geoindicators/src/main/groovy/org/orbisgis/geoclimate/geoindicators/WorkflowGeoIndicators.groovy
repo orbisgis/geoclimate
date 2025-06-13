@@ -1077,7 +1077,7 @@ Map getParameters() {
             "angleRangeSizeRoDirection"        : 30,
             "surfSuperpositions"               : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
             "surfPriorities"                   : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
-            "buildingAreaTypeAndCompositionLcz": ["undefined_lcz"     : ["building"],
+            "buildingAreaTypeAndCompositionLcz": ["undefined_lcz"     : ["building", "undefined"],
                                                   "light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
                                                   "commercial_lcz"    : ["commercial", "shop", "retail", "port",
                                                                          "exhibition_centre", "cinema"],
@@ -1086,7 +1086,7 @@ Map getParameters() {
                                                                          "abbey", "condominium", "villa", "dormitory", "sheltered_housing",
                                                                          "workers_dormitory", "terrace", "residential", "cabin"]],
             "floorAreaTypeAndCompositionLcz"   : [:],
-            "buildingAreaTypeAndCompositionTeb": ["undefined"            : ["building"],
+            "buildingAreaTypeAndCompositionTeb": ["undefined"            : ["building", "undefined"],
                                                   "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
                                                   "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
                                                                             "sheltered_housing", "workers_dormitory",
@@ -1115,7 +1115,7 @@ Map getParameters() {
                                                                             "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
                                                                             "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
                                                                             "transportation", "toll_booth", "hut", "shed"]],
-            "floorAreaTypeAndCompositionTeb"   : ["undefined"            : ["building"],
+            "floorAreaTypeAndCompositionTeb"   : ["undefined"            : ["building", "undefined"],
                                                   "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
                                                   "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
                                                                             "sheltered_housing", "workers_dormitory",
@@ -1231,7 +1231,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
     def holeInscribeCircleArea = inputParameters.surface_hole_rsu
     def indicatorUse = inputParameters.indicatorUse
     def clipGeom = inputParameters.clip
-    def nb_building_estimated = 0
+    def nb_building_updated = 0
     //Estimate height
     if (inputParameters.buildingHeightModelName && datasource.getRowCount(buildingEstimateTableName) > 0) {
         enableTableCache()
@@ -1257,7 +1257,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
             buildingIndicatorsForHeightEst = estimHeight.building_indicators_without_height
             blockIndicatorsForHeightEst = estimHeight.block_indicators_without_height
             rsuIndicatorsForHeightEst = estimHeight.rsu_indicators_without_height
-            nb_building_estimated = estimHeight.nb_building_estimated
+            nb_building_updated = estimHeight.nb_building_updated
         }
 
         indicatorUse = inputParameters.indicatorUse
@@ -1277,7 +1277,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                     "building"             : buildingTableName,
                     "zone_extended"        : zone_extended,
                     "zone"                  : zone,
-                    "nb_building_estimated": nb_building_estimated]
+                    "nb_building_updated": nb_building_updated]
         }
         def buildingForGeoCalc
         def blocksForGeoCalc
@@ -1322,7 +1322,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
             datasource.dropTable(getCachedTableNames())
             clearTablesCache()
             geoIndicators.put("building", buildingTableName)
-            geoIndicators.put("nb_building_estimated", nb_building_estimated)
+            geoIndicators.put("nb_building_updated", nb_building_updated)
             datasource.dropTable(blocksForGeoCalc, rsuForGeoCalc, buildingIndicatorsForHeightEst, rsuIndicatorsForHeightEst)
             return geoIndicators
         }
@@ -1348,7 +1348,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
             throw new Exception("Cannot build the geoindicators")
         } else {
             geoIndicators.put("building", building)
-            geoIndicators.put("nb_building_estimated", nb_building_estimated)
+            geoIndicators.put("nb_building_updated", nb_building_updated)
             return geoIndicators
         }
     }
@@ -1477,14 +1477,14 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
                 "building_indicators_without_height": buildingIndicatorsForHeightEst,
                 "block_indicators_without_height"   : blockIndicatorsForHeightEst,
                 "rsu_indicators_without_height"     : rsuIndicatorsForHeightEst,
-                "nb_building_estimated"             : nbBuildingEstimated]
+                "nb_building_updated"             : nbBuildingEstimated]
     }
     return [    "building"                          : building,
                 "rsu"                               : rsuTable,
                 "building_indicators_without_height": buildingIndicatorsForHeightEst,
                 "block_indicators_without_height"   : blockIndicatorsForHeightEst,
                 "rsu_indicators_without_height"     : rsuIndicatorsForHeightEst,
-                "nb_building_estimated"             : nbBuildingEstimated]
+                "nb_building_updated"             : nbBuildingEstimated]
 
 
 

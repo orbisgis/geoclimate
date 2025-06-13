@@ -272,7 +272,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "rsu_lcz"                : "rsu_lcz",
                                          "zone"                   : "zone",
                                          "grid_indicators"        : "grid_indicators",
-                                         "building_height_missing": "building_height_missing"]]],
+                                         "building_updated": "building_updated"]]],
                 "parameters"  :
                         ["distance"       : 0,
                          rsu_indicators   : ["indicatorUse" : ["LCZ"],
@@ -304,9 +304,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def gridTable = postgis.getTable("grid_indicators")
             assertNotNull(gridTable)
             assertTrue(gridTable.getRowCount() > 0)
-            def building_height_missing = postgis.getTable("building_height_missing")
-            assertNotNull(building_height_missing)
-            assertTrue(building_height_missing.getRowCount() > 0)
+            def building_updated = postgis.getTable("building_updated")
+            assertNotNull(building_updated)
+            assertTrue(building_updated.getRowCount() > 0)
         }
     }
 
@@ -709,7 +709,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue h2gis.firstRow("select count(*) as count from $roadTableName where road_type is not null".toString()).count > 0
         assertTrue h2gis.firstRow("select count(*) as count from $ground_acoustic where layer in ('road', 'building')".toString()).count == 0
         assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where layer = 'water'".toString()).size() == 1
-
     }
 
     @Disabled
@@ -720,8 +719,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = ["Redon"]
-        location = [59.301283, 17.93831, 59.321302, 17.982298]
+        def location = "Redon"
+        //location = [64.34303, -111.025119, 64.478563, -110.673213]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 200
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]

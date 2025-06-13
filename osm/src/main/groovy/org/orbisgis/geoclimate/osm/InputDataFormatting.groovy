@@ -43,7 +43,7 @@ import java.util.regex.Pattern
  * @param hLevMin Minimum building level height
  * @param jsonFilename Name of the json formatted file containing the filtering parameters
  * @return outputTableName The name of the final buildings table
- * @return outputEstimatedTableName The name of the table containing the state of estimation for each building
+ * @return building_updated The name of the table containing the state of estimation for each building
  */
 Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
                         String urban_areas = "", int h_lev_min = 3, String jsonFilename = "") throws Exception {
@@ -52,13 +52,11 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
     }
     def outputTableName = postfix "INPUT_BUILDING"
     debug 'Formating building layer'
-    def outputEstimateTableName = "EST_${outputTableName}"
+    def outputEstimateTableName = "UPDATED_${outputTableName}"
     datasource.execute("""
                     DROP TABLE if exists ${outputEstimateTableName};
                     CREATE TABLE ${outputEstimateTableName} (
-                        id_build INTEGER,
-                        ID_SOURCE VARCHAR)
-                """)
+                        id_build INTEGER,HEIGHT INT,TYPE INT)""")
 
     datasource.execute(""" 
                 DROP TABLE if exists ${outputTableName};
@@ -85,6 +83,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
                         Geometry geom = row.the_geom
+                        def row_id = row.id
                         if (pZone.intersects(geom)) {
                         def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                         def use = typeAndUseValues[1]
@@ -110,7 +109,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
-                                                    '${row.id}',
+                                                    '${row_id}',
                                                     ${formatedHeight.heightWall},
                                                     ${formatedHeight.heightRoof},
                                                     ${formatedHeight.nbLevels},
@@ -121,11 +120,10 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                             """.toString()
 
                                             if (formatedHeight.estimated) {
-                                                stmt.addBatch """
+                                                stmt.addBatch("""
                                                 INSERT INTO ${outputEstimateTableName} values(
-                                                    $id_build, 
-                                                    '${row.id}')
-                                                """.toString()
+                                                    $id_build, 1, 0)
+                                                """.toString())
                                             }
                                             id_build++
                                         }
@@ -140,6 +138,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
                         Geometry geom = row.the_geom
+                        def row_id = row.id
                         if(geom) {
                             def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                             def use = typeAndUseValues[1]
@@ -165,7 +164,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
-                                                    '${row.id}',
+                                                    '${row_id}',
                                                     ${formatedHeight.heightWall},
                                                     ${formatedHeight.heightRoof},
                                                     ${formatedHeight.nbLevels},
@@ -176,11 +175,10 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                             """.toString()
 
                                             if (formatedHeight.estimated) {
-                                                stmt.addBatch """
+                                                stmt.addBatch("""
                                                 INSERT INTO ${outputEstimateTableName} values(
-                                                    $id_build, 
-                                                    '${row.id}')
-                                                """.toString()
+                                                    $id_build,  1, 0)
+                                                """.toString())
                                             }
                                             id_build++
                                         }
@@ -211,7 +209,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.execute """DROP TABLE IF EXISTS $urbanAreasPart, $buildinType ;
             CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part 
                         FROM $outputTableName a, $triangles b 
-                        WHERE a.the_geom && b.the_geom and st_intersects(st_buffer(a.the_geom, 0), b.the_geom) AND  a.TYPE ='building';   
+                        WHERE a.the_geom && b.the_geom and st_intersects(st_buffer(a.the_geom, 0), b.the_geom) AND  a.TYPE in ('building', 'undefined');   
             CREATE INDEX ON $urbanAreasPart(id_build);                     
             create table $buildinType as select 
             MAX(part) FILTER (WHERE type = 'residential') as "residential",
@@ -234,7 +232,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
 
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow("SELECT * FROM $buildinType".toString()) { row ->
-                        def new_type = "building"
+                        def new_type = "undefined"
                         def id_build_ = row.id_build
                         def mapTypes = row.toRowResult()
                         mapTypes.remove("ID_BUILD")
@@ -264,18 +262,29 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                         break
                                 }
                             }
-
                         }
                         stmt.addBatch("UPDATE $outputTableName set type = '${new_type}' , main_use = '${new_type}'where id_build=${id_build_}")
+                        stmt.addBatch( """INSERT INTO ${outputEstimateTableName} values(
+                        $id_build_, 1, 1) """.toString())
                     }
                 }
                 datasource.execute("""DROP TABLE IF EXISTS $urbanAreasPart, $buildinType, $triangles""".toString())
 
+                //Clean the building_updated table
+                def building_updated =postfix("building_updated")
+                datasource.execute("""
+                DROP TABLE IF EXISTS $building_updated;
+                CREATE TABLE $building_updated as select 
+                id_build, max(HEIGHT) as HEIGHT,
+                max(TYPE) AS TYPE from $outputEstimateTableName group by id_build;""")
+                datasource.dropTable(outputEstimateTableName)
+                debug 'Buildings transformation finishes'
+                return [building: outputTableName, building_updated: building_updated]
             }
         }
     }
     debug 'Buildings transformation finishes'
-    [building: outputTableName, building_estimated: outputEstimateTableName]
+    return [building: outputTableName, building_updated: outputEstimateTableName]
 }
 
 /**

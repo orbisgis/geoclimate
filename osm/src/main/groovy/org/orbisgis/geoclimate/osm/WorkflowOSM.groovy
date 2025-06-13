@@ -289,7 +289,7 @@ Map workflow(def input) throws Exception {
                                     "building_utrf",
                                     "grid_indicators",
                                     "sea_land_mask",
-                                    "building_height_missing",
+                                    "building_updated",
                                     "road_traffic",
                                     "population",
                                     "ground_acoustic",
@@ -480,7 +480,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                 info "Building formatted"
                 def buildingTableName = formatBuilding.building
-                def buildingEstimateTableName = formatBuilding.building_estimated
+                def buildingEstimateTableName = formatBuilding.building_updated
 
                 String railTableName = OSM.InputDataFormatting.formatRailsLayer(h2gis_datasource, gisLayersResults.rail, utm_extended_bbox_table)
 
@@ -537,7 +537,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 results.put("urban_areas", urbanAreasTable)
                 results.put("building", buildingTableName)
                 results.put("sea_land_mask", seaLandMaskTableName)
-                results.put("building_height_missing", buildingEstimateTableName)
+                results.put("building_updated", buildingEstimateTableName)
 
                 //Compute traffic flow
                 if (road_traffic) {
@@ -571,7 +571,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     results.putAll(geoIndicators)
                     //We must compute the stats at the end of the process
                     Geoindicators.WorkflowGeoIndicators.computeZoneStats(h2gis_datasource, results.zone,
-                            results.building_indicators, results.block_indicators, results.rsu_indicators, start, results.nb_building_estimated)
+                            results.building_indicators, results.block_indicators, results.rsu_indicators, start, results.nb_building_updated)
                 }
                 //Extract and compute population indicators for the specified year
                 //This data can be used by the grid_indicators process
@@ -1099,7 +1099,7 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
                 } else if (outputGrid == "asc") {
                 Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder.getAbsolutePath(), it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
             }
-        } else if (it == "building_height_missing") {
+        } else if (it == "building_updated") {
             Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.csv", h2gis_datasource, deleteOutputData)
         } else if (it in["building","road",  "rail",   "water", "vegetation",  "impervious",
                          "urban_areas","sea_land_mask", "road_traffic","ground_acoustic",
@@ -1209,21 +1209,10 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone, h2gis_datasource, h2gis_tables.population
             , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.population))
 
-    //Export building_height_missing table
-    def output_table = outputTableNames.building_height_missing
-    def h2gis_table_to_save = h2gis_tables.building_height_missing
+    //Export building_updated table
+    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building_updated, id_zone, h2gis_datasource, h2gis_tables.building_updated
+            , "", inputSRID, outputSRID, false,excluded_columns.get(outputTableNames.building_updated))
 
-    if (output_table) {
-        if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
-            if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '$id_zone'".toString())
-            } else {
-                output_datasource.execute """CREATE TABLE $output_table(ID_BUILD INTEGER, ID_SOURCE VARCHAR, ID_ZONE VARCHAR)""".toString()
-            }
-            IOMethods.exportToDataBase(h2gis_datasource.getConnection(), "(SELECT ID_BUILD, ID_SOURCE, '$id_zone' as ID_ZONE from $h2gis_table_to_save)".toString(),
-                    output_datasource.getConnection(), output_table, 2, 100);
-        }
-    }
 }
 
 
