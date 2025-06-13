@@ -266,13 +266,13 @@ class InputDataFormattingTest {
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_WALL<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF<0").count == 0
-        assertEquals 1029, h2GIS.getTable(buildingLayers.building_estimated).rowCount
-        assertEquals(1029, h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_estimated} using (id_build, id_source) where 1=1").count)
+        assertEquals 1029, h2GIS.getTable(buildingLayers.building_updated).rowCount
+        assertEquals(1029, h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_updated} using (id_build) where 1=1").count)
 
         //Buildings without estimation state
         buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
         assertEquals 1034, h2GIS.getTable(buildingLayers.building).rowCount
-        assertEquals 1029, h2GIS.getTable(buildingLayers.building_estimated).rowCount
+        assertEquals 1029, h2GIS.getTable(buildingLayers.building_updated).rowCount
     }
 
 

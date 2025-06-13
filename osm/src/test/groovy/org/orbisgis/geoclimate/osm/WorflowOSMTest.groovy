@@ -272,7 +272,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "rsu_lcz"                : "rsu_lcz",
                                          "zone"                   : "zone",
                                          "grid_indicators"        : "grid_indicators",
-                                         "building_height_missing": "building_height_missing"]]],
+                                         "building_updated": "building_updated"]]],
                 "parameters"  :
                         ["distance"       : 0,
                          rsu_indicators   : ["indicatorUse" : ["LCZ"],
@@ -304,9 +304,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def gridTable = postgis.getTable("grid_indicators")
             assertNotNull(gridTable)
             assertTrue(gridTable.getRowCount() > 0)
-            def building_height_missing = postgis.getTable("building_height_missing")
-            assertNotNull(building_height_missing)
-            assertTrue(building_height_missing.getRowCount() > 0)
+            def building_updated = postgis.getTable("building_updated")
+            assertNotNull(building_updated)
+            assertTrue(building_updated.getRowCount() > 0)
         }
     }
 

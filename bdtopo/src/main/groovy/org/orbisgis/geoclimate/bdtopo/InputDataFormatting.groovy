@@ -35,9 +35,10 @@ import org.orbisgis.geoclimate.Geoindicators
  * @param datasource A connexion to a DB containing the raw buildings table
  * @param building The name of the raw buildings table in the DB
  * @param hLevMin Minimum building level height
- * @return The name of the final buildings table
+ * @return The name of the final buildings table *
+ * @return building_updated The name of the table containing the state of estimation for each building
  */
-String formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
+Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
                            String urban_areas = "", float h_lev_min = 3) throws Exception {
     if (!h_lev_min) {
         h_lev_min = 3
@@ -45,8 +46,12 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
     def outputTableName = postfix "BUILDING"
     debug 'Formating building layer'
 
+    def outputEstimateTableName = "UPDATED_${outputTableName}"
+    datasource.execute("""
+                    DROP TABLE if exists ${outputEstimateTableName};
+                    CREATE TABLE ${outputEstimateTableName} (
+                        id_build INTEGER,HEIGHT INT,TYPE INT)""")
     //Create the final building table
-
     datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM geometry, ID_BUILD integer, ID_SOURCE varchar(24), 
             HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer, ROOF_SHAPE VARCHAR);""".toString())
@@ -291,6 +296,12 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                                                     ${zIndex}, null)
                                             """.toString()
 
+                                    if (formatedHeight.estimated) {
+                                        stmt.addBatch("""
+                                                INSERT INTO ${outputEstimateTableName} values(
+                                                    $id_build, 1, 0)
+                                                """.toString())
+                                    }
                                     id_build++
                                 }
                             }
@@ -300,18 +311,19 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
             }
             //Let's use the urban areas table to improve building qualification
             if (urban_areas) {
+
                 datasource.createSpatialIndex(outputTableName, "the_geom")
                 datasource.createIndex(outputTableName, "id_build")
                 datasource.createIndex(outputTableName, "type")
                 datasource.createSpatialIndex(urban_areas, "the_geom")
                 def buildinType = postfix("BUILDING_TYPE")
 
-                datasource.execute """create table $buildinType as SELECT 
+                datasource.execute( """create table $buildinType as SELECT 
                         max(b.type) as type, 
                         max(b.type) as main_use, a.id_build FROM $outputTableName a, $urban_areas b 
                         WHERE ST_POINTONSURFACE(a.the_geom) && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), b.the_geom) 
                         AND  a.TYPE in ('building', 'undefined') AND b.TYPE != 'unknown'
-                         group by a.id_build""".toString()
+                         group by a.id_build""")
 
                 datasource.createIndex(buildinType, "id_build")
 
@@ -328,14 +340,33 @@ String formatBuildingLayer(JdbcDataSource datasource, String building, String zo
                                                , a.ZINDEX, a.ROOF_SHAPE from $outputTableName
                                         a LEFT JOIN $buildinType b on a.id_build=b.id_build""")
 
-                datasource.execute("""DROP TABLE IF EXISTS $buildinType, $outputTableName;
+                datasource.execute("""DROP TABLE IF EXISTS  $outputTableName;
                         ALTER TABLE $newBuildingWithType RENAME TO $outputTableName;
                         DROP TABLE IF EXISTS $newBuildingWithType;""")
+
+                def building_updated_merge = postfix("building_updated_merge")
+                datasource.execute("""
+                DROP TABLE IF EXISTS $building_updated_merge;
+                CREATE TABLE $building_updated_merge as select
+                a.id_build, 0 AS HEIGHT, 1 as type from $outputTableName a , $buildinType as b where a.id_build=b.id_build
+                union select id_build, HEIGHT ,TYPE from $outputEstimateTableName
+                """)
+
+                //Clean the building_updated table
+                def building_updated =postfix("building_updated")
+                datasource.execute("""
+                DROP TABLE IF EXISTS $building_updated;
+                CREATE TABLE $building_updated as select 
+                id_build, max(HEIGHT) as HEIGHT,
+                max(TYPE) AS TYPE from $building_updated_merge group by id_build;""")
+                datasource.dropTable(outputEstimateTableName, building_updated_merge,buildinType)
+                info "Building formatted"
+                return [building: outputTableName, building_updated: building_updated]
             }
         }
     }
     info "Building formatted"
-    return outputTableName
+    return [building: outputTableName, building_updated: outputEstimateTableName]
 }
 
 /**

@@ -20,6 +20,7 @@
 package org.orbisgis.geoclimate.bdtopo
 
 import org.h2.tools.DeleteDbFiles
+import org.h2gis.functions.io.utility.IOMethods
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.URIUtilities
@@ -288,7 +289,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
                 info "${nbzones} location(s) on ${locations.size()}"
             }
-            deleteH2GISDb(delete_h2gis, h2gis_datasource.getConnection(), databaseFolder, databaseName)
+            if(delete_h2gis){
+                h2gis_datasource.deleteClose()
+            }
             if (outputTableNamesResult) {
                 return outputTableNamesResult
             }
@@ -674,7 +677,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 "urban_sprawl_areas",
                 "urban_cool_areas",
                 "grid_target",
-                "zone_extended"]
+                "zone_extended",
+                "building_updated"]
     }
 
 
@@ -1007,6 +1011,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             def impervious = dataFormated.impervious
             def urban_areas = dataFormated.urban_areas
             def zone_extended = dataFormated.zone_extended
+            def building_updated = dataFormated.building_updated
 
             info "BDTOPO GIS layers formated"
 
@@ -1022,6 +1027,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             results.put("urban_areas", urban_areas)
             results.put("building", building)
             results.put("zone_extended", zone_extended)
+            results.put("building_updated", building_updated)
 
             //Compute the RSU indicators
             if (rsu_indicators_params && rsu_indicators_params.indicatorUse) {
@@ -1147,7 +1153,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 } else if (outputGrid == "asc") {
                     Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", outputFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
                 }
-            } else if (it in["building","road",  "rail",   "water", "vegetation",  "impervious",
+            } else if (it == "building_updated") {
+                Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${outputFolder + File.separator + it}.csv", h2gis_datasource, deleteOutputData)
+            }
+            else if (it in["building","road",  "rail",   "water", "vegetation",  "impervious",
                            "urban_areas", "road_traffic","ground_acoustic",
                            "urban_sprawl_areas", "urban_cool_areas"]) {
                 //Apply where filter
@@ -1176,7 +1185,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @param excluded_columns list of columns to exclude for each table saved in a database
  * @return
  */
-    def saveTablesInDatabase(def output_datasource, def h2gis_datasource, def outputTableNames, def h2gis_tables,
+    def saveTablesInDatabase(def output_datasource, H2GIS h2gis_datasource, def outputTableNames, def h2gis_tables,
                              def id_zone, def inputSRID, def outputSRID, def reproject,Map excluded_columns) throws Exception {
         Connection con = output_datasource.getConnection()
         con.setAutoCommit(true)
@@ -1246,8 +1255,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone, h2gis_datasource, h2gis_tables.population
                 , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.population))
 
-
-        con.setAutoCommit(false)
+        //Export building_updated table
+        abstractModelTableBatchExportTable(output_datasource, outputTableNames.building_updated, id_zone, h2gis_datasource, h2gis_tables.building_updated
+                , "", inputSRID, outputSRID, false,excluded_columns.get(outputTableNames.building_updated))
 
     }
 
