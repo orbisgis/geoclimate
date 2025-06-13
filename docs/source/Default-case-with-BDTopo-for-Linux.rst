@@ -19,7 +19,7 @@ First, make sure Java (version 11 minimum) is installed in your
 computer.
 
 You need to download Geoclimate.jar
-`here <https://github.com/orbisgis/geoclimate/wiki/Download#geoclimate-for-command-line-interface>`__.
+`here <Download.html#geoclimate-for-command-line-interface>`__.
 
 Rename the downloaded file as “Geoclimate.jar”.
 
@@ -144,7 +144,7 @@ of Geoclimate :
 
 ``java -jar Geoclimate.jar -h``
 
-.. figure:: https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/geoclimate_cli.png
+.. figure:: /_static/images/geoclimate_cli.png
    :alt: Groovy CLI
 
    Groovy CLI
@@ -162,10 +162,8 @@ If everything runs well, you will obtain a message :
 
 The results of your calculations are located in you ``\tmp`` folder.
 
-.. figure:: https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/results_bdtopo.png
-   :alt: Results BDTopo
+.. figure:: /_static/images/results_bdtopo.png
 
-   Results BDTopo
 
 -----------------
 

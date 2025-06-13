@@ -34,7 +34,7 @@ Classifications use the spatial indicators at the three scales and specific stat
 - The typology of a building based on an architectural approach (Urban Typology by Random Forest - UTRF) such as defined in `Bocher et al. (2017) <https://hal.archives-ouvertes.fr/hal-01730717v2>`_, which is then aggregated at RSU scale
 - The typology of a RSU based on the Local Climate Zones definition (`Stewart et Oke, 2012 <https://journals.ametsoc.org/view/journals/bams/93/12/bams-d-11-00019.1.xml?tab_body=pdf>`_)
 
-.. image:: https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/geoclimate_main_processing_steps.png
+.. image:: /_static/images/geoclimate_main_processing_steps.png
    :alt: GeoClimate main processing steps
 
 Figure 1. Main GeoClimate processing steps
@@ -46,7 +46,7 @@ GeoClimate integrates a "rasterization" of the indicators and of the classificat
 
 The rasterization process creates a grid based on the bounding box of the zone layer. The grid is intersected with a set of input data given to a spatial aggregating function that computes the square cell fraction of each input data and the building height which is a footprint area weighted mean height (Figure 2).
 
-.. image:: https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/geoclimate_processing_steps_grid.png
+.. image:: /_static/images/geoclimate_processing_steps_grid.png
    :alt: GeoClimate grid processing
 
 Figure 2. Processing steps to aggregate indicators at grid scale

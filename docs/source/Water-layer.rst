@@ -17,7 +17,7 @@ The water layer represents any kind of surface (river, sea, lake, etc.).
 | zindex    | INTEGER | not null; ≥ 0; ≤ 1                                      | Defines position relative to ground: 0 = on ground, 1 = above ground |
 +-----------+---------+---------------------------------------------------------+----------------------------------------------------------------------+
 
-.. _type list: https://github.com/orbisgis/geoclimate/wiki/Water-layer/_edit#type
+.. _type list: Water-layer.html/_edit#type
 
 Type Column Values
 ------------------

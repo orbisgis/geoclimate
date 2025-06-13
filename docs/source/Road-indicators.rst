@@ -10,8 +10,7 @@ The chain uses the GeoClimate road layer and a configuration file that contains 
 - the Tool 2.5 flow data by WG-AEN road types for the 3 periods: day, night, and evening (*WG data flow*)
 - the maximum speed value according to the WG-AEN road types (*WG maxspeed*)
 
-.. image:: https://raw.githubusercontent.com/orbisgis/geoclimate/master/docs/resources/images/geoclimate_processing_road_traffic.png
-   :alt: GeoClimate road traffic processing
+.. image:: /_static/images/geoclimate_processing_road_traffic.png
 
 *Figure 3. Processing steps to compute a road traffic flow based on WG-AEN referential*
 

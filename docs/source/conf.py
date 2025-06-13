@@ -15,7 +15,8 @@ release = '1.0.0'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'myst_parser',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.githubpages',
     'sphinx.ext.duration',
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
@@ -54,4 +55,12 @@ html_theme_options = {
     'collapse_navigation': False,
     'titles_only': True,  # Optionnel, enlève aussi les sous-éléments redondants
 }
+
+html_context = {
+    "display_github": True, # Add 'Edit on GitHub' link
+    "github_repo": "orbisgis/geoclimate",
+    "github_version": "master",  # or "master" or any branch
+    "conf_py_path": "/docs/source/",  # Path in the repo to your docs root (with trailing slash)
+}
+
 
