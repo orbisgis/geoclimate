@@ -1978,6 +1978,7 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, BASE_NAME
 
+    boolean  buildingIsEmpty =  datasource.isEmpty(building)
     if (360 % numberOfDirection == 0 && numberOfDirection % 2 == 0) {
 
         // Temporary table names
@@ -2117,7 +2118,12 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
         // 4. Make the calculations for the last level
         def layer_bottom = listLayersBottom[listLayersBottom.size() - 1]
         // Get the maximum building height
-        def layer_top = datasource.firstRow("SELECT CAST(MAX($HEIGHT_WALL) AS INTEGER) +1 AS MAXH FROM $building").MAXH
+        def layer_top
+        if(buildingIsEmpty){
+             layer_top =1
+        }else {
+            datasource.firstRow("SELECT CAST(MAX($HEIGHT_WALL) AS INTEGER) +1 AS MAXH FROM $building").MAXH
+        }
         def deltaH = layer_top - layer_bottom
         tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom"
 
