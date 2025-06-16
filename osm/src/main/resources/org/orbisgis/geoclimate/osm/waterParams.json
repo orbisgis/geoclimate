@@ -5,7 +5,8 @@
       "waterway"
     ],
     "water": [],
-    "waterway": [],
+    "waterway": ["river", "stream",
+      "tidal_channel", "flowline", "canal", "fairway", "rapids", "waterfall"],
     "landuse": [
       "basin",
       " salt_pond"
