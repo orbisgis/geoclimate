@@ -2120,9 +2120,9 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
         // Get the maximum building height
         def layer_top
         if(buildingIsEmpty){
-             layer_top =1
+            layer_top =1
         }else {
-            datasource.firstRow("SELECT CAST(MAX($HEIGHT_WALL) AS INTEGER) +1 AS MAXH FROM $building").MAXH
+            layer_top = datasource.firstRow("SELECT CAST(MAX($HEIGHT_WALL) AS INTEGER) +1 AS MAXH FROM $building").MAXH
         }
         def deltaH = layer_top - layer_bottom
         tab_H[listLayersBottom.size() - 1] = "${buildFracH}_$layer_bottom"
