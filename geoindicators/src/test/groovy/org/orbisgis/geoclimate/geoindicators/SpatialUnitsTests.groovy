@@ -94,7 +94,7 @@ class SpatialUnitsTests {
         def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "tsu")
         assert h2GIS.getSpatialTable(outputTable).save(new File(folder, "tsu.shp").getAbsolutePath(), true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
-        assert 237 == countRows.numberOfRows
+        assert 235 == countRows.numberOfRows
     }
 
     @Test
@@ -113,7 +113,7 @@ class SpatialUnitsTests {
 
         assert h2GIS.getSpatialTable(createRSU).save(new File(folder, "rsu.shp").getAbsolutePath(), true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $createRSU"
-        assert 230 == countRows.numberOfRows
+        assert 229 == countRows.numberOfRows
     }
 
     @Test
@@ -201,7 +201,7 @@ class SpatialUnitsTests {
         def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "tsu")
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
 
-        assert 237 == countRows.numberOfRows
+        assert 235 == countRows.numberOfRows
     }
 
     @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")

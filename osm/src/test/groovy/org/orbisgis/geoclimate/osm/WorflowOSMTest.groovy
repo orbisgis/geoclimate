@@ -720,9 +720,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Redon"
-        //location = [64.34303, -111.025119, 64.478563, -110.673213]
+        //location = [63.85919, -52.27294, 64.03886, -51.85932]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
-        def grid_size = 200
+        def grid_size = 4000
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
         //location=[47.215334,-1.558058,47.216646,-1.556185]
         //location = [nominatim.bbox]
@@ -759,8 +759,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory]
                         /*[
                         "database":
-                                ["user"    : "ebocher",
-                                 "password": "k@ndinsky5622",
+                                ["user"    : "orbisgis",
+                                 "password": "orbisgis",
                                  "url"     : "postgis://localhost:5432/orbisgis_db",
                                  "tables"  : [
                                          "rsu_indicators"         : "rsu_indicators",
@@ -768,31 +768,25 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "zone"                   : "zone"]]]*/
                 ,
                 "parameters"  :
-                        ["distance"             : 200,
+                        [//"distance"             : 200,
                          "rsu_indicators"       : [
                                  "indicatorUse": ["LCZ"] //, "UTRF"]
 
-                         ] , "grid_indicators"   : [
+                         ]
+                         /*, "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
+                                "rowCol": false,
+                                "output" : "geojson",
                                 "indicators": [
-                                        "BUILDING_FRACTION",
-                                        "BUILDING_HEIGHT_WEIGHTED",
-                                        //"BUILDING_POP",
-                                        //"BUILDING_TYPE_FRACTION",
-                                        "WATER_FRACTION",
-                                        "VEGETATION_FRACTION",
-                                        "ROAD_FRACTION",
-                                        "IMPERVIOUS_FRACTION",
-                                        "LCZ_FRACTION",
-                                        "LCZ_PRIMARY",
-                                        "SEA_LAND_FRACTION",
-                                        "ASPECT_RATIO",
-                                        //"SVF",
-                                        "STREET_WIDTH" ,
-                                        "IMPERVIOUS_FRACTION",
-                                        "COUNT_WARM_1",
-                                        "COUNT_WARM_4"]
+                                        "BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
+                                        "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
+                                        "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+                                        "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
+                                        "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
+                                        "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
+                                        "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
+                                        "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH"]
                                 //"lcz_lod":1
                         ], "worldpop_indicators": true
                          /*

@@ -331,22 +331,15 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
 
                     datasource.execute( """
                     CREATE INDEX ON $subGraphTableNodes (NODE_ID);
-                    CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(ST_REMOVEHOLES(A.THE_GEOM)))) AS THE_GEOM
+                    CREATE TABLE $subGraphBlocks AS SELECT ST_ToMultiLine(ST_UNION(ST_ACCUM(A.THE_GEOM))) AS THE_GEOM
                     FROM $water A, $subGraphTableNodes B
                     WHERE a.ID_WATER=b.NODE_ID 
                     GROUP BY B.CONNECTED_COMPONENT 
-                    HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;""")
+                    HAVING SUM(st_area(A.THE_GEOM)) >= $surface_hydro;                   
+                    DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph""")
                     debug "Creating the water block table..."
-                    datasource.execute("""DROP TABLE IF EXISTS $hydrographic_tmp; 
-                    CREATE TABLE $hydrographic_tmp (THE_GEOM GEOMETRY) 
-                    AS SELECT the_geom FROM $subGraphBlocks
-                    UNION ALL SELECT ST_ToMultiLine(ST_REMOVEHOLES(a.the_geom)) as the_geom  FROM $water a 
-                    LEFT JOIN $subGraphTableNodes b ON a.ID_WATER = b.NODE_ID WHERE b.NODE_ID IS NULL  
-                    AND st_area(a.the_geom)>=$surface_hydro;
-                    DROP TABLE $subGraphTableNodes,$subGraphTableEdges, $water_graph, $subGraphBlocks ;""")
-
-                    queryCreateOutputTable += [hydrographic_tmp: "(SELECT the_geom FROM $hydrographic_tmp)"]
-                    dropTableList.addAll([hydrographic_tmp])
+                    queryCreateOutputTable += [hydrographic_tmp: "(SELECT the_geom FROM $subGraphBlocks)"]
+                    dropTableList.addAll([subGraphBlocks])
                 }
             }
 

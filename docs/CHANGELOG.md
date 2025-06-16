@@ -13,3 +13,4 @@
 - Add lanes informations on abstract model plus OSM and BDTopo drivers
 - New grid indicator COUNT_WARM_X where X is the step of the sliding window
 - Fix water extraction with OSM
+- Fix islands detection
