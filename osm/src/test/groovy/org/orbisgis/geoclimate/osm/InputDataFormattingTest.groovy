@@ -65,7 +65,7 @@ class InputDataFormattingTest {
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
-        assertEquals 10, h2GIS.getTable(extractData.water).rowCount
+        assertEquals 7, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
         assertEquals 11, h2GIS.getTable(extractData.urban_areas).rowCount
         assertEquals 0, h2GIS.getTable(extractData.coastline).rowCount
@@ -125,7 +125,7 @@ class InputDataFormattingTest {
         //Hydrography
         String water = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water)
         assertNotNull h2GIS.getTable(water).save(new File(folder, "osm_hydro_formated.shp").absolutePath, true)
-        assertEquals 10, h2GIS.getTable(water).rowCount
+        assertEquals 7, h2GIS.getTable(water).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${water} where type = 'sea'").count == 0
 
         //Impervious surfaces
@@ -251,7 +251,7 @@ class InputDataFormattingTest {
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
-        assertEquals 10, h2GIS.getTable(extractData.water).rowCount
+        assertEquals 7, h2GIS.getTable(extractData.water).rowCount
         assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
 
         //Buildings with estimation state
