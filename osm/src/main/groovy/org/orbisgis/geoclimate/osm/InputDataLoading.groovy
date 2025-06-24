@@ -236,11 +236,25 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath,
         columnsToKeep = parametersMap.get("columns")
         String impervious = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep, geometry, true)
         debug "Create the impervious layer"
+
+        //Create impervious layer that contains a polygon or multipolygon tag
+        //This process is used  to isolate this type of situation : https://www.openstreetmap.org/relation/530964#map=17/48.924457/2.360138
+        paramsDefaultFile = this.class.getResourceAsStream("imperviousPolygonsParams.json")
+        parametersMap = readJSONParameters(paramsDefaultFile)
+        tags = parametersMap.get("tags")
+        columnsToKeep = parametersMap.get("columns")
+        String imperviousPolygons = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep, geometry, true)
+        debug "Create the impervious layer that contains a polygon  or multipolygon tag"
+
         if (impervious) {
             outputImperviousTableName = postfix("OSM_IMPERVIOUS")
             datasource.execute("ALTER TABLE ${impervious} RENAME TO $outputImperviousTableName".toString())
             info "Impervious layer created"
         }
+        //Merge the two impervious table
+        outputImperviousTableName = postfix("OSM_IMPERVIOUS")
+        datasource.execute("ALTER TABLE ${impervious} RENAME TO $outputImperviousTableName".toString())
+
         //Create urban areas layer
         paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
         parametersMap = readJSONParameters(paramsDefaultFile)

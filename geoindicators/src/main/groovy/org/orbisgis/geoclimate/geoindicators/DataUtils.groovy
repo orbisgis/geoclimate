@@ -184,3 +184,28 @@ static String aliasColumns(JdbcDataSource datasource, def tableName, def alias, 
         result += "$alias.$iter"
     }.join(",")
 }
+
+/**
+ * An utility process to unioning two tables in one table
+ *
+ * @param tableA left table
+ * @param tabelB right table
+ *
+ * @return a new table
+ */
+String unionTables(JdbcDataSource datasource, String tableA, String tabelB, String outputTableName) throws Exception {
+    def columnsA = datasource.getColumnNames(tableA)
+    def columnsB = datasource.getColumnNames(tabelB)
+    TreeMap colsA = new TreeMap()
+    columnsA.each {col -> colsA.put(col,col)}
+    columnsB.each { e ->  if(!columnsA.contains(e)) colsA.put(e,null)}
+
+    TreeMap colsB = new TreeMap()
+    columnsB.each {col -> colsB.put(col,col)}
+    columnsA.each { e ->  if(!columnsB.contains(e)) colsB.put(e,null)}
+
+    datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+    CREATE TABLE $outputTableName as select ${colsA.collect {it.value +" as "+ it.key}.join(",")} from $tableA 
+    union all select ${colsB.collect { it.value +" as "+ it.key}.join(",")} from $tabelB""")
+    return outputTableName
+}

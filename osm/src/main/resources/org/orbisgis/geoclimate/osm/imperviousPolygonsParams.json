@@ -1,0 +1,25 @@
+{
+  "tags": {
+    "highway": [
+      "residential",
+      "pedestrian"
+
+    ]
+  },
+  "columns": [
+    "highway",
+    "surface"
+  ],
+  "type": {
+    "residential": {
+      "highway": [
+        "residential"
+      ]
+    },
+    "pedestrian": {
+      "highway": [
+        "pedestrian"
+      ]
+    }
+  }
+}
