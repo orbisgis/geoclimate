@@ -1,8 +1,6 @@
 {
   "tags": {
     "highway": [
-      "residential",
-      "pedestrian",
       "rest_area"
     ],
     "amenity": [

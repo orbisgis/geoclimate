@@ -92,4 +92,13 @@ class DataUtilsTests {
         assert 1 == h2GIS.getRowCount(h2GIS.load(directory + File.separator + "tablegeom.fgb", true))
         assert 1 == h2GIS.getRowCount(h2GIS.load(directory + File.separator + "tablea.csv", true))
     }
+
+    @Test
+    void unionTest() {
+        def p = Geoindicators.DataUtils.unionTables(h2GIS,
+                "tablea","tableb",
+                "test")
+        assert "IDA,IDB,LAB,NAME" == h2GIS.getColumnNames(p).join(",")
+        assert 2 == h2GIS.getRowCount(p)
+    }
 }

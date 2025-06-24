@@ -202,8 +202,8 @@ String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCod
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = false) {
-    return extractWaysAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom)
+String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = false, boolean testPolygonType=false) {
+    return extractWaysAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom, testPolygonType)
 }
 
 /**
@@ -215,6 +215,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
  * @param tags list of keys and values to be filtered
  * @param columnsToKeep a list of columns to keep.
  * @param geometry a geometry to reduce the area
+ * @param testPolygonType true to check if the tag contains type = polygon or type=multipolygon
  * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all ways transformed as polygons
@@ -222,7 +223,8 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry, boolean valid_geom = false) {
+String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry,
+                             boolean valid_geom = false, boolean testPolygonType = false) {
     if (!datasource) {
         error "Please set a valid database connection"
         return
@@ -240,6 +242,9 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
     def idWaysPolygons = postfix "ID_WAYS_POLYGONS"
     def osmTableTag = prefix osmTablesPrefix, "way_tag"
     def countTagsQuery = OSMTools.TransformUtils.getCountTagsQuery(osmTableTag, tags)
+    if(testPolygonType){
+       countTagsQuery+= " and  \"type\" in ('polygon', 'multipolygon')"
+    }
     def columnsSelector = OSMTools.TransformUtils.getColumnSelector(osmTableTag, tags, columnsToKeep)
     def tagsFilter = OSMTools.TransformUtils.createWhereFilter(tags)
 
