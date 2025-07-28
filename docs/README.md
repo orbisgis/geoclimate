@@ -1,4 +1,5 @@
-# Geoclimate
+
+![logo_geoclimate](source/_static/images/logo_geoclimate.png) 
 
 [![GitHub](https://img.shields.io/github/license/orbisgis/h2gis.svg)](https://github.com/orbisgis/geoclimate/blob/master/LICENSE.md)
 
