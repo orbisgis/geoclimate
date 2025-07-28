@@ -1,5 +1,5 @@
 =============================================
-Welcome to the GeoClimate wiki documentation!
+Welcome to the GeoClimate documentation!
 =============================================
 
 GeoClimate is an open‑source geospatial toolbox to compute a set of climate‑related parameters describing a territory (morphological indicators such as Sky View Factor, urban classifications such as Local Climate Zones, etc.).
