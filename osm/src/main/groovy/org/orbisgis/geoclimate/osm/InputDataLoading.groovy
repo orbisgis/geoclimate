@@ -237,11 +237,13 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath,
         String impervious = OSMTools.Transform.toPolygons(datasource, prefix, epsg, tags, columnsToKeep, geometry, true)
         debug "Create the impervious layer"
 
-        //Clean impervious layer to remove highway that doesn't contains a polygon or multipolygon tag
-        //This process is used  to isolate this type of situation : https://www.openstreetmap.org/relation/530964#map=17/48.924457/2.360138
-        datasource.execute("DELETE FROM $impervious where \"highway\" is not null and \"type\"  is null ")
-
         if (impervious) {
+            if(!datasource.isEmpty(impervious)) {
+                //Clean impervious layer to remove highway that doesn't contains a polygon or multipolygon tag
+                //This process is used  to isolate this type of situation : https://www.openstreetmap.org/relation/530964#map=17/48.924457/2.360138
+                datasource.execute("DELETE FROM $impervious where \"highway\" is not null and \"type\"  is null ")
+            }
+
             outputImperviousTableName = postfix("OSM_IMPERVIOUS")
             datasource.execute("ALTER TABLE ${impervious} RENAME TO $outputImperviousTableName".toString())
             info "Impervious layer created"

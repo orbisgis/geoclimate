@@ -66,7 +66,7 @@ class InputDataFormattingTest {
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 7, h2GIS.getTable(extractData.water).rowCount
-        assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
+        assertEquals 40, h2GIS.getTable(extractData.impervious).rowCount
         assertEquals 11, h2GIS.getTable(extractData.urban_areas).rowCount
         assertEquals 0, h2GIS.getTable(extractData.coastline).rowCount
 
@@ -131,7 +131,7 @@ class InputDataFormattingTest {
         //Impervious surfaces
         String impervious = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious)
         assertNotNull h2GIS.getTable(impervious).save(new File(folder, "osm_impervious_formated.shp").absolutePath, true)
-        assertEquals 45, h2GIS.getTable(impervious).rowCount
+        assertEquals 39, h2GIS.getTable(impervious).rowCount
 
         //Sea/Land mask
         String sea_land_mask = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline)
@@ -252,7 +252,7 @@ class InputDataFormattingTest {
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 7, h2GIS.getTable(extractData.water).rowCount
-        assertEquals 47, h2GIS.getTable(extractData.impervious).rowCount
+        assertEquals 40, h2GIS.getTable(extractData.impervious).rowCount
 
         //Buildings with estimation state
         Map buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
