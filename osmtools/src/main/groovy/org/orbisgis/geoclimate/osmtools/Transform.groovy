@@ -202,8 +202,8 @@ String toPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCod
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = false, boolean testPolygonType=false) {
-    return extractWaysAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom, testPolygonType)
+String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], boolean valid_geom = false) {
+    return extractWaysAsPolygons(datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep, null, valid_geom)
 }
 
 /**
@@ -215,7 +215,6 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
  * @param tags list of keys and values to be filtered
  * @param columnsToKeep a list of columns to keep.
  * @param geometry a geometry to reduce the area
- * @param testPolygonType true to check if the tag contains type = polygon or type=multipolygon
  * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all ways transformed as polygons
@@ -224,7 +223,7 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
 String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode = 4326, def tags = [], def columnsToKeep = [], Geometry geometry,
-                             boolean valid_geom = false, boolean testPolygonType = false) {
+                             boolean valid_geom = false) {
     if (!datasource) {
         error "Please set a valid database connection"
         return
@@ -242,9 +241,6 @@ String extractWaysAsPolygons(JdbcDataSource datasource, String osmTablesPrefix, 
     def idWaysPolygons = postfix "ID_WAYS_POLYGONS"
     def osmTableTag = prefix osmTablesPrefix, "way_tag"
     def countTagsQuery = OSMTools.TransformUtils.getCountTagsQuery(osmTableTag, tags)
-    if(testPolygonType){
-       countTagsQuery+= " and  \"type\" in ('polygon', 'multipolygon')"
-    }
     def columnsSelector = OSMTools.TransformUtils.getColumnSelector(osmTableTag, tags, columnsToKeep)
     def tagsFilter = OSMTools.TransformUtils.createWhereFilter(tags)
 
@@ -705,16 +701,16 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
                     WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
             """.toString())[0] < 1) {
             debug "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
-            datasource """
+            datasource.execute("""
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
-                """.toString()
+                """)
             return outputTableName
         }
     }
 
 
-    datasource """
+    datasource.execute("""
                 DROP TABLE IF EXISTS $waysLinesTmp; 
                 CREATE TABLE  $waysLinesTmp AS 
                     SELECT id_way,ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(THE_GEOM), 4326), $epsgCode) the_geom 
@@ -732,7 +728,7 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
                         WHERE w.id_way = b.id_way) geom_table 
                     WHERE ST_NUMGEOMETRIES(the_geom) >= 2;
                 CREATE INDEX ON $waysLinesTmp(ID_WAY);
-        """.toString()
+        """)
 
     def allLinesTables = postfix "all_lines_table"
 
