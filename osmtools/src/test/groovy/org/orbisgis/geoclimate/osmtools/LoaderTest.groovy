@@ -38,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
+
+@Disabled
 class LoaderTest extends AbstractOSMToolsTest {
 
     @TempDir

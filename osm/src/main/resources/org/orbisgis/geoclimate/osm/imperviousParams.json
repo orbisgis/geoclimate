@@ -1,9 +1,9 @@
 {
   "tags": {
     "highway": [
+      "rest_area",
       "residential",
-      "pedestrian",
-      "rest_area"
+      "pedestrian"
     ],
     "amenity": [
       "parking",
@@ -46,7 +46,8 @@
     "area:aeroway",
     "aeroway",
     "building",
-    "power"
+    "power",
+    "type"
   ],
   "type": {
     "parking": {
