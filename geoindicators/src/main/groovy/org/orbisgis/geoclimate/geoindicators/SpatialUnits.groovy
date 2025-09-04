@@ -440,14 +440,10 @@ String createBlocks(JdbcDataSource datasource, String inputTableName,
     datasource.execute("""
                 DROP TABLE IF EXISTS $graphTable; 
                 CREATE TABLE $graphTable (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                    SELECT CAST((row_number() over()) as Integer), START_NODE, END_NODE FROM
-                    (SELECT a.id_build as START_NODE, b.id_build AS END_NODE
+                    SELECT CAST((row_number() over()) as Integer), a.id_build as START_NODE, b.id_build AS END_NODE
                     FROM $inputTableName AS a, $inputTableName AS b 
                     WHERE a.id_build<>b.id_build AND a.the_geom && b.the_geom 
-                    AND ST_DWITHIN(b.the_geom,a.the_geom, $snappingTolerance)
-                    UNION
-                    SELECT a.id_build as START_NODE, a.id_build AS END_NODE
-                    FROM $inputTableName AS a);
+                    AND ST_DWITHIN(b.the_geom,a.the_geom, $snappingTolerance);
         """)
 
     datasource.execute( "DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;")
