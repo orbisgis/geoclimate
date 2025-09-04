@@ -234,7 +234,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         String new_location =location in Collection ? location.join("_") : location
                         saveLogZoneTable(h2gis_datasource, databaseFolder, new_location, e.getLocalizedMessage())
                         //eat the exception and process other zone
-                        warn("The zone $location has not been processed. Please check the log file ${databaseFolder + File.separator + "log_zones_" + new_location + ".fgb"} to get more informations.")
+                        warn("The zone $location has not been processed. \nCause :  \n${e.getLocalizedMessage()}")
                     }
                 }
                 if(delete_h2gis){

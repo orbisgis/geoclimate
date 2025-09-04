@@ -1195,7 +1195,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
-                        st_explode('(select ST_GeometryN(ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)), 1) as the_geom from $islands_mark as a,
+                        st_explode('(select ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)) as the_geom from $islands_mark as a,
                         $reducedZone as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
     
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
