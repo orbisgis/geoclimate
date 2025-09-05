@@ -260,12 +260,16 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     datasource.createIndex(vegetation, "ID_VEGET")
                     datasource.createSpatialIndex(vegetation, "THE_GEOM")
                     datasource.execute("""          
-                   CREATE TABLE $vegetation_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                   SELECT CAST((row_number() over()) as Integer), a.ID_VEGET as START_NODE, b.ID_VEGET AS END_NODE 
-                   FROM $vegetation  AS a, $vegetation AS b 
-                   WHERE a.ID_VEGET <>b.ID_VEGET AND a.the_geom && b.the_geom 
-                   AND ST_INTERSECTS(b.the_geom,a.the_geom);
-                   """)
+                    CREATE TABLE $vegetation_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
+                    SELECT CAST((row_number() over()) as Integer), START_NODE, END_NODE
+                    FROM (SELECT a.ID_VEGET as START_NODE, b.ID_VEGET AS END_NODE 
+                    FROM $vegetation  AS a, $vegetation AS b 
+                    WHERE a.ID_VEGET <>b.ID_VEGET AND a.the_geom && b.the_geom 
+                    AND ST_INTERSECTS(b.the_geom,a.the_geom)
+                    UNION
+                    SELECT a.ID_VEGET as START_NODE, a.ID_VEGET AS END_NODE 
+                    FROM $vegetation  AS a);
+                    """)
 
                     //Recherche des clusters
                     getConnectedComponents(datasource.getConnection(), vegetation_graph, "undirected")
@@ -318,10 +322,13 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     datasource.createSpatialIndex(water, "THE_GEOM")
                     datasource.execute("""          
                     CREATE TABLE $water_graph (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                    SELECT CAST((row_number() over()) as Integer), a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
+                    SELECT CAST((row_number() over()) as Integer), START_NODE, END_NODE
+                    FROM (SELECT a.ID_WATER as START_NODE, b.ID_WATER AS END_NODE 
                     FROM $water  AS a, $water AS b 
                     WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
-                    AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0;""")
+                    AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0
+                    UNION SELECT a.ID_WATER as START_NODE, a.ID_WATER AS END_NODE 
+                    FROM $water  AS a);""")
 
                     //Recherche des clusters
                     getConnectedComponents(datasource.getConnection(), water_graph, "undirected")
@@ -430,16 +437,16 @@ String createBlocks(JdbcDataSource datasource, String inputTableName,
     def subGraphTableEdges = postfix graphTable, "EDGE_CC"
     def subGraphBlocks = postfix "subgraphblocks"
 
-    datasource """
+    datasource.execute("""
                 DROP TABLE IF EXISTS $graphTable; 
                 CREATE TABLE $graphTable (EDGE_ID SERIAL, START_NODE INT, END_NODE INT) AS 
-                    SELECT CAST((row_number() over()) as Integer), a.id_build as START_NODE, b.id_build AS END_NODE 
+                    SELECT CAST((row_number() over()) as Integer), a.id_build as START_NODE, b.id_build AS END_NODE
                     FROM $inputTableName AS a, $inputTableName AS b 
                     WHERE a.id_build<>b.id_build AND a.the_geom && b.the_geom 
                     AND ST_DWITHIN(b.the_geom,a.the_geom, $snappingTolerance);
-        """.toString()
+        """)
 
-    datasource "DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;".toString()
+    datasource.execute( "DROP TABLE IF EXISTS $subGraphTableEdges, $subGraphTableNodes;")
 
     getConnectedComponents(datasource.getConnection(), graphTable, "undirected")
 

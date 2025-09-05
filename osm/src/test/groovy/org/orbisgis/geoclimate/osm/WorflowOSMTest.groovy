@@ -712,6 +712,44 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Disabled
+    //Use it to test a list of bboxs collect from various user feedback
+    //The
+    @Test
+    void testLCZBBOXFeedback() {
+        String directory = "/tmp/geoclimate"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def location= [15.004311, 108.55263, 15.094142, 108.64575] //visual validation in a GIS
+        location= [15.094142,108.73887,15.183973,108.83199] //visual validation in a GIS
+        location = [62.027935,129.76294,62.045902,129.80127] //visual validation in a GIS
+        location =[40.70075,-74.03082,40.709732,-74.01897] //visual validation in a GIS
+        location=[40.70075,-74.01897,40.709732,-74.00712] //visual validation in a GIS
+
+        def osm_parmeters = [
+                "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_test_bbox;",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [location],
+                        "area"     : 2800],
+                "output"      : [
+                        "folder": directory]
+                ,
+                "parameters"  :
+                        [
+                         "rsu_indicators"       : [
+                                 "indicatorUse": ["LCZ"]
+                         ]
+                        ]
+        ]
+        OSM.workflow(osm_parmeters)
+    }
+
+    @Disabled
     //Use it for debug
     @Test
     void testIntegration() {
@@ -720,7 +758,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Geneve"
-        location = [43.520330,1.322308,43.527689,1.335461]
+        location = [15.004311, 108.55263, 15.094142, 108.64575]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 4000
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]

@@ -711,7 +711,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
         } catch (Exception e) {
             saveLogZoneTable(h2gis_datasource, databaseFolder, id_zone in Collection ? id_zone.join("_") : id_zone, osm_zone_geometry, e.getLocalizedMessage())
             //eat the exception and process other zone
-            warn("The zone $id_zone has not been processed. Please check the log table to get more informations.")
+            warn("The zone $id_zone has not been processed. \nCause :  \n${e.getLocalizedMessage()}")
         }
     }
     if (outputTableNamesResult) {
@@ -792,8 +792,9 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
         def source_geom_utm = ST_Transform.ST_Transform(con, geom, epsg)
 
         //Check the size of the bbox
-        if ((source_geom_utm.getEnvelopeInternal().getArea() / 1.0E+6) >= bbox_size) {
-            throw new Exception("The size of the OSM BBOX is greated than the limit : ${bbox_size} in km².\n" +
+        double inputBBOXSize = source_geom_utm.getEnvelopeInternal().getArea() / 1.0E+6
+        if (inputBBOXSize >= bbox_size) {
+            throw new Exception("The size of the OSM BBOX ($inputBBOXSize) is greated than the limit : ${bbox_size} in km².\n" +
                     "Please increase the area parameter if you want to skip this limit.".toString())
         }
         def lat_lon_bbox_geom_extended = geom.getFactory().toGeometry(lat_lon_bbox_extended)
