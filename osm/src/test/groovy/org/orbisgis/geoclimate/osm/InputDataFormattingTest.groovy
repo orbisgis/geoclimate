@@ -293,7 +293,7 @@ class InputDataFormattingTest {
         //def nominatim = org.orbisgis.geoclimate.osmtools.OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
-        zoneToExtract =  [40.70075,-74.03082,40.709732,-74.01897]
+        zoneToExtract =  [53.250836,-9.097881,53.288462,-8.982439]
 
         //zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
