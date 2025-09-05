@@ -20,7 +20,8 @@
       "orchard",
       "vineyard",
       "village_green",
-      "allotments"
+      "allotments",
+      "recreation_ground"
     ],
     "landcover": [],
     "leisure": [
@@ -159,6 +160,9 @@
     "park": {
       "leisure": [
         "park"
+      ],
+      "landuse": [
+        "recreation_ground"
       ]
     },
     "garden": {
