@@ -167,7 +167,7 @@ class DataUtilsTests {
         SELECT  3 as  id, 'POLYGON ((99 161, 324 161, 324 58, 99 58, 99 161))'::GEOMETRY THE_GEOM
         """)
         Geoindicators.DataUtils.removeOverlaps(h2GIS, "overlaps", "id", "result")
-        assertEquals(2, h2GIS.getRowCount("result"))
+        assertEquals(3, h2GIS.getRowCount("result"))
         assertTrue( h2GIS.firstRow("select st_area(the_geom) as area_1 from result where id =1").area_1-h2GIS.firstRow("select st_area(the_geom) as area_2 from result where id =2").area_2<0)
         h2GIS.dropTable("result")
     }

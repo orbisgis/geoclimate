@@ -61,7 +61,7 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * @return A database table name and the name of the column ID
  */
 String createTSU(JdbcDataSource datasource, String zone,
-                 double area = 1f, String road, String rail, String vegetation,
+                 double area = 1d, String road, String rail, String vegetation,
                  String water, String sea_land_mask, String urban_areas,
                  double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) throws Exception {
 
@@ -130,7 +130,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
         SELECT CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME,
         ST_BUFFER(ST_BUFFER(the_geom,-0.01, 'quad_segs=2 endcap=flat  join=mitre'),0.01, 'quad_segs=2 endcap=flat join=mitre') AS the_geom FROM 
         ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
-                                FROM $inputTableName)')
+                                FROM $inputTableName)') where st_area(the_geom) > $area
         """)
     } else {
         datasource """
