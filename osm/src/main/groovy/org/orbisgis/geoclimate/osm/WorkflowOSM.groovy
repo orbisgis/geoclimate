@@ -835,7 +835,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                                   svfSimplified      : true,
                                   surface_vegetation : 10000f,
                                   surface_hydro      : 2500f,
-                                  surface_urban_areas: 10000f,
+                                  surface_urban_areas: 10f,
                                   snappingTolerance  : 0.01f,
                                   mapOfWeights       : ["sky_view_factor"             : 4,
                                                         "aspect_ratio"                : 3,

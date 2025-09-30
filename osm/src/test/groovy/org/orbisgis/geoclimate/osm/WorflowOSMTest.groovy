@@ -742,7 +742,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         [
                          "rsu_indicators"       : [
-                                 "surface_urban_areas":0,
+                                 //"surface_urban_areas":0,
                                  //"surface_vegetation":1500,
                                  "indicatorUse": ["LCZ"]
                          ]
