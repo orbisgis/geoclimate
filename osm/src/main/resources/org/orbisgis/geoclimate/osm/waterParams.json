@@ -10,7 +10,8 @@
     "landuse": [
       "basin",
       " salt_pond"
-    ]
+    ],
+    "leisure": ["swimming_pool"]
   },
   "columns": [
     "natural",
@@ -18,6 +19,7 @@
     "seamark:type",
     "water",
     "waterway",
-    "landuse"
+    "landuse",
+    "leisure"
   ]
 }
