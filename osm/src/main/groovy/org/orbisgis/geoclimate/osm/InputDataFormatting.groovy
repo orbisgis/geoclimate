@@ -574,6 +574,17 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                         if (row."surface" && row."surface" != "grass") {
                             addGeom = false
                         }
+                        if(type=='pitch'){
+                            if(row."sport" in ['equestrian', 'dog_racing',
+                                               'canadian_football', 'cricket',
+                                               'croquet', 'golf', 'horse_racing',
+                                               'motocross']){
+                                addGeom = true
+                                type='grass'
+                            }else if(row."sport"!=null){
+                                addGeom = false
+                            }
+                        }
                         if (addGeom) {
                             def height_class = typeAndVegClass[type]
                             def zindex = getZIndex(row."layer")
@@ -616,25 +627,26 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
     debug('Hydro transformation starts')
     def outputTableName = "INPUT_HYDRO_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_water serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_water serial, ID_SOURCE VARCHAR, 
+                    TYPE VARCHAR, INTERMITTENT BOOLEAN DEFAULT FALSE,ZINDEX INTEGER);""".toString()
 
     if (water) {
         if (datasource.getRowCount(water) > 0) {
             String query
             if (zone) {
                 datasource.createSpatialIndex(water, "the_geom")
-                query = "select id ,  st_intersection(a.the_geom, b.the_geom) as the_geom" +
-                        ", a.\"natural\", a.\"layer\"" +
-                        " FROM " +
-                        "$water AS a, $zone AS b " +
-                        "WHERE " +
-                        "a.the_geom && b.the_geom "
+                query = """select id ,  st_intersection(a.the_geom, b.the_geom) as the_geom
+                        , a.\"natural\", a.\"layer\",  a.\"intermittent\"
+                         FROM 
+                        $water AS a, $zone AS b 
+                        WHERE 
+                        a.the_geom && b.the_geom """
                 if (datasource.getColumnNames(water).contains("seamark:type")) {
                     query += " and (a.\"seamark:type\" is null or a.\"seamark:type\" in ('harbour_basin', 'harbour'))"
                 }
 
             } else {
-                query = "select id,  the_geom, \"natural\", \"layer\" FROM $water "
+                query = "select id,  the_geom, \"natural\", \"layer\",  \"intermittent\" FROM $water "
                 if (datasource.getColumnNames(water).contains("seamark:type")) {
                     query += " where \"seamark:type\" is null"
                 }
@@ -644,12 +656,14 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                 datasource.eachRow(query) { row ->
                     def water_type = row.natural in ['bay', 'strait'] ? 'sea' : 'water'
                     def zIndex = getZIndex(row.'layer')
+                    def intermittent = row.'intermittent'
                     Geometry geom = row.the_geom
                     int epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
                         if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                            stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', '${water_type}', ${zIndex})".toString()
+                            stmt.addBatch("""insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, 
+                            '${row.id}', '${water_type}',  ${(intermittent && intermittent ==  "yes")}, ${zIndex})""".toString())
                         }
                     }
                 }
@@ -1055,7 +1069,7 @@ static Map parametersMapping(def file, def altResourceStream) {
 String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zone = "", String jsonFilename = "") throws Exception {
     debug('Urban areas transformation starts')
     def outputTableName = "INPUT_URBAN_AREAS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-    datasource.execute """Drop table if exists $outputTableName;
+    datasource.execute """drop table if exists $outputTableName;
                     CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_urban serial, ID_SOURCE VARCHAR, TYPE VARCHAR);""".toString()
     if (urban_areas != null) {
         def paramsDefaultFile = this.class.getResourceAsStream("urbanAreasParams.json")
@@ -1107,17 +1121,28 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
                     }
                 }
             }
+
             //Merging urban_areas
             def mergingUrbanAreas = postfix("merging_urban_areas")
             datasource.execute("""
             CREATE TABLE $mergingUrbanAreas as select CAST((row_number() over()) as Integer) as id_urban,
-            ST_BUFFER(ST_BUFFER(THE_GEOM, 1,'quad_segs=2 endcap=flat'), -1,'quad_segs=2 endcap=flat') AS the_geom, 
-            type from 
+            the_geom,
+            type from
             ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(the_geom)) as the_geom, type from $outputTableName group by type)');
-            DROP TABLE IF EXISTS $outputTableName;
-            ALTER TABLE  $mergingUrbanAreas RENAME to $outputTableName;
-            """.toString())
+            """)
 
+            datasource.save(mergingUrbanAreas, "/tmp/outputTableName.fgb", true)
+            def removeOverlaps = postfix("removeOverlaps")
+            Geoindicators.DataUtils.removeOverlaps(datasource,  mergingUrbanAreas,"id_urban",removeOverlaps )
+            def withinToHoles = postfix("withinToHoles")
+            Geoindicators.DataUtils.withinToHoles(datasource,  removeOverlaps,"id_urban",withinToHoles )
+
+            //Replace outputTableName
+            datasource.execute("""            
+            DROP TABLE IF EXISTS $outputTableName;
+            ALTER TABLE $withinToHoles RENAME to $outputTableName;
+            DROP TABLE IF EXISTS $withinToHoles,$removeOverlaps,$mergingUrbanAreas ;
+            """)
         }
     }
     debug('Urban areas transformation finishes')
@@ -1210,7 +1235,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                          DROP TABLE IF EXISTS $sea_land_triangles;
                        CREATE TABLE $sea_land_triangles AS 
                        SELECT * FROM 
-                        st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tessellate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
+                        st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tesselate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
                       ID, TYPE, ZINDEX FROM $sea_land_mask)');
 
                     CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_triangles}_the_geom_idx ON $sea_land_triangles (THE_GEOM);
@@ -1291,7 +1316,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                          DROP TABLE IF EXISTS $sea_land_triangles;
                        CREATE TABLE $sea_land_triangles AS 
                        SELECT * FROM 
-                        st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tessellate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
+                        st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tesselate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
                       ID, TYPE, ZINDEX FROM $sea_land_mask)');
 
                     CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_triangles}_the_geom_idx ON $sea_land_triangles (THE_GEOM);

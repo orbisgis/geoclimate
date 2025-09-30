@@ -21,7 +21,8 @@
       "vineyard",
       "village_green",
       "allotments",
-      "recreation_ground"
+      "recreation_ground",
+      "greenfield"
     ],
     "landcover": [],
     "leisure": [
@@ -78,11 +79,6 @@
         "farmland"
       ]
     },
-    "tree": {
-      "natural": [
-        "tree"
-      ]
-    },
     "wood": {
       "landcover": [
         "trees"
@@ -134,7 +130,8 @@
       ],
       "sport": [
         "soccer",
-        "rugby"
+        "rugby",
+        "horse_racing"
       ]
     },
     "grassland": {
@@ -173,32 +170,6 @@
         "allotments"
       ]
     },
-    "tree_row": {
-      "natural": [
-        "tree_row"
-      ],
-      "landcover": [
-        "tree_row"
-      ],
-      "barrier": [
-        "tree_row"
-      ]
-    },
-    "hedge": {
-      "barrier": [
-        "hedge"
-      ],
-      "natural": [
-        "hedge",
-        "hedge_bank"
-      ],
-      "fence_type": [
-        "hedge"
-      ],
-      "hedge": [
-        "hedge_bank"
-      ]
-    },
     "mangrove": {
       "wetland": [
         "mangrove"
@@ -208,6 +179,9 @@
       "landuse": [
         "orchard"
       ]
+    },
+    "plant_nursery": {
+      "landuse":["plant_nursery"]
     },
     "vineyard": {
       "landuse": [
@@ -246,11 +220,18 @@
     "wetland": {
       "landuse": [
         "wetland"
+      ],
+      "natural": [
+        "wetland"
       ]
+    },
+    "pitch": {
+    "leisure": [
+      "pitch"
+    ]
     }
   },
   "class": {
-    "tree": "high",
     "farmland": "low",
     "wood": "high",
     "forest": "high",
@@ -259,8 +240,6 @@
     "grassland": "low",
     "heath": "low",
     "park": "low",
-    "tree_row": "high",
-    "hedge": "high",
     "meadow": "low",
     "mangrove": "high",
     "orchard": "high",
@@ -269,6 +248,8 @@
     "sugar_cane": "low",
     "garden": "low",
     "marsh": "low",
-    "saltmarsh": "low"
+    "saltmarsh": "low",
+    "wetland": "low",
+    "plant_nursery": "low"
   }
 }

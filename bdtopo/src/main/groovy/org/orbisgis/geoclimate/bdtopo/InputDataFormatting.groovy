@@ -615,7 +615,8 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
     debug('Hydro transformation starts')
     def outputTableName = postfix("HYDRO")
     datasource.execute """Drop table if exists $outputTableName;
-                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_WATER serial, ID_SOURCE VARCHAR, TYPE VARCHAR, ZINDEX INTEGER);""".toString()
+                    CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, ID_WATER serial, ID_SOURCE VARCHAR, 
+                    TYPE VARCHAR, INTERMITTENT BOOLEAN DEFAULT FALSE, ZINDEX INTEGER);""".toString()
 
     if (water) {
         if (datasource.hasTable(water)) {
@@ -665,6 +666,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                 datasource.eachRow(query) { row ->
                     def water_type = water_types.get(row.TYPE)
                     def water_zindex = 0
+                    def regime = water_types.get(row."REGIME")
                     if (water_type) {
                         Geometry geom = row.the_geom
                         if (!geom.isEmpty()) {
@@ -672,7 +674,8 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}', ${water_zindex})".toString()
+                                    stmt.addBatch("""insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}',
+                                    ${(regime && regime == "Permanent")}, ${water_zindex})""".toString())
                                 }
                             }
                         }

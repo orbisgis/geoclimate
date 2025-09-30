@@ -33,7 +33,6 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.geoclimate.geoindicators.DataUtils
 import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
 import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
@@ -837,7 +836,6 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                                   surface_vegetation : 10000f,
                                   surface_hydro      : 2500f,
                                   surface_urban_areas: 10000f,
-                                  surface_hole_rsu:    5000f,
                                   snappingTolerance  : 0.01f,
                                   mapOfWeights       : ["sky_view_factor"             : 4,
                                                         "aspect_ratio"                : 3,
@@ -851,8 +849,8 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
     defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
     if (processing_parameters) {
-        def distanceP = processing_parameters.distance
-        if (distanceP!=null && distanceP in Number) {
+        Float distanceP = Geoindicators.DataUtils.asFloat(processing_parameters.distance)
+        if (distanceP!=null) {
             defaultParameters.distance = distanceP
         }
 
@@ -890,17 +888,17 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
             if (snappingToleranceP && snappingToleranceP in Number) {
                 rsu_indicators_default.snappingTolerance = (Float) snappingToleranceP
             }
-            def surface_vegetationP = rsu_indicators.surface_vegetation
-            if (surface_vegetationP && surface_vegetationP in Number) {
-                rsu_indicators_default.surface_vegetation = (Float) surface_vegetationP
+            Float surface_vegetationP = Geoindicators.DataUtils.asFloat(rsu_indicators.surface_vegetation)
+            if (surface_vegetationP!=null) {
+                rsu_indicators_default.surface_vegetation =  surface_vegetationP
             }
-            def surface_hydroP = rsu_indicators.surface_hydro
-            if (surface_hydroP && surface_hydroP in Number) {
-                rsu_indicators_default.surface_hydro = (Float) surface_hydroP
+            Float surface_hydroP = Geoindicators.DataUtils.asFloat(rsu_indicators.surface_hydro)
+            if (surface_hydroP!=null) {
+                rsu_indicators_default.surface_hydro = surface_hydroP
             }
-            def surface_urbanAreasP = rsu_indicators.surface_urban_areas
-            if (surface_urbanAreasP && surface_urbanAreasP in Number) {
-                rsu_indicators_default.surface_urban_areas = (Float) surface_urbanAreasP
+            Float surface_urbanAreasP = Geoindicators.DataUtils.asFloat(rsu_indicators.surface_urban_areas)
+            if (surface_urbanAreasP!=null) {
+                rsu_indicators_default.surface_urban_areas = surface_urbanAreasP
             }
 
             def svfSimplifiedP = rsu_indicators.svfSimplified
@@ -911,11 +909,6 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
             if (estimateHeight && estimateHeight in Boolean) {
                 rsu_indicators_default.estimateHeight = estimateHeight
             }
-            def surface_hole_rsuP = rsu_indicators.surface_hole_rsu
-            if (surface_hole_rsuP && surface_hole_rsuP in Number) {
-                rsu_indicators_default.surface_hole_rsu = (Float) surface_hole_rsuP
-            }
-
             def mapOfWeightsP = rsu_indicators.mapOfWeights
             if (mapOfWeightsP && mapOfWeightsP in Map) {
                 Map defaultmapOfWeights = rsu_indicators_default.mapOfWeights
