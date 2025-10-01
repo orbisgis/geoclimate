@@ -63,7 +63,7 @@ class InputDataLoadingTest {
 
         assertEquals 44, h2GIS.getTable(extract.rail).rowCount
 
-        assertEquals 7, h2GIS.getTable(extract.water).rowCount
+        assertEquals 8, h2GIS.getTable(extract.water).rowCount
 
         assertEquals 45, h2GIS.getTable(extract.impervious).rowCount
 
