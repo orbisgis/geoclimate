@@ -725,6 +725,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         location =[40.70075,-74.03082,40.709732,-74.01897] //visual validation in a GIS
         location=[40.70075,-74.01897,40.709732,-74.00712] //visual validation in a GIS
         location=[53.242824,-9.103203,53.299902,-8.915749] //visual validation in a GIS
+        location=[48.882799,2.221194,48.899165,2.259474]
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -760,9 +761,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Geneve"
-        location = [15.004311, 108.55263, 15.094142, 108.64575]
+        location = [48.882799,2.221194,48.899165,2.259474]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
-        def grid_size = 4000
+        def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
         //location=[47.215334,-1.558058,47.216646,-1.556185]
         //location = [nominatim.bbox]
@@ -812,8 +813,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          "rsu_indicators"       : [
                                  "indicatorUse": ["LCZ"] //, "UTRF"]
 
-                         ]
-                         /*, "grid_indicators"   : [
+                         ],
+                          "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
                                 "rowCol": false,
@@ -828,7 +829,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                         "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH"]
                                 //"lcz_lod":1
-                        ], "worldpop_indicators": true
+                        ], //"worldpop_indicators": true
                          /*
 
                          "road_traffic"                                         : true,
