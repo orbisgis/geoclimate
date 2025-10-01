@@ -1208,7 +1208,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                          DROP TABLE IF EXISTS $sea_land_triangles;
                        CREATE TABLE $sea_land_triangles AS 
                        SELECT * FROM 
-                        st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tessellate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
+                        st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tesselate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
                       ID, TYPE, ZINDEX FROM $sea_land_mask)');
 
                     CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_triangles}_the_geom_idx ON $sea_land_triangles (THE_GEOM);
@@ -1289,7 +1289,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                          DROP TABLE IF EXISTS $sea_land_triangles;
                        CREATE TABLE $sea_land_triangles AS 
                        SELECT * FROM 
-                        st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tessellate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
+                        st_explode('(SELECT CASE WHEN ST_AREA(THE_GEOM) > 100000 THEN ST_Tesselate(the_geom) ELSE THE_GEOM END AS THE_GEOM,
                       ID, TYPE, ZINDEX FROM $sea_land_mask)');
 
                     CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_triangles}_the_geom_idx ON $sea_land_triangles (THE_GEOM);
