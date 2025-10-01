@@ -830,8 +830,14 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                 ["AVG", "STD"], prefixName)
         tablesToDrop << gatheredScales
         if (!datasource.isEmpty(gatheredScales)) {
+            // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
+            datasource.execute("""ALTER TABLE $gatheredScales RENAME COLUMN RSU_WATER_PERMANENT_FRACTION TO RSU_WATER_FRACTION""")
+            datasource.execute("""DROP TABLE IF EXISTS GATHERED_SCALES_WATER_MODIF;
+                CREATE TABLE GATHERED_SCALES_WATER_MODIF 
+                    AS SELECT *, RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION
+                    FROM $gatheredScales""")
             def utrfBuild = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                    gatheredScales, utrfModelName, COLUMN_ID_BUILD, prefixName)
+                    "GATHERED_SCALES_WATER_MODIF", utrfModelName, COLUMN_ID_BUILD, prefixName)
 
             tablesToDrop << utrfBuild
 
@@ -1759,7 +1765,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     // and also set which type of statistics is needed if "BUILDING_HEIGHT" is activated
     def surfaceFractionsProcess
     def columnFractionsList = [:]
-    def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+    def priorities = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
     def unweightedBuildingIndicators = [:]
     def weightedBuildingIndicators = [:]
