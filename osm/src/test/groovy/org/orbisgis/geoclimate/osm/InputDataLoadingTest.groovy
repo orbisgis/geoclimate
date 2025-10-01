@@ -59,7 +59,7 @@ class InputDataLoadingTest {
         Map extract = OSM.InputDataLoading.createGISLayers(h2GIS, osmfile, 2154)
         assertEquals 1038, h2GIS.getTable(extract.building).rowCount
         assertEquals 136, h2GIS.getTable(extract.vegetation).rowCount
-        assertEquals 211, h2GIS.getTable(extract.road).rowCount
+        assertEquals 358, h2GIS.getTable(extract.road).rowCount
 
         assertEquals 44, h2GIS.getTable(extract.rail).rowCount
 

@@ -20,7 +20,14 @@
       "road",
       "track",
       "living_street",
-      "pedestrian"
+      "pedestrian",
+      "footway",
+      "raceway",
+      "escape",
+      "cycleway",
+      "path",
+      "bridleway",
+      "steps"
     ],
     "junction": [
       "roundabout",
@@ -31,7 +38,11 @@
     ],
     "aeroway": [
       "taxiway"
-    ]
+    ],
+    "cycleway": ["track"],
+    "bicycle_road": ["yes"],
+    "route": ["ferry"],
+    "cyclestreet": ["yes"]
   },
   "columns": [
     "width",
@@ -50,6 +61,9 @@
     "area",
     "aeroway",
     "tracktype",
+    "cycleway",
+    "bicycle_road",
+    "cyclestreet",
     "tunnel"
   ],
   "surface": {
@@ -151,7 +165,7 @@
       "cycleway": [
         "track"
       ],
-      "biclycle_road": [
+      "bicycle_road": [
         "yes"
       ]
     },
