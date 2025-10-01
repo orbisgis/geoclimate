@@ -396,8 +396,8 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
             debug "Loading in the H2GIS database $outputTableName"
             outputTableName = "surface_hydrographique"
             h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as 
-                SELECT ID, $formatting_geom, NATURE, POS_SOL FROM ${inputTables.surface_hydrographique}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY 
-                AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)""".toString())
+                SELECT ID, $formatting_geom, NATURE, POS_SOL,  PERSISTANC FROM ${inputTables.surface_hydrographique}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY 
+                AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)""")
         }
 
         if (inputTables.zone_de_vegetation) {

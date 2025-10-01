@@ -624,7 +624,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
             if (zone) {
                 datasource.createSpatialIndex(water, "the_geom")
                 query = "select st_intersection(a.the_geom, b.the_geom) as the_geom " +
-                        ", a.ZINDEX, a.ID_SOURCE, a.TYPE " +
+                        ", a.ZINDEX, a.ID_SOURCE, a.TYPE ,  a.REGIME " +
                         " FROM " +
                         "$water AS a, $zone AS b " +
                         "WHERE " +

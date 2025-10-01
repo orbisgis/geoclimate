@@ -453,7 +453,7 @@ Map loadV3(JdbcDataSource datasource,
         surface_hydrographique = "surface_hydrographique"
         datasource.execute("""DROP TABLE IF EXISTS $surface_hydrographique;  
                 CREATE TABLE $surface_hydrographique (THE_GEOM geometry(polygon, $srid), 
-                ID varchar, NATURE varchar,POS_SOL integer,REGIME varchar);""")
+                ID varchar, NATURE varchar,POS_SOL integer,PERSISTANC varchar);""")
     }
 
     String zone_de_vegetation = tablesExist.get("zone_de_vegetation")
