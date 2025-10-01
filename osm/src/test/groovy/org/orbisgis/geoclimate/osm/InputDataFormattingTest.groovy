@@ -62,7 +62,7 @@ class InputDataFormattingTest {
                 h2GIS, new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(), epsg)
 
         assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
-        assertEquals 211, h2GIS.getTable(extractData.road).rowCount
+        assertEquals 358, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 8, h2GIS.getTable(extractData.water).rowCount
@@ -103,11 +103,11 @@ class InputDataFormattingTest {
         //Roads
         String road = OSM.InputDataFormatting.formatRoadLayer(h2GIS, extractData.road)
         assertNotNull h2GIS.getTable(road).save(new File(folder, "osm_road_formated.fgb").absolutePath, true)
-        assertEquals 145, h2GIS.getTable(road).rowCount
+        assertEquals 290, h2GIS.getTable(road).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where WIDTH is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where WIDTH<=0".toString()).count == 0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${road} where CROSSING IS NOT NULL".toString()).count == 7
-        assertTrue h2GIS.firstRow("select count(*) as count from ${road} where LANES IS NOT NULL".toString()).count == 17
+        assertEquals(12, h2GIS.firstRow("select count(*) as count from ${road} where CROSSING IS NOT NULL".toString()).count)
+        assertEquals(17,h2GIS.firstRow("select count(*) as count from ${road} where LANES IS NOT NULL".toString()).count)
 
         //Rails
         String rails = OSM.InputDataFormatting.formatRailsLayer(h2GIS, extractData.rail)
@@ -249,7 +249,7 @@ class InputDataFormattingTest {
         Map extractData = OSM.InputDataLoading.createGISLayers(h2GIS, new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(), epsg)
 
         assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
-        assertEquals 211, h2GIS.getTable(extractData.road).rowCount
+        assertEquals 358, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 8, h2GIS.getTable(extractData.water).rowCount
