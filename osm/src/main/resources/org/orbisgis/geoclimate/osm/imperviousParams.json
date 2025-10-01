@@ -20,8 +20,6 @@
     "landuse": [
       "railway",
       "construction",
-      "industrial",
-      "commercial",
       "retail"
     ],
     "area:aeroway": [
@@ -61,39 +59,27 @@
         "rest_area"
       ]
     },
-    "industrial": {
-      "landuse": [
-        "railway",
-        "construction",
-        "industrial"
-      ],
+    "platform": {
+      "railway": [
+        "platform"
+      ]
+    },
+    "aeroway": {
       "area:aeroway": [
         "runway"
       ],
       "aeroway": [
         "apron"
-      ],
-      "railway": [
-        "platform"
-      ],
-      "power": [
-        "plant",
-        "substation"
       ]
     },
-    "commercial": {
-      "landuse": [
-        "commercial"
-      ]
-    },
+    "power": {
+    "power": [
+      "plant",
+      "substation"
+    ]},
     "sport": {
       "leisure": [
         "pitch"
-      ]
-    },
-    "residential": {
-      "highway": [
-        "residential"
       ]
     },
     "pedestrian": {

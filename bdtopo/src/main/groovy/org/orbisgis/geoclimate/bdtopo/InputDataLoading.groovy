@@ -143,7 +143,8 @@ def loadV2(
     String surface_eau = tablesExist.get("surface_eau")
     if (!surface_eau) {
         surface_eau = "surface_eau"
-        datasource.execute("DROP TABLE IF EXISTS $surface_eau;  CREATE TABLE $surface_eau (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE VARCHAR);".toString())
+        datasource.execute("""DROP TABLE IF EXISTS $surface_eau;  
+        CREATE TABLE $surface_eau (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE VARCHAR, REGIME VARCHAR);""")
     }
     String zone_vegetation = tablesExist.get("zone_vegetation")
     if (!zone_vegetation) {
@@ -259,8 +260,9 @@ def loadV2(
     def INPUT_HYDRO = postfix("INPUT_HYDRO")
     datasource.execute("""
             DROP TABLE IF EXISTS $INPUT_HYDRO;
-            CREATE TABLE $INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE VARCHAR)
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE   FROM $surface_eau a, $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
+            CREATE TABLE $INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE VARCHAR, REGIME VARCHAR)
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE,a.REGIME FROM $surface_eau a, 
+            $zone_extended b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom);
             """)
 
     //7. Prepare the Vegetation table (from the layer "ZONE_VEGETATION") that are in the study area (ZONE_EXTENDED)
@@ -450,7 +452,8 @@ Map loadV3(JdbcDataSource datasource,
     if (!surface_hydrographique) {
         surface_hydrographique = "surface_hydrographique"
         datasource.execute("""DROP TABLE IF EXISTS $surface_hydrographique;  
-                CREATE TABLE $surface_hydrographique (THE_GEOM geometry(polygon, $srid), ID varchar, NATURE varchar,POS_SOL integer);""")
+                CREATE TABLE $surface_hydrographique (THE_GEOM geometry(polygon, $srid), 
+                ID varchar, NATURE varchar,POS_SOL integer,PERSISTANC varchar);""")
     }
 
     String zone_de_vegetation = tablesExist.get("zone_de_vegetation")
@@ -603,12 +606,14 @@ Map loadV3(JdbcDataSource datasource,
     def INPUT_HYDRO = postfix("INPUT_HYDRO")
     datasource.execute("""
             DROP TABLE IF EXISTS $INPUT_HYDRO;
-            CREATE TABLE $INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE varchar)
-            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE FROM $surface_hydrographique a, $zone_extended 
+            CREATE TABLE $INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE varchar, REGIME varchar)
+            AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE,
+            CASE WHEN a.PERSISTANC = 'Permanent' THEN a.PERSISTANC ELSE 'Intermittent' END as REGIME FROM $surface_hydrographique a, $zone_extended 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0
             and a.NATURE not in ('Conduit buse', 'Conduit forcé', 'Marais', 'Glacier névé')
             union all
-            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE  FROM $terrain_de_sport a, $zone_extended 
+            SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE, 
+            'Permanent' AS REGIME  FROM $terrain_de_sport a, $zone_extended 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) 
             and NATURE = 'Bassin de natation';
             """)

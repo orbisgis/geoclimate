@@ -23,11 +23,10 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.io.WKTReader
 import org.orbisgis.data.H2GIS
 import org.orbisgis.geoclimate.Geoindicators
 
+import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 import static org.orbisgis.data.H2GIS.open
 
@@ -100,5 +99,69 @@ class DataUtilsTests {
                 "test")
         assert "IDA,IDB,LAB,NAME" == h2GIS.getColumnNames(p).join(",")
         assert 2 == h2GIS.getRowCount(p)
+    }
+
+    @Test
+    void withinToHolesTest() {
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS overlaps;
+        CREATE TABLE overlaps as 
+        SELECT 1 as id, ST_BUFFER(ST_MAKEPOINT(0, 0), 100) AS THE_GEOM, 'geoclimate' as name
+        UNION ALL
+        SELECT CAST((row_number() over()) as Integer) + 1 as  id, THE_GEOM, CONCAT('geoclimate', X) as name FROM ST_EXPLODE('(
+        SELECT ST_BUFFER(ST_MAKEPOINT(0, 0), 10 * X) AS THE_GEOM, X FROM GENERATE_SERIES(1, 4))')
+        """)
+        Geoindicators.DataUtils.withinToHoles(h2GIS, "overlaps", "id", "result")
+        assertEquals(5, h2GIS.getRowCount("result"))
+        h2GIS.dropTable("result")
+    }
+
+    @Test
+    void withinToHolesTest2() {
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS overlaps;
+        CREATE TABLE overlaps as 
+        SELECT 1 as id, ST_BUFFER(ST_MAKEPOINT(0, 0), 100) AS THE_GEOM, 'geoclimate' as name
+        UNION ALL
+        SELECT CAST((row_number() over()) as Integer) + 1 as  id, THE_GEOM, CONCAT('geoclimate', X) as name FROM ST_EXPLODE('(
+        SELECT ST_BUFFER(ST_MAKEPOINT(0, 0), 10 * X) AS THE_GEOM, X FROM GENERATE_SERIES(1, 4))')
+        union all
+        SELECT 10 as id, ST_BUFFER(ST_MAKEPOINT(60, 70), 5) AS THE_GEOM, 'geoclimate_ring' as name
+        """)
+        Geoindicators.DataUtils.withinToHoles(h2GIS, "overlaps", "id", "result")
+        assertEquals(6, h2GIS.getRowCount("result"))
+        h2GIS.dropTable("result")
+    }
+
+    @Test
+    void removeOverlapsTest() {
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS overlaps;
+        CREATE TABLE overlaps as 
+        SELECT 1 as id, 'POLYGON ((0 200, 200 200, 200 0, 0 0, 0 200))'::GEOMETRY AS THE_GEOM
+        UNION ALL
+        SELECT  2 as  id, 'POLYGON ((-100 100, 200 100, 200 0, -100 0, -100 100))'::GEOMETRY THE_GEOM
+        """)
+        Geoindicators.DataUtils.removeOverlaps(h2GIS, "overlaps", "id", "result")
+        assertEquals(2, h2GIS.getRowCount("result"))
+        assertTrue( h2GIS.firstRow("select st_area(the_geom) as area_1 from result where id =1").area_1-h2GIS.firstRow("select st_area(the_geom) as area_2 from result where id =2").area_2<0)
+        h2GIS.dropTable("result")
+    }
+
+    @Test
+    void removeOverlapsTest2() {
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS overlaps;
+        CREATE TABLE overlaps as 
+        SELECT 1 as id, 'POLYGON ((0 200, 200 200, 200 0, 0 0, 0 200))'::GEOMETRY AS THE_GEOM
+        UNION ALL
+        SELECT  2 as  id, 'POLYGON ((-100 100, 200 100, 200 0, -100 0, -100 100))'::GEOMETRY THE_GEOM
+        UNION ALL
+        SELECT  3 as  id, 'POLYGON ((99 161, 324 161, 324 58, 99 58, 99 161))'::GEOMETRY THE_GEOM
+        """)
+        Geoindicators.DataUtils.removeOverlaps(h2GIS, "overlaps", "id", "result")
+        assertEquals(3, h2GIS.getRowCount("result"))
+        assertTrue( h2GIS.firstRow("select st_area(the_geom) as area_1 from result where id =1").area_1-h2GIS.firstRow("select st_area(the_geom) as area_2 from result where id =2").area_2<0)
+        h2GIS.dropTable("result")
     }
 }

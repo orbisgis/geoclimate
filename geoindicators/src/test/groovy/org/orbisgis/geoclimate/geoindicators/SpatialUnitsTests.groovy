@@ -29,6 +29,7 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
+import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.*
@@ -105,15 +106,17 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
 
-        def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_test",
+        def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_test",1d,
                 'road_test', 'rail_test',
                 'veget_test', 'hydro_test',
-                "", "", 10000, 2500, 10000,5000, "block")
+                "", "", 10000d, 2500d,
+                10000d, "block")
+
         assert createRSU
 
         assert h2GIS.getSpatialTable(createRSU).save(new File(folder, "rsu.shp").getAbsolutePath(), true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $createRSU"
-        assert 230 == countRows.numberOfRows
+        assert 237 == countRows.numberOfRows
     }
 
     @Test

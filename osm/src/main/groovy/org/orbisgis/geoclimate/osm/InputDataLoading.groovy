@@ -97,7 +97,9 @@ Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, f
             def keysValues = ["building", "railway", "amenity",
                               "leisure", "highway", "natural",
                               "landuse", "landcover",
-                              "vegetation", "waterway", "area", "aeroway", "area:aeroway", "tourism", "sport", "power"]
+                              "vegetation", "waterway",
+                              "area", "aeroway", "area:aeroway", "tourism", "sport", "power",
+                              "healthcare"]
             query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQueryWithAllData(envelope, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         }
 
@@ -241,7 +243,8 @@ Map createGISLayers(JdbcDataSource datasource, String osmFilePath,
             if(!datasource.isEmpty(impervious)) {
                 //Clean impervious layer to remove highway that doesn't contains a polygon or multipolygon tag
                 //This process is used  to isolate this type of situation : https://www.openstreetmap.org/relation/530964#map=17/48.924457/2.360138
-                datasource.execute("DELETE FROM $impervious where \"highway\" is not null and \"type\"  is null ")
+                datasource.execute("""DELETE FROM $impervious where \"highway\" is not null and (\"type\"  is null
+                and \"area\"!='yes') """)
             }
 
             outputImperviousTableName = postfix("OSM_IMPERVIOUS")

@@ -56,15 +56,14 @@ import static org.h2gis.network.functions.ST_ConnectedComponents.getConnectedCom
  * Expressed in geometry unit of the vegetationTable, default 2500
  * @param surface_urban_areas A double value to select the urban  areas.
  * Expressed in geometry unit of the urban_areas table, default 10000
- * @param holeInscribeCircleArea area of the maximum inscribed circle to remove RSU holes
  * @param prefixName A prefix used to name the output table
  *
  * @return A database table name and the name of the column ID
  */
 String createTSU(JdbcDataSource datasource, String zone,
-                 double area = 1f, String road, String rail, String vegetation,
+                 double area = 1d, String road, String rail, String vegetation,
                  String water, String sea_land_mask, String urban_areas,
-                 double surface_vegetation, double surface_hydro, double surface_urban_areas, double holeInscribeCircleArea, String prefixName) throws Exception {
+                 double surface_vegetation, double surface_hydro, double surface_urban_areas, String prefixName) throws Exception {
 
     def tablesToDrop = []
     try {
@@ -80,7 +79,7 @@ String createTSU(JdbcDataSource datasource, String zone,
 
         tablesToDrop << tsuDataPrepared
         def outputTsuTableName = Geoindicators.SpatialUnits.createTSU(datasource, tsuDataPrepared,zone,
-                area, holeInscribeCircleArea, prefixName)
+                area, prefixName)
         datasource.dropTable(tsuDataPrepared)
 
         datasource.execute("""ALTER TABLE $outputTsuTableName RENAME TO $outputTableName;""")
@@ -107,7 +106,7 @@ String createTSU(JdbcDataSource datasource, String zone,
  * @return A database table name and the name of the column ID
  */
 String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
-                 double area = 1d, double holeInscribeCircleArea = 5000, String prefixName) throws Exception {
+                 double area = 1d, String prefixName) throws Exception {
     def COLUMN_ID_NAME = "id_rsu"
     def BASE_NAME = "tsu"
 
@@ -126,49 +125,13 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
     if (zone) {
         datasource.createSpatialIndex(zone)
         //Create the polygons from the TSU lines
-        String polygons = postfix("polygons")
-        datasource.execute(""" DROP TABLE IF EXISTS $polygons;
-        CREATE TABLE $polygons as 
+        datasource.execute(""" DROP TABLE IF EXISTS $outputTableName;
+        CREATE TABLE $outputTableName as 
         SELECT CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME,
         ST_BUFFER(ST_BUFFER(the_geom,-0.01, 'quad_segs=2 endcap=flat  join=mitre'),0.01, 'quad_segs=2 endcap=flat join=mitre') AS the_geom FROM 
         ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
-                                FROM $inputTableName)')
+                                FROM $inputTableName)') where st_area(the_geom) > $area
         """)
-        datasource.createSpatialIndex(polygons)
-        datasource.createIndex(polygons, COLUMN_ID_NAME)
-        //Get a list of polygons that are in another polygons
-        String inside_polygons = postfix("inside_polygons")
-        datasource.execute("""
-        drop table if exists $inside_polygons;
-        create table $inside_polygons as
-        select a.the_geom, st_area(ST_MAKEPOLYGON(ST_EXTERIORRING(b.the_geom))) as area,  a.$COLUMN_ID_NAME as hole_$COLUMN_ID_NAME, 1 AS inside, b.$COLUMN_ID_NAME as parent_$COLUMN_ID_NAME from $polygons as a, $polygons as b where
-        a.the_geom && b.the_geom and st_intersects(ST_POINTONSURFACE(a.the_geom), ST_MAKEPOLYGON(ST_EXTERIORRING(b.the_geom)))
-        AND a.$COLUMN_ID_NAME <> b.$COLUMN_ID_NAME and st_area(ST_MaximumInscribedCircle(a.the_geom))<5000
-        """)
-        String filter_pols = postfix("filter_pols")
-        datasource.execute("""
-        DROP TABLE IF EXISTS $filter_pols;
-        CREATE TABLE $filter_pols as
-        SELECT distinct on (hole_$COLUMN_ID_NAME) hole_$COLUMN_ID_NAME,
-        parent_$COLUMN_ID_NAME, area, the_geom from  $inside_polygons 
-        order by area asc, hole_$COLUMN_ID_NAME ;""")
-        datasource.createIndex(filter_pols, "parent_$COLUMN_ID_NAME")
-        String tsu_cleaned = postfix("tsu_cleaned")
-        datasource.execute("""
-        DROP TABLE IF EXISTS $tsu_cleaned;
-        CREATE TABLE $tsu_cleaned as 
-        select CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME, the_geom from ST_EXPLODE('(
-        SELECT st_snaptoself(ST_UNION(ST_ACCUM(st_buffer(the_geom,0.01))),0.01) as the_geom
-        FROM (
-        select the_geom, $COLUMN_ID_NAME from $polygons where $COLUMN_ID_NAME 
-        not in (select distinct  hole_$COLUMN_ID_NAME from $filter_pols)
-        UNION ALL        
-        SELECT ST_ACCUM(THE_GEOM), parent_$COLUMN_ID_NAME AS ID_RSU FROM $filter_pols 
-        group by parent_$COLUMN_ID_NAME) GROUP BY $COLUMN_ID_NAME  )') WHERE ST_DIMENSION(THE_GEOM)=2     
-        """)
-        datasource.execute("ALTER TABLE $tsu_cleaned RENAME TO $outputTableName")
-        datasource.dropTable(polygons, tsu_cleaned, inside_polygons,filter_pols)
-
     } else {
         datasource """
                     DROP TABLE IF EXISTS $outputTableName;
@@ -177,9 +140,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
                         FROM ST_EXPLODE('(
                                 SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
-
     }
-
     debug "Reference spatial units table created"
     return outputTableName
 }
@@ -213,15 +174,15 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                       double surface_urban_areas,
                       String prefixName = "unified_abstract_model")
         throws Exception {
-    if (surface_vegetation <= 100) {
-        throw new IllegalArgumentException("The surface of vegetation must be greater or equal than 100 m²")
+    if (surface_vegetation < 0) {
+        throw new IllegalArgumentException("The surface of vegetation must be greater or equal than 0 m²")
     }
-    if (surface_hydro <= 100) {
-        throw new IllegalArgumentException("The surface of water must be greater or equal than 100 m²")
+    if (surface_hydro < 0) {
+        throw new IllegalArgumentException("The surface of water must be greater or equal than 0 m²")
     }
 
-    if (surface_urban_areas <= 100) {
-        throw new IllegalArgumentException("The surface of urban areas must be greater or equal than 100 m²")
+    if (surface_urban_areas < 0) {
+        throw new IllegalArgumentException("The surface of urban areas must be greater or equal than 0 m²")
     }
 
     try {

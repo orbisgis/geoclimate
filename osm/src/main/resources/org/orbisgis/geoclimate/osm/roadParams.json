@@ -221,12 +221,6 @@
         "living_street"
       ]
     },
-    "roundabout": {
-      "junction": [
-        "roundabout",
-        "circular"
-      ]
-    },
     "secondary": {
       "highway": [
         "secondary"

@@ -21,7 +21,6 @@ package org.orbisgis.geoclimate.geoindicators
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import org.orbisgis.data.H2GIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
@@ -189,13 +188,13 @@ static String aliasColumns(JdbcDataSource datasource, def tableName, def alias, 
  * An utility process to unioning two tables in one table
  *
  * @param tableA left table
- * @param tabelB right table
+ * @param tablelB right table
  *
  * @return a new table
  */
-String unionTables(JdbcDataSource datasource, String tableA, String tabelB, String outputTableName) throws Exception {
+String unionTables(JdbcDataSource datasource, String tableA, String tablelB, String outputTableName) throws Exception {
     def columnsA = datasource.getColumnNames(tableA)
-    def columnsB = datasource.getColumnNames(tabelB)
+    def columnsB = datasource.getColumnNames(tablelB)
     TreeMap colsA = new TreeMap()
     columnsA.each {col -> colsA.put(col,col)}
     columnsB.each { e ->  if(!columnsA.contains(e)) colsA.put(e,null)}
@@ -206,6 +205,88 @@ String unionTables(JdbcDataSource datasource, String tableA, String tabelB, Stri
 
     datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
     CREATE TABLE $outputTableName as select ${colsA.collect {it.value +" as "+ it.key}.join(",")} from $tableA 
-    union all select ${colsB.collect { it.value +" as "+ it.key}.join(",")} from $tabelB""")
+    union all select ${colsB.collect { it.value +" as "+ it.key}.join(",")} from $tablelB""")
     return outputTableName
+}
+
+/**
+ * An utility process to tranform overalaping geometries in holes
+ *
+ * @param tableToProcess the table that contains overlaping geometry
+ * @param columnId row identifier
+ * @param outputTableName output table name
+ *
+ * @return a new table where the overlaps are converted to holes
+ */
+String withinToHoles(JdbcDataSource datasource, String tableToProcess, String columnId, String outputTableName) throws Exception {
+    String holes = postfix("holes")
+    datasource.createSpatialIndex(tableToProcess)
+    datasource.createIndex(tableToProcess, columnId)
+    datasource.execute("""
+    DROP TABLE IF EXISTS $holes;
+    CREATE TABLE  $holes as 
+    SELECT a.$columnId, ST_BUFFER(ST_MAKEPOLYGON(ST_EXTERIORRING(a.the_geom), ST_ToMultiLine(ST_ACCUM(b.the_geom))), 0)  as the_geom
+    FROM $tableToProcess as a, $tableToProcess as b where a.the_geom && b.the_geom and a.$columnId!=b.$columnId and
+    st_contains(a.the_geom, b.the_geom) group by a.$columnId;
+    """)
+    def columns = datasource.getColumnNames(tableToProcess)
+    columns.remove("THE_GEOM")
+    columns.remove(columnId.toUpperCase())
+    datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+    CREATE TABLE $outputTableName as
+    SELECT a.$columnId, a.the_geom ${columns?",b."+columns.join(",b."):""} FROM $holes as a left join $tableToProcess as  b 
+    on (a.$columnId=b.$columnId)
+    union all 
+    select $columnId, THE_GEOM ${columns?","+columns.join(","):""} from $tableToProcess where
+    $columnId not in (select $columnId from $holes);
+    DROP TABLE IF EXISTS $holes;""")
+    return outputTableName
+}
+
+/**
+ * An utility process to remove overalaping geometries using the min area
+ *
+ * @param tableToProcess the table to process
+ * @param columnId row identifier
+ * @param outputTableName output table name
+ *
+ * @return a new table where the overlaps are removed
+ */
+String removeOverlaps(JdbcDataSource datasource, String tableToProcess, String columnId, String outputTableName) throws Exception {
+    String overlaps = postfix("overlaps")
+    datasource.createSpatialIndex(tableToProcess)
+    datasource.createIndex(tableToProcess, columnId)
+    datasource.execute("""
+    DROP TABLE IF EXISTS $overlaps;
+    CREATE TABLE  $overlaps as 
+    SELECT a.$columnId, ST_DIFFERENCE(a.the_geom, st_buffer(ST_ACCUM(b.the_geom), 0))  as the_geom, a.* EXCEPT($columnId, THE_GEOM)
+    FROM $tableToProcess as a, $tableToProcess as b where a.the_geom && b.the_geom and a.$columnId!=b.$columnId and
+    st_overlaps(a.the_geom, b.the_geom) and st_area(a.the_geom) > st_area(b.the_geom) group by a.$columnId;""")
+
+    def columns = datasource.getColumnNames(tableToProcess)
+    columns.remove("THE_GEOM")
+    columns.remove(columnId.toUpperCase())
+
+    datasource.execute("""
+    DROP TABLE IF EXISTS $outputTableName;
+    CREATE TABLE $outputTableName
+            as select * from $overlaps union all
+    select $columnId, the_geom ${columns?","+columns.join(","):""} from  $tableToProcess  where $columnId not in
+    (select $columnId from $overlaps);
+    drop table if exists $overlaps;
+    """)
+}
+
+
+/**
+ * Cast the input value as Float otherwise return NULL
+ * @param value input value
+ * @return casted value
+ */
+Float asFloat(def value){
+    try {
+        return value as Float
+    }catch (Exception ex){
+        return null
+    }
 }
