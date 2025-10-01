@@ -41,7 +41,8 @@
     "wall",
     "hut",
     "shed",
-    "cabin"
+    "cabin",
+    "building:use"
   ],
   "level": {
     "building": 1,
@@ -592,7 +593,8 @@
     },
     "government:government": {
       "building": [
-        "government"
+        "government",
+        "public"
       ]
     },
     "government_office:government": {
@@ -601,11 +603,6 @@
       ],
       "office": [
         "government"
-      ]
-    },
-    "government:government": {
-      "building": [
-        "public"
       ]
     },
     "historic": {
@@ -1358,6 +1355,11 @@
     "shed:building": {
       "building": [
         "shed"
+      ]
+    },
+    "tower": {
+      "building": [
+        "tower"
       ]
     }
   }
