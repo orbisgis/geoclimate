@@ -74,7 +74,7 @@ class InputDataFormattingTest {
         Map buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
         String building = buildingLayers.building
         assertNotNull h2GIS.getTable(building).save(new File(folder, "osm_building_formated.fgb").absolutePath, true)
-        assertEquals 1034, h2GIS.getTable(building).rowCount
+        assertEquals 1036, h2GIS.getTable(building).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where NB_LEV is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where NB_LEV<0".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where HEIGHT_WALL is null".toString()).count == 0
@@ -259,7 +259,7 @@ class InputDataFormattingTest {
         Map buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
         String buildingLayer = buildingLayers.building
         assertNotNull h2GIS.getTable(buildingLayer).save(new File(folder, "osm_building_formated.fgb").absolutePath, true)
-        assertEquals 1034, h2GIS.getTable(buildingLayer).rowCount
+        assertEquals 1036, h2GIS.getTable(buildingLayer).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV=0").count == 0
@@ -267,13 +267,13 @@ class InputDataFormattingTest {
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_WALL<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF<0").count == 0
-        assertEquals 1029, h2GIS.getTable(buildingLayers.building_updated).rowCount
-        assertEquals(1029, h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_updated} using (id_build) where 1=1").count)
+        assertEquals 1031, h2GIS.getTable(buildingLayers.building_updated).rowCount
+        assertEquals(1031, h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_updated} using (id_build) where 1=1").count)
 
         //Buildings without estimation state
         buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
-        assertEquals 1034, h2GIS.getTable(buildingLayers.building).rowCount
-        assertEquals 1029, h2GIS.getTable(buildingLayers.building_updated).rowCount
+        assertEquals 1036, h2GIS.getTable(buildingLayers.building).rowCount
+        assertEquals 1031, h2GIS.getTable(buildingLayers.building_updated).rowCount
     }
 
 

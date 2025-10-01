@@ -159,7 +159,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                                 SIDE_WALK VARCHAR,
                                                 MAXSPEED INTEGER,
                                                 DIRECTION INTEGER,
-                                                ZINDEX INTEGER)"""
+                                                ZINDEX INTEGER,
+                                                TUNNEL INTEGER)"""
         datasource """DROP TABLE IF EXISTS $railTableName;
                     CREATE TABLE $railTableName(THE_GEOM GEOMETRY,
                                                 ID_RAIL INTEGER,
