@@ -411,7 +411,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
     datasource.execute("""
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
-                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, LANES INTEGER, ZINDEX INTEGER);
+                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, LANES INTEGER, ZINDEX INTEGER, TUNNEL INTEGER);
         """)
     if (road) {
         def road_types_width =
@@ -448,6 +448,9 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
             int rowcount = 1
             datasource.withBatch(100) { stmt ->
                 datasource.eachRow(queryMapper) { row ->
+                    //Default value added here.
+                    //TODO : check construction_lineaire layer in a future version
+                    int tunnel = 0
                     def qualified_road_maxspeed = 50
                     def qualified_road_type = 'unclassified'
                     def qualified_road_surface = 'asphalt'
@@ -590,7 +593,8 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                                         ${qualified_road_maxspeed},
                                         ${road_sens},
                                         ${row.'nb_voies'},
-                                        ${qualified_road_zindex})
+                                        ${qualified_road_zindex},
+                                        ${tunnel})
                                         """.toString()
                                 }
                             }
