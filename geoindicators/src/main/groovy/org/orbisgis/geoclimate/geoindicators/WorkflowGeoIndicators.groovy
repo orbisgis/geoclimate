@@ -1960,7 +1960,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                             DROP TABLE IF EXISTS $tesselatedSeaLandTab;
                             CREATE TABLE $tesselatedSeaLandTab(id_tesselate serial, the_geom geometry, $seaLandTypeField VARCHAR)
                                 AS SELECT explod_id, the_geom, $seaLandTypeField
-                                FROM ST_EXPLODE('(SELECT st_tesselate(the_geom) AS the_geom, $seaLandTypeField 
+                                FROM ST_EXPLODE('(SELECT ST_Tesselate(the_geom) AS the_geom, $seaLandTypeField 
+
                                                     FROM $sea_land_mask
                                                     WHERE ST_DIMENSION(the_geom) = 2 AND ST_ISEMPTY(the_geom) IS NOT TRUE
                                                             AND ST_AREA(the_geom)>0)')"""
