@@ -134,13 +134,6 @@ class DataUtilsTests {
     }
 
     @Test
-    void overlaps2HolesTest3() {
-        h2GIS.load("/tmp/geoclimate/urban_areas.fgb","overlaps", true )
-        Geoindicators.DataUtils.withinToHoles(h2GIS, "overlaps", "id_urban", "result")
-        h2GIS.dropTable("result")
-    }
-
-    @Test
     void removeOverlapsTest() {
         h2GIS.execute("""
         DROP TABLE IF EXISTS overlaps;
