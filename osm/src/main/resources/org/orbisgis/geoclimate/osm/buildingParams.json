@@ -190,7 +190,8 @@
     "refinery": 0,
     "hut": 0,
     "cabin": 0,
-    "shed": 0
+    "shed": 0,
+    "garage": 0
   },
   "type": {
     "terminal:transport": {
@@ -1360,6 +1361,11 @@
     "tower": {
       "building": [
         "tower"
+      ]
+    },
+    "garage": {
+      "building": [
+        "garages", "garage"
       ]
     }
   }
