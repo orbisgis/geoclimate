@@ -960,7 +960,6 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
- * @param holeInscribeCircleArea area of the maximum inscribed circle to remove RSU holes
  * @param clip clip the rsu with the original zone area at the end
  *
  * @return building Table name where are stored the buildings and the RSU and block ID
@@ -972,7 +971,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
                           String water, String sea_land_mask, String urban_areas,
                           String rsu, double surface_vegetation,
                           double surface_hydro, double surface_urban_areas,
-                          double snappingTolerance,double holeInscribeCircleArea,boolean clip=true,
+                          double snappingTolerance,boolean clip=true,
                           List indicatorUse = ["LCZ", "UTRF", "TEB"],  String prefixName = "") throws Exception {
     info "Create the spatial units..."
     def idRsu = "id_rsu"
@@ -982,7 +981,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
         rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone_extended, road, rail,
                 vegetation, water,
                 sea_land_mask, urban_areas, surface_vegetation,
-                surface_hydro, surface_urban_areas,holeInscribeCircleArea, prefixName)
+                surface_hydro, surface_urban_areas, prefixName)
         // Clip the RSU if the argument is set to true and if the the zone is different than the zone_extended
         if (clip && (zone_extended && zone != zone_extended)) {
             String rsu_tmp = postfix("rsu")
@@ -1056,7 +1055,6 @@ Map getParameters() {
             "surface_vegetation"               : 10000f,
             "surface_hydro"                    : 2500f,
             "surface_urban_areas"              : 10000f,
-            "surface_hole_rsu"                 : 5000f,
             "snappingTolerance"                : 0.01f, "indicatorUse": ["LCZ", "UTRF", "TEB"],
             "mapOfWeights"                     : ["sky_view_factor"             : 1, "aspect_ratio": 1, "building_surface_fraction": 1,
                                                   "impervious_surface_fraction" : 1, "pervious_surface_fraction": 1,
@@ -1228,7 +1226,6 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
     def surface_urban_areas = inputParameters.surface_urban_areas
     def snappingTolerance = inputParameters.snappingTolerance
     def buildingHeightModelName = inputParameters.buildingHeightModelName
-    def holeInscribeCircleArea = inputParameters.surface_hole_rsu
     def indicatorUse = inputParameters.indicatorUse
     def clipGeom = inputParameters.clip
     def nb_building_updated = 0
@@ -1248,7 +1245,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                 sea_land_mask, urban_areas, rsuTable,
                 surface_vegetation, surface_hydro, surface_urban_areas,
                 snappingTolerance,
-                buildingHeightModelName,holeInscribeCircleArea, clipGeom, prefixName)
+                buildingHeightModelName, clipGeom, prefixName)
         if (!estimHeight) {
             throw new Exception("Cannot estimate building height")
         } else {
@@ -1289,7 +1286,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                     vegetation,
                     water, sea_land_mask, "", rsuTable,
                     surface_vegetation,
-                    surface_hydro, surface_urban_areas, snappingTolerance, holeInscribeCircleArea,false,indicatorUse,
+                    surface_hydro, surface_urban_areas, snappingTolerance,false,indicatorUse,
                     prefixName)
             buildingForGeoCalc = spatialUnitsForCalc.building
             blocksForGeoCalc = spatialUnitsForCalc.block
@@ -1335,7 +1332,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                 rail, vegetation,
                 water, sea_land_mask, "", rsuTable,
                 surface_vegetation,
-                surface_hydro, surface_urban_areas, snappingTolerance,holeInscribeCircleArea,clipGeom,indicatorUse,
+                surface_hydro, surface_urban_areas, snappingTolerance,clipGeom,indicatorUse,
                 prefixName)
         def relationBuildings = spatialUnits.building
         def relationBlocks = spatialUnits.block
@@ -1369,7 +1366,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
                            String building_estimate, String sea_land_mask, String urban_areas, String rsu,
                            double surface_vegetation, double surface_hydro, double surface_urban_areas,
                            double snappingTolerance, String buildingHeightModelName,
-                           double holeInscribeCircleArea, boolean clipGeom, String prefixName = "") throws Exception {
+                           boolean clipGeom, String prefixName = "") throws Exception {
     if (!building_estimate) {
         throw new IllegalArgumentException("To estimate the building height a table that contains the list of building to estimate must be provided")
     }
@@ -1383,7 +1380,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
     Map spatialUnits = createUnitsOfAnalysis(datasource, zone,zone_extended,
             building, road, rail, vegetation,
             water, sea_land_mask, urban_areas, rsu,
-            surface_vegetation, surface_hydro, surface_urban_areas, snappingTolerance, holeInscribeCircleArea,clipGeom,["UTRF"],
+            surface_vegetation, surface_hydro, surface_urban_areas, snappingTolerance,clipGeom,["UTRF"],
             prefixName)
     def relationBuildings = spatialUnits.building
     def relationBlocks = spatialUnits.block
@@ -1963,7 +1960,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                             DROP TABLE IF EXISTS $tesselatedSeaLandTab;
                             CREATE TABLE $tesselatedSeaLandTab(id_tesselate serial, the_geom geometry, $seaLandTypeField VARCHAR)
                                 AS SELECT explod_id, the_geom, $seaLandTypeField
-                                FROM ST_EXPLODE('(SELECT st_tessellate(the_geom) AS the_geom, $seaLandTypeField 
+                                FROM ST_EXPLODE('(SELECT st_tesselate(the_geom) AS the_geom, $seaLandTypeField 
                                                     FROM $sea_land_mask
                                                     WHERE ST_DIMENSION(the_geom) = 2 AND ST_ISEMPTY(the_geom) IS NOT TRUE
                                                             AND ST_AREA(the_geom)>0)')"""

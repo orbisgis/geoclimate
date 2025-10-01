@@ -713,7 +713,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Disabled
     //Use it to test a list of bboxs collect from various user feedback
-    //The
     @Test
     void testLCZBBOXFeedback() {
         String directory = "/tmp/geoclimate"
@@ -725,6 +724,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         location = [62.027935,129.76294,62.045902,129.80127] //visual validation in a GIS
         location =[40.70075,-74.03082,40.709732,-74.01897] //visual validation in a GIS
         location=[40.70075,-74.01897,40.709732,-74.00712] //visual validation in a GIS
+        location=[53.242824,-9.103203,53.299902,-8.915749] //visual validation in a GIS
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
@@ -742,6 +742,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         [
                          "rsu_indicators"       : [
+                                 //"surface_urban_areas":0,
+                                 //"surface_vegetation":1500,
                                  "indicatorUse": ["LCZ"]
                          ]
                         ]

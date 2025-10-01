@@ -8,7 +8,8 @@
       "construction",
       "military",
       "railway",
-      "farmyard"
+      "farmyard",
+      "religious"
     ],
     "construction": [],
     "amenity": [
@@ -20,6 +21,9 @@
     "power": [
       "plant",
       "substation"
+    ],
+    "healthcare": [
+      "hospital"
     ]
   },
   "columns": [
@@ -28,7 +32,8 @@
     "construction",
     "amenity",
     "building",
-    "power"
+    "power",
+    "healthcare"
   ],
   "type": {
     "education": {
@@ -49,11 +54,6 @@
     "school": {
       "amenity": [
         "school"
-      ]
-    },
-    "construction": {
-      "landuse": [
-        "construction"
       ]
     },
     "commercial": {
@@ -113,6 +113,16 @@
     "farmyard": {
       "landuse": [
         "farmyard"
+      ]
+    },
+    "healthcare": {
+      "healthcare": [
+        "hospital"
+      ]
+    },
+    "religious": {
+      "landuse": [
+        "religious"
       ]
     }
   }

@@ -52,7 +52,7 @@ class WorkflowAbstractTest {
         Map spatialUnits = Geoindicators.WorkflowGeoIndicators.createUnitsOfAnalysis(datasource, zone, zone,buildingTableName,
                 roadTableName, railTableName, vegetationTableName,
                 hydrographicTableName, sealandmaskTableName, urban_areas, "", 10000,
-                2500, 10000, 0.01,5000, true, indicatorUse,prefixName)
+                2500, 10000, 0.01, true, indicatorUse,prefixName)
 
         String relationBuildings = spatialUnits.building
         String relationBlocks = spatialUnits.block
