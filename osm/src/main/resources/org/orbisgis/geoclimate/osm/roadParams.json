@@ -63,7 +63,8 @@
     "tracktype",
     "cycleway",
     "bicycle_road",
-    "cyclestreet"
+    "cyclestreet",
+    "tunnel"
   ],
   "surface": {
     "unpaved": {

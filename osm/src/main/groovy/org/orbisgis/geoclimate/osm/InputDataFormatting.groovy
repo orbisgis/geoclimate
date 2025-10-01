@@ -85,10 +85,19 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                         Geometry geom = row.the_geom
                         def row_id = row.id
                         if (pZone.intersects(geom)) {
-                        def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
-                        def use = typeAndUseValues[1]
-                        def type = typeAndUseValues[0]
-                        if (type) {
+                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                            def use = typeAndUseValues[1]
+                            def type = typeAndUseValues[0]
+                            if(type==null) {
+                               type="undefined"
+                            }
+                            if(use==null) {
+                                use="undefined"
+                            }
+                            String building_use = row."building:use"
+                            if(building_use){
+                                use=building_use
+                            }
                             String height = row.height
                             String roof_height = row.'roof:height'
                             String b_lev = row.'building:levels'
@@ -99,13 +108,13 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                             def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
                             def zIndex = getZIndex(row.'layer')
                             String roof_shape = row.'roof:shape'
-                            if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                                    def srid = geom.getSRID()
-                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                        Geometry subGeom = geom.getGeometryN(i)
-                                        if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                            subGeom.normalize()
-                                            stmt.addBatch """
+                            if (formatedHeight.nbLevels > 0 && zIndex >= 0) {
+                                def srid = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                        subGeom.normalize()
+                                        stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
@@ -119,14 +128,13 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                                     ${roof_shape ? "'" + roof_shape + "'" : null})
                                             """.toString()
 
-                                            if (formatedHeight.estimated) {
-                                                stmt.addBatch("""
+                                        if (formatedHeight.estimated) {
+                                            stmt.addBatch("""
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build, 1, 0)
                                                 """.toString())
-                                            }
-                                            id_build++
                                         }
+                                        id_build++
                                     }
                                 }
                             }
@@ -143,24 +151,33 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                             def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
                             def use = typeAndUseValues[1]
                             def type = typeAndUseValues[0]
-                            if (type) {
-                                String height = row.height
-                                String roof_height = row.'roof:height'
-                                String b_lev = row.'building:levels'
-                                String roof_lev = row.'roof:levels'
-                                def heightRoof = getHeightRoof(height, heightPattern)
-                                def heightWall = getHeightWall(heightRoof, roof_height)
-                                def nbLevels = getNbLevels(b_lev, roof_lev)
-                                def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
-                                def zIndex = getZIndex(row.'layer')
-                                String roof_shape = row.'roof:shape'
-                                if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
-                                    def srid = geom.getSRID()
-                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                        Geometry subGeom = geom.getGeometryN(i)
-                                        if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                            subGeom.normalize()
-                                            stmt.addBatch """
+                            if(type==null) {
+                                type="undefined"
+                            }
+                            if(use==null) {
+                                use="undefined"
+                            }
+                            String building_use = row."building:use"
+                            if(building_use){
+                                use=building_use
+                            }
+                            String height = row.height
+                            String roof_height = row.'roof:height'
+                            String b_lev = row.'building:levels'
+                            String roof_lev = row.'roof:levels'
+                            def heightRoof = getHeightRoof(height, heightPattern)
+                            def heightWall = getHeightWall(heightRoof, roof_height)
+                            def nbLevels = getNbLevels(b_lev, roof_lev)
+                            def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(heightWall, heightRoof, nbLevels, h_lev_min, type, typeAndLevel)
+                            def zIndex = getZIndex(row.'layer')
+                            String roof_shape = row.'roof:shape'
+                            if (formatedHeight.nbLevels > 0 && zIndex >= 0 && type) {
+                                def srid = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                        subGeom.normalize()
+                                        stmt.addBatch """
                                                 INSERT INTO ${outputTableName} values(
                                                     ST_GEOMFROMTEXT('${subGeom}',$srid), 
                                                     $id_build, 
@@ -174,17 +191,16 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                                                     ${roof_shape ? "'" + roof_shape + "'" : null})
                                             """.toString()
 
-                                            if (formatedHeight.estimated) {
-                                                stmt.addBatch("""
+                                        if (formatedHeight.estimated) {
+                                            stmt.addBatch("""
                                                 INSERT INTO ${outputEstimateTableName} values(
                                                     $id_build,  1, 0)
                                                 """.toString())
-                                            }
-                                            id_build++
                                         }
+                                        id_build++
                                     }
                                 }
-                            }
+                                }
                         }
                     }
                 }
@@ -303,7 +319,7 @@ String formatRoadLayer(
     datasource """
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_road serial, ID_SOURCE VARCHAR, WIDTH FLOAT, TYPE VARCHAR, CROSSING VARCHAR(30),
-                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, LANES INTEGER, ZINDEX INTEGER);
+                SURFACE VARCHAR, SIDEWALK VARCHAR, MAXSPEED INTEGER, DIRECTION INTEGER, LANES INTEGER, ZINDEX INTEGER, TUNNEL INTEGER);
         """.toString()
     if (road) {
         //Define the mapping between the values in OSM and those used in the abstract model
@@ -401,6 +417,12 @@ String formatRoadLayer(
                         if (onewayValue && onewayValue == "yes") {
                             direction = 1
                         }
+                        //Check if the road is a Tunnel
+                        String tunnelValue = row."tunnel"
+                        int tunnel = 0
+                        if (tunnelValue && tunnelValue == "yes") {
+                            tunnel = 1
+                        }
 
                         if (zIndex >= 0 && type) {
                             boolean addGeom = false
@@ -426,7 +448,8 @@ String formatRoadLayer(
                                         ${maxspeed_value},
                                         ${direction},
                                         ${row.'lanes'},
-                                        ${zIndex})
+                                        ${zIndex},
+                                        ${tunnel})
                                 """.toString()
                                 }
                             }
