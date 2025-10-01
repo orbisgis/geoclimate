@@ -15,6 +15,7 @@ AREA_FRACTION_x
 
 **Description**: Footprint fraction within the RSU of _type \x_ building. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
 
+* "undefined" : ["building", "undefined"],
 * "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace"],
 * "collective_housing": ["apartments", "barracks", "abbey", "dormitory", "sheltered_housing", "workers_dormitory", "condominium"],
 * "undefined_residential": ["residential"],

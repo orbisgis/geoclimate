@@ -65,7 +65,7 @@ class InputDataFormattingTest {
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
-        assertEquals 7, h2GIS.getTable(extractData.water).rowCount
+        assertEquals 8, h2GIS.getTable(extractData.water).rowCount
         assertEquals 45, h2GIS.getTable(extractData.impervious).rowCount
         assertEquals 11, h2GIS.getTable(extractData.urban_areas).rowCount
         assertEquals 0, h2GIS.getTable(extractData.coastline).rowCount
@@ -126,7 +126,7 @@ class InputDataFormattingTest {
         String water = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water)
         assertNotNull h2GIS.getTable(water).save(new File(folder, "osm_hydro_formated.fgb").absolutePath, true)
         def waterCount = h2GIS.getTable(water).rowCount
-        assertEquals 7, waterCount
+        assertEquals 8, waterCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${water} where INTERMITTENT is not null").count == waterCount
 
         //Impervious surfaces
@@ -252,7 +252,7 @@ class InputDataFormattingTest {
         assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
-        assertEquals 7, h2GIS.getTable(extractData.water).rowCount
+        assertEquals 8, h2GIS.getTable(extractData.water).rowCount
         assertEquals 45, h2GIS.getTable(extractData.impervious).rowCount
 
         //Buildings with estimation state
