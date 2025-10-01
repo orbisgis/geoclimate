@@ -389,7 +389,7 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
                             CAST(row_number() over(ORDER BY ID_ROW DESC) as integer) as "FID",
                             BUILDING_FRACTION  AS "roof",
                             ROAD_FRACTION AS "road",
-                            WATER_FRACTION AS "watr",
+                            WATER_PERMANENT_FRACTION AS "watr",
                             IMPERVIOUS_FRACTION + UNDEFINED_FRACTION AS "conc",
                             HIGH_VEGETATION_FRACTION AS "Veg",                            
                             LOW_VEGETATION_FRACTION  AS "dry",
