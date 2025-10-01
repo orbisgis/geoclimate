@@ -9,7 +9,7 @@
       "tidal_channel", "flowline", "canal", "fairway", "rapids", "waterfall"],
     "landuse": [
       "basin",
-      " salt_pond"
+      "salt_pond"
     ],
     "leisure": ["swimming_pool"]
   },
@@ -20,7 +20,7 @@
     "water",
     "waterway",
     "landuse",
-    "leisure"
+    "leisure",
     "intermittent"
   ]
 }
