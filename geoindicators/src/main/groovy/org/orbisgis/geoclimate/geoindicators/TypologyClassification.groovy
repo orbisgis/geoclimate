@@ -638,7 +638,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
         putModel(modelName, model)
     }
     if (!model) {
-        throw new IllegalArgumentException("Cannot find the requiered columns to apply the model")
+        throw new IllegalArgumentException("Cannot find the required columns to apply the model")
     }
 
     // The name of the outputTableName is constructed
@@ -677,6 +677,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
         isDouble = true
     }
     // Read the table containing the explicative variables as a DataFrame
+    datasource.save(explicativeVariablesTableName, "/tmp/utrf.fgb", true)
     def dfNofactorized = DataFrame.of(datasource.getTable("""(SELECT ${modelColumnNames.join(",")}, 
             ${isDouble ? "CAST (0 AS DOUBLE PRECISION) AS " + var2model : "CAST(0 AS INTEGER) AS " + var2model},
             $idName from $explicativeVariablesTableName)""".toString()))

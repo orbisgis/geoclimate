@@ -312,8 +312,8 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                      angleRangeSizeRoDirection        : 30,
                                      svfSimplified                    : true,
                                      indicatorUse                     : ["LCZ", "UTRF", "TEB"],
-                                     surfSuperpositions               : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
-                                     surfPriorities                   : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
+                                     surfSuperpositions               : ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]],
+                                     surfPriorities                   : ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
                                      buildingAreaTypeAndCompositionLcz: ["light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
                                                                          "commercial_lcz"    : ["commercial", "shop", "retail", "port",
                                                                                                 "exhibition_centre", "cinema"],
@@ -383,14 +383,16 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                                                                                       "high_vegetation_low_vegetation_fraction",
                                                                                                                       "high_vegetation_road_fraction",
                                                                                                                       "high_vegetation_impervious_fraction",
-                                                                                                                      "high_vegetation_water_fraction",
+                                                                                                                      "high_vegetation_water_permanent_fraction",
+                                                                                                                      "high_vegetation_water_intermittent_fraction",
                                                                                                                       "high_vegetation_building_fraction"],
                                                                          "low_vegetation_fraction_utrf"            : ["low_vegetation_fraction"],
                                                                          "high_vegetation_impervious_fraction_utrf": ["high_vegetation_road_fraction",
                                                                                                                       "high_vegetation_impervious_fraction"],
                                                                          "high_vegetation_pervious_fraction_utrf"  : ["high_vegetation_fraction",
                                                                                                                       "high_vegetation_low_vegetation_fraction",
-                                                                                                                      "high_vegetation_water_fraction"],
+                                                                                                                      "high_vegetation_water_permanent_fraction",
+                                                                                                                      "high_vegetation_water_intermittent_fraction"],
                                                                          "road_fraction_utrf"                      : ["road_fraction",
                                                                                                                       "high_vegetation_road_fraction"],
                                                                          "impervious_fraction_utrf"                : ["road_fraction",
@@ -401,14 +403,17 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                                                                           "high_vegetation_building_fraction"],
                                                                          "pervious_fraction_lcz"       : ["high_vegetation_fraction",
                                                                                                           "low_vegetation_fraction",
-                                                                                                          "water_fraction",
+                                                                                                          "water_intermittent_fraction",
+                                                                                                          "water_permanent_fraction",
                                                                                                           "high_vegetation_low_vegetation_fraction",
-                                                                                                          "high_vegetation_water_fraction"],
+                                                                                                          "high_vegetation_water_permanent_fraction",
+                                                                                                          "high_vegetation_water_intermittent_fraction",],
                                                                          "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
                                                                                                           "high_vegetation_low_vegetation_fraction",
                                                                                                           "high_vegetation_road_fraction",
                                                                                                           "high_vegetation_impervious_fraction",
-                                                                                                          "high_vegetation_water_fraction",
+                                                                                                          "high_vegetation_water_permanent_fraction",
+                                                                                                          "high_vegetation_water_intermittent_fraction",
                                                                                                           "high_vegetation_building_fraction"],
                                                                          "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
                                                                          "impervious_fraction_lcz"     : ["impervious_fraction",
@@ -417,8 +422,8 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
                                                                                                           "high_vegetation_impervious_fraction",
                                                                                                           "high_vegetation_road_fraction",
                                                                                                           "high_vegetation_rail_fraction"],
-                                                                         "water_fraction_lcz"          : ["water_fraction",
-                                                                                                          "high_vegetation_water_fraction"]],
+                                                                         "water_fraction_lcz"          : ["water_permanent_fraction",
+                                                                                                          "high_vegetation_water_permanent_fraction"]],
                                      buildingFractions                : ["high_vegetation_building_fraction", "building_fraction"]], String prefixName = "")
         throws Exception {
 
@@ -825,8 +830,14 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                 ["AVG", "STD"], prefixName)
         tablesToDrop << gatheredScales
         if (!datasource.isEmpty(gatheredScales)) {
+            // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
+            datasource.execute("""ALTER TABLE $gatheredScales RENAME COLUMN RSU_WATER_PERMANENT_FRACTION TO RSU_WATER_FRACTION""")
+            datasource.execute("""DROP TABLE IF EXISTS GATHERED_SCALES_WATER_MODIF;
+                CREATE TABLE GATHERED_SCALES_WATER_MODIF 
+                    AS SELECT *, RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION
+                    FROM $gatheredScales""")
             def utrfBuild = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                    gatheredScales, utrfModelName, COLUMN_ID_BUILD, prefixName)
+                    "GATHERED_SCALES_WATER_MODIF", utrfModelName, COLUMN_ID_BUILD, prefixName)
 
             tablesToDrop << utrfBuild
 
@@ -1073,8 +1084,8 @@ Map getParameters() {
             "levelForRoads"                    : [0],
             "angleRangeSizeBuDirection"        : 30,
             "angleRangeSizeRoDirection"        : 30,
-            "surfSuperpositions"               : ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
-            "surfPriorities"                   : ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
+            "surfSuperpositions"               : ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]],
+            "surfPriorities"                   : ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
             "buildingAreaTypeAndCompositionLcz": ["undefined_lcz"     : ["building", "undefined"],
                                                   "light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
                                                   "commercial_lcz"    : ["commercial", "shop", "retail", "port",
@@ -1147,14 +1158,16 @@ Map getParameters() {
                                                                                                "high_vegetation_low_vegetation_fraction",
                                                                                                "high_vegetation_road_fraction",
                                                                                                "high_vegetation_impervious_fraction",
-                                                                                               "high_vegetation_water_fraction",
+                                                                                               "high_vegetation_water_permanent_fraction",
+                                                                                               "high_vegetation_water_intermittent_fraction",
                                                                                                "high_vegetation_building_fraction"],
                                                   "low_vegetation_fraction_utrf"            : ["low_vegetation_fraction"],
                                                   "high_vegetation_impervious_fraction_utrf": ["high_vegetation_road_fraction",
                                                                                                "high_vegetation_impervious_fraction"],
                                                   "high_vegetation_pervious_fraction_utrf"  : ["high_vegetation_fraction",
                                                                                                "high_vegetation_low_vegetation_fraction",
-                                                                                               "high_vegetation_water_fraction"],
+                                                                                               "high_vegetation_water_permanent_fraction",
+                                                                                               "high_vegetation_water_intermittent_fraction"],
                                                   "road_fraction_utrf"                      : ["road_fraction",
                                                                                                "high_vegetation_road_fraction"],
                                                   "impervious_fraction_utrf"                : ["road_fraction",
@@ -1165,14 +1178,17 @@ Map getParameters() {
                                                                                    "high_vegetation_building_fraction"],
                                                   "pervious_fraction_lcz"       : ["high_vegetation_fraction",
                                                                                    "low_vegetation_fraction",
-                                                                                   "water_fraction",
+                                                                                   "water_permanent_fraction",
+                                                                                   "water_intermittent_fraction",
                                                                                    "high_vegetation_low_vegetation_fraction",
-                                                                                   "high_vegetation_water_fraction"],
+                                                                                   "high_vegetation_water_permanent_fraction",
+                                                                                   "high_vegetation_water_intermittent_fraction"],
                                                   "high_vegetation_fraction_lcz": ["high_vegetation_fraction",
                                                                                    "high_vegetation_low_vegetation_fraction",
                                                                                    "high_vegetation_road_fraction",
                                                                                    "high_vegetation_impervious_fraction",
-                                                                                   "high_vegetation_water_fraction",
+                                                                                   "high_vegetation_water_permanent_fraction",
+                                                                                   "high_vegetation_water_intermittent_fraction",
                                                                                    "high_vegetation_building_fraction"],
                                                   "low_vegetation_fraction_lcz" : ["low_vegetation_fraction"],
                                                   "impervious_fraction_lcz"     : ["impervious_fraction",
@@ -1181,8 +1197,8 @@ Map getParameters() {
                                                                                    "high_vegetation_impervious_fraction",
                                                                                    "high_vegetation_road_fraction",
                                                                                    "high_vegetation_rail_fraction"],
-                                                  "water_fraction_lcz"          : ["water_fraction",
-                                                                                   "high_vegetation_water_fraction"]],
+                                                  "water_fraction_lcz"          : ["water_permanent_fraction",
+                                                                                   "high_vegetation_water_permanent_fraction"]],
             "buildingFractions"                : ["high_vegetation_building_fraction", "building_fraction"]]
 
 }
@@ -1436,9 +1452,16 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
 
         } else {
             info "Start estimating the building height"
+            // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
+            datasource.execute("""ALTER TABLE $gatheredScales RENAME COLUMN RSU_WATER_PERMANENT_FRACTION TO RSU_WATER_FRACTION""")
+            datasource.execute("""DROP TABLE IF EXISTS GATHERED_SCALES_WATER_MODIF;
+                CREATE TABLE GATHERED_SCALES_WATER_MODIF 
+                    AS SELECT *, RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION
+                    FROM $gatheredScales""")
+
             //Apply RF model
             buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                    gatheredScales, buildingHeightModelName, "id_build", prefixName)
+                    "GATHERED_SCALES_WATER_MODIF", buildingHeightModelName, "id_build", prefixName)
 
             //Update the abstract building table
             info "Replace the input building table by the estimated height"
@@ -1466,7 +1489,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
             //Drop intermediate tables
             datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                             $formatedBuildEstimatedHeight, $buildEstimatedHeight,
-                                            $gatheredScales""".toString()
+                                            $gatheredScales, GATHERED_SCALES_WATER_MODIF""".toString()
 
         }
         return ["building"                          : buildingTableName,
@@ -1749,7 +1772,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     // and also set which type of statistics is needed if "BUILDING_HEIGHT" is activated
     def surfaceFractionsProcess
     def columnFractionsList = [:]
-    def priorities = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+    def priorities = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
     def unweightedBuildingIndicators = [:]
     def weightedBuildingIndicators = [:]
@@ -1761,7 +1784,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
             columnFractionsList.put(priorities.indexOf("building"), "building")
         }
         if (it == "WATER_FRACTION") {
-            columnFractionsList.put(priorities.indexOf("water"), "water")
+            columnFractionsList.put(priorities.indexOf("water_permanent"), "water_permanent")
+            columnFractionsList.put(priorities.indexOf("water_intermittent"), "water_intermittent")
         }
         if (it == "VEGETATION_FRACTION") {
             columnFractionsList.put(priorities.indexOf("high_vegetation"), "high_vegetation")

@@ -159,7 +159,7 @@ abstract class WorkflowAbstractTest {
         assertTrue h2gis.rows("select distinct(g) as g from ${tableNames.ground_acoustic} where type = 'water'".toString()).size() == 1
 
         //Test grid_indicators
-        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators} where water_fraction>0").count > 0
+        assertTrue h2gis.firstRow("select count(*) as count from ${tableNames.grid_indicators} where water_permanent_fraction>0").count > 0
 
         h2gis.deleteClose()
     }

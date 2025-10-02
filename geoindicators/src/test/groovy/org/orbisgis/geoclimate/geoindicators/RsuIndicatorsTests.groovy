@@ -426,11 +426,11 @@ class RsuIndicatorsTests {
 
     @Test
     void smallestCommunGeometryTest() {
-        h2GIS.load(SpatialUnitsTests.getResource("road_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.getResource("building_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
-        h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("ROAD.geojson"), "road_test", true)
+        h2GIS.load(SpatialUnitsTests.getResource("BUILDING.geojson"), "building_test",true)
+        h2GIS.load(SpatialUnitsTests.getResource("VEGET.geojson"), "veget_test", true)
+        h2GIS.load(SpatialUnitsTests.getResource("HYDRO.geojson"), "hydro_test", true)
+        h2GIS.load(SpatialUnitsTests.getResource("ZONE.geojson"), "zone_test", true)
 
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', '',
@@ -451,7 +451,8 @@ class RsuIndicatorsTests {
                    CREATE TABLE stats_rsu AS SELECT b.the_geom,
                 round(sum(CASE WHEN a.low_vegetation=1 THEN a.area ELSE 0 END),1) AS low_VEGETATION_sum,
                 round(sum(CASE WHEN a.high_vegetation=1 THEN a.area ELSE 0 END),1) AS high_VEGETATION_sum,
-                round(sum(CASE WHEN a.water=1 THEN a.area ELSE 0 END),1) AS water_sum,
+                round(sum(CASE WHEN a.water_intermittent=1 THEN a.area ELSE 0 END),1) AS water_intermittent_sum,
+                round(sum(CASE WHEN a.water_permanent=1 THEN a.area ELSE 0 END),1) AS water_permanent_sum,
                 round(sum(CASE WHEN a.road=1 THEN a.area ELSE 0 END),1) AS road_sum,
                 round(sum(CASE WHEN a.building=1 THEN a.area ELSE 0 END),1) AS building_sum, a.id_rsu
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu;
@@ -495,17 +496,28 @@ class RsuIndicatorsTests {
 
         assertTrue h2GIS.firstRow("select count(*) as count from vegetation_high_compare_stats where diff > 1").count == 0
 
-        //Check the sum of water areas by USR
-        h2GIS """DROP TABLE IF EXISTS stats_water;
-                          CREATE TABLE stats_water as select sum(st_area(the_geom)) as water_areas, id_rsu from 
+        //Check the sum of permanent water areas by USR
+        h2GIS """DROP TABLE IF EXISTS stats_water_permanent;
+                          CREATE TABLE stats_water_permanent as select sum(st_area(the_geom)) as water_permanent_areas, id_rsu from 
                             (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from hydro_test as a,
-                            $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.zindex=0 ) group by id_rsu;
-                           CREATE INDEX ON stats_water(id_rsu);                           
-                           DROP TABLE IF EXISTS water_compare_stats;
-                           CREATE TABLE water_compare_stats as select (a.water_sum- b.water_areas) as diff, a.id_rsu from stats_rsu as a,
-                           stats_water as b where a.id_rsu=b.id_rsu;"""
+                            $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.zindex=0 and a.intermittent is False) group by id_rsu;
+                           CREATE INDEX ON stats_water_permanent(id_rsu);                           
+                           DROP TABLE IF EXISTS water_permanent_compare_stats;
+                           CREATE TABLE water_permanent_compare_stats as select (a.water_permanent_sum- b.water_permanent_areas) as diff, a.id_rsu from stats_rsu as a,
+                           stats_water_permanent as b where a.id_rsu=b.id_rsu;"""
 
-        assertTrue h2GIS.firstRow("select count(*) as count from water_compare_stats where diff > 1").count == 0
+        //Check the sum of intermittent water areas by USR
+        h2GIS """DROP TABLE IF EXISTS stats_water_intermittent;
+                          CREATE TABLE stats_water_intermittent as select sum(st_area(the_geom)) as water_intermittent_areas, id_rsu from 
+                            (select st_intersection(ST_force2d(a.the_geom), b.the_geom) as the_geom, b.id_rsu from hydro_test as a,
+                            $outputTable as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) and a.zindex=0 and a.intermittent is True) group by id_rsu;
+                           CREATE INDEX ON stats_water_intermittent(id_rsu);                           
+                           DROP TABLE IF EXISTS water_intermittent_compare_stats;
+                           CREATE TABLE water_intermittent_compare_stats as select (a.water_intermittent_sum- b.water_intermittent_areas) as diff, a.id_rsu from stats_rsu as a,
+                           stats_water_intermittent as b where a.id_rsu=b.id_rsu;"""
+
+        assertTrue h2GIS.firstRow("select count(*) as count from water_permanent_compare_stats where diff > 1").count == 0
+        assertTrue h2GIS.firstRow("select count(*) as count from water_intermittent_compare_stats where diff > 1").count == 0
 
     }
 
@@ -524,8 +536,8 @@ class RsuIndicatorsTests {
 
         // Apply the surface fractions for different combinations
         // combination 1
-        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
-        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        def superpositions0 = ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "road", "impervious"]]
+        def priorities0 = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         String p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
                 "rsu_tempo", "id_rsu", tempoTable,
                 superpositions0, priorities0, "test")
@@ -535,14 +547,15 @@ class RsuIndicatorsTests {
         assertEquals(3.0 / 20, result0["high_vegetation_low_vegetation_fraction"])
         assertEquals(3.0 / 20, result0["high_vegetation_fraction"])
         assertEquals(3.0 / 20, result0["low_vegetation_fraction"])
-        assertEquals(1.0 / 4, result0["water_fraction"])
+        assertEquals(0 / 1, result0["water_intermittent_fraction"])
+        assertEquals(1.0 / 4, result0["water_permanent_fraction"])
         assertEquals(1.0 / 10, result0["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
 
         // combination 2
 
-        def superpositions1 = ["high_vegetation": ["building", "water", "low_vegetation", "road", "impervious"]]
-        def priorities1 = ["building", "water", "high_vegetation", "low_vegetation", "road", "impervious"]
+        def superpositions1 = ["high_vegetation": ["building", "water_permanent", "water_intermittent", "low_vegetation", "road", "impervious"]]
+        def priorities1 = ["building", "water_permanent", "water_intermittent", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p1 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
                 "rsu_tempo", "id_rsu", tempoTable,
                 superpositions1, priorities1,
@@ -553,13 +566,14 @@ class RsuIndicatorsTests {
         assertEquals(3.0 / 20, result1["high_vegetation_low_vegetation_fraction"])
         assertEquals(3.0 / 20, result1["high_vegetation_fraction"])
         assertEquals(3.0 / 20, result1["low_vegetation_fraction"])
-        assertEquals(3.0 / 20, result1["water_fraction"])
+        assertEquals(0 / 4, result1["water_intermittent_fraction"])
+        assertEquals(3.0 / 20, result1["water_permanent_fraction"])
         assertEquals(1.0 / 5, result1["building_fraction"])
-        assertEquals(0d, result0["undefined_fraction"])
+        assertEquals(0d, result1["undefined_fraction"])
 
         // combination 3
 
-        def superpositions2 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"],
+        def superpositions2 = ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "road", "impervious"],
                                "building"       : ["low_vegetation"]]
         def p2 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
                 "rsu_tempo", "id_rsu", tempoTable,
@@ -572,9 +586,10 @@ class RsuIndicatorsTests {
         assertEquals(3.0 / 20, result2["high_vegetation_fraction"])
         assertEquals(1.0 / 10, result2["building_low_vegetation_fraction"])
         assertEquals(3.0 / 20, result2["low_vegetation_fraction"])
-        assertEquals(1.0 / 4, result2["water_fraction"])
+        assertEquals(0 / 4, result2["water_intermittent_fraction"])
+        assertEquals(1.0 / 4, result2["water_permanent_fraction"])
         assertEquals(0d, result2["building_fraction"])
-        assertEquals(0d, result0["undefined_fraction"])
+        assertEquals(0d, result2["undefined_fraction"])
     }
 
     @Test
@@ -595,8 +610,8 @@ class RsuIndicatorsTests {
         // Apply the surface fractions for different combinations
         // combination 1
 
-        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
-        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        def superpositions0 = ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "road", "impervious"]]
+        def priorities0 = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
                 "rsu_tempo", "id_rsu", tempoTable,
                 superpositions0, priorities0, "test")
@@ -613,14 +628,14 @@ class RsuIndicatorsTests {
                             CREATE TABLE rsu_tempo(id_rsu int, the_geom geometry);
                             INSERT INTO rsu_tempo VALUES  (1, 'POLYGON((1000 1000, 1100 1000, 1100 1100, 1000 1100, 1000 1000))'::GEOMETRY);
                             CREATE TABLE smallest_geom(area double, low_vegetation integer, high_vegetation integer,
-                                water integer, impervious integer, road integer, building integer, rail integer, id_rsu integer);
-                                INSERT INTO smallest_geom VALUES (923, 0, 1, 0, 0, 0, 0, 0, 2)"""
+                                water_intermittent integer, water_permanent integer, impervious integer, road integer, building integer, rail integer, id_rsu integer);
+                                INSERT INTO smallest_geom VALUES (923, 0, 1, 0, 0, 0, 0, 0, 0, 2)"""
 
 
         // Apply the surface fractions for different combinations
         // combination 1
-        def superpositions0 = ["high_vegetation": ["water", "building", "low_vegetation", "road", "impervious"]]
-        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        def superpositions0 = ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "road", "impervious"]]
+        def priorities0 = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
                 "rsu_tempo", "id_rsu", "smallest_geom",
                 superpositions0, priorities0, "test")
@@ -644,7 +659,7 @@ class RsuIndicatorsTests {
 
 
         def superpositions0 = [:]
-        def priorities0 = ["water", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        def priorities0 = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
                 "rsu_tempo", "id_rsu", tempoTable,
                 superpositions0, priorities0, "test")
@@ -652,7 +667,8 @@ class RsuIndicatorsTests {
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0}")
         assertEquals(3.0 / 10, result0["high_vegetation_fraction"])
         assertEquals(3.0 / 20, result0["low_vegetation_fraction"])
-        assertEquals(1.0 / 4, result0["water_fraction"])
+        assertEquals(0 / 4, result0["water_intermittent_fraction"])
+        assertEquals(1.0 / 4, result0["water_permanent_fraction"])
         assertEquals(3.0 / 10, result0["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
     }

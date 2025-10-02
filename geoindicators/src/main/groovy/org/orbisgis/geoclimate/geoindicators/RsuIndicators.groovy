@@ -1418,10 +1418,9 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             if (vegetation && datasource.hasTable(vegetation) && !datasource.isEmpty(vegetation)) {
                 debug "Preparing table : $vegetation"
                 datasource.createSpatialIndex(vegetation, "the_geom")
-                def low_vegetation_rsu_tmp = postfix "low_vegetation_rsu_zindex0"
                 def low_vegetation_tmp = postfix "low_vegetation_zindex0"
                 def high_vegetation_tmp = postfix "high_vegetation_zindex0"
-                datasource.execute("""DROP TABLE IF EXISTS $low_vegetation_tmp, $low_vegetation_rsu_tmp;
+                datasource.execute("""DROP TABLE IF EXISTS $low_vegetation_tmp, $high_vegetation_tmp;
                 CREATE TABLE $low_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_zone} FROM 
                     $vegetation AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low';
@@ -1436,12 +1435,17 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             if (water && datasource.hasTable(water) && !datasource.isEmpty(water)) {
                 debug "Preparing table : $water"
                 datasource.createSpatialIndex(water, "the_geom")
-                def water_tmp = postfix "water_zindex0"
-                datasource.execute("""DROP TABLE IF EXISTS $water_tmp;
-                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
+                def water_intermittent_tmp = postfix "water_intermittent_zindex0"
+                def water_permanent_tmp = postfix "water_permanent_zindex0"
+                datasource.execute("""DROP TABLE IF EXISTS $water_intermittent_tmp, $water_permanent_tmp;
+                CREATE TABLE $water_intermittent_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
                         $water AS a, $zone AS b WHERE a.the_geom && b.the_geom 
-                        AND ST_INTERSECTS(a.the_geom, b.the_geom)""")
-                tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.intermittent = True;
+                CREATE TABLE $water_permanent_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
+                        $water AS a, $zone AS b WHERE a.the_geom && b.the_geom 
+                        AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.intermittent = False""")
+                tablesToMerge += ["$water_intermittent_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $water_intermittent_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
+                tablesToMerge += ["$water_permanent_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $water_permanent_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
             }
 
             if (impervious && datasource.hasTable(impervious) && !datasource.isEmpty(impervious)) {
@@ -1512,48 +1516,54 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
-                CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 1 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
+                CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 1 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("low_vegetation")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
-                 CREATE TABLE $tmptableName AS SELECT b.area,1 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
+                 CREATE TABLE $tmptableName AS SELECT b.area,1 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom,b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
-                } else if (entry.key.startsWith("water")) {
+                } else if (entry.key.startsWith("water_intermittent")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
-                    datasource.execute("""CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 0 as high_vegetation, 1 as water, 0 as impervious, 0 as road,  0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
+                    datasource.execute("""CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 0 as high_vegetation, 1 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road,  0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
+                $final_polygonize as b  where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                    finalMerge.add("SELECT * FROM $tmptableName")
+                } else if (entry.key.startsWith("water_permanent")) {
+                    datasource.createSpatialIndex(entry.key, "the_geom")
+                    datasource.createIndex(entry.key, id_zone)
+                    datasource.execute("""CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 1 as water_permanent, 0 as impervious, 0 as road,  0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b  where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("road")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
-                    CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 1 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
+                    CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 1 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("rail")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
-                    CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 0 as building,1 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
+                    CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road, 0 as building,1 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("impervious")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
-                CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 1 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
+                CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 1 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("building")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
-                CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water, 0 as impervious, 0 as road, 1 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key}  as a,
+                CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road, 1 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key}  as a,
                 $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 }
@@ -1567,8 +1577,8 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                                       CREATE INDEX ON $allInfoTableName (${ID_COLUMN_NAME});
                                       CREATE INDEX ON $allInfoTableName (${id_zone});
                                       CREATE TABLE $outputTableName AS SELECT MAX(AREA) AS AREA, MAX(LOW_VEGETATION) AS LOW_VEGETATION,
-                                                        MAX(HIGH_VEGETATION) AS HIGH_VEGETATION, MAX(WATER) AS WATER,
-                                                        MAX(IMPERVIOUS) AS IMPERVIOUS, MAX(ROAD) AS ROAD, 
+                                                        MAX(HIGH_VEGETATION) AS HIGH_VEGETATION, MAX(WATER_INTERMITTENT) AS WATER_INTERMITTENT,
+                                                        MAX(WATER_PERMANENT) AS WATER_PERMANENT, MAX(IMPERVIOUS) AS IMPERVIOUS, MAX(ROAD) AS ROAD, 
                                                         MAX(BUILDING) AS BUILDING, MAX(RAIL) AS RAIL, ${id_zone} FROM $allInfoTableName GROUP BY ${ID_COLUMN_NAME}, ${id_zone};
                                       DROP TABLE IF EXISTS ${tablesToMerge.keySet().join(' , ')}, ${allInfoTableName}, ${tmpTablesToDrop.join(",")}""")
             } else {
@@ -1576,7 +1586,8 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                 CREATE TABLE $outputTableName(AREA DOUBLE PRECISION, 
                                                 LOW_VEGETATION INTEGER,
                                                 HIGH_VEGETATION INTEGER,
-                                                WATER INTEGER,
+                                                WATER_INTERMITTENT INTEGER,
+                                                WATER_PERMANENT INTEGER,
                                                 IMPERVIOUS INTEGER,
                                                 ROAD INTEGER,
                                                 BUILDING INTEGER,
@@ -1621,11 +1632,11 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
  */
 String surfaceFractions(JdbcDataSource datasource,
                         String rsu, String id_rsu, String spatialRelationsTable,
-                        Map superpositions = ["high_vegetation": ["water", "building", "low_vegetation", "rail", "road", "impervious"]],
-                        List priorities = ["water", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
+                        Map superpositions = ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]],
+                        List priorities = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
                         String prefixName) throws Exception {
     def BASE_TABLE_NAME = "RSU_SURFACE_FRACTIONS"
-    def LAYERS = ["rail", "road", "water", "high_vegetation", "low_vegetation", "impervious", "building"]
+    def LAYERS = ["rail", "road", "water_permanent", "water_intermittent", "high_vegetation", "low_vegetation", "impervious", "building"]
     debug "Executing RSU surface fractions computation"
 
     // The name of the outputTableName is constructed

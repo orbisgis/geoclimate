@@ -161,10 +161,10 @@ class WorkflowGeoIndicatorsTest {
         listColBasic = ["ID_RSU", "THE_GEOM"]
 
         // Indicators common to each indicator use
-        listColCommon = ["LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION",
-                         "BUILDING_FRACTION", "WATER_FRACTION", "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                         "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_FRACTION",
-                         "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
+        listColCommon = ["LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_FRACTION", "BUILDING_FRACTION",
+                         "WATER_PERMANENT_FRACTION", "WATER_INTERMITTENT_FRACTION","ROAD_FRACTION", "IMPERVIOUS_FRACTION",
+                         "HIGH_VEGETATION_LOW_VEGETATION_FRACTION", "HIGH_VEGETATION_WATER_PERMANENT_FRACTION",
+                         "HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION", "HIGH_VEGETATION_ROAD_FRACTION", "HIGH_VEGETATION_IMPERVIOUS_FRACTION",
                          "HIGH_VEGETATION_BUILDING_FRACTION", "UNDEFINED_FRACTION", "BUILDING_FLOOR_AREA_DENSITY"]
 
         // Column names in the LCZ Table
@@ -553,7 +553,8 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(0d, rows.IMPERVIOUS_FRACTION)
         assertEquals(0d, rows.LOW_VEGETATION_FRACTION)
         assertEquals(0d, rows.ROAD_FRACTION)
-        assertEquals(0d, rows.WATER_FRACTION)
+        assertEquals(0d, rows.WATER_PERMANENT_FRACTION)
+        assertEquals(0d, rows.WATER_INTERMITTENT_FRACTION)
         assertEquals(0d, rows.UNDEFINED_FRACTION)
         assertEquals(100d, rows.SUM_POP)
         assertEquals(10d, rows.AVG_HEIGHT_ROOF)
@@ -590,7 +591,7 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(31, countResult.count)
 
         //Check high_vegetation_water_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_fraction>0".toString())
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction>0".toString())
         assertEquals(0, countResult.count)
 
         //Check high_vegetation_building_fraction > 0
@@ -610,7 +611,7 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(0, countResult.count)
 
         //Check water_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE water_fraction>0".toString())
+        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE water_permanent_fraction + water_intermittent_fraction>0".toString())
         assertEquals(5, countResult.count)
 
         //Check low_vegetation_fraction > 0.001
