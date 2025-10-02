@@ -462,7 +462,6 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 def rsu_indicators_params = processing_parameters.rsu_indicators
                 def grid_indicators_params = processing_parameters.grid_indicators
                 def road_traffic = processing_parameters.road_traffic
-                def worldpop_indicators = processing_parameters.worldpop_indicators
 
                 info "Formating OSM GIS layers"
                 //Format urban areas
@@ -572,56 +571,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     Geoindicators.WorkflowGeoIndicators.computeZoneStats(h2gis_datasource, results.zone,
                             results.building_indicators, results.block_indicators, results.rsu_indicators, start, results.nb_building_updated)
                 }
-                //Extract and compute population indicators for the specified year
-                //This data can be used by the grid_indicators process
-                if (worldpop_indicators) {
-                    String coverageId = "wpGlobal:ppp_2020"
-                    if(WorldPopTools.Extract.isCoverageAvailable(coverageId)) {
-                        def bbox = [zones.osm_envelope_extented.getMinY() as Float, zones.osm_envelope_extented.getMinX() as Float,
-                                    zones.osm_envelope_extented.getMaxY() as Float, zones.osm_envelope_extented.getMaxX() as Float]
 
-                        String worldPopFile = WorldPopTools.Extract.extractWorldPopLayer(coverageId, bbox)
-                        if (worldPopFile) {
-                            String worldPopTableName = WorldPopTools.Extract.importAscGrid(h2gis_datasource, worldPopFile, srid, coverageId.replaceAll(":", "_"))
-                            if (worldPopTableName) {
-                                results.put("population", worldPopTableName)
-                                String buildingWithPop = Geoindicators.BuildingIndicators.buildingPopulation(h2gis_datasource, results.building, worldPopTableName, ["pop"])
-                                h2gis_datasource.dropTable(worldPopTableName)
-                                if (!buildingWithPop) {
-                                    info "Cannot compute any population data at building level"
-                                } else {
-                                    h2gis_datasource.dropTable(results.building)
-                                    //Update the building table with the population data
-                                    results.put("building", buildingWithPop)
-                                }
-
-                            } else {
-                                info "Cannot import the worldpop asc file $worldPopFile"
-                                info "Create a default empty worldpop table"
-                                def outputTableWorldPopName = postfix "world_pop"
-                                h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
-                                        create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
-                                results.put("population", outputTableWorldPopName)
-                            }
-
-                        } else {
-                            info "Cannot find the population grid $coverageId \n Create a default empty worldpop table"
-                            def outputTableWorldPopName = postfix "world_pop"
-                            h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
-                                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
-                            results.put("population", outputTableWorldPopName)
-                        }
-                    } else {
-                        info "Cannot find the population grid $coverageId \n Create a default empty worldpop table"
-                        def outputTableWorldPopName = postfix "world_pop"
-                        h2gis_datasource.execute("""drop table if exists $outputTableWorldPopName;
-                                    create table $outputTableWorldPopName (the_geom GEOMETRY(POLYGON, $srid), ID_POP INTEGER, POP FLOAT);""".toString())
-                        results.put("population", outputTableWorldPopName)
-                    }
-                }
                 def noise_indicators = processing_parameters.noise_indicators
-
-
                 if (noise_indicators) {
                     if (noise_indicators.ground_acoustic) {
                         def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, outputZoneGeometry, 200, 200)
@@ -1033,12 +984,6 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
         def road_traffic = processing_parameters.road_traffic
         if (road_traffic && road_traffic in Boolean) {
             defaultParameters.put("road_traffic", road_traffic)
-        }
-
-        //Check if the pop indicators must be computed
-        def pop_indics = processing_parameters.worldpop_indicators
-        if (pop_indics && pop_indics in Boolean) {
-            defaultParameters.put("worldpop_indicators", pop_indics)
         }
 
         //Check if the noise indicators must be computed
