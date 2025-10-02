@@ -830,7 +830,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                         "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH"]
                                 //"lcz_lod":1
-                        ], //"worldpop_indicators": true
+                        ],
                          /*
 
                          "road_traffic"                                         : true,

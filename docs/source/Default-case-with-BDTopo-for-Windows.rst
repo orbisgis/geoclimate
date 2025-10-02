@@ -79,7 +79,7 @@ An example of configuration file is presented below :
            "y_size": 100,
            "rowCol": false,
            "output" : "geojson",
-           "indicators" :["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
+           "indicators" :["BUILDING_FRACTION", "BUILDING_HEIGHT",
                                   "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                                   "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                                   "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
