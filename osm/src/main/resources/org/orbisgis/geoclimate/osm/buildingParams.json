@@ -190,7 +190,13 @@
     "refinery": 0,
     "hut": 0,
     "cabin": 0,
-    "shed": 0
+    "shed": 0,
+    "garage": 0,
+    "civic": 1,
+    "service":0,
+    "manufacture": 0,
+    "storage_tank": 0,
+    "slurry_tank": 0
   },
   "type": {
     "terminal:transport": {
@@ -1360,6 +1366,36 @@
     "tower": {
       "building": [
         "tower"
+      ]
+    },
+    "garage": {
+      "building": [
+        "garages", "garage"
+      ]
+    },
+    "civic": {
+      "building": [
+        "civic"
+      ]
+    },
+    "service:industrial": {
+      "building": [
+        "service"
+      ]
+    },
+    "manufacture:industrial": {
+      "building": [
+        "manufacture"
+      ]
+    },
+    "storage_tank:industrial": {
+      "building": [
+        "storage_tank"
+      ]
+    },
+    "slurry_tank:industrial": {
+      "building": [
+        "slurry_tank"
       ]
     }
   }

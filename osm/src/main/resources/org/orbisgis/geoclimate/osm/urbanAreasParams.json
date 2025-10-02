@@ -9,7 +9,8 @@
       "military",
       "railway",
       "farmyard",
-      "religious"
+      "religious",
+      "garages"
     ],
     "construction": [],
     "amenity": [
@@ -123,6 +124,11 @@
     "religious": {
       "landuse": [
         "religious"
+      ]
+    },
+    "garage": {
+      "landuse": [
+        "garages"
       ]
     }
   }
