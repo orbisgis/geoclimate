@@ -1874,13 +1874,11 @@ String rasterizeIndicators(JdbcDataSource datasource,
             buildingCutted = cutBuilding(datasource, grid, building)
         }
         def indicatorName = "TYPE"
-        def upperScaleAreaStatistics = Geoindicators.GenericIndicators.upperScaleAreaStatistics(datasource, grid,
-                grid_column_identifier,
-                buildingCutted,
-                indicatorName, indicatorName, false,
-                "building_type_fraction")
-        indicatorTablesToJoin.put(upperScaleAreaStatistics, grid_column_identifier)
-        tablesToDrop << upperScaleAreaStatistics
+        def gridTableTypeProportion = Geoindicators.GenericIndicators.typeProportion(datasource, buildingCutted,
+                grid_column_identifier, "type", grid, parameters.buildingAreaTypeAndCompositionTeb,
+                parameters.floorAreaTypeAndCompositionTeb, "")
+        indicatorTablesToJoin.put(gridTableTypeProportion, grid_column_identifier)
+        tablesToDrop << gridTableTypeProportion
 
     }
 
