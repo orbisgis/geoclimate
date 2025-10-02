@@ -315,7 +315,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                 debug "Preparing road..."
                 if (datasource.getColumnNames(road).size() > 0) {
                     queryCreateOutputTable += [road_tmp: "(SELECT ST_ToMultiLine(THE_GEOM) FROM $road where (zindex=0 or crossing in ('bridge', 'crossing')) " +
-                            "and type not in ('track','service', 'path', 'cycleway', 'steps') and tunnel=0)"]
+                            "and type not in ('track','service', 'path', 'cycleway', 'steps', 'footway', 'pedestrian', 'ferry') and tunnel=0)"]
                 }
             }
 
