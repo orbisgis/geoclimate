@@ -726,7 +726,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         location =[40.70075,-74.03082,40.709732,-74.01897] //visual validation in a GIS
         location=[40.70075,-74.01897,40.709732,-74.00712] //visual validation in a GIS
         location=[53.242824,-9.103203,53.299902,-8.915749] //visual validation in a GIS
-        location=[48.882799,2.221194,48.899165,2.259474]
+        //location=[48.882799,2.221194,48.899165,2.259474]
 
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
