@@ -244,6 +244,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             MAX(part) FILTER (WHERE  type = 'military')  as "military",
             MAX(part) FILTER (WHERE  type = 'railway')  as "railway",
             MAX(part) FILTER (WHERE  type = 'farmyard')  as "farmyard",
+            MAX(part) FILTER (WHERE  type = 'garage')  as "garage",
             id_build FROM $urbanAreasPart where part > 0.9 group by id_build """.toString()
 
                 datasource.withBatch(100) { stmt ->
@@ -1153,8 +1154,6 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
             type from
             ST_EXPLODE('(SELECT ST_UNION(ST_ACCUM(the_geom)) as the_geom, type from $outputTableName group by type)');
             """)
-
-            datasource.save(mergingUrbanAreas, "/tmp/outputTableName.fgb", true)
             def removeOverlaps = postfix("removeOverlaps")
             Geoindicators.DataUtils.removeOverlaps(datasource,  mergingUrbanAreas,"id_urban",removeOverlaps )
             def withinToHoles = postfix("withinToHoles")
