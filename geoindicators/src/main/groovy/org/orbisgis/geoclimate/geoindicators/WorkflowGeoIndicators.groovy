@@ -1452,9 +1452,16 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
 
         } else {
             info "Start estimating the building height"
+            // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
+            datasource.execute("""ALTER TABLE $gatheredScales RENAME COLUMN RSU_WATER_PERMANENT_FRACTION TO RSU_WATER_FRACTION""")
+            datasource.execute("""DROP TABLE IF EXISTS GATHERED_SCALES_WATER_MODIF;
+                CREATE TABLE GATHERED_SCALES_WATER_MODIF 
+                    AS SELECT *, RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION
+                    FROM $gatheredScales""")
+
             //Apply RF model
             buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                    gatheredScales, buildingHeightModelName, "id_build", prefixName)
+                    "GATHERED_SCALES_WATER_MODIF", buildingHeightModelName, "id_build", prefixName)
 
             //Update the abstract building table
             info "Replace the input building table by the estimated height"
@@ -1482,7 +1489,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
             //Drop intermediate tables
             datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                             $formatedBuildEstimatedHeight, $buildEstimatedHeight,
-                                            $gatheredScales""".toString()
+                                            $gatheredScales, GATHERED_SCALES_WATER_MODIF""".toString()
 
         }
         return ["building"                          : buildingTableName,

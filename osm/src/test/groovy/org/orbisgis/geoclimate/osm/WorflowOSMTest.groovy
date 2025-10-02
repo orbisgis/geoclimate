@@ -504,8 +504,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def tableNames = process.values()
         def gridTable = tableNames.grid_indicators[0]
         H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
-        assertTrue h2gis.firstRow("select count(*) as count from $gridTable where water_fraction>0").count > 0
-        def grid_file = new File("${directory + File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_fraction.asc")
+        assertTrue h2gis.firstRow("select count(*) as count from $gridTable where water_permanent_fraction + water_intermittent_fraction>0").count > 0
+        def grid_file = new File("${directory + File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_permanent_fraction.asc")
         h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count == 6
         assertEquals(6, h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is not null").count)
