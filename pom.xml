@@ -11,7 +11,6 @@
         <module>osm</module>
         <module>geoclimate-cli</module>
         <module>osmtools</module>
-        <module>worldpoptools</module>
         <module>common-utils</module>
     </modules>
     <scm>
