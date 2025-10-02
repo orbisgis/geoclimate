@@ -5,7 +5,7 @@ The table grid_indicators contains the grid cell identifier (id_grid)
 and a certain number of indicators described below. When calculating
 grid indicators, you can calculate only a subset of these indicators.
 The whole list is the following: ["BUILDING_FRACTION",
-"BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION",
+"BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION",
 "WATER_FRACTION", "VEGETATION_FRACTION", "ROAD_FRACTION",
 "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
