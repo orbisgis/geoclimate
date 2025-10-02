@@ -15,16 +15,36 @@ AREA_FRACTION_x
 
 **Description**: Footprint fraction within the RSU of _type \x_ building. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
 
-* "undefined" : ["building", "undefined"],
-* "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace"],
-* "collective_housing": ["apartments", "barracks", "abbey", "dormitory", "sheltered_housing", "workers_dormitory", "condominium"],
+* "undefined"            : ["building", "undefined"],
+* "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
+* "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
+                          "sheltered_housing", "workers_dormitory",
+                          "condominium"],
 * "undefined_residential": ["residential"],
-* "commercial": ["commercial", "internet_cafe", "money_transfer", "pharmacy", "post_office", "cinema", "arts_centre", "brothel", "casino", "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub", "aquarium"],
-* "tertiary": ["government", "townhall", "retail", "gambling", "music_venue", "nightclub", "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank", "bureau_de_change", "boat_rental", "car_rental", "research_institute", "community_centre", "conference_centre", "events_venue", "exhibition_centre", "social_centre", "studio", "theatre", "library", "healthcare", "entertainment_arts_culture", "hospital", "information"],
-* "education": ["education", "swimming-pool", "fitness_centre", "sports_centre", "college", "kindergarten", "school", "university", "museum", "gallery"],
-* "light_industrial": ["industrial", "factory", "warehouse", "port"],
-* "heavy_industrial": ["refinery"],
-* "non_heated": ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military", "castle", "monument", "fortress", "synagogue", "mosquee", "musalla", "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester", "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall", "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship", "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace", "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand", "transportation", "toll_booth"]
+* "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
+                          "post_office", "cinema", "arts_centre", "brothel", "casino",
+                          "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
+                          "ice_cream", "pub", "aquarium"],
+* "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
+                          "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
+                          "bureau_de_change", "boat_rental", "car_rental", "research_institute",
+                          "community_centre", "conference_centre", "events_venue",
+                          "exhibition_centre", "social_centre", "studio", "theatre",
+                          "library", "healthcare", "entertainment_arts_culture",
+                          "hospital", "information", "civic"],
+* "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
+                          "college", "kindergarten", "school", "university", "museum", "gallery"],
+* "light_industrial"     : ["industrial", "factory", "warehouse", "port", "manufacture"],
+* "heavy_industrial"     : ["refinery"],
+* "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
+                          "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
+                          "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
+                          "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
+                          "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
+                          "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
+                          "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
+                          "transportation", "toll_booth", "hut", "shed", "garage", "service", "storage_tank",
+                          "slurry_tank"]
 
 **Method**: ``SUM(Bu_AREA of type X) / RSU_Area``
 
@@ -33,10 +53,14 @@ AREA_FRACTION_x_LCZ
 
 **Description**: Footprint fraction within the RSU of _type \x_ building useful for determining LCZ types. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
 
-* "light_industry_lcz": ["industrial", "factory", "warehouse", "port"],
-* "commercial_lcz": ["commercial", "shop", "retail", "port", "exhibition_centre", "cinema"],
+* "undefined_lcz"     : ["building", "undefined"],
+* "light_industry_lcz": ["industrial", "factory", "warehouse", "port", "manufacture"],
+* "commercial_lcz"    : ["commercial", "shop", "retail", "port",
+                       "exhibition_centre", "cinema"],
 * "heavy_industry_lcz": ["refinery"],
-* "residential_lcz": ["house", "detached", "bungalow", "farm", "apartments", "barracks", "abbey", "condominium", "villa", "dormitory", "sheltered_housing", "workers_dormitory", "terrace", "residential"]
+* "residential_lcz"   : ["house", "detached", "bungalow", "farm", "apartments", "barracks",
+                       "abbey", "condominium", "villa", "dormitory", "sheltered_housing",
+                       "workers_dormitory", "terrace", "residential", "cabin"]
 
 **Method**: ``SUM(Bu_AREA of type X) / RSU_Area``
 
@@ -178,32 +202,36 @@ EFFECTIVE_TERRAIN_ROUGHNESS_LENGTH
 
 **Description**: Footprint fraction within the RSU of _type \x_ building. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
 
-* "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace"],
-* "collective_housing": ["apartments", "barracks", "abbey", "dormitory", "sheltered_housing", "workers_dormitory", "condominium"],
+* "undefined"            : ["building", "undefined"],
+* "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
+* "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
+                          "sheltered_housing", "workers_dormitory",
+                          "condominium"],
 * "undefined_residential": ["residential"],
-* "commercial": ["commercial", "internet_cafe", "money_transfer", "pharmacy", "post_office", "cinema", "arts_centre", "brothel", "casino", "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub", "aquarium"],
-* "tertiary": ["government", "townhall", "retail", "gambling", "music_venue", "nightclub", "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank", "bureau_de_change", "boat_rental", "car_rental", "research_institute", "community_centre", "conference_centre", "events_venue", "exhibition_centre", "social_centre", "studio", "theatre", "library", "healthcare", "entertainment_arts_culture", "hospital", "information"],
-* "education": ["education", "swimming-pool", "fitness_centre", "sports_centre", "college", "kindergarten", "school", "university", "museum", "gallery"],
-* "light_industrial": ["industrial", "factory", "warehouse", "port"],
-* "heavy_industrial": ["refinery"],
-* "non_heated": ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military", "castle", "monument", "fortress", "synagogue", "mosquee", "musalla", "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester", "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall", "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship", "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace", "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand", "transportation", "toll_booth"]
-
-**Method**: ``SUM(Bu_FLOOR_AREA of type X) / RSU_Area``
-
-FLOOR_AREA_FRACTION_X_LCZ
--------------------------
-
-**Description**: Footprint fraction within the RSU of _type \x_ building useful for LCZ determining. There are too many `building types <Building-layer.html#type-and-main_use-column-values>`_ to have a fraction of each one, thus several building types are gathered within a broader _type \x_. In the following, the key is the _type \x_ and the list of values are the building types described `here <Building-layer.html#type-and-main_use-column-values>`_:
-
-* "individual_housing": ["house", "detached", "bungalow", "farm", "villa", "terrace"],
-* "collective_housing": ["apartments", "barracks", "abbey", "dormitory", "sheltered_housing", "workers_dormitory", "condominium"],
-* "undefined_residential": ["residential"],
-* "commercial": ["commercial", "internet_cafe", "money_transfer", "pharmacy", "post_office", "cinema", "arts_centre", "brothel", "casino", "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food", "ice_cream", "pub", "aquarium"],
-* "tertiary": ["government", "townhall", "retail", "gambling", "music_venue", "nightclub", "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank", "bureau_de_change", "boat_rental", "car_rental", "research_institute", "community_centre", "conference_centre", "events_venue", "exhibition_centre", "social_centre", "studio", "theatre", "library", "healthcare", "entertainment_arts_culture", "hospital", "information"],
-* "education": ["education", "swimming-pool", "fitness_centre", "sports_centre", "college", "kindergarten", "school", "university", "museum", "gallery"],
-* "light_industrial": ["industrial", "factory", "warehouse", "port"],
-* "heavy_industrial": ["refinery"],
-* "non_heated": ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military", "castle", "monument", "fortress", "synagogue", "mosquee", "musalla", "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester", "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall", "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship", "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace", "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand", "transportation", "toll_booth"]
+* "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
+                          "post_office", "cinema", "arts_centre", "brothel", "casino",
+                          "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
+                          "ice_cream", "pub", "aquarium"],
+* "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
+                          "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
+                          "bureau_de_change", "boat_rental", "car_rental", "research_institute",
+                          "community_centre", "conference_centre", "events_venue",
+                          "exhibition_centre", "social_centre", "studio", "theatre",
+                          "library", "healthcare", "entertainment_arts_culture",
+                          "hospital", "information", "civic"],
+* "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
+                          "college", "kindergarten", "school", "university", "museum", "gallery"],
+* "light_industrial"     : ["industrial", "factory", "warehouse", "port", "manufacture"],
+* "heavy_industrial"     : ["refinery"],
+* "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
+                          "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
+                          "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
+                          "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
+                          "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
+                          "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
+                          "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
+                          "transportation", "toll_booth", "hut", "shed", "garage", "service", "storage_tank",
+                          "slurry_tank"]
 
 **Method**: ``SUM(Bu_FLOOR_AREA of type X) / RSU_Area``
 
