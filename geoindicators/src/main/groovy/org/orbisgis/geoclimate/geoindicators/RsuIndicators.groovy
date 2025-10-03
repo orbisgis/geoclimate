@@ -952,6 +952,83 @@ String effectiveTerrainRoughnessLength(JdbcDataSource datasource, String rsuTabl
     }
 }
 
+/**
+ * Script to compute the proected facade density by wind direction using "rsu_projected_facade_area_distribution"
+ * (containing the area of projected facade by direction and wind level) as input data. Thus the operation
+ * of this indicator is just a sum of columns divided by the area
+ *
+ * Warning: the calculation of the projected facade density is only performed for angles included in the range [0, 180[°.
+ * To simplify the calculation, the projected facade density is considered as equal for a given orientation independantly
+ * of the direction.
+ * This assumption is right when the RSU do not split buildings but could slightly overestimate the results
+ * otherwise (the real z0 is actually overestimated in one direction but OK in the opposite direction).
+ * *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input Table and in which
+ * the resulting database will be stored
+ * @param rsuTable the name of the input ITable where are stored the RSU geometries and
+ * the rsu_projected_facade_area_distribution fields
+ * @param id_rsu Unique identifier column name
+ * @param projectedFacadeAreaName the name base used for naming the projected facade area field within the
+ * inputA rsuTable (default rsu_projected_facade_area_distribution - note that the field is also constructed
+ * with the direction and vertical height informations)
+ * @param prefixName String use as prefix to name the output table
+ * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers used for calculation
+ * of the rsu_projected_facade_area_density (default [0, 10, 20, 30, 40, 50])
+ * @param numberOfDirection the number of directions used for the calculation - according to the method used it should
+ * be divisor of 360 AND a multiple of 2 (default 12)
+ *
+ * @return Table name in which the rsu id and their corresponding indicator value are stored
+ *
+ * @author Jérémy Bernard
+ */
+String projectedFacadeDensityDir(JdbcDataSource datasource, String rsuTable, String id_rsu,
+                                       String projectedFacadeAreaName,
+                                       List listLayersBottom = [0, 10, 20, 30, 40, 50],
+                                       int numberOfDirection = 12, String prefixName) throws Exception {
+    // To avoid overwriting the output files of this step, a unique identifier is created
+    try {
+        def GEOMETRIC_COLUMN = "the_geom"
+        def ID_COLUMN_RSU = id_rsu
+        def BASE_NAME = "projected_facade_density_dir"
+
+        debug "Executing RSU projected facade density (directional)"
+
+        // Processes used for the indicator calculation
+        // Some local variables are initialized
+        def names = []
+        // The projection should be performed at the median of the angle interval
+        def dirRangeDeg = round(360 / numberOfDirection)
+        // The name of the outputTableName is constructed
+        def outputTableName = prefix prefixName, "rsu_" + BASE_NAME
+
+        def layerSize = listLayersBottom.size()
+        // The lambda_f indicator is calculated by wind direction
+        def lambdaQuery = "DROP TABLE IF EXISTS $outputTableName;" +
+                "CREATE TABLE $outputTableName AS SELECT $ID_COLUMN_RSU, "
+        for (int d = 0; d < numberOfDirection / 2; d++) {
+            def lambdaQueryd = "("
+            def dirDeg = d * 360 / numberOfDirection
+            for (int i in 1..layerSize) {
+                //TODO : why an array here and not a variable
+                names[i - 1] = "${projectedFacadeAreaName}_H${listLayersBottom[i - 1]}_${listLayersBottom[i]}"
+                if (i == layerSize) {
+                    names[layerSize - 1] =
+                            "${projectedFacadeAreaName}_H${listLayersBottom[layerSize - 1]}"
+                }
+                lambdaQueryd += "${names[i - 1]}_D${dirDeg}_${dirDeg + dirRangeDeg}+"
+            }
+            lambdaQuery += lambdaQueryd[0..-2] + ")/(ST_AREA($GEOMETRIC_COLUMN)) " +
+                    "AS ${BASE_NAME}_D${dirDeg}_${dirDeg + dirRangeDeg},"
+        }
+        lambdaQuery = "${lambdaQuery[0..-2]} FROM $rsuTable"
+        datasource.execute(lambdaQuery.toString())
+
+        return outputTableName
+    } catch (SQLException e) {
+        throw new SQLException("Cannot compute the RSU projected facade density (directional) at RSU scale", e)
+    }
+}
+
 /** Performs operations on the linear of road within the RSU scale objects. Note that when a road is located at
  * the boundary of two RSU, it is arbitrarily attributed to the RSU having the lowest ID in order to not
  * duplicate the corresponding road.
