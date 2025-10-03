@@ -353,6 +353,37 @@ class RsuIndicatorsTests {
     }
 
     @Test
+    void projectedFacadeDensityDirTest() {
+        // Only the first 5 first created buildings are selected for the tests
+        h2GIS("DROP TABLE IF EXISTS tempo_build, rsu_table, test_rsu_projectedFacadeDensityDir; " +
+                "CREATE TABLE tempo_build AS SELECT * " +
+                "FROM building_test WHERE id_build < 6")
+
+        def listLayersBottom = [0, 10, 20, 30, 40, 50]
+        def numberOfDirection = 6
+        def pFacadeDistrib = Geoindicators.RsuIndicators.projectedFacadeAreaDistribution(h2GIS, "tempo_build",
+                "rsu_test", "id_rsu", listLayersBottom,
+                numberOfDirection, "test")
+        assertNotNull(pFacadeDistrib)
+        h2GIS.save("rsu_test", "/tmp/rsu.fgb", true)
+        h2GIS.save("tempo_build", "/tmp/build.fgb", true)
+        // Add the geometry field in the previous resulting Tables
+        h2GIS "CREATE TABLE rsu_table AS SELECT a.*, b.the_geom " +
+                "FROM test_rsu_projected_facade_area_distribution a, rsu_test b " +
+                "WHERE a.id_rsu = b.id_rsu"
+        def p = Geoindicators.RsuIndicators.projectedFacadeDensityDir(h2GIS, "rsu_table", "id_rsu",
+                "projected_facade_area_distribution",
+                listLayersBottom, numberOfDirection, "test")
+        assertNotNull(p)
+        def concat = 0
+        h2GIS.eachRow("SELECT * FROM test_rsu_projected_facade_density_dir WHERE id_rsu = 1") {
+            row -> concat += row["projected_facade_density_dir_D60_120"].round(3)
+        }
+        assertEquals(0.214, concat)
+    }
+
+
+    @Test
     void linearRoadOperationsTest() {
         // Only the first 5 first created buildings are selected for the tests
         h2GIS "DROP TABLE IF EXISTS road_tempo; CREATE TABLE road_tempo AS SELECT * " +
