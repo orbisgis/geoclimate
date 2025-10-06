@@ -66,7 +66,7 @@ An example of configuration file is presented below :
                                   "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                                   "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                   "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
-                                  "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
+                                  "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
                                   "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                   "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH"]
             }

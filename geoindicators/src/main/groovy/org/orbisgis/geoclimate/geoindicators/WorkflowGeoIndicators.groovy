@@ -1812,7 +1812,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (it == "BUILDING_POP" && building) {
             unweightedBuildingIndicators.put("pop", ["SUM"])
         }
-        if (it == "HEIGHT_OF_ROUGHNESS_ELEMENTS" && building) {
+        if ((it == "HEIGHT_OF_ROUGHNESS_ELEMENTS" || it == "TERRAIN_ROUGHNESS") && building) {
             height_roof_unweighted_list.add("GEOM_AVG")
         }
     }
@@ -1856,17 +1856,56 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     String buildingCutted
-    if (weightedBuildingIndicators) {
-        //Cut the building to compute exact fractions
+    if (list_indicators_upper.intersect(["BUILDING_DIRECTION", "BUILDING_NUMBER"]) || weightedBuildingIndicators) {
+        //Cut the buildings for some specific calculations
         buildingCutted = cutBuilding(datasource, grid, building)
-        def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, buildingCutted,
-                grid, grid_column_identifier,
-                weightedBuildingIndicators, prefixName)
 
-        indicatorTablesToJoin.put(computeWeightedAggregStat, grid_column_identifier)
-        tablesToJoinForWidth.put(computeWeightedAggregStat, grid_column_identifier)
+        if (list_indicators_upper.contains("BUILDING_NUMBER")){
+            // Calculates building number
+            def computeBuildNb = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,
+                    buildingCutted, grid, grid_column_identifier,
+                    "id_build", ["building" : ["NB_DENS"]],
+                    prefixName+"_cutted_bu")
+            indicatorTablesToJoin.put(computeBuildNb, grid_column_identifier)
+            tablesToDrop << computeBuildNb
 
-        tablesToDrop << computeWeightedAggregStat
+            // Create blocks from buildings cutted
+            def blocksCutted = Geoindicators.SpatialUnits.createBlocks(datasource,
+                    buildingCutted, 0.01, "block_cutted")
+            def blocksCuttedID = Geoindicators.SpatialUnits.spatialJoin(datasource,
+                    blocksCutted, grid, grid_column_identifier,
+                    false, null, prefixName+"_cutted_bl")
+            tablesToDrop << blocksCutted
+            tablesToDrop << blocksCuttedID
+
+            // Calculates block number
+            def computeBlockNb = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,
+                    blocksCuttedID, grid, grid_column_identifier,
+                    "id_block", ["block" : ["NB_DENS"]],
+                    prefixName+"_cutted_bl")
+            indicatorTablesToJoin.put(computeBlockNb, grid_column_identifier)
+            tablesToDrop << computeBlockNb
+        }
+
+
+        if (list_indicators_upper.contains("BUILDING_DIRECTION")){
+            def computeBuildDir = Geoindicators.GenericIndicators.buildingDirectionDistribution(datasource, buildingCutted,
+                    grid, grid_column_identifier, 360.0/12,
+                    prefixName)
+            indicatorTablesToJoin.put(computeBuildDir, grid_column_identifier)
+            tablesToDrop << computeBuildDir
+        }
+
+        if (weightedBuildingIndicators){
+            def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, buildingCutted,
+                    grid, grid_column_identifier,
+                    weightedBuildingIndicators, prefixName)
+
+            indicatorTablesToJoin.put(computeWeightedAggregStat, grid_column_identifier)
+            tablesToJoinForWidth.put(computeWeightedAggregStat, grid_column_identifier)
+
+            tablesToDrop << computeWeightedAggregStat
+        }
     }
 
     if (list_indicators_upper.contains("BUILDING_TYPE_FRACTION") && building) {
@@ -2039,7 +2078,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         tablesToDrop << svf_fraction
     }
 
-    if (list_indicators_upper.intersect(["HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]) && building) {
+    if (list_indicators_upper.intersect(["TERRAIN_ROUGHNESS", "PROJECTED_FACADE_DENSITY_DIR"]) && building) {
         def heightColumnName = "height_roof"
         def facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50]
         def facadeDensNumberOfDirection = 12
@@ -2063,16 +2102,25 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def grid_for_roughness = Geoindicators.DataUtils.joinTables(datasource, tablesToJoin, "grid_for_roughness")
         tablesToDrop << grid_for_roughness
 
-        def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, grid_for_roughness,
-                grid_column_identifier,
-                "frontal_area_index",
-                "geom_avg_$heightColumnName",
-                facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
+        if (list_indicators_upper.contains("PROJECTED_FACADE_DENSITY_DIR")) {
+            def projFacDensDir = Geoindicators.RsuIndicators.projectedFacadeDensityDir(datasource, grid_for_roughness,
+                                                                            grid_column_identifier,
+                                                                            "frontal_area_index",
+                                                                            facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
+            indicatorTablesToJoin.put(projFacDensDir, grid_column_identifier)
+            tablesToDrop << projFacDensDir
+        }
 
-        indicatorTablesToJoin.put(effRoughHeight, grid_column_identifier)
-        tablesToDrop << effRoughHeight
+        if (list_indicators_upper.contains("TERRAIN_ROUGHNESS")) {
+            def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, grid_for_roughness,
+                    grid_column_identifier,
+                    "frontal_area_index",
+                    "geom_avg_$heightColumnName",
+                    facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
 
-        if (list_indicators_upper.contains("TERRAIN_ROUGHNESS_CLASS")) {
+            indicatorTablesToJoin.put(effRoughHeight, grid_column_identifier)
+            tablesToDrop << effRoughHeight
+
             def roughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(datasource, effRoughHeight,
                     grid_column_identifier, "effective_terrain_roughness_length", prefixName)
             indicatorTablesToJoin.put(roughClass, grid_column_identifier)
