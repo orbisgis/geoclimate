@@ -1856,18 +1856,43 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     String buildingCutted
-    if (weightedBuildingIndicators) {
+    if (list_indicators_upper.intersect(["BUILDING_DIRECTION", "BUILDING_NUMBER"]) || weightedBuildingIndicators) {
         //Cut the buildings for some specific calculations
         buildingCutted = cutBuilding(datasource, grid, building)
+
+        if (list_indicators_upper.contains("BUILDING_NUMBER")){
+            // Calculates building number
+            def computeBuildNb = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,
+                    buildingCutted, grid, grid_column_identifier,
+                    "id_build", ["building" : ["NB_DENS"]],
+                    prefixName+"_cutted_bu")
+            indicatorTablesToJoin.put(computeBuildNb, grid_column_identifier)
+            tablesToDrop << computeBuildNb
+
+            // Create blocks from buildings cutted
+            def blocksCutted = Geoindicators.SpatialUnits.createBlocks(datasource,
+                    buildingCutted, 0.01, "block_cutted")
+            def blocksCuttedID = Geoindicators.SpatialUnits.spatialJoin(datasource,
+                    blocksCutted, grid, grid_column_identifier,
+                    false, null, prefixName+"_cutted_bl")
+            tablesToDrop << blocksCutted
+            tablesToDrop << blocksCuttedID
+
+            // Calculates block number
+            def computeBlockNb = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource,
+                    blocksCuttedID, grid, grid_column_identifier,
+                    "id_block", ["block" : ["NB_DENS"]],
+                    prefixName+"_cutted_bl")
+            indicatorTablesToJoin.put(computeBlockNb, grid_column_identifier)
+            tablesToDrop << computeBlockNb
+        }
+
 
         if (list_indicators_upper.contains("BUILDING_DIRECTION")){
             def computeBuildDir = Geoindicators.GenericIndicators.buildingDirectionDistribution(datasource, buildingCutted,
                     grid, grid_column_identifier, 360.0/12,
                     prefixName)
-
             indicatorTablesToJoin.put(computeBuildDir, grid_column_identifier)
-            tablesToJoinForWidth.put(computeBuildDir, grid_column_identifier)
-
             tablesToDrop << computeBuildDir
         }
 

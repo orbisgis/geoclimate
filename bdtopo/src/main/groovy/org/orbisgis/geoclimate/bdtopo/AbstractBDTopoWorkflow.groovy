@@ -563,7 +563,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                    "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO",
                                                    "SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS", "PROJECTED_FACADE_DENSITY_DIR", "URBAN_SPRAWL_AREAS",
                                                    "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES", "STREET_WIDTH",
-                                                   "BUILDING_DIRECTION"]
+                                                   "BUILDING_DIRECTION", "BUILDING_NUMBER"]
                     def allowedOutputIndicators = list_indicators.findAll{
                         it.startsWith("COUNT_WARM_") || allowed_grid_indicators.contains(it)
                     }
