@@ -828,6 +828,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                         "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
                                         "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
+                                        "PROJECTED_FACADE_DENSITY_DIR",
                                         "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                         "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH"]
                                 //"lcz_lod":1

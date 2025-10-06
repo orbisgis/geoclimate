@@ -2039,7 +2039,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         tablesToDrop << svf_fraction
     }
 
-    if (list_indicators_upper.intersect(["TERRAIN_ROUGHNESS"]) && building) {
+    if (list_indicators_upper.intersect(["TERRAIN_ROUGHNESS", "PROJECTED_FACADE_DENSITY_DIR"]) && building) {
         def heightColumnName = "height_roof"
         def facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50]
         def facadeDensNumberOfDirection = 12
@@ -2063,16 +2063,25 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def grid_for_roughness = Geoindicators.DataUtils.joinTables(datasource, tablesToJoin, "grid_for_roughness")
         tablesToDrop << grid_for_roughness
 
-        def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, grid_for_roughness,
-                grid_column_identifier,
-                "frontal_area_index",
-                "geom_avg_$heightColumnName",
-                facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
-
-        indicatorTablesToJoin.put(effRoughHeight, grid_column_identifier)
-        tablesToDrop << effRoughHeight
+        if (list_indicators_upper.contains("PROJECTED_FACADE_DENSITY_DIR")) {
+            def projFacDensDir = Geoindicators.RsuIndicators.projectedFacadeDensityDir(datasource, grid_for_roughness,
+                                                                            grid_column_identifier,
+                                                                            "frontal_area_index",
+                                                                            facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
+            indicatorTablesToJoin.put(projFacDensDir, grid_column_identifier)
+            tablesToDrop << projFacDensDir
+        }
 
         if (list_indicators_upper.contains("TERRAIN_ROUGHNESS")) {
+            def effRoughHeight = Geoindicators.RsuIndicators.effectiveTerrainRoughnessLength(datasource, grid_for_roughness,
+                    grid_column_identifier,
+                    "frontal_area_index",
+                    "geom_avg_$heightColumnName",
+                    facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
+
+            indicatorTablesToJoin.put(effRoughHeight, grid_column_identifier)
+            tablesToDrop << effRoughHeight
+
             def roughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(datasource, effRoughHeight,
                     grid_column_identifier, "effective_terrain_roughness_length", prefixName)
             indicatorTablesToJoin.put(roughClass, grid_column_identifier)
