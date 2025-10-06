@@ -1857,16 +1857,30 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     String buildingCutted
     if (weightedBuildingIndicators) {
-        //Cut the building to compute exact fractions
+        //Cut the buildings for some specific calculations
         buildingCutted = cutBuilding(datasource, grid, building)
-        def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, buildingCutted,
-                grid, grid_column_identifier,
-                weightedBuildingIndicators, prefixName)
 
-        indicatorTablesToJoin.put(computeWeightedAggregStat, grid_column_identifier)
-        tablesToJoinForWidth.put(computeWeightedAggregStat, grid_column_identifier)
+        if (list_indicators_upper.contains("BUILDING_DIRECTION")){
+            def computeBuildDir = Geoindicators.GenericIndicators.buildingDirectionDistribution(datasource, buildingCutted,
+                    grid, grid_column_identifier, 360.0/12,
+                    prefixName)
 
-        tablesToDrop << computeWeightedAggregStat
+            indicatorTablesToJoin.put(computeBuildDir, grid_column_identifier)
+            tablesToJoinForWidth.put(computeBuildDir, grid_column_identifier)
+
+            tablesToDrop << computeBuildDir
+        }
+
+        if (weightedBuildingIndicators){
+            def computeWeightedAggregStat = Geoindicators.GenericIndicators.weightedAggregatedStatistics(datasource, buildingCutted,
+                    grid, grid_column_identifier,
+                    weightedBuildingIndicators, prefixName)
+
+            indicatorTablesToJoin.put(computeWeightedAggregStat, grid_column_identifier)
+            tablesToJoinForWidth.put(computeWeightedAggregStat, grid_column_identifier)
+
+            tablesToDrop << computeWeightedAggregStat
+        }
     }
 
     if (list_indicators_upper.contains("BUILDING_TYPE_FRACTION") && building) {
