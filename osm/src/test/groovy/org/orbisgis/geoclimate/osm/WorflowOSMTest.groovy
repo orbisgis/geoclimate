@@ -763,6 +763,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.mkdir()
         def location = "Geneve"
         location = [53.242824,-9.103203,53.299902,-8.915749]
+        location = [45.585723,5.894873,45.587615,5.898542]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
@@ -826,7 +827,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                                         "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                         "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
-                                        "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
+                                        "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
                                         "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                         "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH"]
                                 //"lcz_lod":1

@@ -58,7 +58,7 @@ The configuration file below uses this bounding box method with OSM.
                    "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                    "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                    "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
-                   "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS",
+                   "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
                    "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                    "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH"
                ]

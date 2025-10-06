@@ -1812,7 +1812,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (it == "BUILDING_POP" && building) {
             unweightedBuildingIndicators.put("pop", ["SUM"])
         }
-        if (it == "HEIGHT_OF_ROUGHNESS_ELEMENTS" && building) {
+        if ((it == "HEIGHT_OF_ROUGHNESS_ELEMENTS" || it == "TERRAIN_ROUGHNESS") && building) {
             height_roof_unweighted_list.add("GEOM_AVG")
         }
     }
@@ -2039,7 +2039,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         tablesToDrop << svf_fraction
     }
 
-    if (list_indicators_upper.intersect(["HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS_CLASS"]) && building) {
+    if (list_indicators_upper.intersect(["TERRAIN_ROUGHNESS"]) && building) {
         def heightColumnName = "height_roof"
         def facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50]
         def facadeDensNumberOfDirection = 12
@@ -2072,7 +2072,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         indicatorTablesToJoin.put(effRoughHeight, grid_column_identifier)
         tablesToDrop << effRoughHeight
 
-        if (list_indicators_upper.contains("TERRAIN_ROUGHNESS_CLASS")) {
+        if (list_indicators_upper.contains("TERRAIN_ROUGHNESS")) {
             def roughClass = Geoindicators.RsuIndicators.effectiveTerrainRoughnessClass(datasource, effRoughHeight,
                     grid_column_identifier, "effective_terrain_roughness_length", prefixName)
             indicatorTablesToJoin.put(roughClass, grid_column_identifier)
