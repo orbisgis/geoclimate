@@ -119,6 +119,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         def distribLczTableWithoutLcz1 = postfix "distribLczTableWithout_lcz_primary"
         def distribLczTableInt = postfix "distribLczTableInt"
         def ruralLCZ = postfix "ruralLCZ"
+        def ruralLCZUncertainty = postfix "ruralLCZUncertainty"
         def classifiedRuralLCZ = postfix "classifiedRuralLCZ"
         def urbanLCZ = postfix "urbanLCZ"
         def urbanLCZExceptIndus = postfix "urbanLCZExceptIndus"
@@ -171,7 +172,16 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                  "LCZ8": 8,
                                  "LCZ9": 9]
 
-        // I. Rural LCZ types are classified according to a "manual" decision tree
+        // Define thresholds of LCZ method as variables
+        double urbanBuildFracMin = 0.1
+        double urbanAspectRatioMin = 0.1
+        double scatteredTreeLow = 0.05
+        double scatteredTreeHigh = 0.75
+        double lcz8LevNumbMax = 3
+        double lcz8VegFracMax = 0.2
+        double lcz8SVFMin = 0.7
+
+        // I. Land cover LCZ types are classified according to a "manual" decision tree
         datasource.createIndex(rsuAllIndicators, "BUILDING_FRACTION_LCZ")
         datasource.createIndex(rsuAllIndicators, "ASPECT_RATIO")
         datasource.createIndex(rsuAllIndicators, ID_FIELD_RSU)
@@ -180,6 +190,9 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                     DROP TABLE IF EXISTS $ruralLCZ; 
                     CREATE TABLE $ruralLCZ AS 
                         SELECT $ID_FIELD_RSU, 
+                            BUILDING_FRACTION_LCZ,
+                            ASPECT_RATIO,
+                            HIGH_VEGETATION_FRACTION_LCZ,
                             IMPERVIOUS_FRACTION_LCZ, 
                             PERVIOUS_FRACTION_LCZ, 
                             WATER_FRACTION_LCZ, 
@@ -200,9 +213,10 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                 AS HIGH_ALL_VEGETATION,
                             LOW_VEGETATION_FRACTION_LCZ+HIGH_VEGETATION_FRACTION_LCZ AS ALL_VEGETATION
                         FROM $rsuAllIndicators
-                        WHERE (BUILDING_FRACTION_LCZ < 0.1 OR BUILDING_FRACTION_LCZ IS NULL) 
-                        AND ASPECT_RATIO < 0.1;""".toString()
+                        WHERE BUILDING_FRACTION_LCZ < $urbanBuildFracMin 
+                        AND ASPECT_RATIO < $urbanAspectRatioMin;""".toString()
 
+        // LCZ primary classification
         datasource.createIndex(ruralLCZ, ID_FIELD_RSU)
         datasource.createIndex(ruralLCZ, "IMPERVIOUS_FRACTION_LCZ")
         datasource.createIndex(ruralLCZ, "PERVIOUS_FRACTION_LCZ")
@@ -210,14 +224,14 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         datasource.createIndex(ruralLCZ, "ALL_VEGETATION")
         datasource """DROP TABLE IF EXISTS $classifiedRuralLCZ;
                                 CREATE TABLE $classifiedRuralLCZ
-                                        AS SELECT   $ID_FIELD_RSU,
+                                        AS SELECT   *,
                                                 CASE WHEN IMPERVIOUS_FRACTION_LCZ>ALL_VEGETATION AND IMPERVIOUS_FRACTION_LCZ>WATER_FRACTION_LCZ AND IMPERVIOUS_FRACTION_LCZ>0.1
                                                         THEN 105
                                                         ELSE CASE WHEN ALL_VEGETATION<=WATER_FRACTION_LCZ AND WATER_FRACTION_LCZ> 0.31
                                                                 THEN 107
-                                                                ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR HIGH_ALL_VEGETATION<0.05
+                                                                ELSE CASE WHEN HIGH_ALL_VEGETATION IS NULL OR HIGH_ALL_VEGETATION<$scatteredTreeLow
                                                                         THEN 104
-                                                                        ELSE CASE WHEN HIGH_ALL_VEGETATION<0.75
+                                                                        ELSE CASE WHEN HIGH_ALL_VEGETATION<$scatteredTreeHigh
                                                                                 THEN 102
                                                                                 ELSE 101 END END END END AS LCZ1,
                                                 null AS LCZ2,
@@ -228,9 +242,44 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                                 null AS LCZ_EQUALITY_VALUE
                                         FROM $ruralLCZ""".toString()
 
-        tablesToDrop << ruralLCZ
-        // II. Urban LCZ types are classified
+        // Classification uncertainty indicators are calculated
+        Map fraction_indic_map = [101:"HIGH_VEGETATION_FRACTION_LCZ",
+                                  104:"ALL_VEGETATION-HIGH_VEGETATION_FRACTION_LCZ",
+                                  105:"IMPERVIOUS_FRACTION_LCZ",
+                                  107:"WATER_FRACTION_LCZ"]
+        List query_case_when_list = []
+        fraction_indic_map.each{lcz_type,land_cover_indic ->
+            query_case_when_list.add("""CASE WHEN LCZ1 = $lcz_type 
+                                  THEN 0.25 * ($urbanAspectRatioMin - ASPECT_RATIO) / $urbanAspectRatioMin
+                                       + 0.25 * ($urbanBuildFracMin - BUILDING_FRACTION_LCZ) / $urbanBuildFracMin
+                                       + 0.5 * ($land_cover_indic - BUILDING_FRACTION_LCZ)""")
+        }
+        String query_case_when = query_case_when_list.join(" ELSE ")
 
+        String query_case_when_end = ""
+        fraction_indic_map.each{
+            query_case_when_end += " END"
+        }
+        datasource """DROP TABLE IF EXISTS $ruralLCZUncertainty;
+                    CREATE TABLE $ruralLCZUncertainty
+                            AS SELECT   $ID_FIELD_RSU,
+                                    LCZ1,
+                                    LCZ2,
+                                    min_distance, 
+                                    $query_case_when ELSE
+                                    CASE WHEN LCZ1 = 102
+                                    THEN 0.25 * ($urbanAspectRatioMin - ASPECT_RATIO) / $urbanAspectRatioMin
+                                         + 0.25 * ($urbanBuildFracMin - BUILDING_FRACTION_LCZ) / $urbanBuildFracMin
+                                         + 0.25 * (ALL_VEGETATION - BUILDING_FRACTION_LCZ 
+                                         + 0.25 * (($scatteredTreeHigh - $scatteredTreeLow) / 2 
+                                                    - ABS(HIGH_ALL_VEGETATION - ($scatteredTreeHigh - $scatteredTreeLow) / 2))
+                                                    / (($scatteredTreeHigh - $scatteredTreeLow) / 2 ) $query_case_when_end END AS LCZ_UNIQUENESS_VALUE, 
+                                    null AS LCZ_EQUALITY_VALUE
+                            FROM $ruralLCZ""".toString()
+
+        tablesToDrop << ruralLCZ
+        tablesToDrop << ruralLCZUncertainty
+        // II. Urban LCZ types are classified
         // Keep only the RSU that have not been classified as rural
         datasource """DROP TABLE IF EXISTS $urbanLCZ;
                                 CREATE TABLE $urbanLCZ
@@ -246,7 +295,7 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         if (datasource.getColumnNames(urbanLCZ).contains("AREA_FRACTION_HEAVY_INDUSTRY_LCZ")) {
             datasource """DROP TABLE IF EXISTS $classifiedIndustrialCommercialLcz;
                                 CREATE TABLE $classifiedIndustrialCommercialLcz
-                                        AS SELECT   $ID_FIELD_RSU,
+                                        AS SELECT   *,
                                                     CASE WHEN AREA_FRACTION_HEAVY_INDUSTRY_LCZ > AREA_FRACTION_LOWRISE_TYPO
                                                         THEN 10 
                                                         ELSE 8  END AS LCZ1,
@@ -262,7 +311,15 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
                                                     AND GROUND_SKY_VIEW_FACTOR > 0.7;
                                 DROP TABLE IF EXISTS $ruralAndIndustrialCommercialLCZ;
                                 CREATE TABLE $ruralAndIndustrialCommercialLCZ
-                                            AS SELECT * 
+                                            AS SELECT $ID_FIELD_RSU,
+                                                      LCZ1,
+                                                      LCZ2,
+                                                      min_distance,
+                                                      CASE WHEN LCZ1 = 10 
+                                                      THEN AREA_FRACTION_HEAVY_INDUSTRY_LCZ ELSE
+                                                      CASE WHEN LCZ1 = 8 
+                                                      THEN AREA_FRACTION_LOWRISE_TYPO END END AS LCZ_UNIQUENESS_VALUE,
+                                                      LCZ_EQUALITY_VALUE
                                             FROM $classifiedIndustrialCommercialLcz 
                                         UNION ALL 
                                             SELECT *

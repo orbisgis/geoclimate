@@ -64,12 +64,14 @@ class TypologyClassificationTests {
             results[id]["LCZ_PRIMARY"] = row.LCZ_PRIMARY
             results[id]["LCZ_SECONDARY"] = row.LCZ_SECONDARY
             results[id]["min_distance"] = row.min_distance
+            results[id]["uniqueness"] = row.LCZ_UNIQUENESS_VALUE
             results[id]["PSS"] = row.LCZ_EQUALITY_VALUE
             assert results[id]["LCZ_PRIMARY"] != results[id]["LCZ_SECONDARY"]
         }
         assert 1 == results[1]["LCZ_PRIMARY"]
         assert 0 == results[1]["min_distance"]
         assert 8 == results[2]["LCZ_PRIMARY"]
+        assert  == results[2]["uniqueness"]
         assert results[2]["min_distance"] > 0
         assert results[2]["PSS"] < 1
         assert 107 == results[3]["LCZ_PRIMARY"]
