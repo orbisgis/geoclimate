@@ -335,7 +335,6 @@ String identifyLczType(JdbcDataSource datasource, String rsuLczIndicators, Strin
         tablesToDrop << classifiedRuralLCZ
         datasource.createIndex(ruralAndIndustrialCommercialLCZ, ID_FIELD_RSU)
         datasource.createIndex(rsuLczIndicators, ID_FIELD_RSU)
-        datasource.save(classifiedIndustrialCommercialLcz, "/tmp/test.csv", true)
         datasource """DROP TABLE IF EXISTS $urbanLCZExceptIndus;
                                 CREATE TABLE $urbanLCZExceptIndus
                                         AS SELECT a.*
