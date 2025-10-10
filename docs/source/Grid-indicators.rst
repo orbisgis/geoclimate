@@ -14,7 +14,7 @@ The whole list is the following: ["BUILDING_FRACTION",
 "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION", "LCZ_PRIMARY",
 "URBAN_SPRAWL_AREAS", "URBAN_SPRAWL_DISTANCES",
 "URBAN_SPRAWL_COOL_DISTANCES", "BUILDING_HEIGHT_DISTRIBUTION",
-"STREET_WIDTH"].
+"STREET_WIDTH", "PROJECTED_FACADE_DENSITY_DIR", "GEOM_AVG_HEIGHT_ROOF",].
 
 BUILDING_FRACTION
 ---------------------
@@ -440,5 +440,74 @@ given RSU area divided by the area of free surfaces of the given RSU
 → Cell_avg_height_roof_area_weighted / Cell_aspect_ratio
 
 ------------------------------------------------------------
+
+
+PROJECTED_FACADE_DENSITY_DIR
+--------------------------------------------
+
+**Corresponding name in the table**: PROJECTED_FACADE_AREA_DISTRIBUTION_Dw_z
+
+**Description**: Distribution of projected facade area within a RSU per direction of analysis (ie. wind or sun direction - the angle range being from ``w`` to ``z`` within the range [0, 180[°).
+
+**Method**: Each line representing the facades of a building are projected in order to be perpendicular to the median of each angle range of analysis. Only free facades are considered. The projected surfaces are then summed within each direction of analysis. The analysis is only performed within the [0, 180[° range since the projected facade of a building is identical for opposite directions.
+
+**Warning**: To simplify the calculation, z0 is considered as equal for a given orientation independently of the direction. This assumption is right when the RSU do not split buildings but could slightly overestimate the results otherwise (the projected facade area is actually overestimated in one direction but OK in the opposite direction).
+
+
+HEIGHT_OF_ROUGHNESS_ELEMENTS
+----------------
+
+**Corresponding name in the table**: GEOM_AVG_HEIGHT_ROOF
+
+**Description**: RSU geometric mean of the building roof heights.
+
+**Method**: ``EXP(SUM(LOG(Bu_ROOF_HEIGHT)) / NB_Building)``
+
+------------------------------------------------------------
+
+
+BUILDING_DIRECTION
+----------------
+Three columns are created when this key word is in the list of indicators:
+First indicator: **Corresponding name in the table**: MAIN_BUILDING_DIRECTION
+
+**Description**: Main direction of the buildings contained in a RSU.
+
+**Method**: The building direction distribution is calculated according to the length of the building SMBR sides (width and length). The [0, 180]° angle range is splitted into ``nb_directions`` angle ranges. Then the length of each SMBR building side is attributed to one of these ranges according to the side direction. Within each angle range, the total length of SMBR sides are summed and then the mode of the distribution is taken as the main building direction.
+
+Second indicator: **Corresponding name in the table**: BUILDING_DIRECTION_UNIQUENESS
+
+**Description**: Indicates how unique is the RSU main building direction.
+
+**Range of values**: [0, 1] - the higher the value, the more unique is the main building direction
+
+**Method**: ``| Length_First_Dir - Length_Second_Dir | / (Length_Second_Dir + Length_First_Dir)``
+
+Third indicator: **Corresponding name in the table**: BUILDING_DIRECTION_EQUALITY
+
+**Description**: Indicates how equal is the RSU building direction distribution (having ``nb_direction`` directions of analysis).
+
+**Method**: From the building direction distribution created in the ``MAIN_BUILDING_DIRECTION`` indicator calculation, an indicator of equality of the distribution is calculated:
+
+→ ``Sum(Min(1/nb_direction, length_dir_i/length_all_dir))``
+
+**Range of values**: [``nb_direction``, ``1``] - the higher the value the most equal is the distribution
+
+
+BUILDING_NUMBER
+----------------
+Two columns are created when this key word is in the list of indicators:
+First indicator: **Corresponding name in the table**: BUILDING_NUMBER_DENSITY
+
+**Description**: RSU number of building density.
+
+**Method**: ``Nb_Building / Rsu_Area``
+
+Second indicator: **Corresponding name in the table**: BLOCK_NUMBER_DENSITY
+
+**Description**: RSU number of block density.
+
+**Method**: ``Nb_Block / Rsu_Area``
+
 
 .. include:: _Footer.rst
