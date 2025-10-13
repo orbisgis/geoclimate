@@ -3,7 +3,7 @@ LCZ Classification
 
 .. Note::
 
-   To get more informations about the method used for LCZ classification, please see the corresponding article on the `References page <References.html>`_.
+   To get more informations about the method used for LCZ classification, please see the corresponding article on the `References page <References.html>`_. Note that in the manuscript, the uniqueness indicator was only valid for some of the LCZ types. It is now valid for all classes. 
 
 GeoClimate computes the Local Climate Zones (LCZ) at the RSU's scale.
 
