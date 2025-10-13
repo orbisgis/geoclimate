@@ -1,10 +1,9 @@
 LCZ Classification
 ==================
 
-.. warning::
+.. Note::
 
-   The article describing the full method of the LCZ attribution is currently under writing.
-   You will soon find more informations on the `References page <References.html>`_.
+   To get more informations about the method used for LCZ classification, please see the corresponding article on the `References page <References.html>`_.
 
 GeoClimate computes the Local Climate Zones (LCZ) at the RSU's scale.
 
@@ -15,21 +14,39 @@ The LCZ, introduced by *Stewart* & *Oke* (`2012 <http://journals.ametsoc.org/doi
 Methodology
 -----------
 
-A LCZ type is assigned to a RSU. This "assignment" is performed according to the 7 indicators used for LCZ classification:
+A LCZ type is assigned to a RSU. This "assignment" is performed according to 14 indicators:
+- 7 indicators usually used for LCZ classification:
+    - ``sky_view_factor``
+    - ``aspect_ratio``
+    - ``building_surface_fraction``
+    - ``impervious_surface_fraction``
+    - ``pervious_surface_fraction``
+    - ``height_of_roughness_elements``
+    - ``terrain_roughness_class``
+- 7 additionnal indicators:
+    - ``all vegetation fraction``
+    - ``water fraction``
+    - ``fraction of all land (except building, water and impervious) being high vegetation``
+    - ``fraction of building being industrial``
+    - ``fraction of building being large low-rise``
+    - ``fraction of building being residential``
+    - ``area weighted average number of building levels``
 
-- ``sky_view_factor``
-- ``aspect_ratio``
-- ``building_surface_fraction``
-- ``impervious_surface_fraction``
-- ``pervious_surface_fraction``
-- ``height_of_roughness_elements``
-- ``terrain_roughness_class``
+The classification to a given type follows the procedure illustrated on the Figure below.
+.. figure:: /_static/image/LczProcedure.png
 
-Each LCZ type has a given range for each of the 7 indicators.
+Each land cover type LCZ is classified according to a given set of indicators and threshold. The same apply for LCZ built types 8 and 10. A unique LCZ type (``LCZ_PRIMARY``) is associated to each RSU and ``LCZ_UNIQUENESS_VALUE`` is calculated to characterize the degree of certainty of the classified RSU. This calculation is unique per LCZ type:
+- 
+
+
+
+For the rest of the built types, their classification is based on the usual 7 indicators used to define LCZ classes. 
 The method to find the most appropriate LCZ type for a given RSU is based on the minimum distance (``MIN_DISTANCE``) to each LCZ in the 7-dimensional space.
 To calculate this distance, each dimension is normalized according to the mean and standard deviation (or median and absolute median deviation) of the interval values.
 
 Some indicators may be more important (or reliable) than others for LCZ identification. To account for this, a map of weights may be applied to multiply the distance contribution of each indicator.
+The default values are 4 for sky view factor, 3 for aspect ratio , 8 for building surface fraction, 0 for impervious surface fraction , 0 for pervious surface fraction , 6 for height of roughness elements,
+and 0.5 for terrain roughness class.
 
 The distance of each RSU to each LCZ type is calculated in the normalized interval space.
 The two LCZ types closest to the RSU indicators (``LCZ_PRIMARY`` and ``LCZ_SECONDARY``) are assigned to this RSU.
@@ -44,7 +61,7 @@ Note:
 This method is valid mostly for built LCZ types. For LCZ types 8, 10 and all land-cover LCZ types, the method differs and will be detailed in the forthcoming article on the `References page <References.html>`_.
 For these LCZ types, ``LCZ_SECONDARY``, ``MIN_DISTANCE``, ``LCZ_UNIQUENESS_VALUE``, and ``LCZ_EQUALITY_VALUE`` are set to null.
 
-The source code is available `here <https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/geoindicators/TypologyClassification.groovy>`_ for those who cannot wait.
+The source code is available `at <https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/geoindicators/TypologyClassification.groovy>`_
 
 
 Output LCZ layer
