@@ -64,12 +64,13 @@ class TypologyClassificationTests {
             results[id]["LCZ_PRIMARY"] = row.LCZ_PRIMARY
             results[id]["LCZ_SECONDARY"] = row.LCZ_SECONDARY
             results[id]["min_distance"] = row.min_distance
+            results[id]["uniqueness"] = row.LCZ_UNIQUENESS_VALUE
             results[id]["PSS"] = row.LCZ_EQUALITY_VALUE
             assert results[id]["LCZ_PRIMARY"] != results[id]["LCZ_SECONDARY"]
         }
         assert 1 == results[1]["LCZ_PRIMARY"]
         assert 0 == results[1]["min_distance"]
-        assert 8 == results[2]["LCZ_PRIMARY"]
+        assert 5 == results[2]["LCZ_PRIMARY"]
         assert results[2]["min_distance"] > 0
         assert results[2]["PSS"] < 1
         assert 107 == results[3]["LCZ_PRIMARY"]
@@ -77,11 +78,17 @@ class TypologyClassificationTests {
         assert !results[3]["min_distance"]
         assert !results[3]["PSS"]
         assert 102 == results[4]["LCZ_PRIMARY"]
+        assertEquals(0.25+0.25+0.25*0.7/0.9+0.25*0.2/(1-0.2-0.1)/0.35, results[4]["uniqueness"], 0.001)
         assert 101 == results[5]["LCZ_PRIMARY"]
+        assertEquals((1.5/10 + 8.0/9)/2, results[5]["uniqueness"], 0.001)
         assert 104 == results[6]["LCZ_PRIMARY"]
+        assertEquals(0.25+0.25+0.5*0.5/0.9, results[6]["uniqueness"], 0.001)
         assert 105 == results[7]["LCZ_PRIMARY"]
+        assertEquals(0.25+0.25+0.5*0.35/0.9, results[7]["uniqueness"], 0.001)
         assert 107 == results[18]["LCZ_PRIMARY"]
+        assertEquals(0.25+0.25+0.5*0.899/0.9, results[18]["uniqueness"], 0.001)
         assert 8 == results[19]["LCZ_PRIMARY"]
+        assertEquals(0.08/0.67, results[19]["uniqueness"], 0.001)
         assert 4 == results[20]["LCZ_PRIMARY"]
 
         h2GIS """
@@ -109,7 +116,7 @@ class TypologyClassificationTests {
                     assert 1 == row.LCZ_PRIMARY
                     assert 0 == row.min_distance
                 } else if (row.id_rsu == 2) {
-                    assert 8 == row.LCZ_PRIMARY
+                    assert 5 == row.LCZ_PRIMARY
                     assert row.min_distance > 0
                     assert row.LCZ_EQUALITY_VALUE < 1
                 } else if (row.id_rsu == 8) {
