@@ -1299,7 +1299,14 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                     if (!waterTypes.containsValue("water")) {
                         datasource.execute("""
                             DROP TABLE IF EXISTS $water;
-                            CREATE TABLE $water as select CAST(1 AS INTEGER) AS ID_WATER, NULL AS ID_SOURCE , CAST(0 AS INTEGER) AS ZINDEX, the_geom, 'sea' as type from $zone  ;                     
+                            CREATE TABLE $water 
+                                as select   CAST(1 AS INTEGER) AS ID_WATER, 
+                                            NULL AS ID_SOURCE , 
+                                            False AS INTERMITTENT,
+                                            CAST(0 AS INTEGER) AS ZINDEX, 
+                                            the_geom, 
+                                            'sea' as type 
+                                from $zone  ;                     
                             """.toString())
                         return outputTableName
                     }
@@ -1367,7 +1374,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
             debug 'The sea/land mask has been computed'
             return outputTableName
         } else {
-            //There is no coatline geometries, we check the water table.
+            //There is no coastline geometries, we check the water table.
             if (water) {
                 def waterTypes = datasource.firstRow("SELECT COUNT(*) as count, type from $water group by type".toString())
                 //There is only sea geometries then we then decided to put the entire study area in a sea zone
@@ -1375,7 +1382,13 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                 if (waterTypes && !waterTypes.containsValue("water")) {
                     datasource.execute("""
                             DROP TABLE IF EXISTS $water;
-                            CREATE TABLE $water as select CAST(1 AS INTEGER) AS ID_WATER, NULL AS ID_SOURCE , CAST(0 AS INTEGER) AS ZINDEX, the_geom, 'sea' as type from $zone  ;                        
+                            CREATE TABLE $water
+                                    as select   CAST(1 AS INTEGER) AS ID_WATER, 
+                                                NULL AS ID_SOURCE , 
+                                                False AS INTERMITTENT,
+                                                CAST(0 AS INTEGER) AS ZINDEX,
+                                                the_geom, 'sea' as type 
+                                    from $zone  ;                        
                             """.toString())
                     return outputTableName
                 }

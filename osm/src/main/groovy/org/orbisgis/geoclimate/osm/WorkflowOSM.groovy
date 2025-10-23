@@ -508,7 +508,13 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 if (h2gis_datasource.getRowCount(seaLandMaskTableName) > 0) {
                     //Select the water and sea features
                     h2gis_datasource.execute """Drop table if exists $hydrographicTableName;
-                    CREATE TABLE $hydrographicTableName as select the_geom, id as id_water, cast(0 as integer) as zindex, type from $seaLandMaskTableName where type in ('water', 'sea') """.toString()
+                    CREATE TABLE $hydrographicTableName 
+                            as select   the_geom, 
+                                        id as id_water, 
+                                        False AS intermittent,
+                                        cast(0 as integer) as zindex, 
+                                        type 
+                            from $seaLandMaskTableName where type in ('water', 'sea') """.toString()
                 }
 
                 //Format road
