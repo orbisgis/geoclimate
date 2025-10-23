@@ -3,7 +3,7 @@ LCZ Classification
 
 .. Note::
 
-   To get more informations about the method used for LCZ classification, please see the corresponding article on the `References page <References.html>`_.
+   To get more informations about the method used for LCZ classification, please see the corresponding article on the `References page <References.html>`_. Note that in the manuscript, the uniqueness indicator was only valid for some of the LCZ types. It is now valid for all classes. 
 
 GeoClimate computes the Local Climate Zones (LCZ) at the RSU's scale.
 
@@ -15,29 +15,40 @@ Methodology
 -----------
 
 A LCZ type is assigned to a RSU. This "assignment" is performed according to 14 indicators:
+
 - 7 indicators usually used for LCZ classification:
-    - ``sky_view_factor``
-    - ``aspect_ratio``
-    - ``building_surface_fraction``
-    - ``impervious_surface_fraction``
-    - ``pervious_surface_fraction``
-    - ``height_of_roughness_elements``
-    - ``terrain_roughness_class``
+    - :math: `SVF` : sky_view_factor
+    - :math: `H/W` : aspect_ratio
+    - :math: `F_B` : building_surface_fraction
+    - :math: `F_I` : impervious_surface_fraction
+    - :math: `F_P` : pervious_surface_fraction
+    - :math: `H_r` : height_of_roughness_elements
+    - :math: `z_0` : terrain_roughness_class
+
 - 7 additionnal indicators:
-    - ``all vegetation fraction``
-    - ``water fraction``
-    - ``fraction of all land (except building, water and impervious) being high vegetation``
-    - ``fraction of building being industrial``
-    - ``fraction of building being large low-rise``
-    - ``fraction of building being residential``
-    - ``area weighted average number of building levels``
+    - :math: `F_B` : all vegetation fraction
+    - :math: `F_W` : water fraction
+    - :math: `F_{HV}` : fraction of all land (except building, water and impervious) being high vegetation
+    - :math: `F_{IND/B}` : fraction of building being industrial
+    - :math: `F_{LLR/B}` : fraction of building being large low-rise
+    - :math: `F_{RES/B}`  fraction of building being residential
+    - :math: `N_{lev}` : area weighted average number of building levels
 
 The classification to a given type follows the procedure illustrated on the Figure below.
 .. figure:: /_static/image/LczProcedure.png
 
 Each land cover type LCZ is classified according to a given set of indicators and threshold. The same apply for LCZ built types 8 and 10. A unique LCZ type (``LCZ_PRIMARY``) is associated to each RSU and ``LCZ_UNIQUENESS_VALUE`` is calculated to characterize the degree of certainty of the classified RSU. This calculation is unique per LCZ type:
-- 
 
+- LCZA: :math: `0.25 * (F_{B_{LC-max}} - F_B) / F_{B_{LC-max}} + 0.25 * (H/W_{B_{LC-max}} - H/W) / H/W_{B_{LC-max}} + 0.5 * (F_{HV} - F_{B_{LC-max}) / (1 - F_{B_{LC-max})`
+- LCZB: :math: `0.25 * (F_{B_{LC-max}} - F_B) / F_{B_{LC-max}} + 0.25 * (H/W_{B_{LC-max}} - H/W) / H/W_{B_{LC-max}} + 0.25 * (F_{AV} - F_{B_{LC-max}) / (1 - F_{B_{LC-max}) + 0.25 * ((F_{HV/AV_{max}} - F_{HV/AV_{min}}) / 2 - |F_{HV/AV} - (F_{HV/AV_{max}} - F_{HV/AV_{min}}) / 2|) / ((F_{HV/AV_{max}} - F_{HV/AV_{min}}) / 2)`
+- LCZD: :math: `0.25 * (F_{B_{LC-max}} - F_B) / F_{B_{LC-max}} + 0.25 * (H/W_{B_{LC-max}} - H/W) / H/W_{B_{LC-max}} + 0.5 * (F_{LV} - F_{B_{LC-max}) / (1 - F_{B_{LC-max})`
+- LCZE: :math: `0.25 * (F_{B_{LC-max}} - F_B) / F_{B_{LC-max}} + 0.25 * (H/W_{B_{LC-max}} - H/W) / H/W_{B_{LC-max}} + 0.5 * (F_{I} - F_{B_{LC-max}) / (1 - F_{B_{LC-max})`
+- LCZG: :math: `0.25 * (F_{B_{LC-max}} - F_B) / F_{B_{LC-max}} + 0.25 * (H/W_{B_{LC-max}} - H/W) / H/W_{B_{LC-max}} + 0.5 * (F_{W} - F_{B_{LC-max}) / (1 - F_{B_{LC-max})`
+- LCZ8: :math: `0.25 * (F_{LLR/B} - F_{LLR/B_{min}}) / (1 - F_{LLR/B_{min}})`
+- LCZ10: :math: `0.25 * (F_{IND/B} - F_{IND/B_{min}}) / (1 - F_{IND/B_{min}})`
+where 
+:math: `F_{B_{LC-max}}` and :math: `AR_{B_{LC-max}}` are the maximum value accepted for a land cover, for building fraction and aspect ratio, respectively
+:math: `F_{HV/AV_{min}}` and :math: `F_{HV/AV_{max}}` are the minimum and maximum :math: `F_{HV/AV}` thresholds for being LCZ102 
 
 
 For the rest of the built types, their classification is based on the usual 7 indicators used to define LCZ classes. 
@@ -54,12 +65,10 @@ The two LCZ types closest to the RSU indicators (``LCZ_PRIMARY`` and ``LCZ_SECON
 Three indicators describe the degree of certainty of the allocated LCZ class:
 
 - **MIN_DISTANCE**: Distance from a RSU point to the closest LCZ type (lower means more certain ``LCZ_PRIMARY``).
-- **LCZ_UNIQUENESS_VALUE**: Indicates certainty of the primary LCZ type (closer to 1 means more certain).
+- **LCZ_UNIQUENESS_VALUE**: Indicates certainty of the primary LCZ type (closer to 1 means more certain). Defines as (DISTANCE LCZ_PRIMARY - DISTANCE LCZ_SECONDARY) / (DISTANCE LCZ_PRIMARY - DISTANCE LCZ_SECONDARY)``
 - **LCZ_EQUALITY_VALUE**: Indicates whether the RSU's LCZ could be any LCZ type (closer to 0 means more certain).
 
-Note:
-This method is valid mostly for built LCZ types. For LCZ types 8, 10 and all land-cover LCZ types, the method differs and will be detailed in the forthcoming article on the `References page <References.html>`_.
-For these LCZ types, ``LCZ_SECONDARY``, ``MIN_DISTANCE``, ``LCZ_UNIQUENESS_VALUE``, and ``LCZ_EQUALITY_VALUE`` are set to null.
+
 
 The source code is available `at <https://github.com/orbisgis/geoclimate/blob/v1.0.0-RC1/geoindicators/src/main/groovy/org/orbisgis/orbisprocess/geoclimate/geoindicators/TypologyClassification.groovy>`_
 
@@ -85,14 +94,13 @@ Output LCZ layer
      - Secondary LCZ type
    * - ``MIN_DISTANCE``
      - double precision
-     - Minimum distance to each LCZ
+     - Minimum distance to each LCZ. Only valid for LCZ1 to LCZ7 and LCZ9.
    * - ``LCZ_UNIQUENESS_VALUE``
      - double precision
-     - Indicates how unique is the attributed LCZ type. Only valid for LCZ1 to LCZ7 and LCZ9.
-       ``LCZ_UNIQUENESS_VALUE = (DISTANCE LCZ_PRIMARY - DISTANCE LCZ_SECONDARY) / (DISTANCE LCZ_PRIMARY - DISTANCE LCZ_SECONDARY)``
+     - Indicates how unique (and thus how certain) is the attributed LCZ type.
    * - ``LCZ_EQUALITY_VALUE``
      - double precision
-     - Indicates whether the LCZ type of a RSU could be any LCZ type
+     - Indicates whether the LCZ type of a RSU could be any LCZ type. Based on distance calculation in the 7 dimension space, thus only valid for LCZ1 to LCZ7 and LCZ9.
 
 
 LCZ_PRIMARY and LCZ_SECONDARY Column Values
