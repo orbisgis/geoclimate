@@ -17,6 +17,11 @@ The whole list is the following: ["BUILDING_FRACTION",
 "STREET_WIDTH", "PROJECTED_FACADE_DENSITY_DIR",
 "BUILDING_DIRECTION", "BUILDING_NUMBER"].
 
+ID_ROW, ID_COL, ID_GRID
+---------------------
+Cells are numbered from the lower left corner to the upper right corner and then continuing on the rigth side of the next row, and so on until the last cell at the upper-right side of the raster.
+
+
 BUILDING_FRACTION
 ---------------------
 
