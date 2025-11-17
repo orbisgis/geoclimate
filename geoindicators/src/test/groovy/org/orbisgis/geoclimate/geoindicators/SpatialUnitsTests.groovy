@@ -110,13 +110,35 @@ class SpatialUnitsTests {
                 'road_test', 'rail_test',
                 'veget_test', 'hydro_test',
                 "", "", 10000d, 2500d,
-                10000d, "block")
+                10000d, "block", false)
 
         assert createRSU
 
         assert h2GIS.getSpatialTable(createRSU).save(new File(folder, "rsu.shp").getAbsolutePath(), true)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $createRSU"
         assert 237 == countRows.numberOfRows
+    }
+
+    @Test
+    void createTsuRemoveWrongShapesTest() {
+        h2GIS.load(SpatialUnitsTests.getResource("road_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("rail_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("vegetation_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("water_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("zone_wrongshape_test.fgb"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("sea_land_mask_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("urban_areas_wrongshape_test.geojson"), true)
+
+        def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_wrongshape_test", 1d,
+                'road_wrongshape_test', 'rail_wrongshape_test',
+                'veget_wrongshape_test', 'hydro_wrongshape_test',
+                "sea_land_wrongshape_test", "urban_areas_wrongshape_test",
+                10000d, 2500d,
+                10000d, "test", true)
+
+        h2GIS.getSpatialTable(createRSU).save("/tmp/rsu_test.fgb", true)
+
+        assert createRSU
     }
 
     @Test
