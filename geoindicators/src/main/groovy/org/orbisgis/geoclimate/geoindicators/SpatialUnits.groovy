@@ -150,14 +150,16 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
     }
     if (zone) {
         // 1. PREPARE INPUT DATA
+        String tempoPrefix = "remove_wrong_shape"
         // Calculate water fraction
         def smallestCommun = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
                 rsuToModify, COLUMN_ID_NAME, "", "", water,
-                "", "", "","")
+                "", "", "",tempoPrefix)
+
 
         String surface_fractions = Geoindicators.RsuIndicators.surfaceFractions(datasource,
                 rsuToModify, COLUMN_ID_NAME, smallestCommun,
-                [:], ["water_permanent", "water_intermittent"], "")
+                [:], ["water_permanent", "water_intermittent"], tempoPrefix)
 
         // Identify non-water RSU
         datasource.execute """
@@ -445,6 +447,11 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                         $RSU_WRONG_CORRECT_REL, $RSU_CORRECT_ALL, $RSU_SPLIT_WRONG_REMAINING, $RSU_WRONG_CORRECT_REL2, 
                         $RSU_CORRECT_ALL2
                     """.toString()
+
+        // Remove tables from the cache if cache enabled
+        removeCachedTableName([smallestCommun.split(tempoPrefix + "_")[1],
+                               surface_fractions.split(tempoPrefix + "_")[1]])
+
 
     } else {
         throw new IllegalArgumentException("There is no zone to process")

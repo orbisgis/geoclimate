@@ -1736,7 +1736,9 @@ String surfaceFractions(JdbcDataSource datasource,
 
         def query = """DROP TABLE IF EXISTS $withoutUndefined; CREATE TABLE $withoutUndefined AS SELECT b.${id_rsu} """
         def end_query = """ FROM $spatialRelationsTable AS a RIGHT JOIN $rsu b 
-                            ON a.${id_rsu}=b.${id_rsu} GROUP BY b.${id_rsu};"""
+                            ON a.${id_rsu}=b.${id_rsu} 
+                            WHERE NOT ST_ISEMPTY(b.the_geom)
+                            GROUP BY b.${id_rsu};"""
 
         if (superpositions) {
             // Calculates the fraction of overlapped layers according to "superpositionsWithPriorities"

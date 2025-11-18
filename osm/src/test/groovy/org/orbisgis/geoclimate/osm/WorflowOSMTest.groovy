@@ -762,7 +762,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Geneve"
-        location = [53.242824,-9.103203,53.299902,-8.915749]
+        location = [47.459433,-0.569873,47.465918,-0.554209]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
@@ -815,7 +815,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "indicatorUse": ["LCZ"] //, "UTRF"]
 
                          ],
-                          "grid_indicators"   : [
+                          /**"grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
                                 "rowCol": false,
@@ -832,7 +832,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH",
                                         "BUILDING_NUMBER"]
                                 //"lcz_lod":1
-                        ],
+                        ],*/
                          /*
 
                          "road_traffic"                                         : true,

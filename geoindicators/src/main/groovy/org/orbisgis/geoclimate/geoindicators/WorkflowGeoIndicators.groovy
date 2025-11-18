@@ -994,9 +994,8 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
     if (!rsu) {
         // Create the RSU
         rsu = Geoindicators.SpatialUnits.createTSU(datasource, zone_extended, road, rail,
-                vegetation, water,
-                sea_land_mask, urban_areas, surface_vegetation,
-                surface_hydro, surface_urban_areas, prefixName)
+                vegetation, water, sea_land_mask, urban_areas, surface_vegetation,
+                surface_hydro, surface_urban_areas, prefixName, true)
         // Clip the RSU if the argument is set to true and if the the zone is different than the zone_extended
         if (clip && (zone_extended && zone != zone_extended)) {
             String rsu_tmp = postfix("rsu")

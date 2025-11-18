@@ -94,7 +94,7 @@ abstract class Geoindicators extends AbstractScript {
     }
 
     /**
-     * Remove from the list of table names the cached tables
+     * Remove from the list of table names ALL the cached tables
      * @return
      */
     static def removeAllCachedTableNames(def tableNames) {
@@ -102,6 +102,18 @@ abstract class Geoindicators extends AbstractScript {
             tableNames.removeAll(getCachedTableNames())
         }
         return tableNames
+    }
+
+    /**
+     * Remove from the list of table names the cached tables
+     * @return
+     */
+    static def removeCachedTableName(def tableNames) {
+        if (isTableCacheEnable()) {
+            tableNames.each{tab ->
+                System.clearProperty("GEOCLIMATE_TABLE_" + tab)
+            }
+        }
     }
 
     /**
