@@ -83,7 +83,7 @@ String createTSU(JdbcDataSource datasource, String zone,
                 area, prefixName)
         datasource.dropTable(tsuDataPrepared)
 
-        if(removeLongShapes){
+        if(false){
             def outputRsuWithoutLong = Geoindicators.SpatialUnits.removeLongRsu(datasource, outputTsuTableName,
                     water, zone, prefixName)
             datasource.execute("""ALTER TABLE $outputRsuWithoutLong RENAME TO $outputTableName;""")
@@ -419,7 +419,7 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 FROM $RSU_SPLIT_WRONG_REMAINING a, $RSU_CORRECT_ALL b
                 WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM);"""
 
-        // Union the wrong shape RSU with the correct one having the longest shared side
+        // Union the wrong shape RSU with the correct one having the longest shared side + the water RSU
         datasource.execute """
             CREATE INDEX IF NOT EXISTS id ON $RSU_WRONG_CORRECT_REL2(ID_GRID);
             DROP TABLE IF EXISTS $outputTableName;
@@ -436,7 +436,11 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 UNION ALL
                 SELECT $COLUMN_ID_NAME, THE_GEOM
                 FROM $RSU_CORRECT_ALL)
-                GROUP BY $COLUMN_ID_NAME;"""
+                GROUP BY $COLUMN_ID_NAME
+                UNION ALL
+                SELECT $COLUMN_ID_NAME, THE_GEOM
+                FROM $RSU_WATER;
+                """
 
         // Remove intermediate tables
         datasource """
