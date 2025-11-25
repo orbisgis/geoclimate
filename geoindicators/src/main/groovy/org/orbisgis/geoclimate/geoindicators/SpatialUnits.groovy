@@ -83,9 +83,9 @@ String createTSU(JdbcDataSource datasource, String zone,
                 area, prefixName)
         datasource.dropTable(tsuDataPrepared)
 
-        if(false){
+        if(removeLongShapes){
             def outputRsuWithoutLong = Geoindicators.SpatialUnits.removeLongRsu(datasource, outputTsuTableName,
-                    water, zone, prefixName)
+                    water, zone, area, prefixName)
             datasource.execute("""ALTER TABLE $outputRsuWithoutLong RENAME TO $outputTableName;""")
         }
         else{
@@ -109,12 +109,12 @@ String createTSU(JdbcDataSource datasource, String zone,
  * @param rsuToModify The input spatial units table having the strange shapes
  * @param water The water table (water RSU being not modified)
  * @param zone The zone table
- * @param prefixName A prefix used to name the output table
  * @param area TSU less or equals than area are removed
+ * @param prefixName A prefix used to name the output table
  * @return A database table name and the name of the column ID
  */
 String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water, String zone,
-                 String prefixName) throws Exception {
+                 area, String prefixName) throws Exception {
     def COLUMN_ID_NAME = "id_rsu"
     def BASE_NAME = "rsu_without_long"
 
@@ -424,22 +424,27 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
             CREATE INDEX IF NOT EXISTS id ON $RSU_WRONG_CORRECT_REL2(ID_GRID);
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName
-                AS SELECT 	$COLUMN_ID_NAME,
-                            ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM
-                FROM (  SELECT $COLUMN_ID_NAME, THE_GEOM
-                        FROM $RSU_WRONG_CORRECT_REL2 a
-                        WHERE VAL = (
-                        SELECT MAX(b.VAL)
-                                FROM $RSU_WRONG_CORRECT_REL2 b
-                                WHERE b.ID_GRID = a.ID_GRID
+                AS SELECT  $COLUMN_ID_NAME, THE_GEOM
+                FROM (SELECT 	$COLUMN_ID_NAME,
+                                ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM
+                    FROM (  SELECT $COLUMN_ID_NAME, THE_GEOM
+                            FROM $RSU_WRONG_CORRECT_REL2 a
+                            WHERE VAL = (
+                            SELECT MAX(b.VAL)
+                                    FROM $RSU_WRONG_CORRECT_REL2 b
+                                    WHERE b.ID_GRID = a.ID_GRID
+                        )
+                        UNION ALL
+                        SELECT $COLUMN_ID_NAME, THE_GEOM
+                        FROM $RSU_CORRECT_ALL
                     )
+                    GROUP BY $COLUMN_ID_NAME
+                )
+                WHERE ST_AREA(THE_GEOM) > $area
                 UNION ALL
                 SELECT $COLUMN_ID_NAME, THE_GEOM
-                FROM $RSU_CORRECT_ALL)
-                GROUP BY $COLUMN_ID_NAME
-                UNION ALL
-                SELECT $COLUMN_ID_NAME, THE_GEOM
-                FROM $RSU_WATER;
+                FROM $RSU_WATER
+                WHERE ST_AREA(THE_GEOM) > $area;
                 """
 
         // Remove intermediate tables
