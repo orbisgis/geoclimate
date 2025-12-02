@@ -1099,66 +1099,8 @@ Map getParameters() {
                                                                          "abbey", "condominium", "villa", "dormitory", "sheltered_housing",
                                                                          "workers_dormitory", "terrace", "residential", "cabin"]],
             "floorAreaTypeAndCompositionLcz"   : [:],
-            "buildingAreaTypeAndCompositionTeb": ["undefined"            : ["building", "undefined"],
-                                                  "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
-                                                  "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
-                                                                            "sheltered_housing", "workers_dormitory",
-                                                                            "condominium"],
-                                                  "undefined_residential": ["residential"],
-                                                  "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
-                                                                            "post_office", "cinema", "arts_centre", "brothel", "casino",
-                                                                            "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
-                                                                            "ice_cream", "pub", "aquarium"],
-                                                  "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
-                                                                            "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
-                                                                            "bureau_de_change", "boat_rental", "car_rental", "research_institute",
-                                                                            "community_centre", "conference_centre", "events_venue",
-                                                                            "exhibition_centre", "social_centre", "studio", "theatre",
-                                                                            "library", "healthcare", "entertainment_arts_culture",
-                                                                            "hospital", "information", "civic"],
-                                                  "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
-                                                                            "college", "kindergarten", "school", "university", "museum", "gallery"],
-                                                  "light_industrial"     : ["industrial", "factory", "warehouse", "port", "manufacture"],
-                                                  "heavy_industrial"     : ["refinery"],
-                                                  "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
-                                                                            "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
-                                                                            "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
-                                                                            "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
-                                                                            "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
-                                                                            "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
-                                                                            "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
-                                                                            "transportation", "toll_booth", "hut", "shed", "garage", "service", "storage_tank",
-                                                                            "slurry_tank"]],
-            "floorAreaTypeAndCompositionTeb"   : ["undefined"            : ["building", "undefined"],
-                                                  "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
-                                                  "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
-                                                                            "sheltered_housing", "workers_dormitory",
-                                                                            "condominium"],
-                                                  "undefined_residential": ["residential"],
-                                                  "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
-                                                                            "post_office", "cinema", "arts_centre", "brothel", "casino",
-                                                                            "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
-                                                                            "ice_cream", "pub", "aquarium"],
-                                                  "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
-                                                                            "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
-                                                                            "bureau_de_change", "boat_rental", "car_rental", "research_institute",
-                                                                            "community_centre", "conference_centre", "events_venue",
-                                                                            "exhibition_centre", "social_centre", "studio", "theatre",
-                                                                            "library", "healthcare", "entertainment_arts_culture",
-                                                                            "hospital", "information", "civic"],
-                                                  "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
-                                                                            "college", "kindergarten", "school", "university", "museum", "gallery"],
-                                                  "light_industrial"     : ["industrial", "factory", "warehouse", "port", "manufacture"],
-                                                  "heavy_industrial"     : ["refinery"],
-                                                  "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
-                                                                            "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
-                                                                            "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
-                                                                            "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
-                                                                            "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
-                                                                            "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
-                                                                            "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
-                                                                            "transportation", "toll_booth", "hut", "shed", "garage", "service", "storage_tank",
-                                                                            "slurry_tank"]],
+            "buildingAreaTypeAndCompositionTeb": getHeatingBuildingGroups(),
+            "floorAreaTypeAndCompositionTeb"   : getHeatingBuildingGroups(),
             "utrfSurfFraction"                 : ["vegetation_fraction_utrf"                : ["high_vegetation_fraction",
                                                                                                "low_vegetation_fraction",
                                                                                                "high_vegetation_low_vegetation_fraction",
@@ -1207,6 +1149,44 @@ Map getParameters() {
                                                                                    "high_vegetation_water_permanent_fraction"]],
             "buildingFractions"                : ["high_vegetation_building_fraction", "building_fraction"]]
 
+}
+
+/**
+ * Map for grouping building types to be used by the abstract model
+ * These groups are useful for calculating indicators such as fractions for buildings with similar heating behaviors.
+ * @return a map with groups
+ */
+Map getHeatingBuildingGroups(){
+    return ["undefined"            : ["building", "undefined"],
+            "individual_housing"   : ["house", "detached", "bungalow", "farm", "villa", "terrace", "cabin"],
+            "collective_housing"   : ["apartments", "barracks", "abbey", "dormitory",
+                                      "sheltered_housing", "workers_dormitory",
+                                      "condominium"],
+            "undefined_residential": ["residential"],
+            "commercial"           : ["commercial", "internet_cafe", "money_transfer", "pharmacy",
+                                      "post_office", "cinema", "arts_centre", "brothel", "casino",
+                                      "sustenance", "hotel", "restaurant", "bar", "cafe", "fast_food",
+                                      "ice_cream", "pub", "aquarium"],
+            "tertiary"             : ["government", "townhall", "retail", "gambling", "music_venue", "nightclub",
+                                      "shop", "store", "supermarket", "office", "terminal", "airport_terminal", "bank",
+                                      "bureau_de_change", "boat_rental", "car_rental", "research_institute",
+                                      "community_centre", "conference_centre", "events_venue",
+                                      "exhibition_centre", "social_centre", "studio", "theatre",
+                                      "library", "healthcare", "entertainment_arts_culture",
+                                      "hospital", "information", "civic"],
+            "education"            : ["education", "swimming-pool", "fitness_centre", "sports_centre",
+                                      "college", "kindergarten", "school", "university", "museum", "gallery"],
+            "light_industrial"     : ["industrial", "factory", "warehouse", "port", "manufacture"],
+            "heavy_industrial"     : ["refinery"],
+            "non_heated"           : ["silo", "barn", "cowshed", "ruins", "church", "chapel", "military",
+                                      "castle", "monument", "fortress", "synagogue", "mosquee", "musalla",
+                                      "shrine", "cathedral", "agricultural", "farm_auxiliary", "digester",
+                                      "horse_riding", "stadium", "track", "pitch", "ice_rink", "sports_hall",
+                                      "ammunition", "bunker", "casemate", "shelter", "religious", "place_of_worship",
+                                      "wayside_shrine", "station", "stable", "sty", "greenhouse", "kiosk", "marketplace",
+                                      "marker", "warehouse", "planetarium", "fire_station", "water_tower", "grandstand",
+                                      "transportation", "toll_booth", "hut", "shed", "garage", "service", "storage_tank",
+                                      "slurry_tank"]]
 }
 
 /**
@@ -2099,10 +2079,10 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
 /**
  * Method to cut the building with a grid or any other table
- * @param datasource
- * @param grid
- * @param building
- * @return
+ * @param datasource input database
+ * @param grid name of the grid table
+ * @param building name of the building table
+ * @return name of the new building table
  */
 String cutBuilding(JdbcDataSource datasource, String grid, String building) throws Exception {
     String buildingCutted = postfix("building_cutted")

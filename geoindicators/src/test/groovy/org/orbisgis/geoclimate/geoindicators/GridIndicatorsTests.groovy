@@ -22,7 +22,8 @@ class GridIndicatorsTests {
 
     @BeforeAll
     static void beforeAll() {
-        h2GIS = open(folder.getAbsolutePath() + File.separator + "gridIndicatorsTests")
+        folder = new File("/tmp")
+        h2GIS = open(folder.getAbsolutePath() + File.separator + "test_db;AUTO_SERVER=TRUE")
     }
 
     @BeforeEach
@@ -76,7 +77,7 @@ class GridIndicatorsTests {
     @Disabled
     //Todo a test that shows how to create the a geom layer for each lod
     void multiscaleLCZGridGeomTest() {
-        String grid_indicators = h2GIS.load("/home/ebocher/Autres/data/geoclimate/uhi_lcz/Dijon/grid_indicators.geojson", true)
+        String grid_indicators = h2GIS.load("/tmp/grid_indicators.geojson", true)
         int nb_levels = 3
         String grid_scale = Geoindicators.GridIndicators.multiscaleLCZGrid(h2GIS, grid_indicators, "id_grid", nb_levels)
         for (int i in 1..nb_levels) {
@@ -157,5 +158,33 @@ class GridIndicatorsTests {
     @Test
     void gridCountCellsWarmTest3() {
         assertThrows(Exception.class, () -> Geoindicators.GridIndicators.gridCountCellsWarm(h2GIS, "grid", [5, 2, 3, 50]))
+    }
+
+    @Test
+    void gridTypeProportionTest1() {
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS grid;
+        CREATE TABLE  grid as SELECT * FROM ST_MakeGrid('POLYGON((0 0, 2 0, 2 2, 0 0))'::GEOMETRY, 1, 1);
+        
+        DROP TABLE IF EXISTS building;
+        CREATE TABLE building (THE_GEOM GEOMETRY(POLYGON, 0),ID_BUILD INT,
+        HEIGHT_WALL DOUBLE PRECISION, HEIGHT_ROOF DOUBLE PRECISION,NB_LEV INT,
+        "TYPE" CHARACTER VARYING,MAIN_USE CHARACTER VARYING);
+        
+        INSERT INTO building (THE_GEOM,ID_BUILD,HEIGHT_WALL,HEIGHT_ROOF,NB_LEV,"TYPE",MAIN_USE) VALUES
+        ('POLYGON ((0.01794118 1.04156863, 0.01794118 1.96127451, 0.96622549 1.96127451, 0.96622549 1.04156863, 0.01794118 1.04156863))'::geometry,1,10.0,10.0,2,'house','residential'),
+        ('POLYGON ((0.81813725 0.57132353, 0.81813725 0.87269608, 1.31955882 0.87269608, 1.31955882 0.57132353, 0.81813725 0.57132353))'::geometry,2,3.0,3.0,1,'house','building'),
+        ('POLYGON ((1.53 1.52480392, 1.53 1.84696078, 1.85995098 1.84696078, 1.85995098 1.52480392, 1.53 1.52480392))'::geometry,3,20.0,20.0,3,'hospital','healthcare');
+
+        """)
+        String buildingCutted = Geoindicators.WorkflowGeoIndicators.cutBuilding(h2GIS, "grid", "building")
+        Map buildingHeatingGroups = Geoindicators.WorkflowGeoIndicators.getHeatingBuildingGroups()
+        String typeProportionTable = Geoindicators.GenericIndicators.typeProportion(h2GIS, buildingCutted, "id", "type", "grid", buildingHeatingGroups, null, "")
+        Map tablesToJoin = ["grid": "id"]
+        tablesToJoin.put(typeProportionTable, "id")
+        Geoindicators.DataUtils.joinTables(h2GIS, tablesToJoin, "grid_types")
+        assertEquals(3, h2GIS.firstRow("select count(*) as count from grid_types where AREA_FRACTION_INDIVIDUAL_HOUSING=1").count)
+        assertEquals(1, h2GIS.firstRow("select count(*) as count from grid_types where AREA_FRACTION_TERTIARY=1").count)
+        h2GIS.dropTable("grid", "building", typeProportionTable, buildingCutted, "grid_types")
     }
 }

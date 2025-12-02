@@ -738,11 +738,11 @@ String typeProportion(JdbcDataSource datasource, String inputTableName, String i
             }
 
             // Calculates the surface of each object depending on its type
-            datasource.execute """DROP TABLE IF EXISTS $caseWhenTab;
+            datasource.execute("""DROP TABLE IF EXISTS $caseWhenTab;
                                     CREATE TABLE $caseWhenTab 
                                             AS SELECT $idField
                                                         ${!queryCaseWh.isEmpty()?","+queryCaseWh.join(","):""} 
-                                            FROM $inputTableName""".toString()
+                                            FROM $inputTableName""")
 
             datasource.createIndex(caseWhenTab, idField)
 
