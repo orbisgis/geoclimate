@@ -761,8 +761,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location = "Geneve"
-        location = [60.355744,5.254726,60.423343,5.396862]
+        def location = "Redon"
+        //location = [60.355744,5.254726,60.423343,5.396862]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
