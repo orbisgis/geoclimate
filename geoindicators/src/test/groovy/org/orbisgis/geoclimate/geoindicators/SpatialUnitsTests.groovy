@@ -360,7 +360,7 @@ class SpatialUnitsTests {
     @Disabled
     void sprawlAreasTestIntegration() {
         //Data for test
-        String path = "/home/ebocher/Autres/data/geoclimate/uhi_lcz/Angers/"
+        String path = "geoclimate_data/"
         String grid_scales = h2GIS.load("${path}grid_indicators.geojson")
         String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, grid_scales, 100)
         String distances = Geoindicators.GridIndicators.gridDistances(h2GIS, sprawl_areas, grid_scales, "id_grid")

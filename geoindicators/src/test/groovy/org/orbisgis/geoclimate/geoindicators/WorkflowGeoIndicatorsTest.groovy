@@ -526,8 +526,8 @@ class WorkflowGeoIndicatorsTest {
     void rasterizeIndicators1() {
         datasource.execute("""
         DROP TABLE IF EXISTS building;
-        CREATE TABLE BUILDING (id_build int, id_block int, id_rsu int, zindex int, the_geom geometry, height_wall float, height_roof float, type varchar, pop double precision );
-        INSERT INTO BUILDING VALUES (1, 1, 1, 0, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY, 5, 10, 'office', 100);
+        CREATE TABLE BUILDING (id_build int, id_block int, id_rsu int, zindex int, the_geom geometry, height_wall float, height_roof float, nb_lev int, type varchar, pop double precision );
+        INSERT INTO BUILDING VALUES (1, 1, 1, 0, 'POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))'::GEOMETRY, 5, 10, 1, 'office', 100);
         """.toString())
         String grid = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, datasource.getExtent("building"), 10, 10, 0)
         assertNotNull(grid)
@@ -569,7 +569,7 @@ class WorkflowGeoIndicatorsTest {
         assertNull(rows.ASPECT_RATIO)
         assertNull(rows.STREET_WIDTH)
         assertTrue(0.5 - rows.SVF < 0.1)
-        assertEquals(1d, rows.TYPE_OFFICE)
+        assertEquals(1d, rows.AREA_FRACTION_TERTIARY)
     }
 
 
