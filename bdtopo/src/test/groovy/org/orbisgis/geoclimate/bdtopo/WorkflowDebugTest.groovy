@@ -172,7 +172,7 @@ class WorkflowDebugTest {
         ]
         //BDTopo.v2(bdTopoParameters)
         /*
-        input_data = "/home/ebocher/Téléchargements/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D033_2023-12-15/BDTOPO/1_DONNEES_LIVRAISON_2023-12-00099"
+        input_data = "/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_D033_2023-12-15/BDTOPO/1_DONNEES_LIVRAISON_2023-12-00099"
 
         directory = "/tmp/bdtopo3"
         dirFile = new File(directory)
