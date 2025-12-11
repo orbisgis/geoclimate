@@ -273,7 +273,7 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                                   WHERE b.$COLUMN_ID_NAME IS NULL AND b.ID_GRID IS NULL
                                   GROUP BY a.$COLUMN_ID_NAME)');"""
 
-        // 4. GATHER SPLITTED CORRECT SHAPES AND SURROUNDED ONES
+        // 4. GATHER SPLITTED CORRECT SHAPES AND SURROUNDING ONES
         // Identify wrong shapes that touche correct ones and calculate length of intersection
         datasource.execute """
             CREATE INDEX IF NOT EXISTS idx ON $RSU_SPLIT_CORRECT_SHAPE(THE_GEOM);
@@ -314,19 +314,20 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
             DROP TABLE IF EXISTS $RSU_SPLIT_CORRECT_UNION;
             CREATE TABLE $RSU_SPLIT_CORRECT_UNION
                 AS SELECT $COLUMN_ID_NAME, EXPLOD_ID, ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM
-                FROM (SELECT $COLUMN_ID_NAME, THE_GEOM, EXPLOD_ID
-                        FROM (SELECT a.$COLUMN_ID_NAME, a.THE_GEOM, a.EXPLOD_ID
-                        FROM $RSU_SPLIT_WRONG_TOUCH a
-                        WHERE VAL = (
-                            SELECT MAX(b.VAL)
-                            FROM $RSU_SPLIT_WRONG_TOUCH b
-                            WHERE b.ID_GRID = a.ID_GRID AND b.$COLUMN_ID_NAME = a.$COLUMN_ID_NAME
-                        GROUP BY b.ID_GRID, b.$COLUMN_ID_NAME
+                FROM    (SELECT $COLUMN_ID_NAME, THE_GEOM, EXPLOD_ID
+                        FROM    (SELECT a.$COLUMN_ID_NAME, a.THE_GEOM, a.EXPLOD_ID
+                                FROM $RSU_SPLIT_WRONG_TOUCH a
+                                WHERE VAL = (
+                                    SELECT MAX(b.VAL)
+                                    FROM $RSU_SPLIT_WRONG_TOUCH b
+                                    WHERE b.ID_GRID = a.ID_GRID AND b.$COLUMN_ID_NAME = a.$COLUMN_ID_NAME
+                                    GROUP BY b.ID_GRID, b.$COLUMN_ID_NAME
+                                    )
+                                )
+                        UNION ALL
+                        SELECT $COLUMN_ID_NAME, THE_GEOM, EXPLOD_ID
+                        FROM $RSU_SPLIT_CORRECT_SHAPE
                         )
-                )
-                UNION ALL
-                SELECT $COLUMN_ID_NAME, THE_GEOM, EXPLOD_ID
-                FROM $RSU_SPLIT_CORRECT_SHAPE)
                 GROUP BY $COLUMN_ID_NAME, EXPLOD_ID;"""
 
         // Union correct shape RSU and splitted RSU that has correct shape
@@ -341,9 +342,11 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                     SELECT $COLUMN_ID_NAME, THE_GEOM
                     FROM $RSU_SPLIT_CORRECT_UNION);"""
 
-        // 5. MERGE REMAINING WRONG SHAPES TO ADJACENT CORRECT SHAPE RSU
-        // Make sure all wrong shape snap correct geometries
-        datasource.execute """
+        // 5. ITERATIVELY MERGE REMAINING WRONG SHAPES TO ADJACENT CORRECT SHAPE RSU
+        def remove_all_wrong = datasource.getTable(RSU_SPLIT_WRONG_NOTOUCH).isEmpty()
+        while(!remove_all_wrong){
+            // Make sure all wrong shape snap correct geometries
+            datasource.execute """
             CREATE INDEX IF NOT EXISTS idx ON $RSU_ALL_CORRECTS(THE_GEOM);
             CREATE INDEX IF NOT EXISTS idx ON $RSU_SPLIT_WRONG_NOTOUCH(THE_GEOM);
             DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_NOTOUCH_SNAP;
@@ -356,8 +359,8 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                             GROUP BY a.$COLUMN_ID_NAME, a.ID_GRID;"""
 
 
-        // Identify all correct shape RSU sharing the side with the wrong shape ones
-        datasource.execute """
+            // Identify all correct shape RSU sharing the side with the wrong shape ones
+            datasource.execute """
             CREATE INDEX IF NOT EXISTS idx ON $RSU_ALL_CORRECTS(THE_GEOM);
             CREATE INDEX IF NOT EXISTS idx ON $RSU_SPLIT_WRONG_NOTOUCH_SNAP(THE_GEOM);
             DROP TABLE IF EXISTS $RSU_WRONG_CORRECT_REL;
@@ -369,8 +372,8 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 FROM $RSU_SPLIT_WRONG_NOTOUCH_SNAP a, $RSU_ALL_CORRECTS b
                 WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM);"""
 
-        // Union the wrong shape RSU with the correct one having the longest shared side
-        datasource.execute """
+            // Union the wrong shape RSU with the correct one having the longest shared side
+            datasource.execute """
             CREATE INDEX IF NOT EXISTS id ON $RSU_WRONG_CORRECT_REL(ID_GRID);
             DROP TABLE IF EXISTS $RSU_CORRECT_ALL;
             CREATE TABLE $RSU_CORRECT_ALL
@@ -389,6 +392,30 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 FROM $RSU_ALL_CORRECTS)
                 GROUP BY $COLUMN_ID_NAME;"""
 
+            // Identify wrong shapes that have not been yet merged with correct ones
+            datasource.execute """
+            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_NOTOUCH_SNAP($COLUMN_ID_NAME);
+            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_NOTOUCH($COLUMN_ID_NAME);
+            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_NOTOUCH_SNAP(ID_GRID);
+            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_NOTOUCH(ID_GRID);
+            DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_REMAINING;
+            CREATE TABLE $RSU_SPLIT_WRONG_REMAINING
+                AS SELECT a.$COLUMN_ID_NAME, a.ID_GRID, a.THE_GEOM
+                FROM $RSU_SPLIT_WRONG_NOTOUCH a
+                LEFT JOIN $RSU_SPLIT_WRONG_NOTOUCH_SNAP b
+                ON a.$COLUMN_ID_NAME = b.$COLUMN_ID_NAME AND a.ID_GRID = b.ID_GRID
+                WHERE b.$COLUMN_ID_NAME IS NULL AND b.ID_GRID IS NULL;"""
+
+            // Rename tables to make the iterative process work
+            datasource.execute """DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_NOTOUCH;
+                                        ALTER TABLE $RSU_SPLIT_WRONG_REMAINING RENAME TO $RSU_SPLIT_WRONG_NOTOUCH;"""
+            datasource.execute """DROP TABLE IF EXISTS $RSU_ALL_CORRECTS;
+                                        ALTER TABLE $RSU_CORRECT_ALL RENAME TO $RSU_ALL_CORRECTS;"""
+
+            // Verify that all there is no remaining wrong shapes
+            remove_all_wrong = datasource.getTable(RSU_SPLIT_WRONG_NOTOUCH).isEmpty()
+        }
+        /*
         // 6. AGAIN MERGE REMAINING WRONG SHAPES TO ADJACENT CORRECT SHAPE RSU
         // Identify wrong shapes that have not been yet merged with correct ones
         datasource.execute """
@@ -446,6 +473,19 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 FROM $RSU_WATER
                 WHERE ST_AREA(THE_GEOM) > $area;
                 """
+        */
+        datasource.execute """
+            DROP TABLE IF EXISTS $outputTableName;
+            CREATE TABLE $outputTableName
+                AS SELECT $COLUMN_ID_NAME, THE_GEOM
+                FROM $RSU_ALL_CORRECTS
+                WHERE ST_AREA(THE_GEOM) > $area
+                UNION ALL
+                SELECT $COLUMN_ID_NAME, THE_GEOM
+                FROM $RSU_WATER
+                WHERE ST_AREA(THE_GEOM) > $area;
+            """
+
 
         // Remove intermediate tables
         datasource """
