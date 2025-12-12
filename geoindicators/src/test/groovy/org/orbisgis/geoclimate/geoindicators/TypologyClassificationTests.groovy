@@ -268,7 +268,7 @@ class TypologyClassificationTests {
     void formatEstimateBuildingTest1() {
         h2GIS.execute("""
         DROP TABLE IF EXISTS building;
-        CREATE TABLE building (id_build int, type varchar, main_use varchar, 
+        CREATE TABLE building (id_build int, build_type varchar, build_main_use varchar, 
         RSU_WATER_PERMANENT_FRACTION double precision,
         RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION double precision,
         RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION double precision);        
@@ -280,18 +280,18 @@ class TypologyClassificationTests {
 
         def rows = h2GIS.rows("SELECT * from $buildingFormated where id_build=1")
         assertEquals(0.5, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
-        assertEquals("chapel", rows.TYPE[0])
-        assertEquals("religious", rows.MAIN_USE[0])
+        assertEquals("chapel", rows.BUILD_TYPE[0])
+        assertEquals("religious", rows.BUILD_MAIN_USE[0])
 
         rows = h2GIS.rows("SELECT * from $buildingFormated where id_build=2")
         assertEquals(1, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
-        assertEquals("commercial", rows.TYPE[0])
-        assertEquals("commercial", rows.MAIN_USE[0])
+        assertEquals("commercial", rows.BUILD_TYPE[0])
+        assertEquals("commercial", rows.BUILD_MAIN_USE[0])
 
         rows = h2GIS.rows("SELECT * from $buildingFormated where id_build=3")
         assertEquals(0, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
-        assertEquals("building", rows.TYPE[0])
-        assertEquals("transportation", rows.MAIN_USE[0])
+        assertEquals("building", rows.BUILD_TYPE[0])
+        assertEquals("transportation", rows.BUILD_MAIN_USE[0])
     }
 
     @Test

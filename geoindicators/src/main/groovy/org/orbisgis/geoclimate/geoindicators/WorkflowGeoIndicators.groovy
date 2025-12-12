@@ -835,14 +835,11 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                 ["AVG", "STD"], prefixName)
         tablesToDrop << gatheredScales
         if (!datasource.isEmpty(gatheredScales)) {
-            // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
-            datasource.execute("""ALTER TABLE $gatheredScales RENAME COLUMN RSU_WATER_PERMANENT_FRACTION TO RSU_WATER_FRACTION""")
-            datasource.execute("""DROP TABLE IF EXISTS GATHERED_SCALES_WATER_MODIF;
-                CREATE TABLE GATHERED_SCALES_WATER_MODIF 
-                    AS SELECT *, RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION
-                    FROM $gatheredScales""")
+            String formatBuildingBeforeRF = formatBuildingBeforeEstimation(datasource, gatheredScales)
+            tablesToDrop<<formatBuildingBeforeRF
+
             def utrfBuild = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                    "GATHERED_SCALES_WATER_MODIF", utrfModelName, COLUMN_ID_BUILD, prefixName)
+                    formatBuildingBeforeRF, utrfModelName, COLUMN_ID_BUILD, prefixName)
 
             tablesToDrop << utrfBuild
 
@@ -1439,16 +1436,11 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
 
         } else {
             info "Start estimating the building height"
-            // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
-            datasource.execute("""ALTER TABLE $gatheredScales RENAME COLUMN RSU_WATER_PERMANENT_FRACTION TO RSU_WATER_FRACTION""")
-            datasource.execute("""DROP TABLE IF EXISTS GATHERED_SCALES_WATER_MODIF;
-                CREATE TABLE GATHERED_SCALES_WATER_MODIF 
-                    AS SELECT *, RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION
-                    FROM $gatheredScales""")
+            String formatBuildingBeforeRF = formatBuildingBeforeEstimation(datasource, gatheredScales)
 
             //Apply RF model
             buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                    "GATHERED_SCALES_WATER_MODIF", buildingHeightModelName, "id_build", prefixName)
+                    formatBuildingBeforeRF, buildingHeightModelName, "id_build", prefixName)
 
             //Update the abstract building table
             info "Replace the input building table by the estimated height"
@@ -1476,7 +1468,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
             //Drop intermediate tables
             datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                             $formatedBuildEstimatedHeight, $buildEstimatedHeight,
-                                            $gatheredScales, GATHERED_SCALES_WATER_MODIF""".toString()
+                                            $gatheredScales, $formatBuildingBeforeRF""".toString()
 
         }
         return ["building"                          : buildingTableName,
@@ -1498,6 +1490,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
 }
 
 /**
+ * A method to format the building indicators before using it with the RF height model
  *
  * @param datasource connexion to the database
  * @param buildingToEstimate the name of the building table from which the heights must be estimated
@@ -1518,23 +1511,23 @@ String formatBuildingBeforeEstimation(JdbcDataSource datasource, String building
     typesToMap.each {it->
         List inputTypes = it.value
         if(inputTypes){
-            typesCaseWhen+=" WHEN type in ('${inputTypes.join("','")}') THEN '${it.key}'"
+            typesCaseWhen+=" WHEN BUILD_TYPE in ('${inputTypes.join("','")}') THEN '${it.key}'"
         }
     }
-    typesCaseWhen+=" ELSE type end as type"
+    typesCaseWhen+=" ELSE BUILD_TYPE end as BUILD_TYPE"
 
     def usesCaseWhen = "CASE "
     usesToMap.each {it->
         List inputTypes = it.value
         if(inputTypes){
-            usesCaseWhen+=" WHEN MAIN_USE in ('${inputTypes.join("','")}') THEN '${it.key}'"
+            usesCaseWhen+=" WHEN BUILD_MAIN_USE in ('${inputTypes.join("','")}') THEN '${it.key}'"
         }
     }
-    usesCaseWhen+=" ELSE MAIN_USE end as MAIN_USE"
+    usesCaseWhen+=" ELSE BUILD_MAIN_USE end as BUILD_MAIN_USE"
 
     def columns =  datasource.getColumnNames(buildingToEstimate)
-    columns.removeAll(["TYPE", "MAIN_USE"])
-    String outputTable =  postfix("GATHERED_SCALES_WATER_MODIF")
+    columns.removeAll(["BUILD_TYPE", "BUILD_MAIN_USE"])
+    String outputTable =  postfix("format_building_before_rf")
     // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
     datasource.execute("""DROP TABLE IF EXISTS $outputTable;
                     CREATE TABLE $outputTable 
