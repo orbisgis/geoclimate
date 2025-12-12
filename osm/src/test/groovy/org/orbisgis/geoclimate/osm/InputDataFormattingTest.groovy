@@ -19,6 +19,7 @@
  */
 package org.orbisgis.geoclimate.osm
 
+import groovy.json.JsonSlurper
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
@@ -390,5 +391,101 @@ class InputDataFormattingTest {
     void parseFloat() {
         def heightPattern = Pattern.compile("((?:\\d+\\/|(?:\\d+|^|\\s)\\.)?\\d+)\\s*([^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?(?:\\/[^\\s\\d+\\-.,:;^\\/]+(?:\\^\\d+(?:\$|(?=[\\s:;\\/])))?)*)?", Pattern.CASE_INSENSITIVE)
         assertEquals(0, InputDataFormatting.getHeightRoof("II OSK 1559/12", heightPattern))
+    }
+
+    @Test
+    void mappingBuildingModelTest() {
+        JsonSlurper jsonSlurper = new JsonSlurper()
+        Map buildingParameters = jsonSlurper.parse(InputDataFormatting.class.getResourceAsStream("buildingParams.json")) as Map
+
+        HashSet allOSMTypes = new HashSet()
+        HashSet allOSMUses = new HashSet()
+        Map mappingTypeAndUse = buildingParameters.type as Map
+        mappingTypeAndUse.each { it ->
+            def type_use = it.key.split(":")
+            if (type_use.size() == 2) {
+                allOSMTypes.add(type_use[0].trim())
+                def main_use = type_use[1].trim()
+                allOSMUses.add(main_use)
+            } else {
+                def type_and_main_use = it.key.trim()
+                allOSMUses.add(type_and_main_use)
+                allOSMTypes.add(type_and_main_use)
+            }
+        }
+
+        Map types_uses_for_model = Geoindicators.WorkflowGeoIndicators.getHeightModelTypesMapping()
+
+        Map typesToMap = types_uses_for_model.types as Map
+        Map usesToMap = types_uses_for_model.uses as Map
+        HashSet<String> allModelTypes = new HashSet<>()
+        typesToMap.each {it->
+            allModelTypes.add(it.key)
+            List inputTypes = it.value
+            if(inputTypes){
+                allModelTypes.addAll(inputTypes)
+            }
+        }
+
+        HashSet<String> allModelUses = new HashSet<>()
+        usesToMap.each {it->
+            allModelUses.add(it.key)
+            List inputUses = it.value
+            if(inputUses){
+                allModelUses.addAll(inputUses)
+            }
+        }
+
+        assertTrue(!(allOSMTypes - allModelTypes))
+        assertTrue(!(allOSMUses - allModelUses))
+
+    }
+
+    @Test
+    void mappingUrbanAreasModelTest() {
+        JsonSlurper jsonSlurper = new JsonSlurper()
+        Map buildingParameters = jsonSlurper.parse(InputDataFormatting.class.getResourceAsStream("urbanAreasParams.json")) as Map
+
+        HashSet allOSMTypes = new HashSet()
+        HashSet allOSMUses = new HashSet()
+        Map mappingTypeAndUse = buildingParameters.type as Map
+        mappingTypeAndUse.each { it ->
+            def type_use = it.key.split(":")
+            if (type_use.size() == 2) {
+                allOSMTypes.add(type_use[0].trim())
+                def main_use = type_use[1].trim()
+                allOSMUses.add(main_use)
+            } else {
+                def type_and_main_use = it.key.trim()
+                allOSMUses.add(type_and_main_use)
+                allOSMTypes.add(type_and_main_use)
+            }
+        }
+
+        Map types_uses_for_model = Geoindicators.WorkflowGeoIndicators.getHeightModelTypesMapping()
+
+        Map typesToMap = types_uses_for_model.types as Map
+        Map usesToMap = types_uses_for_model.uses as Map
+        HashSet<String> allModelTypes = new HashSet<>()
+        typesToMap.each {it->
+            allModelTypes.add(it.key)
+            List inputTypes = it.value
+            if(inputTypes){
+                allModelTypes.addAll(inputTypes)
+            }
+        }
+
+        HashSet<String> allModelUses = new HashSet<>()
+        usesToMap.each {it->
+            allModelUses.add(it.key)
+            List inputUses = it.value
+            if(inputUses){
+                allModelUses.addAll(inputUses)
+            }
+        }
+
+        assertTrue(!(allOSMTypes - allModelTypes))
+        assertTrue(!(allOSMUses - allModelUses))
+
     }
 }
