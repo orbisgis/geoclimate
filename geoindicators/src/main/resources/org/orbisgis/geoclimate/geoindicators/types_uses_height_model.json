@@ -8,7 +8,10 @@
       "brothel",
       "shed",
       "water_tower",
-      "undefined"
+      "undefined",
+      "slight_construction",
+      "garage",
+      "garages"
     ],
     "castle": [
       "fortress"
@@ -172,13 +175,14 @@
       "station",
       "track",
       "service",
-      "aeroway"
+      "aeroway",
+      "railway"
     ]
   },
   "uses": {
     "agricultural": [],
     "commercial": ["retail"],
-    "education": [],
+    "education": ["school"],
     "government": ["civic"],
     "healthcare": [
       "emergency", "fire_station"
@@ -190,7 +194,7 @@
     "office": [],
     "religious": [],
     "residential": [],
-    "transportation": ["service", "transport"],
+    "transportation": ["service", "transport","railway"],
     "historic": [],
     "building": [
       "undefined",

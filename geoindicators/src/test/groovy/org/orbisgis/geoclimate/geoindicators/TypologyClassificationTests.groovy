@@ -292,6 +292,8 @@ class TypologyClassificationTests {
         assertEquals(0, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
         assertEquals("building", rows.BUILD_TYPE[0])
         assertEquals("transportation", rows.BUILD_MAIN_USE[0])
+
+        h2GIS.dropTable("building", buildingFormated)
     }
 
     @Test
