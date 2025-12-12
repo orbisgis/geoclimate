@@ -612,7 +612,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def osm_parmeters = [
-                "description" : "Compute the targuet land input",
+                "description" : "Compute the Target land input",
                 "geoclimatedb": [
                         "folder": dirFile.absolutePath,
                         "name"  : "geoclimate_chain_db",

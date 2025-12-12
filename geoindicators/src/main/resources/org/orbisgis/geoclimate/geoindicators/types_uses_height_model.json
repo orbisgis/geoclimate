@@ -39,7 +39,8 @@
     "detached": [
       "hut",
       "shelter",
-      "tower"
+      "tower",
+      "annex"
     ],
     "education": [
       "college",
@@ -191,7 +192,7 @@
     "healthcare": [
       "emergency", "fire_station"
     ],
-    "heritage": [],
+    "heritage": ["castle"],
     "industrial": ["port","refinery"],
     "military": [],
     "monument": [],
@@ -207,7 +208,8 @@
       "garage",
       "garages",
       "shelter",
-      "slight_construction"
+      "slight_construction",
+      "annex"
     ],
     "entertainment_arts_culture":["sport","community_centre"]
   }
