@@ -76,11 +76,13 @@
       "stable"
     ],
     "government": [
-      "government_office"
+      "government_office",
+      "civic"
     ],
     "healthcare": [
       "hospital",
-      "social_facility"
+      "social_facility",
+      "emergency"
     ],
     "house": [
       "farmhouse"
