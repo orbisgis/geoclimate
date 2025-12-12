@@ -11,7 +11,8 @@
       "undefined",
       "slight_construction",
       "garage",
-      "garages"
+      "garages",
+      "farmyard"
     ],
     "castle": [
       "fortress"
@@ -100,7 +101,8 @@
       "oil_mill",
       "well_cluster",
       "factory",
-      "wellsite"
+      "wellsite",
+      "port"
     ],
     "military": [
       "bunker",
@@ -182,15 +184,15 @@
     ]
   },
   "uses": {
-    "agricultural": [],
+    "agricultural": ["farmyard"],
     "commercial": ["retail"],
-    "education": ["school"],
+    "education": ["school", "university", "research_institute"],
     "government": ["civic"],
     "healthcare": [
       "emergency", "fire_station"
     ],
     "heritage": [],
-    "industrial": [],
+    "industrial": ["port","refinery"],
     "military": [],
     "monument": [],
     "office": [],
@@ -207,6 +209,6 @@
       "shelter",
       "slight_construction"
     ],
-    "entertainment_arts_culture":["sport"]
+    "entertainment_arts_culture":["sport","community_centre"]
   }
 }
