@@ -19,6 +19,7 @@
  */
 package org.orbisgis.geoclimate.geoindicators
 
+import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
@@ -1494,6 +1495,56 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
 
 
 
+}
+
+/**
+ *
+ * @param datasource connexion to the database
+ * @param buildingToEstimate the name of the building table from which the heights must be estimated
+ * @return a new building table with the data ready for the RF model
+ */
+String formatBuildingBeforeEstimation(JdbcDataSource datasource, String buildingToEstimate){
+    JsonSlurper jsonSlurper = new JsonSlurper()
+    Map types_uses_for_model = jsonSlurper.parse(this.class.getResourceAsStream("types_uses_height_model.json")) as Map
+    if (!types_uses_for_model) {
+        error "Cannot find the file to map the input types and uses"
+        return
+    }
+    Map typesToMap = types_uses_for_model.types as Map
+    Map usesToMap = types_uses_for_model.uses as Map
+
+    //Check if the input data contains the same type and use values
+    def typesCaseWhen = "CASE "
+    typesToMap.each {it->
+        List inputTypes = it.value
+        if(inputTypes){
+            typesCaseWhen+=" WHEN type in ('${inputTypes.join("','")}') THEN '${it.key}'"
+        }
+    }
+    typesCaseWhen+=" ELSE type end as type"
+
+    def usesCaseWhen = "CASE "
+    usesToMap.each {it->
+        List inputTypes = it.value
+        if(inputTypes){
+            usesCaseWhen+=" WHEN MAIN_USE in ('${inputTypes.join("','")}') THEN '${it.key}'"
+        }
+    }
+    usesCaseWhen+=" ELSE MAIN_USE end as MAIN_USE"
+
+    def columns =  datasource.getColumnNames(buildingToEstimate)
+    columns.removeAll(["TYPE", "MAIN_USE"])
+    String outputTable =  postfix("GATHERED_SCALES_WATER_MODIF")
+    // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
+    datasource.execute("""DROP TABLE IF EXISTS $outputTable;
+                    CREATE TABLE $outputTable 
+                    AS SELECT ${columns.join(",")}, 
+                    RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION,
+                    RSU_WATER_PERMANENT_FRACTION as RSU_WATER_FRACTION,
+                    ${typesCaseWhen}, ${usesCaseWhen}
+                    FROM $buildingToEstimate""")
+
+    return outputTable
 }
 
 

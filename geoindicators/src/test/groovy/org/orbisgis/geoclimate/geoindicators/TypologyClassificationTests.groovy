@@ -265,6 +265,36 @@ class TypologyClassificationTests {
     }
 
     @Test
+    void formatEstimateBuildingTest1() {
+        h2GIS.execute("""
+        DROP TABLE IF EXISTS building;
+        CREATE TABLE building (id_build int, type varchar, main_use varchar, 
+        RSU_WATER_PERMANENT_FRACTION double precision,
+        RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION double precision,
+        RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION double precision);        
+        INSERT INTO building values(1, 'chapel', 'religious', 0.5, 0.5, 0);
+        INSERT INTO building values(2, 'retail', 'retail', 0.3, 0.3, 0.7);
+        INSERT INTO building values(3, 'building', 'service', 0, 0, 0);
+        """)
+        String buildingFormated = Geoindicators.WorkflowGeoIndicators.formatBuildingBeforeEstimation(h2GIS, "building")
+
+        def rows = h2GIS.rows("SELECT * from $buildingFormated where id_build=1")
+        assertEquals(0.5, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
+        assertEquals("chapel", rows.TYPE[0])
+        assertEquals("religious", rows.MAIN_USE[0])
+
+        rows = h2GIS.rows("SELECT * from $buildingFormated where id_build=2")
+        assertEquals(1, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
+        assertEquals("commercial", rows.TYPE[0])
+        assertEquals("commercial", rows.MAIN_USE[0])
+
+        rows = h2GIS.rows("SELECT * from $buildingFormated where id_build=3")
+        assertEquals(0, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
+        assertEquals("building", rows.TYPE[0])
+        assertEquals("transportation", rows.MAIN_USE[0])
+    }
+
+    @Test
     @Disabled
     void lczTestValuesBdTopov2() {
         // Maps of weights for bd topo

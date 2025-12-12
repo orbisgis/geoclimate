@@ -243,7 +243,9 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             MAX(part) FILTER (WHERE  type = 'community_centre')  as "community_centre",
             MAX(part) FILTER (WHERE  type = 'military')  as "military",
             MAX(part) FILTER (WHERE  type = 'railway')  as "railway",
-            MAX(part) FILTER (WHERE  type = 'farmyard')  as "farmyard",
+            MAX(part) FILTER (WHERE  type = 'farmyard')  as "farmyard",            
+            MAX(part) FILTER (WHERE type= 'healthcare') as "healthcare",
+            MAX(part) FILTER (WHERE type= 'religious') as "religious",
             MAX(part) FILTER (WHERE  type = 'garage')  as "garage",
             id_build FROM $urbanAreasPart where part > 0.9 group by id_build """.toString()
 
