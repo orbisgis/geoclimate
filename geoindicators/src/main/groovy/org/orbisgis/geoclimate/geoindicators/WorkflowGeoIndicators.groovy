@@ -1528,8 +1528,12 @@ String formatBuildingBeforeEstimation(JdbcDataSource datasource, String building
     HashSet<String> inputTypes = new HashSet<>()
     HashSet<String> inputUses = new HashSet<>()
     datasource.eachRow("SELECT DISTINCT BUILD_TYPE, BUILD_MAIN_USE FROM $buildingToEstimate"){ row->
-            inputTypes.add(row.BUILD_TYPE)
-            inputUses.add(row.BUILD_MAIN_USE)
+            if(row.BUILD_TYPE!="null"){
+                inputTypes.add(row.BUILD_TYPE)
+            }
+            if(row.BUILD_MAIN_USE!="null") {
+                inputUses.add(row.BUILD_MAIN_USE)
+            }
     }
 
     //Let's check if the type and uses values are known in the model

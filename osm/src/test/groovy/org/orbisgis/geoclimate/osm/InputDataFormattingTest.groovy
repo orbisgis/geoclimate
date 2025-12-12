@@ -412,7 +412,6 @@ class InputDataFormattingTest {
                 allOSMUses.add(type_and_main_use)
                 allOSMTypes.add(type_and_main_use)
             }
-
         }
 
         Map types_uses_for_model = Geoindicators.WorkflowGeoIndicators.getHeightModelTypesMapping()
