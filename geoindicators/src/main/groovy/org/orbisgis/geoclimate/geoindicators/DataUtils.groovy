@@ -290,3 +290,33 @@ Float asFloat(def value){
         return null
     }
 }
+
+/**
+ * Cast the input value as Boolean otherwise return NULL
+ * @param value input value
+ * @return casted value
+ */
+Boolean asBoolean(def value){
+    if(value==null){
+        return null
+    }
+    try {
+        return Boolean.valueOf(value)
+    }catch (Exception ex){
+        return null
+    }
+}
+
+
+/**
+ * Cast the input value as Integer otherwise return NULL
+ * @param value input value
+ * @return casted value
+ */
+Integer asInteger(def value){
+    try {
+        return value as Integer
+    }catch (Exception ex){
+        return null
+    }
+}
