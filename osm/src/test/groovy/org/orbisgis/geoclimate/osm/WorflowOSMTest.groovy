@@ -815,12 +815,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          "rsu_indicators"       : [
                                  "indicatorUse": ["LCZ"] //, "UTRF"]
 
-
-                         ]/*,
+                         ],
                           "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
-                                "rowCol": false,
+                                "rowCol": true,
                                 "output" : "geojson",
                                 "indicators": [
                                         "BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
