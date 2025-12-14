@@ -833,8 +833,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH",
                                         "BUILDING_NUMBER"]
                                 //"lcz_lod":1
-                        ],*/
-                         /*
+                        ]/*,                        
 
                          "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
