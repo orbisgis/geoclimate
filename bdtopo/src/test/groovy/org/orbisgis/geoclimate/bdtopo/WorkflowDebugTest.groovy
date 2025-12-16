@@ -136,9 +136,13 @@ class WorkflowDebugTest {
     @Disabled
     @Test
     void testIntegrationFolderInput() {
-        def input_data = "/home/bernardj/Data/BDT/V3/BDTOPO_3-3_TOUSTHEMES_SHP_LAMB93_R11_2024-03-15"
-        def locations = [
-                         [6857743.1274865065, 653030.9684552355, 6858743.1274865065, 654030.9684552355]]
+        def input_data = "/home/ebocher/Téléchargements/BDTOPO_3-5_TOUSTHEMES_SHP_LAMB93_D069_2025-09-15/BDTOPO"
+        def locations = [                [
+                        6512366.0854,
+                        839027.5698,
+                        6515013.5663,
+                        842413.6146
+                ]]
         String directory = "/tmp/bdtopo3"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -159,7 +163,7 @@ class WorkflowDebugTest {
                 "parameters"  :
                         ["distance"    : 0,
                          rsu_indicators: [
-                                 "indicatorUse": ["LCZ", "UTRF", "TEB"]
+                                 "indicatorUse": ["LCZ"]//, "UTRF", "TEB"]
 
                          ],
                          /*"grid_indicators": [

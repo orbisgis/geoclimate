@@ -341,8 +341,11 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         debug "Loading in the H2GIS database $outputTableName"
         def communeColumns = h2gis_datasource.getColumnNames(inputTables.commune)
         if (communeColumns.contains("INSEE_COM")) {
-            h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 
-            INSEE_COM AS CODE_INSEE FROM ${inputTables.commune} WHERE INSEE_COM='$location' or lower(nom)='${location.toLowerCase()}'""".toString())
+            h2gis_datasource.execute("""
+            DROP TABLE IF EXISTS $outputTableName ; 
+            CREATE TABLE $outputTableName as SELECT $formatting_geom, 
+            INSEE_COM AS CODE_INSEE FROM ${inputTables.commune} WHERE INSEE_COM='$location' or lower(nom)='${location.toLowerCase()}'
+            """)
         } else {
             throw new Exception("Cannot find a column insee_com or code_insee to filter the commune")
         }
@@ -359,11 +362,12 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
             //Extract batiment
             outputTableName = "BATIMENT"
             debug "Loading in the H2GIS database $outputTableName"
-            h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, 
+            h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; 
+                CREATE TABLE $outputTableName as SELECT ID, $formatting_geom, 
                 NATURE,	USAGE1,NB_ETAGES, HAUTEUR,
 	            Z_MIN_TOIT, Z_MAX_TOIT 
 	            FROM ${inputTables.batiment}  WHERE the_geom && 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY 
-                AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)""".toString())
+                AND ST_INTERSECTS(the_geom, 'SRID=$sourceSRID;$geomToExtract'::GEOMETRY)""")
         }
 
         if (inputTables.troncon_de_route) {

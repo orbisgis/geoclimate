@@ -786,14 +786,15 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
             } else {
                 def tablesToMerge = ["zone"               : [],
+                                     "zone_extended"      : [],
                                      "road"               : [], "rail": [], "water": [],
                                      "vegetation"         : [], "impervious": [], "building": [],
                                      "building_indicators": [], "block_indicators": [],
                                      "rsu_indicators"     : [], "rsu_lcz": [],
                                      "rsu_utrf_area"      : [], "rsu_utrf_floor_area": [],
                                      "building_utrf"      : [], "population": [], "road_traffic": [],
-                                     "grid_indicators"    : [], "urban_areas": [], "ground_acoustic": []
-
+                                     "grid_indicators"    : [], "urban_areas": [], "ground_acoustic": [],
+                                     "building_updated": []
                 ]
                 tmp_results.each { code ->
                     code.value.each { it ->
