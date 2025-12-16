@@ -607,7 +607,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testTarget() {
-        String directory = folder.absolutePath + File.separator + "testOSMTEB"
+        String directory = folder.absolutePath + File.separator + "testTarget"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
