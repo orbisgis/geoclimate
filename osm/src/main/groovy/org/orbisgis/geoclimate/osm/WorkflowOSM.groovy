@@ -811,13 +811,13 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
             defaultParameters.distance = distanceP
         }
 
-        def prefixNameP = processing_parameters.prefixName
-        if (prefixNameP && prefixNameP in String) {
+        def prefixNameP = processing_parameters.prefixName as String
+        if (prefixNameP !=null) {
             defaultParameters.prefixName = prefixNameP
         }
 
-        def hLevMinP = processing_parameters.hLevMin
-        if (hLevMinP && hLevMinP in Integer) {
+        def hLevMinP = Geoindicators.DataUtils.asInteger(processing_parameters.hLevMin)
+        if (hLevMinP !=null) {
             defaultParameters.hLevMin = hLevMinP
         }
 
@@ -841,8 +841,8 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
             } else {
                 rsu_indicators_default.indicatorUse = []
             }
-            def snappingToleranceP = rsu_indicators.snappingTolerance
-            if (snappingToleranceP && snappingToleranceP in Number) {
+            def snappingToleranceP = Geoindicators.DataUtils.asFloat(rsu_indicators.snappingTolerance)
+            if (snappingToleranceP!=null) {
                 rsu_indicators_default.snappingTolerance = (Float) snappingToleranceP
             }
             Float surface_vegetationP = Geoindicators.DataUtils.asFloat(rsu_indicators.surface_vegetation)
@@ -858,12 +858,12 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                 rsu_indicators_default.surface_urban_areas = surface_urbanAreasP
             }
 
-            def svfSimplifiedP = rsu_indicators.svfSimplified
-            if (svfSimplifiedP && svfSimplifiedP in Boolean) {
+            def svfSimplifiedP = Geoindicators.DataUtils.asBoolean(rsu_indicators.svfSimplified)
+            if (svfSimplifiedP!=null) {
                 rsu_indicators_default.svfSimplified = svfSimplifiedP
             }
-            def estimateHeight = rsu_indicators.estimateHeight
-            if (estimateHeight && estimateHeight in Boolean) {
+            def estimateHeight = Geoindicators.DataUtils.asBoolean(rsu_indicators.estimateHeight)
+            if (estimateHeight!=null) {
                 rsu_indicators_default.estimateHeight = estimateHeight
             }
             def mapOfWeightsP = rsu_indicators.mapOfWeights
@@ -960,24 +960,24 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                         }
                     }
 
-                    def domainP = grid_indicators.domain
-                    if (domainP!=null && domainP in String && domainP.toLowerCase() in ["zone", "zone_extended"]) {
+                    String domainP = grid_indicators.domain as String
+                    if (domainP!=null && domainP.toLowerCase() in ["zone", "zone_extended"]) {
                         grid_indicators_tmp.domain = domainP.toLowerCase() //Grid is computed to the zone
                     }
 
-                    def grid_rowCol = grid_indicators.rowCol
-                    if (grid_rowCol && grid_rowCol in Boolean) {
+                    def grid_rowCol = Geoindicators.DataUtils.asBoolean(grid_indicators.rowCol)
+                    if (grid_rowCol!=null) {
                         grid_indicators_tmp.rowCol = grid_rowCol
                     }
-                    def lcz_lod = grid_indicators.lcz_lod
-                    if (lcz_lod && lcz_lod in Integer) {
+                    def lcz_lod = Geoindicators.DataUtils.asInteger(grid_indicators.lcz_lod)
+                    if (lcz_lod!=null) {
                         if (lcz_lod < 0 && lcz_lod > 10) {
                             throw new Exception("The number of level of details to aggregate the LCZ must be between 0 and 10")
                         }
                         grid_indicators_tmp.put("lcz_lod", lcz_lod)
                     }
-                    def sprawl_areas = grid_indicators.urban_sprawl_areas
-                    if (sprawl_areas && sprawl_areas in Boolean) {
+                    def sprawl_areas = Geoindicators.DataUtils.asBoolean(grid_indicators.urban_sprawl_areas)
+                    if (sprawl_areas!=null) {
                         grid_indicators_tmp.put("urban_sprawl_areas", sprawl_areas)
                     }
                     defaultParameters.put("grid_indicators", grid_indicators_tmp)
@@ -988,16 +988,16 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
         }
 
         //Check for road_traffic method
-        def road_traffic = processing_parameters.road_traffic
-        if (road_traffic && road_traffic in Boolean) {
+        def road_traffic = Geoindicators.DataUtils.asBoolean(processing_parameters.road_traffic)
+        if (road_traffic!=null) {
             defaultParameters.put("road_traffic", road_traffic)
         }
 
         //Check if the noise indicators must be computed
         def noise_indicators = processing_parameters.noise_indicators
         if (noise_indicators) {
-            def ground_acoustic = noise_indicators.ground_acoustic
-            if (ground_acoustic && ground_acoustic in Boolean) {
+            def ground_acoustic = Geoindicators.DataUtils.asBoolean(noise_indicators.ground_acoustic)
+            if (ground_acoustic!=null) {
                 defaultParameters.put("noise_indicators", ["ground_acoustic": ground_acoustic])
             }
         }
@@ -1282,7 +1282,8 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
                     }
                 }
                 if (tmpTable) {
-                    output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
+                    output_datasource.execute("""ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;
+                                              ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone varchar;""")
                     output_datasource.execute("UPDATE $output_table SET id_zone= '${id_zone.replace("'","''")}'".toString())
                     output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                     info "The table $h2gis_table_to_save has been exported into the table $output_table"

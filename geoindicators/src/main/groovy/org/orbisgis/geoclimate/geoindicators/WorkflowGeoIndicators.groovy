@@ -19,6 +19,7 @@
  */
 package org.orbisgis.geoclimate.geoindicators
 
+import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
@@ -834,14 +835,11 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
                 ["AVG", "STD"], prefixName)
         tablesToDrop << gatheredScales
         if (!datasource.isEmpty(gatheredScales)) {
-            // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
-            datasource.execute("""ALTER TABLE $gatheredScales RENAME COLUMN RSU_WATER_PERMANENT_FRACTION TO RSU_WATER_FRACTION""")
-            datasource.execute("""DROP TABLE IF EXISTS GATHERED_SCALES_WATER_MODIF;
-                CREATE TABLE GATHERED_SCALES_WATER_MODIF 
-                    AS SELECT *, RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION
-                    FROM $gatheredScales""")
+            String formatBuildingBeforeRF = formatBuildingBeforeEstimation(datasource, gatheredScales)
+            tablesToDrop<<formatBuildingBeforeRF
+
             def utrfBuild = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                    "GATHERED_SCALES_WATER_MODIF", utrfModelName, COLUMN_ID_BUILD, prefixName)
+                    formatBuildingBeforeRF, utrfModelName, COLUMN_ID_BUILD, prefixName)
 
             tablesToDrop << utrfBuild
 
@@ -1438,16 +1436,11 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
 
         } else {
             info "Start estimating the building height"
-            // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
-            datasource.execute("""ALTER TABLE $gatheredScales RENAME COLUMN RSU_WATER_PERMANENT_FRACTION TO RSU_WATER_FRACTION""")
-            datasource.execute("""DROP TABLE IF EXISTS GATHERED_SCALES_WATER_MODIF;
-                CREATE TABLE GATHERED_SCALES_WATER_MODIF 
-                    AS SELECT *, RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION
-                    FROM $gatheredScales""")
+            String formatBuildingBeforeRF = formatBuildingBeforeEstimation(datasource, gatheredScales)
 
             //Apply RF model
             buildEstimatedHeight = Geoindicators.TypologyClassification.applyRandomForestModel(datasource,
-                    "GATHERED_SCALES_WATER_MODIF", buildingHeightModelName, "id_build", prefixName)
+                    formatBuildingBeforeRF, buildingHeightModelName, "id_build", prefixName)
 
             //Update the abstract building table
             info "Replace the input building table by the estimated height"
@@ -1475,7 +1468,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
             //Drop intermediate tables
             datasource.execute """DROP TABLE IF EXISTS $estimated_building_with_indicators,
                                             $formatedBuildEstimatedHeight, $buildEstimatedHeight,
-                                            $gatheredScales, GATHERED_SCALES_WATER_MODIF""".toString()
+                                            $gatheredScales, $formatBuildingBeforeRF""".toString()
 
         }
         return ["building"                          : buildingTableName,
@@ -1494,6 +1487,96 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
 
 
 
+}
+
+/**
+ * A method to format the building indicators before using it with the RF height model
+ *
+ * @param datasource connexion to the database
+ * @param buildingToEstimate the name of the building table from which the heights must be estimated
+ * @return a new building table with the data ready for the RF model
+ */
+String formatBuildingBeforeEstimation(JdbcDataSource datasource, String buildingToEstimate){
+    Map types_uses_for_model = getHeightModelTypesMapping()
+    Map typesToMap = types_uses_for_model.types as Map
+    Map usesToMap = types_uses_for_model.uses as Map
+    HashSet<String> allModelTypes = new HashSet<>()
+    //Check if the input data contains the same type and use values
+    def typesCaseWhen = "CASE "
+    typesToMap.each {it->
+        allModelTypes.add(it.key)
+        List inputTypes = it.value
+        if(inputTypes){
+            typesCaseWhen+=" WHEN BUILD_TYPE in ('${inputTypes.join("','")}') THEN '${it.key}'"
+            allModelTypes.addAll(inputTypes)
+        }
+    }
+    typesCaseWhen+=" ELSE BUILD_TYPE end as BUILD_TYPE"
+
+    HashSet<String> allModelUses = new HashSet<>()
+    def usesCaseWhen = "CASE "
+    usesToMap.each {it->
+        allModelUses.add(it.key)
+        List inputUses = it.value
+        if(inputUses){
+            usesCaseWhen+=" WHEN BUILD_MAIN_USE in ('${inputUses.join("','")}') THEN '${it.key}'"
+            allModelUses.addAll(inputUses)
+        }
+    }
+    usesCaseWhen+=" ELSE BUILD_MAIN_USE end as BUILD_MAIN_USE"
+
+    HashSet<String> inputTypes = new HashSet<>()
+    HashSet<String> inputUses = new HashSet<>()
+    datasource.eachRow("SELECT DISTINCT BUILD_TYPE, BUILD_MAIN_USE FROM $buildingToEstimate"){ row->
+            if(row.BUILD_TYPE!="null"){
+                inputTypes.add(row.BUILD_TYPE)
+            }
+            if(row.BUILD_MAIN_USE!="null") {
+                inputUses.add(row.BUILD_MAIN_USE)
+            }
+    }
+
+    //Let's check if the type and uses values are known in the model
+    def diffTypes = inputTypes-allModelTypes
+    if(diffTypes.size()>0){
+        error("The input types are different than the model types. Please check the folowing types : ${diffTypes}")
+        return
+    }
+    def diffUses = inputUses-allModelUses
+    if(diffUses.size()>0){
+        error("The input main_uses are different than the model main_uses. Please check the folowing main_uses : ${diffUses}")
+        return
+    }
+
+    def columns =  datasource.getColumnNames(buildingToEstimate)
+    columns.removeAll(["BUILD_TYPE", "BUILD_MAIN_USE"])
+    String outputTable =  postfix("format_building_before_rf")
+    // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
+    //Replace the abstract type and uses values by the good ones in the RF model
+    datasource.execute("""DROP TABLE IF EXISTS $outputTable;
+                    CREATE TABLE $outputTable 
+                    AS SELECT ${columns.join(",")}, 
+                    RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION,
+                    RSU_WATER_PERMANENT_FRACTION as RSU_WATER_FRACTION,
+                    ${typesCaseWhen}, ${usesCaseWhen}
+                    FROM $buildingToEstimate""")
+
+    return outputTable
+}
+
+/**
+ * Get the mapping between the abstract type and use and the RF model
+ * @return a map with the corresponding types and main_uses
+ */
+Map getHeightModelTypesMapping(){
+    //Load the json file that defines the mapping between the abstract type and use and the RF model
+    JsonSlurper jsonSlurper = new JsonSlurper()
+    Map types_uses_for_model = jsonSlurper.parse(this.class.getResourceAsStream("types_uses_height_model.json")) as Map
+    if (!types_uses_for_model) {
+        error "Cannot find the file to map the input types and uses"
+        return null
+    }
+    return types_uses_for_model
 }
 
 

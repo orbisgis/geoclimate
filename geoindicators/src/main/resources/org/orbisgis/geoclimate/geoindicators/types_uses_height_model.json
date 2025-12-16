@@ -1,0 +1,216 @@
+{
+  "types": {
+    "apartments": [
+      "condominium"
+    ],
+    "building": [
+      "sty",
+      "brothel",
+      "shed",
+      "water_tower",
+      "undefined",
+      "slight_construction",
+      "garage",
+      "garages",
+      "farmyard"
+    ],
+    "castle": [
+      "fortress"
+    ],
+    "chapel": [],
+    "church": [],
+    "commercial": [
+      "supermarket",
+      "retail",
+      "store",
+      "shop",
+      "marketplace",
+      "market",
+      "boat_rental",
+      "car_rental",
+      "bureau_de_change",
+      "bank",
+      "internet_cafe",
+      "money_transfer",
+      "kiosk",
+      "pharmacy",
+      "post_office"
+    ],
+    "detached": [
+      "hut",
+      "shelter",
+      "tower",
+      "annex"
+    ],
+    "education": [
+      "college",
+      "university",
+      "research_institute",
+      "school",
+      "kindergarten"
+    ],
+    "entertainment_arts_culture": [
+      "music_venue",
+      "theatre",
+      "arts_centre",
+      "gallery",
+      "cinema",
+      "arts_centre",
+      "planetarium",
+      "museum",
+      "events_venue",
+      "aquarium",
+      "conference_centre",
+      "gambling",
+      "community_centre",
+      "library",
+      "studio",
+      "casino",
+      "exhibition_centre",
+      "nightclub",
+      "attraction"
+    ],
+    "farm_auxiliary": [
+      "cowshed",
+      "agricultural",
+      "barn",
+      "greenhouse",
+      "stable"
+    ],
+    "government": [
+      "government_office",
+      "civic"
+    ],
+    "healthcare": [
+      "hospital",
+      "social_facility",
+      "emergency"
+    ],
+    "house": [
+      "farmhouse"
+    ],
+    "industrial": [
+      "hangar",
+      "manufacture",
+      "refinery",
+      "storage_tank",
+      "gas",
+      "slurry_tank",
+      "oil",
+      "warehouse",
+      "digester",
+      "oil_mill",
+      "well_cluster",
+      "factory",
+      "wellsite",
+      "port"
+    ],
+    "military": [
+      "bunker",
+      "casemate",
+      "barracks",
+      "ammunition"
+    ],
+    "monument": [
+      "shrine",
+      "historic"
+    ],
+    "office": [
+      "social_centre",
+      "information"
+    ],
+    "religious": [
+      "synagogue",
+      "mosque",
+      "cathedral",
+      "temple",
+      "abbey",
+      "musalla",
+      "wayside_shrine",
+      "place_of_worship"
+    ],
+    "residential": [
+      "dormitory",
+      "workers_dormitory",
+      "villa",
+      "farm",
+      "hotel",
+      "sheltered_housing",
+      "cabin",
+      "terrace",
+      "bungalow"
+    ],
+    "ruins": [],
+    "silo": [
+      "grain_silo"
+    ],
+    "sport": [
+      "pitch"
+    ],
+    "sports_centre": [
+      "stadium",
+      "swimming_pool",
+      "sports_hall",
+      "fitness_centre",
+      "ice_rink",
+      "grandstand",
+      "horse_riding"
+    ],
+    "sustenance": [
+      "restaurant",
+      "bar",
+      "ice_cream",
+      "fast_food",
+      "cafe",
+      "food_court",
+      "pub",
+      "biergarten"
+    ],
+    "terminal": [
+      "airport_terminal"
+    ],
+    "toll": [],
+    "townhall": [],
+    "train_station": [],
+    "transportation": [
+      "parking",
+      "control_tower",
+      "roundhouse",
+      "heating_station",
+      "station",
+      "track",
+      "service",
+      "aeroway",
+      "railway"
+    ]
+  },
+  "uses": {
+    "agricultural": ["farmyard"],
+    "commercial": ["retail"],
+    "education": ["school", "university", "research_institute"],
+    "government": ["civic"],
+    "healthcare": [
+      "emergency", "fire_station"
+    ],
+    "heritage": ["castle"],
+    "industrial": ["port","refinery"],
+    "military": [],
+    "monument": [],
+    "office": [],
+    "religious": [],
+    "residential": [],
+    "transportation": ["service", "transport","railway"],
+    "historic": [],
+    "building": [
+      "undefined",
+      "tourism",
+      "tower",
+      "garage",
+      "garages",
+      "shelter",
+      "slight_construction",
+      "annex"
+    ],
+    "entertainment_arts_culture":["sport","community_centre"]
+  }
+}

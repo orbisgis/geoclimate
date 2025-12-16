@@ -458,17 +458,17 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                       utrfModelName      : "UTRF_BDTOPO_V2_RF_2_2.model"]
 
         if (processing_parameters) {
-            def distanceP = processing_parameters.distance
-            if (distanceP!=null && distanceP in Number) {
+            def distanceP = Geoindicators.DataUtils.asFloat(processing_parameters.distance)
+            if (distanceP!=null) {
                 defaultParameters.distance = distanceP
             }
 
-            def prefixNameP = processing_parameters.prefixName
-            if (prefixNameP && prefixNameP in String) {
+            String prefixNameP = processing_parameters.prefixName as String
+            if (prefixNameP!=null) {
                 defaultParameters.prefixName = prefixNameP
             }
-            def hLevMinP = processing_parameters.hLevMin
-            if (hLevMinP && hLevMinP in Integer) {
+            def hLevMinP = Geoindicators.DataUtils.asInteger(processing_parameters.hLevMin)
+            if (hLevMinP!=null) {
                 defaultParameters.hLevMin = hLevMinP
             }
             //Check for rsu indicators
@@ -491,25 +491,25 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 } else {
                     throw new Exception("The list of RSU indicator names cannot be null or empty")
                 }
-                def snappingToleranceP = rsu_indicators.snappingTolerance
-                if (snappingToleranceP && snappingToleranceP in Number) {
+                def snappingToleranceP = Geoindicators.DataUtils.asFloat(rsu_indicators.snappingTolerance)
+                if (snappingToleranceP!=null) {
                     rsu_indicators_default.snappingTolerance = snappingToleranceP
                 }
-                def surface_vegetationP = rsu_indicators.surface_vegetation
-                if (surface_vegetationP && surface_vegetationP in Number) {
+                def surface_vegetationP = Geoindicators.DataUtils.asFloat(rsu_indicators.surface_vegetation)
+                if (surface_vegetationP!=null) {
                     rsu_indicators_default.surface_vegetation = surface_vegetationP
                 }
-                def surface_hydroP = rsu_indicators.surface_hydro
-                if (surface_hydroP && surface_hydroP in Number) {
+                def surface_hydroP = Geoindicators.DataUtils.asFloat(rsu_indicators.surface_hydro)
+                if (surface_hydroP!=null) {
                     rsu_indicators_default.surface_hydro = surface_hydroP
                 }
-                def surface_UrbanAreasP = rsu_indicators.surface_urban_areas
-                if (surface_UrbanAreasP && surface_UrbanAreasP in Number) {
+                def surface_UrbanAreasP = Geoindicators.DataUtils.asFloat(rsu_indicators.surface_urban_areas)
+                if (surface_UrbanAreasP!=null) {
                     rsu_indicators_default.surface_urban_areas = surface_UrbanAreasP
                 }
 
-                def svfSimplifiedP = rsu_indicators.svfSimplified
-                if (svfSimplifiedP && svfSimplifiedP in Boolean) {
+                def svfSimplifiedP = Geoindicators.DataUtils.asBoolean(rsu_indicators.svfSimplified)
+                if (svfSimplifiedP!=null) {
                     rsu_indicators_default.svfSimplified = svfSimplifiedP
                 }
 
@@ -603,8 +603,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                 grid_indicators_tmp.output = grid_output.toLowerCase()
                             }
                         }
-                        def domainP = grid_indicators.domain
-                        if (domainP!=null && domainP in String && domainP.toLowerCase() in ["zone", "zone_extended"]) {
+                        String domainP = grid_indicators.domain as String
+                        if (domainP!=null && domainP.toLowerCase() in ["zone", "zone_extended"]) {
                             grid_indicators_tmp.domain = domainP.toLowerCase() //Grid is computed to the zone
                         }
 
@@ -627,8 +627,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
             }
             //Check for road_traffic method
-            def road_traffic = processing_parameters.road_traffic
-            if (road_traffic && road_traffic in Boolean) {
+            def road_traffic = Geoindicators.DataUtils.asBoolean(processing_parameters.road_traffic)
+            if (road_traffic!=null) {
                 defaultParameters.put("road_traffic", road_traffic)
             }
             //Check if the noise indicators must be computed
@@ -786,14 +786,15 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
             } else {
                 def tablesToMerge = ["zone"               : [],
+                                     "zone_extended"      : [],
                                      "road"               : [], "rail": [], "water": [],
                                      "vegetation"         : [], "impervious": [], "building": [],
                                      "building_indicators": [], "block_indicators": [],
                                      "rsu_indicators"     : [], "rsu_lcz": [],
                                      "rsu_utrf_area"      : [], "rsu_utrf_floor_area": [],
                                      "building_utrf"      : [], "population": [], "road_traffic": [],
-                                     "grid_indicators"    : [], "urban_areas": [], "ground_acoustic": []
-
+                                     "grid_indicators"    : [], "urban_areas": [], "ground_acoustic": [],
+                                     "building_updated": []
                 ]
                 tmp_results.each { code ->
                     code.value.each { it ->
@@ -1323,13 +1324,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             //Because the select query reproject doesn't contain any geometry metadata
                             output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""".toString())
-
+                            USING ST_SetSRID(the_geom,$outputSRID);""")
                         }
                     }
                     if (tmpTable) {
                         //Add a GID column
-                        output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
+                        output_datasource.execute("""ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;
+                                                  ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone varchar;""")
                         output_datasource.execute("UPDATE $output_table SET id_zone= '${id_zone.replace("'","''")}'")
                         output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
