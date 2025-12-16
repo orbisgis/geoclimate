@@ -679,7 +679,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
                                     stmt.addBatch("""insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}',
-                                    ${(regime && regime == "Permanent")}, ${water_zindex})""".toString())
+                                    ${(regime && regime != "Permanent")}, ${water_zindex})""".toString())
                                 }
                             }
                         }
