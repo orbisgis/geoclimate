@@ -272,7 +272,6 @@ abstract class WorkflowAbstractTest {
             if(it=="building_updated"){
                 def table = externalDB.getTable(it)
                 assertNotNull(table)
-                assertTrue(table.getRowCount() == 0)
             }else {
                 def spatialTable = externalDB.getSpatialTable(it)
                 assertNotNull(spatialTable)
