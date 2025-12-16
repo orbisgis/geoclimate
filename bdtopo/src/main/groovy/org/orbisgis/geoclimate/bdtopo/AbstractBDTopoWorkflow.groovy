@@ -1324,13 +1324,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             //Because the select query reproject doesn't contain any geometry metadata
                             output_datasource.execute("""ALTER TABLE $output_table
                             ALTER COLUMN the_geom TYPE geometry(geometry, $outputSRID)
-                            USING ST_SetSRID(the_geom,$outputSRID);""".toString())
-
+                            USING ST_SetSRID(the_geom,$outputSRID);""")
                         }
                     }
                     if (tmpTable) {
                         //Add a GID column
-                        output_datasource.execute """ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;""".toString()
+                        output_datasource.execute("""ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS gid serial;
+                                                  ALTER TABLE $output_table ADD COLUMN IF NOT EXISTS id_zone varchar;""")
                         output_datasource.execute("UPDATE $output_table SET id_zone= '${id_zone.replace("'","''")}'")
                         output_datasource.execute("""CREATE INDEX IF NOT EXISTS idx_${output_table.replaceAll(".", "_")}_id_zone  ON $output_table (ID_ZONE)""".toString())
                         info "The table $h2gis_table_to_save has been exported into the table $output_table"
