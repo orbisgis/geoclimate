@@ -450,7 +450,7 @@ String formatRoadLayer(
                                         ${singleQuote(sidewalk)},
                                         ${maxspeed_value},
                                         ${direction},
-                                        ${row.'lanes'},
+                                        ${Geoindicators.DataUtils.asInteger(row.'lanes')},
                                         ${zIndex},
                                         ${tunnel})
                                 """.toString()
