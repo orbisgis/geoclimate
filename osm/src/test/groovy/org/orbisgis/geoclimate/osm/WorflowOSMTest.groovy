@@ -821,7 +821,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          "rsu_indicators"       : [
                                  "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
 
-                         ],
+                         ]/*,
                           "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
@@ -1189,6 +1189,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def zonesTable = postgis.getTable("zone")
             assertNotNull(zonesTable)
             assertTrue(zonesTable.getRowCount() > 0)
+            postgis.dropTable("rsu_indicators" , "rsu_lcz" ,"zone" ,"building")
         }
     }
 
