@@ -608,7 +608,8 @@ Map loadV3(JdbcDataSource datasource,
             DROP TABLE IF EXISTS $INPUT_HYDRO;
             CREATE TABLE $INPUT_HYDRO (THE_GEOM geometry, ID_SOURCE varchar(24), ZINDEX integer, TYPE varchar, REGIME varchar)
             AS SELECT  ST_FORCE2D(ST_MAKEVALID(a.THE_GEOM)) as the_geom, a.ID, 0, a.NATURE,
-            CASE WHEN a.PERSISTANC = 'Permanent' THEN a.PERSISTANC ELSE 'Intermittent' END as REGIME FROM $surface_hydrographique a, $zone_extended 
+            CASE WHEN a.PERSISTANC = 'Permanent' THEN a.PERSISTANC ELSE 'Intermittent' END as REGIME 
+            FROM $surface_hydrographique a, $zone_extended 
             b WHERE a.the_geom && b.the_geom AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.POS_SOL>=0
             and a.NATURE not in ('Conduit buse', 'Conduit forcé', 'Marais', 'Glacier névé')
             union all

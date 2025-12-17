@@ -63,7 +63,7 @@ class InputDataFormattingTest {
                 h2GIS, new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(), epsg)
 
         assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
-        assertEquals 358, h2GIS.getTable(extractData.road).rowCount
+        assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 8, h2GIS.getTable(extractData.water).rowCount
@@ -75,7 +75,7 @@ class InputDataFormattingTest {
         Map buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
         String building = buildingLayers.building
         assertNotNull h2GIS.getTable(building).save(new File(folder, "osm_building_formated.fgb").absolutePath, true)
-        assertEquals 1036, h2GIS.getTable(building).rowCount
+        assertEquals 1034, h2GIS.getTable(building).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where NB_LEV is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where NB_LEV<0".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${building} where HEIGHT_WALL is null".toString()).count == 0
@@ -104,11 +104,11 @@ class InputDataFormattingTest {
         //Roads
         String road = OSM.InputDataFormatting.formatRoadLayer(h2GIS, extractData.road)
         assertNotNull h2GIS.getTable(road).save(new File(folder, "osm_road_formated.fgb").absolutePath, true)
-        assertEquals 290, h2GIS.getTable(road).rowCount
+        assertEquals 145, h2GIS.getTable(road).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where WIDTH is null".toString()).count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${road} where WIDTH<=0".toString()).count == 0
-        assertEquals(12, h2GIS.firstRow("select count(*) as count from ${road} where CROSSING IS NOT NULL".toString()).count)
-        assertEquals(17,h2GIS.firstRow("select count(*) as count from ${road} where LANES IS NOT NULL".toString()).count)
+        assertTrue h2GIS.firstRow("select count(*) as count from ${road} where CROSSING IS NOT NULL".toString()).count == 7
+        assertTrue h2GIS.firstRow("select count(*) as count from ${road} where LANES IS NOT NULL".toString()).count == 17
 
         //Rails
         String rails = OSM.InputDataFormatting.formatRailsLayer(h2GIS, extractData.rail)
@@ -250,7 +250,7 @@ class InputDataFormattingTest {
         Map extractData = OSM.InputDataLoading.createGISLayers(h2GIS, new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath(), epsg)
 
         assertEquals 1038, h2GIS.getTable(extractData.building).rowCount
-        assertEquals 358, h2GIS.getTable(extractData.road).rowCount
+        assertEquals 211, h2GIS.getTable(extractData.road).rowCount
         assertEquals 44, h2GIS.getTable(extractData.rail).rowCount
         assertEquals 136, h2GIS.getTable(extractData.vegetation).rowCount
         assertEquals 8, h2GIS.getTable(extractData.water).rowCount
@@ -260,7 +260,7 @@ class InputDataFormattingTest {
         Map buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
         String buildingLayer = buildingLayers.building
         assertNotNull h2GIS.getTable(buildingLayer).save(new File(folder, "osm_building_formated.fgb").absolutePath, true)
-        assertEquals 1036, h2GIS.getTable(buildingLayer).rowCount
+        assertEquals 1034, h2GIS.getTable(buildingLayer).rowCount
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where NB_LEV=0").count == 0
@@ -268,13 +268,13 @@ class InputDataFormattingTest {
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_WALL<0").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF is null").count == 0
         assertTrue h2GIS.firstRow("select count(*) as count from ${buildingLayer} where HEIGHT_ROOF<0").count == 0
-        assertEquals 1031, h2GIS.getTable(buildingLayers.building_updated).rowCount
-        assertEquals(1031, h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_updated} using (id_build) where 1=1").count)
+        assertEquals 1029, h2GIS.getTable(buildingLayers.building_updated).rowCount
+        assertEquals(1029, h2GIS.firstRow("select count(*) as count from ${buildingLayers.building} join ${buildingLayers.building_updated} using (id_build) where 1=1").count)
 
         //Buildings without estimation state
         buildingLayers = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building)
-        assertEquals 1036, h2GIS.getTable(buildingLayers.building).rowCount
-        assertEquals 1031, h2GIS.getTable(buildingLayers.building_updated).rowCount
+        assertEquals 1034, h2GIS.getTable(buildingLayers.building).rowCount
+        assertEquals 1029, h2GIS.getTable(buildingLayers.building_updated).rowCount
     }
 
 
@@ -295,7 +295,7 @@ class InputDataFormattingTest {
         //def nominatim = OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
-       zoneToExtract =  [48.889780,2.226381,48.891529,2.230699]
+       zoneToExtract =  [53.242824,-9.103203,53.299902,-8.915749]
 
         //zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)

@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*
 
 class WorflowOSMTest extends WorkflowAbstractTest {
 
-    @TempDir(cleanup = CleanupMode.ON_SUCCESS)
+    @TempDir
     static File folder
 
     /**
@@ -228,7 +228,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "url"     : "h2://" + dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
                                  "tables"  : [
                                          "rsu_indicators": "rsu_indicators",
-                                         "rsu_lcz"       : "rsu_lcz"]]],
+                                         "rsu_lcz"       : "rsu_lcz",
+                                         "building_updated": "building_updated"]]],
                 "parameters"  :
                         ["distance"    : 0,
                          rsu_indicators: ["indicatorUse" : ["LCZ"],
@@ -243,6 +244,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def rsu_lczTable = outputdb.getTable("rsu_lcz")
         assertNotNull(rsu_lczTable)
         assertTrue(rsu_lczTable.getRowCount() > 0)
+        def building_updated = outputdb.getTable("building_updated")
+        assertNotNull(building_updated)
+        assertTrue(building_updated.getRowCount() > 0)
+
     }
 
     /**
@@ -563,7 +568,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "database":
                                 ["user"    : "sa",
                                  "password": "",
-                                 "url"     : "jdbc:h2://" + dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
+                                 "url"     : "h2://" + dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
                                  "tables"  : [
                                          "rsu_indicators": "rsu_indicators",
                                          "rsu_lcz"       : "rsu_lcz"]]],
@@ -607,7 +612,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Test
     void testTarget() {
-        String directory = folder.absolutePath + File.separator + "testOSMTEB"
+        String directory = folder.absolutePath + File.separator + "testTarget"
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
@@ -626,7 +631,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         [
                                 rsu_indicators: [
-                                        "indicatorUse" : ["target"]
+                                        "indicatorUse" : ["TARGET"]
                                 ]
                         ]
         ]
@@ -762,8 +767,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Redon"
-        //location = [60.355744,5.254726,60.423343,5.396862]
-        //location = [53.242824,-9.103203,53.299902,-8.915749]
+        location = [43.4, 1.4, 43.6, 1.6]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
@@ -793,7 +797,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 ],
                 "input"       : [
                         "locations": [location],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
-                        "area"     : 2800,
+                        "area":100000,
+                        "timeout":1800,
+                        "maxsize":1036870912
                         //"date":"2017-12-31T19:20:00Z",
                         /*"timeout":182,
                         "maxsize": 536870918,
@@ -813,9 +819,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         [//"distance"             : 200,
                          "rsu_indicators"       : [
-                                 "indicatorUse": ["LCZ"] //, "UTRF"]
+                                 "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
 
-                         ],
+                         ]/*,
                           "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
@@ -833,7 +839,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH",
                                         "BUILDING_NUMBER"]
                                 //"lcz_lod":1
-                        ]/*,                        
+                        ],
+                         /*
 
                          "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
@@ -1182,6 +1189,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def zonesTable = postgis.getTable("zone")
             assertNotNull(zonesTable)
             assertTrue(zonesTable.getRowCount() > 0)
+            postgis.dropTable("rsu_indicators" , "rsu_lcz" ,"zone" ,"building")
         }
     }
 

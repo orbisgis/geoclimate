@@ -635,7 +635,6 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                         "a.the_geom && b.the_geom "
             } else {
                 query = "select * FROM $water "
-
             }
             def water_types =
                     ["Aqueduc"                   : "aqueduct",
@@ -659,6 +658,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                      "Réservoir-bassin piscicole": "basin",
                      "Retenue"                   : "basin",
                      "Retenuebarrage"            : "basin",
+                     "Retenue-barrage"           : "basin",
                      "Retenue-bassin portuaire"  : "basin",
                      "Retenue-digue"             : "basin",
                      "Surface d'eau"             : "water",
@@ -670,7 +670,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                 datasource.eachRow(query) { row ->
                     def water_type = water_types.get(row.TYPE)
                     def water_zindex = 0
-                    def regime = water_types.get(row."REGIME")
+                    def regime = row."REGIME"
                     if (water_type) {
                         Geometry geom = row.the_geom
                         if (!geom.isEmpty()) {
@@ -679,7 +679,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
                                     stmt.addBatch("""insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}',
-                                    ${(regime && regime == "Permanent")}, ${water_zindex})""".toString())
+                                    ${(regime && regime != "Permanent")}, ${water_zindex})""".toString())
                                 }
                             }
                         }
