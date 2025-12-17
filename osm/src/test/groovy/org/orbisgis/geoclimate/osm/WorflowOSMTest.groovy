@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*
 
 class WorflowOSMTest extends WorkflowAbstractTest {
 
-    @TempDir(cleanup = CleanupMode.ON_SUCCESS)
+    @TempDir
     static File folder
 
     /**
