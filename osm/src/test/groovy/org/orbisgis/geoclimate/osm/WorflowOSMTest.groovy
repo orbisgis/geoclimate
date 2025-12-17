@@ -37,8 +37,6 @@ import static org.junit.jupiter.api.Assertions.*
 
 class WorflowOSMTest extends WorkflowAbstractTest {
 
-    @TempDir
-    static File folder
 
     /**
      * This method is used to copy resources from the jar the tmp folder in order to limit
@@ -66,7 +64,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void osmGeoIndicatorsFromTestFiles() {
+    void osmGeoIndicatorsFromTestFiles(@TempDir File folder) {
         String urlBuilding = new File(getClass().getResource("BUILDING.geojson").toURI()).absolutePath
         String urlRoad = new File(getClass().getResource("ROAD.geojson").toURI()).absolutePath
         String urlRail = new File(getClass().getResource("RAIL.geojson").toURI()).absolutePath
@@ -108,8 +106,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void osmGeoIndicatorsFromTestFilesWhenOnlySea() {
-
+    void osmGeoIndicatorsFromTestFilesWhenOnlySea(@TempDir File folder) {
         String urlZone = new File(getClass().getResource("ZONE_ONLY_SEA.geojson").toURI()).absolutePath
 
         //TODO enable it for debug purpose
@@ -207,15 +204,12 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      * Save the geoclimate result to an H2GIS database
      */
     @Test
-    void osmWorkflowToH2Database() {
+    void osmWorkflowToH2Database(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "osmWorkflowToH2Database"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result into a database",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -225,7 +219,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "database":
                                 ["user"    : "sa",
                                  "password": "",
-                                 "url"     : "h2://" + dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
+                                 "url"     : "h2://" + directory + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
                                  "tables"  : [
                                          "rsu_indicators": "rsu_indicators",
                                          "rsu_lcz"       : "rsu_lcz",
@@ -237,7 +231,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         ]
         ]
         OSM.workflow(osm_parmeters)
-        H2GIS outputdb = H2GIS.open(dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE")
+        H2GIS outputdb = H2GIS.open(directory + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE")
         def rsu_indicatorsTable = outputdb.getTable("rsu_indicators")
         assertNotNull(rsu_indicatorsTable)
         assertTrue(rsu_indicatorsTable.getRowCount() > 0)
@@ -254,7 +248,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      * Save the geoclimate result to a PostGIS database
      */
     @Test
-    void osmWorkflowToPostGISDatabase() {
+    void osmWorkflowToPostGISDatabase(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -317,7 +311,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testOSMWorkflowFromPlaceNameWithSrid() {
+    void testOSMWorkflowFromPlaceNameWithSrid(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMWorkflowFromPlaceNameWithSrid"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -343,8 +337,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         OSM.workflow(osm_parmeters)
         //Test the SRID of all output files
         def geoFiles = []
-        def folder = new File("${directory + File.separator}osm_Pont-de-Veyle")
-        folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
+        def output_folder = new File("${directory + File.separator}osm_Pont-de-Veyle")
+        output_folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
             if (file.name.toLowerCase().endsWith(".fgb")) {
                 geoFiles << file.getAbsolutePath()
             }
@@ -359,7 +353,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testOSMWorkflowFromBbox() {
+    void testOSMWorkflowFromBbox(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMWorkflowFromBbox"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -378,9 +372,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory]
         ]
         OSM.WorkflowOSM.workflow(osm_parmeters)
-        def folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
+        def output_folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
         def countFiles = 0;
-        folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
+        output_folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
             if (file.name.toLowerCase().endsWith(".fgb")) {
                 countFiles++
             }
@@ -390,7 +384,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
     @Disabled
     @Test
-    void testOSMWorkflowFromPoint() {
+    void testOSMWorkflowFromPoint(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMWorkflowFromPoint"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -409,9 +403,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory]
         ]
         OSM.WorkflowOSM.workflow(osm_parmeters)
-        def folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
+        def output_folder = new File(directory + File.separator + "osm_" + bbox.join("_"))
         def resultFiles = []
-        folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
+        output_folder.eachFileRecurse groovy.io.FileType.FILES, { file ->
             if (file.name.toLowerCase().endsWith(".fgb")) {
                 resultFiles << file.getAbsolutePath()
             }
@@ -421,7 +415,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testOSMWorkflowBadOSMFilters() {
+    void testOSMWorkflowBadOSMFilters(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMWorkflowBadOSMFilters"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -442,7 +436,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void workflowWrongMapOfWeights() {
+    void workflowWrongMapOfWeights(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "workflowWrongMapOfWeights"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -478,7 +472,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testGrid_Indicators() {
+    void testGrid_Indicators(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testGrid_Indicators"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -517,7 +511,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      }
 
     @Test
-    void testLoggerZones() {
+    void testLoggerZones(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testLoggerZones"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -549,7 +543,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void osmWrongAreaSize() {
+    void osmWrongAreaSize(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "osmWrongAreaSize"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -583,7 +577,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
 
     @Test
-    void testOSMTEB() {
+    void testOSMTEB(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMTEB"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -611,7 +605,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testTarget() {
+    void testTarget(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testTarget"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -644,7 +638,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testTargetGridSize() {
+    void testTargetGridSize(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMTEB"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -682,7 +676,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testRoadTrafficAndNoiseIndicators() {
+    void testRoadTrafficAndNoiseIndicators(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testRoad_traffic"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -960,7 +954,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
 
     @Test
-    void testEstimateBuildingWithAllInputHeight() {
+    void testEstimateBuildingWithAllInputHeight(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "test_building_height"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -986,7 +980,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testEstimateBuildingWithAllInputHeightFromPoint() {
+    void testEstimateBuildingWithAllInputHeightFromPoint(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "test_building_height"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -1016,7 +1010,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
 
     @Test
-    void testCreateGISLayers() {
+    void testCreateGISLayers(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "test_creategislayers"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -1043,7 +1037,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testCreateGISLayersNoOutput() {
+    void testCreateGISLayersNoOutput(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "test_no_output"
         directory = "/tmp/db"
         File dirFile = new File(directory)
@@ -1071,7 +1065,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Disabled
     //Because it takes some time to build the OSM query
     @Test
-    void testEstimateBuildingWithAllInputHeightDate() {
+    void testEstimateBuildingWithAllInputHeightDate(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "test_building_height"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -1139,7 +1133,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      * Save the geoclimate result to a PostGIS database
      */
     @Test
-    void osmWorkflowToPostGISExcludeColumns() {
+    void osmWorkflowToPostGISExcludeColumns(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -1258,7 +1252,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testClip() {
+    void testClip(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "test_building_height"
         File dirFile = new File(directory)
         dirFile.delete()
@@ -1313,7 +1307,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
-    void testClip2() {
+    void testClip2(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "test_building_height"
         File dirFile = new File(directory)
         dirFile.delete()
