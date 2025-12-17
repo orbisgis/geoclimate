@@ -283,7 +283,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception {
         connection = url.openConnection() as HttpURLConnection
     }
     connection.requestMethod = "GET"
-    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${System.currentTimeMillis()}")
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
     int responseCode = connection.getResponseCode();
     if (responseCode != RESPONSECODE_OK) {
@@ -721,14 +721,17 @@ def getServerStatus() {
     } else {
         connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
     }
+    connection.setConnectTimeout(TIMEOUT_HTTPURL)
+    connection.setReadTimeout(TIMEOUT_HTTPURL)
     connection.requestMethod = GET
-    connection.connect()
-    if (connection.responseCode == RESPONSECODE_OK) {
-        return connection.inputStream.text
-    } else {
+
+    if (connection.responseCode != RESPONSECODE_OK) {
         error "Cannot get the status of the server.\n Server answer with code ${connection.responseCode} : " +
                 "${connection.inputStream.text}"
     }
+    String status =  connection.inputStream.text
+    connection.disconnect()
+    return status
 }
 
 /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
@@ -767,7 +770,7 @@ boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
         timeout = (int) TimeUnit.MINUTES.toMillis(3);
     }
 
-    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
     connection.setConnectTimeout(timeout);
     connection.setReadTimeout(timeout);
@@ -822,14 +825,7 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
     }
     debug queryUrl
     connection.requestMethod = GET
-    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query)
-    int timeout = OVERPASS_TIMEOUT
-    if (timeoutMatcher.find()) {
-        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
-    } else {
-        timeout = (int) TimeUnit.MINUTES.toMillis(3);
-    }
-    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${System.currentTimeMillis()}")
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
     connection.setConnectTimeout(TIMEOUT_HTTPURL)
     connection.setReadTimeout(TIMEOUT_HTTPURL)
@@ -864,11 +860,11 @@ def isNominatimReady() {
     } else {
         connection = new URL(endPoint).openConnection() as HttpURLConnection
     }
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
+    connection.setConnectTimeout(TIMEOUT_HTTPURL)
+    connection.setReadTimeout(TIMEOUT_HTTPURL)
     connection.requestMethod = GET
-    connection.connect()
-    if (connection.responseCode == RESPONSECODE_OK) {
-        return true
-    } else {
-        return false
-    }
+    def ok = connection.responseCode == RESPONSECODE_OK
+    connection.disconnect()
+    return ok
 }

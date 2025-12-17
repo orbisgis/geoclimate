@@ -37,7 +37,38 @@ abstract class OSMTools extends AbstractScript {
     public static Transform Transform = new Transform()
     public static Utilities Utilities = new Utilities()
     public static TransformUtils TransformUtils = new TransformUtils()
+    static Properties OSMTOOLS_PROPERTIES
 
     OSMTools() {
+    }
+
+
+    /**
+     * Return the current OSMTools version
+     * @return
+     */
+    static def version() {
+        return osmtools_property("version")
+    }
+
+    /**
+     * Return the current OSMTools build number
+     * @return
+     */
+    static def buildNumber() {
+        return osmtools_property("build")
+    }
+
+    /**
+     * Return OSMTools properties
+     * @param name
+     * @return
+     */
+    static def osmtools_property(String name) {
+        if (!OSMTOOLS_PROPERTIES) {
+            OSMTOOLS_PROPERTIES = new Properties()
+            OSMTOOLS_PROPERTIES.load(OSMTools.getResourceAsStream("osmtools.properties"))
+        }
+        return OSMTOOLS_PROPERTIES.get(name)
     }
 }
