@@ -551,6 +551,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testOSMTEB(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMTEB"
+        new File(directory).mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
