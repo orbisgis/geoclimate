@@ -51,7 +51,7 @@ Map getNominatimData(def placeName) throws Exception {
     if (!placeName) {
         throw new Exception("The place name should not be null or empty.")
     }
-    def  nominatimQ = "nomination_"+Utilities.utf8ToUrl(placeName)
+    def nominatimQ = "nomination_" + Utilities.utf8ToUrl(placeName)
     //hash the query to cache it
     def queryHash = nominatimQ.digest('SHA-256')
     def outputOSMFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "${queryHash}.geojson")
@@ -275,28 +275,28 @@ boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception {
     final String proxyHost = System.getProperty("http.proxyHost");
     final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
 
-    def connection
+    HttpURLConnection connection
     if (proxyHost != null) {
         def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
         connection = url.openConnection(proxy) as HttpURLConnection
     } else {
-        connection = url.openConnection()
+        connection = url.openConnection() as HttpURLConnection
     }
     connection.requestMethod = "GET"
-    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
-    connection.connect()
-
-    debug url.toString()
+    int responseCode = connection.getResponseCode();
+    if (responseCode != RESPONSECODE_OK) {
+        throw new Exception("Cannot execute the Nominatim query : ${url.toString()}")
+    }
     debug "Executing query... $query"
     //Save the result in a file
-    if (connection.responseCode == 200) {
-        info "Downloading the Nominatim data."
-        outputOSMFile << connection.inputStream
-        return true
-    } else {
-        throw new Exception("Cannot execute the Nominatim query.")
-    }
+    info "Downloading the Nominatim data."
+    connection.setConnectTimeout(TIMEOUT_HTTPURL)
+    outputOSMFile << connection.inputStream
+    connection.disconnect()
+    return true
+
 }
 
 /**
@@ -310,7 +310,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception {
  *
  * @return OSM bbox.
  */
- String toBBox(Geometry geometry) throws Exception {
+String toBBox(Geometry geometry) throws Exception {
     if (!geometry) {
         throw new Exception("Cannot convert to an overpass bounding box.")
     }
@@ -329,7 +329,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception {
  *
  * @return The OSM polygon.
  */
- String toPoly(Geometry geometry) throws Exception {
+String toPoly(Geometry geometry) throws Exception {
     if (!geometry) {
         throw new Exception("Cannot convert to an overpass poly filter.")
     }
@@ -698,6 +698,11 @@ static @Field OVERPASS_STATUS_URL = "${OVERPASS_ENDPOINT}/status"
 
 /** OVERPASS TIMEOUT */
 static @Field int OVERPASS_TIMEOUT = 180
+
+static @Field int RESPONSECODE_OK = 200
+
+//The timeout we use for the  HttpURLConnection
+static @Field int TIMEOUT_HTTPURL = 900000
 /**
  * Return the status of the Overpass server.
  * @return A string representation of the overpass status.
@@ -716,14 +721,17 @@ def getServerStatus() {
     } else {
         connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
     }
+    connection.setConnectTimeout(TIMEOUT_HTTPURL)
+    connection.setReadTimeout(TIMEOUT_HTTPURL)
     connection.requestMethod = GET
-    connection.connect()
-    if (connection.responseCode == 200) {
-        return connection.inputStream.text
-    } else {
+
+    if (connection.responseCode != RESPONSECODE_OK) {
         error "Cannot get the status of the server.\n Server answer with code ${connection.responseCode} : " +
                 "${connection.inputStream.text}"
     }
+    String status =  connection.inputStream.text
+    connection.disconnect()
+    return status
 }
 
 /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
@@ -762,7 +770,7 @@ boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
         timeout = (int) TimeUnit.MINUTES.toMillis(3);
     }
 
-    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
     connection.setConnectTimeout(timeout);
     connection.setReadTimeout(timeout);
@@ -771,7 +779,7 @@ boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
 
     debug "Executing query... $queryUrl"
     //Save the result in a file
-    if (connection.responseCode == 200) {
+    if (connection.responseCode == RESPONSECODE_OK) {
         info "Downloading the OSM data from overpass api in ${outputOSMFile}"
         outputOSMFile << connection.inputStream
         return true
@@ -817,30 +825,23 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
     }
     debug queryUrl
     connection.requestMethod = GET
-    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query)
-    int timeout = OVERPASS_TIMEOUT
-    if (timeoutMatcher.find()) {
-        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
-    } else {
-        timeout = (int) TimeUnit.MINUTES.toMillis(3);
-    }
-    connection.setRequestProperty("User-Agent", "GEOCLIMATE_${System.currentTimeMillis()}")
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
-    connection.setConnectTimeout(timeout)
-    connection.setReadTimeout(timeout)
+    connection.setConnectTimeout(TIMEOUT_HTTPURL)
+    connection.setReadTimeout(TIMEOUT_HTTPURL)
 
-    connection.connect()
+    int responseCode = connection.getResponseCode();
 
     debug "Executing query... $query"
     //Save the result in a file
-    if (connection.responseCode == 200) {
-        info "Downloading the OSM data from overpass api in ${outputOSMFile}"
-        outputOSMFile << connection.inputStream
-        return true
-    } else {
+    if (responseCode != RESPONSECODE_OK) {
         error "Cannot execute the query.\n${getServerStatus()}"
         return false
     }
+    info "Downloading the OSM data from overpass api in ${outputOSMFile}"
+    outputOSMFile << connection.inputStream
+    connection.disconnect()
+    return true
 }
 
 /**
@@ -859,11 +860,11 @@ def isNominatimReady() {
     } else {
         connection = new URL(endPoint).openConnection() as HttpURLConnection
     }
+    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
+    connection.setConnectTimeout(TIMEOUT_HTTPURL)
+    connection.setReadTimeout(TIMEOUT_HTTPURL)
     connection.requestMethod = GET
-    connection.connect()
-    if (connection.responseCode == 200) {
-        return true
-    } else {
-        return false
-    }
+    def ok = connection.responseCode == RESPONSECODE_OK
+    connection.disconnect()
+    return ok
 }

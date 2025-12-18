@@ -249,14 +249,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      */
     @Test
     void osmWorkflowToPostGISDatabase(@TempDir File folder) {
-        String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase" ,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -313,13 +309,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testOSMWorkflowFromPlaceNameWithSrid(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMWorkflowFromPlaceNameWithSrid"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the results in a folder",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -355,14 +348,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testOSMWorkflowFromBbox(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMWorkflowFromBbox"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
-        def bbox = [38.89557963573336, -77.03930318355559, 38.89944983078282, -77.03364372253417]
+        def bbox = [43.726898, 7.298452, 43.727677, 7.299632]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -386,14 +376,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testOSMWorkflowFromPoint(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMWorkflowFromPoint"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def bbox = OSM.bbox(48.78146, -3.01115, 100)
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -417,13 +404,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testOSMWorkflowBadOSMFilters(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMWorkflowBadOSMFilters"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the results in a folder",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -438,13 +422,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void workflowWrongMapOfWeights(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "workflowWrongMapOfWeights"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the resultst in a folder",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -474,13 +455,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testGrid_Indicators(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testGrid_Indicators"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the grid indicators",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -513,13 +491,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testLoggerZones(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testLoggerZones"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the grid indicators",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -545,13 +520,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void osmWrongAreaSize(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "osmWrongAreaSize"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result into a database",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -562,7 +534,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "database":
                                 ["user"    : "sa",
                                  "password": "",
-                                 "url"     : "h2://" + dirFile.absolutePath + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
+                                 "url"     : "h2://" + directory + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
                                  "tables"  : [
                                          "rsu_indicators": "rsu_indicators",
                                          "rsu_lcz"       : "rsu_lcz"]]],
@@ -579,13 +551,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testOSMTEB(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testOSMTEB"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
+        new File(directory).mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": true
                 ],
@@ -607,13 +577,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testTarget(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testTarget"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Compute the Target land input",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db",
                         "delete": false
                 ],
@@ -640,13 +607,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testTargetGridSize(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testTargetGridSize"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Compute the target land input",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db",
                         "delete": false
                 ],
@@ -678,13 +642,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testRoadTrafficAndNoiseIndicators(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testRoadTrafficAndNoiseIndicators"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run only the road traffic estimation",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -955,12 +916,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testEstimateBuildingWithAllInputHeight(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testEstimateBuildingWithAllInputHeight"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db",
                         "delete": false
                 ],
@@ -981,12 +939,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testEstimateBuildingWithAllInputHeightFromPoint(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testEstimateBuildingWithAllInputHeightFromPoint"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db",
                         "delete": false
                 ],
@@ -1011,12 +966,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testCreateGISLayers(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testCreateGISLayers"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db",
                         "delete": false
                 ],
@@ -1038,13 +990,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testCreateGISLayersNoOutput(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testCreateGISLayersNoOutput"
-        directory = "/tmp/db"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db",
                         "delete": false
                 ],
@@ -1134,13 +1082,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void osmWorkflowToPostGISExcludeColumns(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISExcludeColumns"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
@@ -1253,13 +1198,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testClip(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testClip"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def bbox = [43.726898, 7.298452, 43.727677, 7.299632]
         def osm_parmeters = [
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db",
                         "delete": false
                 ],
@@ -1308,13 +1250,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testClip2(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testClip2"
-        File dirFile = new File(directory)
-        dirFile.delete()
-        dirFile.mkdir()
         def bbox = [43.726898, 7.298452, 43.727677, 7.299632]
         def osm_parmeters = [
                 "geoclimatedb": [
-                        "folder": dirFile.absolutePath,
+                        "folder": directory,
                         "name"  : "geoclimate_chain_db",
                         "delete": false
                 ],
