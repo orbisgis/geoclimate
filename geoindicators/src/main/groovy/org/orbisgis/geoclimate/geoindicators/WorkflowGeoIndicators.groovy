@@ -68,11 +68,11 @@ String computeBuildingsIndicators(JdbcDataSource datasource, String building, St
             geometryOperations, buildingPrefixName)
     finalTablesToJoin.put(buildTableGeometryProperties, idColumnBu)
 
-    // building_volume + building_floor_area + building_total_facade_length
+    // building_volume + building_floor_area + building_total_facade_length + passive_volume_ratio (note that this last indic is actually not used in the classif but interesting for some UTRF users)
     HashSet sizeOperations = new HashSet()
     sizeOperations.addAll(["floor_area"])
     if (indicatorUse*.toUpperCase().contains("UTRF")) {
-        sizeOperations.addAll(["volume", "total_facade_length"])
+        sizeOperations.addAll(["volume", "total_facade_length", "passive_volume_ratio"])
     }
     if (indicatorUse*.toUpperCase().contains("LCZ")) {
         sizeOperations.addAll(["total_facade_length"])
