@@ -811,6 +811,17 @@ class TransformTest extends AbstractOSMToolsTest {
         }
     }
 
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void testIntegrationForOSMGZFile() {
+        def bbox = [47.647353, -2.090192, 47.649413, -2.087274]
+        def query = OSMTools.Utilities.buildOSMQuery(bbox)
+        def extract = OSMTools.Loader.extract(query)
+    }
+
     @Test
     void buildAllPolygons() {
         def bbox = [47.647353, -2.090192, 47.649413, -2.087274]

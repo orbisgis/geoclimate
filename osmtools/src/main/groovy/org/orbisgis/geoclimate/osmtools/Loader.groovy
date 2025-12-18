@@ -216,6 +216,7 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) t
     }
 }
 
+
 /**
  * This process extracts OSM data as an XML file using the Overpass API
  *
