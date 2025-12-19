@@ -285,7 +285,7 @@ boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception {
     connection.requestMethod = "GET"
     connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
-    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
+    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query.toString());
     int timeout = OVERPASS_TIMEOUT
     if (timeoutMatcher.find()) {
         timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
@@ -729,16 +729,8 @@ def getServerStatus() {
     } else {
         connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
     }
-    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
-    int timeout = OVERPASS_TIMEOUT
-    if (timeoutMatcher.find()) {
-        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
-    } else {
-        timeout = (int) TimeUnit.MINUTES.toMillis(3);
-    }
-
-    connection.setConnectTimeout(timeout)
-    connection.setReadTimeout(timeout)
+    connection.setConnectTimeout(OVERPASS_TIMEOUT)
+    connection.setReadTimeout(OVERPASS_TIMEOUT)
 
     connection.requestMethod = GET
 
