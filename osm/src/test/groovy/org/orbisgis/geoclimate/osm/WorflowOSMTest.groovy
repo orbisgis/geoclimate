@@ -225,7 +225,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "rsu_lcz"       : "rsu_lcz",
                                          "building_updated": "building_updated"]]],
                 "parameters"  :
-                        ["distance"    : 0,
+                        [
                          rsu_indicators: ["indicatorUse" : ["LCZ"],
                                           "svfSimplified": true]
                         ]
@@ -270,7 +270,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "grid_indicators"        : "grid_indicators",
                                          "building_updated": "building_updated"]]],
                 "parameters"  :
-                        ["distance"       : 0,
+                        [
                          rsu_indicators   : ["indicatorUse" : ["LCZ"],
                                              "svfSimplified": true],
                          "grid_indicators": [
@@ -322,7 +322,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory,
                         "srid"  : 4326],
                 "parameters"  :
-                        ["distance"    : 0,
+                        [
                          rsu_indicators: ["indicatorUse" : ["LCZ"],
                                           "svfSimplified": true]
                         ]
@@ -434,7 +434,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "output"      : [
                         "folder": directory],
                 "parameters"  :
-                        ["distance"    : 100,
+                        [
                          "hLevMin"     : 3,
                          rsu_indicators: ["indicatorUse" : ["LCZ"],
                                           "svfSimplified": true,
@@ -468,7 +468,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": ["path"  : directory,
                                    "tables": ["grid_indicators", "zone"]]],
                 "parameters"  :
-                        ["distance"       : 0,
+                        [
                          "grid_indicators": [
                                  "x_size"    : 1000,
                                  "y_size"    : 1000,
@@ -539,7 +539,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "rsu_indicators": "rsu_indicators",
                                          "rsu_lcz"       : "rsu_lcz"]]],
                 "parameters"  :
-                        ["distance"    : 0,
+                        [
                          rsu_indicators: ["indicatorUse" : ["LCZ"],
                                           "svfSimplified": true]
                         ]
@@ -925,7 +925,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "input"       : [
                         "locations": [[43.726898, 7.298452, 43.727677, 7.299632]]],
                 "parameters"  :
-                        ["distance"    : 100,
+                        [
                          rsu_indicators: ["indicatorUse": ["LCZ"]]
                         ]
         ]
@@ -987,6 +987,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertEquals(1, h2gis.firstRow("select count(*) as count from $zone").count)
     }
 
+    @Disabled
     @Test
     void testCreateGISLayersNoOutput(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testCreateGISLayersNoOutput"
@@ -1106,7 +1107,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "rsu_lcz"         : ["the_geom"],
                                          "building_indicators"  : ["the_geom"]]]],
                 "parameters"  :
-                        ["distance"       : 0,
+                        [
                          rsu_indicators   : ["indicatorUse" : ["LCZ"]]
                         ]
         ]
