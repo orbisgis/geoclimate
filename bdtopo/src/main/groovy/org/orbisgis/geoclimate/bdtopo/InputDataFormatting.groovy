@@ -437,7 +437,8 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
             def queryMapper = "SELECT a.ID_SOURCE, a.WIDTH, a.TYPE, a.ZINDEX, a.CROSSING, a.DIRECTION, a.RANK, a.ADMIN_SCALE, a.NB_VOIES"
             if (zone) {
                 datasource.createSpatialIndex(road, "the_geom")
-                queryMapper += ", ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom), 2) as the_geom " +
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN " +
+                        "a.the_geom else ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom), 2) end as the_geom " +
                         "FROM " +
                         "$road AS a, $zone AS b " +
                         "WHERE " +
@@ -627,7 +628,8 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
             String query
             if (zone) {
                 datasource.createSpatialIndex(water, "the_geom")
-                query = "select st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                query = "select CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else" +
+                        " st_intersection(a.the_geom, b.the_geom) end as the_geom " +
                         ", a.ZINDEX, a.ID_SOURCE, a.TYPE ,  a.REGIME " +
                         " FROM " +
                         "$water AS a, $zone AS b " +
@@ -711,7 +713,8 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
             def queryMapper = "SELECT a.ID_SOURCE, a.TYPE, a.ZINDEX, a.CROSSING, a.WIDTH"
             if (zone) {
                 datasource.createSpatialIndex(rail, "the_geom")
-                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom " +
+                        "else st_intersection(a.the_geom, b.the_geom) end as the_geom " +
                         "FROM " +
                         "$rail AS a, $zone AS b " +
                         "WHERE " +
@@ -807,7 +810,8 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
             def queryMapper = "SELECT a.ID_SOURCE, a.TYPE, a.ZINDEX"
             if (zone) {
                 datasource.createSpatialIndex(vegetation, "the_geom")
-                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else " +
+                        " st_intersection(a.the_geom, b.the_geom) end as the_geom " +
                         "FROM " +
                         "$vegetation AS a, $zone AS b " +
                         "WHERE " +

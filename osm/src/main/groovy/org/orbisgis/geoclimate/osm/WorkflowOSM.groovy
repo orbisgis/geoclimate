@@ -260,7 +260,7 @@ Map workflow(def input) throws Exception {
     def overpass_enpoint = inputParameters.get("endpoint")
 
     if (!overpass_enpoint) {
-        overpass_enpoint = "https://api.openstreetmap.org/api/0.6/"
+        overpass_enpoint = "https://overpass-api.de/api"
     }
     System.setProperty("OVERPASS_ENPOINT", overpass_enpoint)
 

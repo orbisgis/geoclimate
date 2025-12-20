@@ -138,7 +138,9 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
                 DROP TABLE IF EXISTS $buildLine;
                 CREATE TABLE $buildLine
                     AS SELECT   a.$ID_FIELD_BU, a.$idRsu, ST_AREA(b.$GEOMETRIC_FIELD_RSU) AS $RSU_AREA,
-                                ST_CollectionExtract(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU), 2) AS $GEOMETRIC_FIELD_BU,
+                                CASE WHEN ST_CONTAINS(b.$GEOMETRIC_FIELD_RSU, a.$GEOMETRIC_FIELD_BU) THEN
+                                ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU) ELSE
+                                ST_CollectionExtract(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU), 2) END AS $GEOMETRIC_FIELD_BU,
                                 a.$HEIGHT_WALL
                     FROM $building AS a LEFT JOIN $rsu AS b
                     ON a.$idRsu = b.$idRsu""")
@@ -150,7 +152,7 @@ String freeExternalFacadeDensityExact(JdbcDataSource datasource, String building
         datasource.execute("""
                 DROP TABLE IF EXISTS $sharedLineRsu;
                 CREATE TABLE $sharedLineRsu 
-                    AS SELECT   SUM(ST_LENGTH(  ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                    AS SELECT   SUM(ST_LENGTH(ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
                                                                 ST_SNAP(b.$GEOMETRIC_FIELD_BU, a.$GEOMETRIC_FIELD_BU, $snap_tolerance)
                                                                 )
                                                 )
@@ -466,10 +468,8 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
             datasource.execute("""
                     DROP TABLE IF EXISTS $buildingIntersection;
                     CREATE TABLE $buildingIntersection( the_geom GEOMETRY, id_build_a INTEGER, id_build_b INTEGER, z_max DOUBLE, z_min DOUBLE) AS 
-                        SELECT ST_CollectionExtract(t.the_geom,2), t.id_build_a , t.id_build_b , t.z_max , t.z_min 
-                        FROM (
-                            SELECT ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), 
-                                ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)) AS the_geom, 
+                        SELECT ST_CollectionExtract(ST_INTERSECTION(ST_MAKEVALID(a.$GEOMETRIC_COLUMN_BU), 
+                                ST_MAKEVALID(b.$GEOMETRIC_COLUMN_BU)), 2) AS the_geom, 
                                 a.$ID_COLUMN_BU AS id_build_a, 
                                 b.$ID_COLUMN_BU AS id_build_b, 
                                 GREATEST(a.$HEIGHT_WALL,b.$HEIGHT_WALL) AS z_max, 
@@ -477,7 +477,7 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
                             FROM $building AS a, $building AS b 
                             WHERE a.$GEOMETRIC_COLUMN_BU && b.$GEOMETRIC_COLUMN_BU 
                             AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_BU) 
-                             AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU) AS t
+                            AND a.$ID_COLUMN_BU <> b.$ID_COLUMN_BU
             """)
 
             datasource.createIndex(buildingIntersection, "id_build_a")
@@ -532,7 +532,9 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
             // Intersections between free facades and rsu geometries are calculated
             datasource.execute(""" DROP TABLE IF EXISTS $buildingFreeExpl; 
                     CREATE TABLE $buildingFreeExpl($ID_COLUMN_RSU INTEGER, the_geom GEOMETRY, $namesAndType) AS 
-                    (SELECT a.$ID_COLUMN_RSU, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, ST_TOMULTILINE(b.the_geom)), 
+                    (SELECT a.$ID_COLUMN_RSU, 
+                    CASE WHEN ST_CONTAINS(a.the_geom, b.the_geom) then b.the_geom else
+                    ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, ST_TOMULTILINE(b.the_geom)) end as the_geom, 
                     ${onlyNamesB} FROM $rsu a, $buildingLayer b 
                     WHERE a.$GEOMETRIC_COLUMN_RSU && b.the_geom 
                     AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.the_geom))""")
@@ -784,10 +786,12 @@ String roofAreaDistribution(JdbcDataSource datasource, String rsu, String buildi
                         a.z_min, 
                         a.delta_h, 
                         a.non_vertical_roof_area*
-                            ST_AREA(ST_INTERSECTION(a.the_geom, b.$GEOMETRIC_COLUMN_RSU))/
+                            ST_AREA(
+                            ST_INTERSECTION(a.the_geom, b.$GEOMETRIC_COLUMN_RSU))/
                             a.building_area AS non_vertical_roof_area, 
-                        (a.vertical_roof_area-a.vert_roof_to_remove)*
-                            (1-0.5*(1-ST_LENGTH(ST_ACCUM(ST_INTERSECTION(ST_TOMULTILINE(a.the_geom), b.$GEOMETRIC_COLUMN_RSU)))/
+                            (a.vertical_roof_area-a.vert_roof_to_remove)*
+                            (1-0.5*(1-ST_LENGTH(ST_ACCUM(
+                            ST_INTERSECTION(ST_TOMULTILINE(a.the_geom), b.$GEOMETRIC_COLUMN_RSU)))/
                             a.building_total_facade_length)) 
                     FROM $buildVertRoofAll a, $rsu b 
                     WHERE a.id_rsu=b.$ID_COLUMN_RSU 
@@ -1114,8 +1118,11 @@ String linearRoadOperations(JdbcDataSource datasource, String rsuTable, String r
                     }
                     datasource.execute("""DROP TABLE IF EXISTS $roadInter; 
                         CREATE TABLE $roadInter AS SELECT a.$ID_COLUMN_RSU AS id_rsu, 
-                        ST_AREA(a.$GEOMETRIC_COLUMN_RSU) AS rsu_area, ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, 
-                        b.$GEOMETRIC_COLUMN_ROAD) AS the_geom $ifZindex FROM $rsuTable a, $roadTable b 
+                        ST_AREA(a.$GEOMETRIC_COLUMN_RSU) AS rsu_area, 
+                        CASE WHEN ST_CONTAINS(a.the_geom, b.the_geom) then
+                        b.the_geom else
+                        ST_INTERSECTION(a.$GEOMETRIC_COLUMN_RSU, 
+                        b.$GEOMETRIC_COLUMN_ROAD) end AS the_geom $ifZindex FROM $rsuTable a, $roadTable b 
                         WHERE $filtering;""")
 
                     // If all roads are considered at the same level...
@@ -1373,8 +1380,11 @@ String extendedFreeFacadeFraction(JdbcDataSource datasource, String building, St
 
         // The facade area of buildings being partially included in the RSU buffer is calculated
         datasource.execute("""DROP TABLE IF EXISTS $notIncBu; CREATE TABLE $notIncBu AS SELECT 
-                    COALESCE(SUM(ST_LENGTH(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD),
-                     b.$GEOMETRIC_FIELD))*a.$HEIGHT_WALL), 0) 
+                    COALESCE(SUM(ST_LENGTH(
+                     CASE WHEN ST_CONTAINS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) then
+                     ST_TOMULTILINE(a.$GEOMETRIC_FIELD) else
+                     ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD),
+                     b.$GEOMETRIC_FIELD) end )*a.$HEIGHT_WALL), 0) 
                     AS FAC_AREA, b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD FROM $building a, $extRsuTable b 
                     WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD and ST_OVERLAPS(b.$GEOMETRIC_FIELD, a.$GEOMETRIC_FIELD) GROUP BY b.$ID_FIELD_RSU, b.$GEOMETRIC_FIELD;""")
 
@@ -1461,7 +1471,10 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                 def road_tmp = postfix "road_zindex0"
 
                 datasource.execute("""DROP TABLE IF EXISTS $roadTable_zindex0_buffer, $road_tmp;
-            CREATE TABLE $roadTable_zindex0_buffer as SELECT ST_CollectionExtract(st_intersection(a.the_geom,b.the_geom),2) AS the_geom, 
+            CREATE TABLE $roadTable_zindex0_buffer as SELECT 
+            CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN
+            a.the_geom ELSE
+            ST_CollectionExtract(st_intersection(a.the_geom,b.the_geom),2) END AS the_geom, 
             a.WIDTH, b.${id_zone}
             FROM $road as a, $zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) and a.ZINDEX=0 ;
             CREATE SPATIAL INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer(the_geom);
@@ -1480,7 +1493,10 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                 def railTable_zindex0_buffer = postfix "rail_zindex0_buffer"
                 def rail_tmp = postfix "rail_zindex0"
                 datasource.execute("""DROP TABLE IF EXISTS $railTable_zindex0_buffer, $rail_tmp;
-            CREATE TABLE $railTable_zindex0_buffer as SELECT ST_CollectionExtract(st_intersection(a.the_geom,b.the_geom),3) AS the_geom, 
+            CREATE TABLE $railTable_zindex0_buffer as SELECT 
+            CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN
+            a.the_geom ELSE
+            ST_CollectionExtract(st_intersection(a.the_geom,b.the_geom),3) END AS the_geom, 
             a.WIDTH, b.${id_zone}
             FROM $rail as a ,$zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) and a.ZINDEX=0 ;
             CREATE SPATIAL INDEX IF NOT EXISTS ids_$railTable_zindex0_buffer ON $railTable_zindex0_buffer(the_geom);
@@ -1498,10 +1514,16 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                 def low_vegetation_tmp = postfix "low_vegetation_zindex0"
                 def high_vegetation_tmp = postfix "high_vegetation_zindex0"
                 datasource.execute("""DROP TABLE IF EXISTS $low_vegetation_tmp, $high_vegetation_tmp;
-                CREATE TABLE $low_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_zone} FROM 
+                CREATE TABLE $low_vegetation_tmp as select 
+                CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN
+                a.the_geom ELSE
+                ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom,  b.${id_zone} FROM 
                     $vegetation AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low';
-                CREATE TABLE $high_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_zone} FROM 
+                CREATE TABLE $high_vegetation_tmp as select 
+                CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN
+                a.the_geom ELSE
+                ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom,  b.${id_zone} FROM 
                     $vegetation AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high';
                 """)
@@ -1515,10 +1537,16 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                 def water_intermittent_tmp = postfix "water_intermittent_zindex0"
                 def water_permanent_tmp = postfix "water_permanent_zindex0"
                 datasource.execute("""DROP TABLE IF EXISTS $water_intermittent_tmp, $water_permanent_tmp;
-                CREATE TABLE $water_intermittent_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
+                CREATE TABLE $water_intermittent_tmp AS SELECT 
+                CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN
+                a.the_geom ELSE
+                ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom, b.${id_zone} FROM 
                         $water AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.intermittent = True;
-                CREATE TABLE $water_permanent_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
+                CREATE TABLE $water_permanent_tmp AS SELECT 
+                CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN
+                a.the_geom ELSE
+                ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom, b.${id_zone} FROM 
                         $water AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) AND a.intermittent = False""")
                 tablesToMerge += ["$water_intermittent_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $water_intermittent_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1530,7 +1558,10 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                 datasource.createSpatialIndex(impervious, "the_geom")
                 def impervious_tmp = postfix "impervious_zindex0"
                 datasource.execute("""DROP TABLE IF EXISTS $impervious_tmp;
-                CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
+                CREATE TABLE $impervious_tmp AS SELECT 
+                CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN
+                a.the_geom ELSE
+                ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom, b.${id_zone} FROM 
                         $impervious AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)""")
                 tablesToMerge += ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1541,7 +1572,10 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                 datasource.createSpatialIndex(building, "the_geom")
                 def building_tmp = postfix "building_zindex0"
                 datasource.execute("""DROP TABLE IF EXISTS $building_tmp;
-                CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone} FROM 
+                CREATE TABLE $building_tmp AS SELECT 
+                CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN
+                a.the_geom ELSE
+                ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom, b.${id_zone} FROM 
                         $building AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.zindex=0""")
                 tablesToMerge += ["$building_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $building_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -1934,7 +1968,10 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
                 DROP TABLE IF EXISTS $buildInter;
                 CREATE TABLE $buildInter
                     AS SELECT   a.$ID_COLUMN_BU, a.$idRsu,
-                                ST_INTERSECTION(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_RSU) AS $GEOMETRIC_COLUMN_BU,
+                                CASE WHEN ST_CONTAINS(b.$GEOMETRIC_COLUMN_RSU, a.$GEOMETRIC_COLUMN_BU) THEN
+                                a.$GEOMETRIC_COLUMN_BU ELSE
+                                ST_INTERSECTION(a.$GEOMETRIC_COLUMN_BU, b.$GEOMETRIC_COLUMN_RSU) END
+                                AS $GEOMETRIC_COLUMN_BU,
                                 (a.$HEIGHT_WALL + a.$HEIGHT_ROOF) / 2 AS $BUILD_HEIGHT
                     FROM $building AS a LEFT JOIN $rsu AS b
                     ON a.$idRsu = b.$idRsu""")
@@ -2085,7 +2122,10 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
                     DROP TABLE IF EXISTS $buildLine;
                     CREATE TABLE $buildLine
                         AS SELECT   a.$ID_FIELD_BU, a.$idRsu,
-                                    ST_CollectionExtract(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU),2) AS $GEOMETRIC_FIELD_BU,
+                                    CASE WHEN ST_CONTAINS(b.$GEOMETRIC_FIELD_RSU,a.$GEOMETRIC_FIELD_BU) THEN
+                                    a.$GEOMETRIC_FIELD_BU ELSE
+                                    ST_CollectionExtract(ST_INTERSECTION(ST_TOMULTILINE(a.$GEOMETRIC_FIELD_BU), b.$GEOMETRIC_FIELD_RSU),2) END 
+                                    AS $GEOMETRIC_FIELD_BU,
                                     a.$HEIGHT_WALL
                         FROM $building AS a LEFT JOIN $rsu AS b
                         ON a.$idRsu = b.$idRsu""")
@@ -2102,7 +2142,8 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
                                     $idRsu,
                                     $HEIGHT_WALL,
                                     $ID_FIELD_BU
-                        FROM ST_EXPLODE('(SELECT  ST_TOMULTISEGMENTS(ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
+                        FROM ST_EXPLODE('(SELECT
+                                            ST_TOMULTISEGMENTS(ST_INTERSECTION(a.$GEOMETRIC_FIELD_BU, 
                                                                                        ST_SNAP(b.$GEOMETRIC_FIELD_BU, 
                                                                                                a.$GEOMETRIC_FIELD_BU,
                                                                                                $snap_tolerance))) AS $GEOMETRIC_FIELD_BU,
@@ -2120,7 +2161,7 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
                                 $idRsu,
                                 $HEIGHT_WALL,
                                 $ID_FIELD_BU
-                        FROM ST_EXPLODE('(SELECT    ST_TOMULTISEGMENTS($GEOMETRIC_FIELD_BU) AS $GEOMETRIC_FIELD_BU,
+                        FROM ST_EXPLODE('(SELECT ST_TOMULTISEGMENTS($GEOMETRIC_FIELD_BU) AS $GEOMETRIC_FIELD_BU,
                                                     $HEIGHT_WALL,
                                                     $idRsu, $ID_FIELD_BU
                                           FROM $buildLine)')
@@ -2410,7 +2451,8 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             AS the_geom, surface as type
             FROM $road  where ZINDEX=0 ;
             CREATE SPATIAL INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer(the_geom);
-            CREATE TABLE $road_tmp AS SELECT ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.${id_zone}, a.type FROM
+            CREATE TABLE $road_tmp AS SELECT
+            ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.${id_zone}, a.type FROM
             $roadTable_zindex0_buffer AS a, $zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.${id_zone}, a.type;
             DROP TABLE IF EXISTS $roadTable_zindex0_buffer;
             """)
@@ -2424,7 +2466,10 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             def high_vegetation_tmp = postfix "high_vegetation_zindex0"
             if (priorities.contains("low_vegetation")) {
                 datasource.execute("""DROP TABLE IF EXISTS $low_vegetation_tmp; 
-                CREATE TABLE $low_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_zone}, a.type FROM 
+                CREATE TABLE $low_vegetation_tmp as select 
+                    CASE WHEN ST_CONTAINS(b.the_geom,a.the_geom) THEN
+                    a.the_geom ELSE
+                    ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom,  b.${id_zone}, a.type FROM 
                     $vegetation AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='low'; """)
                 tablesToMerge += ["$low_vegetation_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $low_vegetation_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -2432,7 +2477,10 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             }
             if (priorities.contains("high_vegetation")) {
                 datasource.execute("""DROP TABLE IF EXISTS  $high_vegetation_tmp;
-                CREATE TABLE $high_vegetation_tmp as select ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom,  b.${id_zone}, a.type FROM 
+                CREATE TABLE $high_vegetation_tmp as select 
+                    CASE WHEN ST_CONTAINS(b.the_geom,a.the_geom) THEN
+                    a.the_geom ELSE
+                    ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom,  b.${id_zone}, a.type FROM 
                     $vegetation AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.height_class='high';
                 """)
@@ -2445,7 +2493,10 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             datasource.createSpatialIndex(water, "the_geom")
             def water_tmp = postfix "water_zindex0"
             datasource.execute("""DROP TABLE IF EXISTS $water_tmp;
-                CREATE TABLE $water_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone}, 'water' as type FROM 
+                CREATE TABLE $water_tmp AS SELECT 
+                    CASE WHEN ST_CONTAINS(b.the_geom,a.the_geom) THEN
+                    a.the_geom ELSE
+                    ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom, b.${id_zone}, 'water' as type FROM 
                         $water AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)""")
             tablesToMerge += ["$water_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $water_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -2456,7 +2507,10 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             datasource.createSpatialIndex(impervious, "the_geom")
             def impervious_tmp = postfix "impervious_zindex0"
             datasource.execute("""DROP TABLE IF EXISTS $impervious_tmp;
-                CREATE TABLE $impervious_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone},  'impervious' as type FROM 
+                CREATE TABLE $impervious_tmp AS SELECT 
+                CASE WHEN ST_CONTAINS(b.the_geom,a.the_geom) THEN
+                a.the_geom ELSE                    
+                ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom, b.${id_zone},  'impervious' as type FROM 
                         $impervious AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom)""")
             tablesToMerge += ["$impervious_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $impervious_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
@@ -2467,7 +2521,10 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             datasource.createSpatialIndex(building, "the_geom")
             def building_tmp = postfix "building_zindex0"
             datasource.execute("""DROP TABLE IF EXISTS $building_tmp;
-                CREATE TABLE $building_tmp AS SELECT ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) AS the_geom, b.${id_zone}, a.type FROM 
+                CREATE TABLE $building_tmp AS SELECT 
+                CASE WHEN ST_CONTAINS(b.the_geom,a.the_geom) THEN
+                a.the_geom ELSE 
+                ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom),3) END AS the_geom, b.${id_zone}, a.type FROM 
                         $building AS a, $zone AS b WHERE a.the_geom && b.the_geom 
                         AND ST_INTERSECTS(a.the_geom, b.the_geom) and a.zindex=0""")
             tablesToMerge += ["$building_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $building_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]

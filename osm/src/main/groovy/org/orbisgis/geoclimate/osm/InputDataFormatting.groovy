@@ -214,7 +214,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 def buildinType = postfix("BUILDING_TYPE")
                 String triangles = postfix("triangles")
 
-                //Tessellate the urban_areas to perform the intersection on large geometry
+                //Subdivide the urban_areas to perform the intersection on large geometry
                 datasource.execute("""DROP TABLE IF EXISTS $triangles;
                 CREATE TABLE $triangles as 
                 SELECT * FROM st_explode('(SELECT CASE WHEN ST_NPoints(THE_GEOM) > 2500 
@@ -223,7 +223,10 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.createSpatialIndex(triangles)
 
                 datasource.execute """DROP TABLE IF EXISTS $urbanAreasPart, $buildinType ;
-            CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, st_area(st_intersection(a.the_geom,b.the_geom))/st_area(a.the_geom) as part 
+                CREATE TABLE $urbanAreasPart as SELECT b.type, a.id_build, 
+                        st_area(
+                        CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else
+                        st_intersection(a.the_geom,b.the_geom) END )/st_area(a.the_geom) as part 
                         FROM $outputTableName a, $triangles b 
                         WHERE a.the_geom && b.the_geom and st_intersects(st_buffer(a.the_geom, 0), b.the_geom) AND  a.TYPE in ('building', 'undefined');   
             CREATE INDEX ON $urbanAreasPart(id_build);                     
@@ -340,7 +343,8 @@ String formatRoadLayer(
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(road)
-                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else " +
+                        "st_intersection(a.the_geom, b.the_geom) end as the_geom " +
                         "FROM " +
                         "$road AS a, $zone AS b " +
                         "WHERE " +
@@ -495,7 +499,8 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(rail)
-                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else " +
+                        "st_intersection(a.the_geom, b.the_geom) END as the_geom " +
                         "FROM " +
                         "$rail AS a, $zone AS b " +
                         "WHERE " +
@@ -582,7 +587,8 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(vegetation)
-                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else " +
+                        "st_intersection(a.the_geom, b.the_geom) END as the_geom " +
                         "FROM " +
                         "$vegetation AS a, $zone AS b " +
                         "WHERE " +
@@ -661,7 +667,8 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
             String query
             if (zone) {
                 datasource.createSpatialIndex(water, "the_geom")
-                query = """select id ,  st_intersection(a.the_geom, b.the_geom) as the_geom
+                query = """select id ,  CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else
+                        st_intersection(a.the_geom, b.the_geom) END as the_geom
                         , a.\"natural\", a.\"layer\",  a.\"intermittent\"
                          FROM 
                         $water AS a, $zone AS b 
@@ -724,7 +731,8 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
             columnNames.remove("THE_GEOM")
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                queryMapper += ", st_intersection(a.the_geom, b.the_geom) as the_geom " +
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else " +
+                        "st_intersection(a.the_geom, b.the_geom) END as the_geom " +
                         "FROM " +
                         "$impervious AS a, $zone AS b " +
                         "WHERE " +
@@ -1109,7 +1117,8 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
             queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
                 datasource.createSpatialIndex(urban_areas)
-                queryMapper += ", st_snaptoself(st_intersection(a.the_geom, b.the_geom), -0.001) as the_geom " +
+                queryMapper += ", st_snaptoself(" +
+                        "CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else st_intersection(a.the_geom, b.the_geom) END, -0.001) as the_geom " +
                         "FROM " +
                         "$urban_areas AS a, $zone AS b " +
                         "WHERE " +
@@ -1208,7 +1217,9 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
             datasource.execute """DROP TABLE IF EXISTS $coastLinesIntersects, 
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
                         $water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles;
-                        CREATE TABLE $coastLinesIntersects AS SELECT ST_intersection(a.the_geom, b.the_geom) as the_geom
+                        CREATE TABLE $coastLinesIntersects AS SELECT 
+                        CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else
+                        ST_intersection(a.the_geom, b.the_geom) END as the_geom
                         from $coastline  AS  a,  $zone  AS b WHERE
                         a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) and "natural"= 'coastline';
                         """.toString()
@@ -1246,7 +1257,9 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
-                        st_explode('(select ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)) as the_geom from $islands_mark as a,
+                        st_explode('(select ST_ToMultiSegments(
+                        CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else 
+                        st_intersection(a.the_geom, b.the_geom) END ) as the_geom from $islands_mark as a,
                         $reducedZone as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
     
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
@@ -1334,7 +1347,9 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
                         CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
-                        st_explode('(select ST_GeometryN(ST_ToMultiSegments(st_intersection(a.the_geom, b.the_geom)), 1) as the_geom from $islands_mark as a,
+                        st_explode('(select ST_GeometryN(ST_ToMultiSegments(
+                        CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else 
+                        st_intersection(a.the_geom, b.the_geom) END ), 1) as the_geom from $islands_mark as a,
                         $zone as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
     
                         CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 

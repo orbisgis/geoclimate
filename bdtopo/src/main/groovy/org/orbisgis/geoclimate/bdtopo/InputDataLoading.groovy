@@ -281,7 +281,10 @@ def loadV2(
     def input_urban_areas = postfix "INPUT_URBAN_AREAS"
     datasource.execute(""" DROP TABLE IF EXISTS TMP_SURFACE_ACTIVITE;
             CREATE TABLE TMP_SURFACE_ACTIVITE (THE_GEOM geometry, ID varchar(24), NATURE VARCHAR) AS 
-            SELECT ST_FORCE2D(ST_MAKEVALID(ST_CollectionExtract(ST_INTERSECTION(a.THE_GEOM, B.THE_GEOM), 3))) as the_geom, a.ID,
+            SELECT 
+            CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else
+            ST_FORCE2D(ST_MAKEVALID(ST_CollectionExtract(ST_INTERSECTION(a.THE_GEOM, B.THE_GEOM), 3))) 
+            END as the_geom, a.ID,
             CASE WHEN a.CATEGORIE ='Administratif' THEN 'government'
             WHEN a.CATEGORIE= 'Enseignement' THEN 'education'
             WHEN a.CATEGORIE='Santé' THEN 'healthcare' 
@@ -644,7 +647,8 @@ Map loadV3(JdbcDataSource datasource,
     def input_urban_areas = postfix "INPUT_URBAN_AREAS"
     datasource.execute(""" DROP TABLE IF EXISTS TMP_SURFACE_ACTIVITE;
             CREATE TABLE TMP_SURFACE_ACTIVITE (THE_GEOM geometry, ID varchar(24), NATURE VARCHAR) 
-            AS SELECT ST_FORCE2D(ST_MAKEVALID(ST_CollectionExtract(ST_INTERSECTION(a.THE_GEOM, B.THE_GEOM), 3))) as the_geom, a.ID,            
+            AS SELECT CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else 
+            ST_FORCE2D(ST_MAKEVALID(ST_CollectionExtract(ST_INTERSECTION(a.THE_GEOM, B.THE_GEOM), 3))) END as the_geom, a.ID,            
             CASE WHEN a.CATEGORIE = 'Administratif ou militaire' 
             AND a.NATURE IN ('Administration centrale de l''Etat' , 'Aire d''accueil des gens du voyage' ,
             'Autre service déconcentré de l''Etat' , 'Borne', 'Capitainerie','Caserne de pompiers' , 'Divers public ou administratif', 

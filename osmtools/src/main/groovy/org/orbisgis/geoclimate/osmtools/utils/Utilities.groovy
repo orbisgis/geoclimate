@@ -285,6 +285,17 @@ boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception {
     connection.requestMethod = "GET"
     connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
+    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query.toString());
+    int timeout = OVERPASS_TIMEOUT
+    if (timeoutMatcher.find()) {
+        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
+    } else {
+        timeout = (int) TimeUnit.MINUTES.toMillis(3);
+    }
+
+    connection.setConnectTimeout(timeout)
+    connection.setReadTimeout(timeout)
+
     int responseCode = connection.getResponseCode();
     if (responseCode != RESPONSECODE_OK) {
         throw new Exception("Cannot execute the Nominatim query : ${url.toString()}")
@@ -292,7 +303,6 @@ boolean executeNominatimQuery(def query, def outputOSMFile) throws Exception {
     debug "Executing query... $query"
     //Save the result in a file
     info "Downloading the Nominatim data."
-    connection.setConnectTimeout(TIMEOUT_HTTPURL)
     outputOSMFile << connection.inputStream
     connection.disconnect()
     return true
@@ -701,8 +711,6 @@ static @Field int OVERPASS_TIMEOUT = 180
 
 static @Field int RESPONSECODE_OK = 200
 
-//The timeout we use for the  HttpURLConnection
-static @Field int TIMEOUT_HTTPURL = 900000
 /**
  * Return the status of the Overpass server.
  * @return A string representation of the overpass status.
@@ -721,8 +729,9 @@ def getServerStatus() {
     } else {
         connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
     }
-    connection.setConnectTimeout(TIMEOUT_HTTPURL)
-    connection.setReadTimeout(TIMEOUT_HTTPURL)
+    connection.setConnectTimeout(OVERPASS_TIMEOUT)
+    connection.setReadTimeout(OVERPASS_TIMEOUT)
+
     connection.requestMethod = GET
 
     if (connection.responseCode != RESPONSECODE_OK) {
@@ -789,6 +798,7 @@ boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
     }
 }
 
+
 /**
  * Method to execute an Overpass query and save the result in a file
  *
@@ -800,7 +810,7 @@ boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-boolean executeOverPassQuery(def query, def outputOSMFile) {
+boolean executeOverPassQuery(String query, File outputOSMFile) {
     if (!query) {
         error "The query should not be null or empty."
         return false
@@ -827,8 +837,20 @@ boolean executeOverPassQuery(def query, def outputOSMFile) {
     connection.requestMethod = GET
     connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
 
-    connection.setConnectTimeout(TIMEOUT_HTTPURL)
-    connection.setReadTimeout(TIMEOUT_HTTPURL)
+    if(outputOSMFile.absolutePath.endsWith(".osm.gz")){
+        connection.setRequestProperty("Accept-Encoding", "gzip")
+    }
+
+    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
+    int timeout = OVERPASS_TIMEOUT
+    if (timeoutMatcher.find()) {
+        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
+    } else {
+        timeout = (int) TimeUnit.MINUTES.toMillis(3);
+    }
+
+    connection.setConnectTimeout(timeout)
+    connection.setReadTimeout(timeout)
 
     int responseCode = connection.getResponseCode();
 
@@ -861,8 +883,17 @@ def isNominatimReady() {
         connection = new URL(endPoint).openConnection() as HttpURLConnection
     }
     connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
-    connection.setConnectTimeout(TIMEOUT_HTTPURL)
-    connection.setReadTimeout(TIMEOUT_HTTPURL)
+    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
+    int timeout = OVERPASS_TIMEOUT
+    if (timeoutMatcher.find()) {
+        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
+    } else {
+        timeout = (int) TimeUnit.MINUTES.toMillis(3);
+    }
+
+    connection.setConnectTimeout(timeout)
+    connection.setReadTimeout(timeout)
+
     connection.requestMethod = GET
     def ok = connection.responseCode == RESPONSECODE_OK
     connection.disconnect()

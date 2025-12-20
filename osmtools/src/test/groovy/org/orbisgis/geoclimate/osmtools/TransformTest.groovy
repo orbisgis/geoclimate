@@ -811,6 +811,29 @@ class TransformTest extends AbstractOSMToolsTest {
         }
     }
 
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void testIntegrationForOSMGZFile() {
+        long start = System.currentTimeMillis()
+        def bbox = [43.4, 1.4, 43.6, 1.6]
+        def query = OSMTools.Utilities.buildOSMQuery(bbox)
+        /*def outputOSMFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "data.osm.gz")
+        println(outputOSMFile.absolutePath)
+        outputOSMFile.delete()
+        def extract = OSMTools.Utilities.executeOverPassQueryGZIP(query, outputOSMFile )*/
+
+        def outputOSMFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "data.osm")
+        println(outputOSMFile.absolutePath)
+        outputOSMFile.delete()
+        def extract = OSMTools.Utilities.executeOverPassQuery(query, outputOSMFile )
+
+        println("Time "+ (System.currentTimeMillis()-start)/1000)
+
+    }
+
     @Test
     void buildAllPolygons() {
         def bbox = [47.647353, -2.090192, 47.649413, -2.087274]
