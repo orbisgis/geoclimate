@@ -1004,7 +1004,9 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
             DROP TABLE IF EXISTS $rsu_tmp;
             CREATE TABLE $rsu_tmp as
             SELECT CAST((row_number() over()) as Integer) as id_rsu, the_geom FROM ST_EXPLODE('(
-            SELECT ST_CollectionExtract(ST_INTERSECTION(a.the_geom, b.the_geom),3) as the_geom 
+            SELECT 
+            CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) then a.the_geom else
+            ST_CollectionExtract(ST_INTERSECTION(a.the_geom, b.the_geom),3) end as the_geom 
             from $rsu as a, $zone as b 
             where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom))');
             DROP TABLE IF EXISTS $rsu;
@@ -1975,7 +1977,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (!buildingCutted) {
             buildingCutted = cutBuilding(datasource, grid, building)
         }
-        def indicatorName = "TYPE"
         def gridTableTypeProportion = Geoindicators.GenericIndicators.typeProportion(datasource, buildingCutted,
                 grid_column_identifier, "type", grid, parameters.buildingAreaTypeAndCompositionTeb,
                 parameters.floorAreaTypeAndCompositionTeb, "")
@@ -2224,11 +2225,14 @@ String cutBuilding(JdbcDataSource datasource, String grid, String building) thro
         DROP TABLE IF EXISTS $buildingCutted;
         CREATE TABLE $buildingCutted as 
         SELECT *, ST_AREA(THE_GEOM) AS area from 
-        (SELECT a.* EXCEPT(the_geom), ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom), 3) as the_geom, b.* EXCEPT(the_geom),
+        (SELECT a.* EXCEPT(the_geom), 
+        CASE WHEN ST_CONTAINS(a.the_geom, b.the_geom) then b.the_geom else
+        ST_CollectionExtract(st_intersection(a.the_geom, b.the_geom), 3) end as the_geom, 
+        b.* EXCEPT(the_geom),
         (b.HEIGHT_WALL + b.HEIGHT_ROOF) / 2 AS BUILD_HEIGHT
         FROM $grid as a, $building as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom)) 
         as foo
-        """.toString())
+        """)
     }
     catch (SQLException ex) {
         throw new SQLException("Cannot cut the building", ex)

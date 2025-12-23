@@ -243,8 +243,8 @@ Map workflow(def input) throws Exception {
     }
     def overpass_timeout = inputParameters.get("timeout")
     if (!overpass_timeout) {
-        overpass_timeout = 900
-    } else if (overpass_timeout <= 180) {
+        overpass_timeout = 180
+    } else if (overpass_timeout < 180) {
         throw new Exception("The timeout value must be greater than the default value : 180 s")
     }
 
@@ -1190,8 +1190,9 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
                 Map columnsToKeepWithType =h2gis_datasource.getColumnNamesTypes(h2gis_table_to_save)
                 def columnNamesToSave =  columnsToKeepWithType.keySet()
                 if(excluded_columns) {
-                    columnsToKeepWithType = columnsToKeepWithType.findAll{it-> !excluded_columns.contains(it.key)}
-                    columnNamesToSave =  columnsToKeepWithType.keySet()
+                    columnsToKeepWithType.removeAll{ it->
+                        excluded_columns.contains(it.key)
+                    }
                 }
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource,columnNamesToSave)
                 if (inputRes) {
@@ -1321,9 +1322,11 @@ def indicatorTableBatchExportTable(JdbcDataSource output_datasource, def output_
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                     int BATCH_MAX_SIZE = 100
                     //We must exclude the columns to save in the database
-                    Map columnsToKeepWithType =[:]
+                    Map columnsToKeepWithType =h2gis_datasource.getColumnNamesTypes(h2gis_table_to_save)
                     if(excluded_columns) {
-                        columnsToKeepWithType = h2gis_datasource.getColumnNamesTypes(h2gis_table_to_save).findAll{it-> !excluded_columns.contains(it.key)}
+                        columnsToKeepWithType.removeAll{ it->
+                            excluded_columns.contains(it.key)
+                        }
                     }
                     def columnNamesToSave =  columnsToKeepWithType.keySet()
                     ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource, columnNamesToSave)

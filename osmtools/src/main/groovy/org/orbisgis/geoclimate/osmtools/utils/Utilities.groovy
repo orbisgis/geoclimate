@@ -706,8 +706,8 @@ static @Field OVERPASS_BASE_URL = "${OVERPASS_ENDPOINT}/interpreter?data="
 /** Url of the status of the Overpass server */
 static @Field OVERPASS_STATUS_URL = "${OVERPASS_ENDPOINT}/status"
 
-/** OVERPASS TIMEOUT */
-static @Field int OVERPASS_TIMEOUT = 180
+/** OVERPASS TIMEOUT Default to 180 seconds.*/
+static @Field int OVERPASS_TIMEOUT = 180 * 1000
 
 static @Field int RESPONSECODE_OK = 200
 
@@ -738,66 +738,13 @@ def getServerStatus() {
         error "Cannot get the status of the server.\n Server answer with code ${connection.responseCode} : " +
                 "${connection.inputStream.text}"
     }
-    String status =  connection.inputStream.text
+    String status = connection.inputStream.text
     connection.disconnect()
     return status
 }
 
 /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
 static @Field utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
-
-
-/**
- * Method to execute an Overpass query and save the result in a file
- *
- * @param query the Overpass query
- * @param outputOSMFile the output file
- *
- * @return True if the query has been successfully executed, false otherwise.
- *
- * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Lesaux (UBS LAB-STICC)
- */
-boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
-    final String proxyHost = System.getProperty("http.proxyHost");
-    final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
-    def connection
-    if (proxyHost != null) {
-        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
-        connection = queryUrl.openConnection(proxy) as HttpURLConnection
-    } else {
-        connection = queryUrl.openConnection() as HttpURLConnection
-    }
-    debug queryUrl
-    connection.requestMethod = GET
-
-    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
-    int timeout = OVERPASS_TIMEOUT
-    if (timeoutMatcher.find()) {
-        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
-    } else {
-        timeout = (int) TimeUnit.MINUTES.toMillis(3);
-    }
-
-    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
-
-    connection.setConnectTimeout(timeout);
-    connection.setReadTimeout(timeout);
-
-    connection.connect()
-
-    debug "Executing query... $queryUrl"
-    //Save the result in a file
-    if (connection.responseCode == RESPONSECODE_OK) {
-        info "Downloading the OSM data from overpass api in ${outputOSMFile}"
-        outputOSMFile << connection.inputStream
-        return true
-    } else {
-        error "Cannot execute the query.\n${getServerStatus()}"
-        return false
-    }
-}
-
 
 /**
  * Method to execute an Overpass query and save the result in a file
@@ -826,45 +773,47 @@ boolean executeOverPassQuery(String query, File outputOSMFile) {
     def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
     final String proxyHost = System.getProperty("http.proxyHost");
     final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
-    def connection
-    if (proxyHost != null) {
-        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
-        connection = queryUrl.openConnection(proxy) as HttpURLConnection
-    } else {
-        connection = queryUrl.openConnection() as HttpURLConnection
+    HttpURLConnection connection
+    try {
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+            connection = queryUrl.openConnection(proxy) as HttpURLConnection
+        } else {
+            connection = queryUrl.openConnection() as HttpURLConnection
+        }
+        debug queryUrl
+        connection.requestMethod = GET
+        connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
+
+        if (outputOSMFile.absolutePath.endsWith(".osm.gz")) {
+            connection.setRequestProperty("Accept-Encoding", "gzip")
+        }
+
+        Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query);
+        int timeout = OVERPASS_TIMEOUT
+        if (timeoutMatcher.find()) {
+            timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
+        } else {
+            timeout = (int) TimeUnit.MINUTES.toMillis(3);
+        }
+
+        connection.setConnectTimeout(timeout)
+        connection.setReadTimeout(timeout)
+        debug "Executing query... $query"
+        connection.connect()
+        handleResponseCode(connection)
+        info "Downloading the OSM data from overpass api in ${outputOSMFile}"
+        //Save the result in a file
+        outputOSMFile << connection.inputStream
+    } catch (IOException e) {
+        error("Cannot execute the overpass query. Cause : ${e.getMessage()}")
     }
-    debug queryUrl
-    connection.requestMethod = GET
-    connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
-
-    if(outputOSMFile.absolutePath.endsWith(".osm.gz")){
-        connection.setRequestProperty("Accept-Encoding", "gzip")
+    finally {
+        if (connection != null) connection.disconnect();
     }
-
-    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
-    int timeout = OVERPASS_TIMEOUT
-    if (timeoutMatcher.find()) {
-        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
-    } else {
-        timeout = (int) TimeUnit.MINUTES.toMillis(3);
-    }
-
-    connection.setConnectTimeout(timeout)
-    connection.setReadTimeout(timeout)
-
-    int responseCode = connection.getResponseCode();
-
-    debug "Executing query... $query"
-    //Save the result in a file
-    if (responseCode != RESPONSECODE_OK) {
-        error "Cannot execute the query.\n${getServerStatus()}"
-        return false
-    }
-    info "Downloading the OSM data from overpass api in ${outputOSMFile}"
-    outputOSMFile << connection.inputStream
-    connection.disconnect()
     return true
 }
+
 
 /**
  * Return the status of the Nominatim server.
@@ -883,19 +832,35 @@ def isNominatimReady() {
         connection = new URL(endPoint).openConnection() as HttpURLConnection
     }
     connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
-    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(queryUrl.toString());
-    int timeout = OVERPASS_TIMEOUT
-    if (timeoutMatcher.find()) {
-        timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
-    } else {
-        timeout = (int) TimeUnit.MINUTES.toMillis(3);
-    }
 
-    connection.setConnectTimeout(timeout)
-    connection.setReadTimeout(timeout)
+    connection.setConnectTimeout(OVERPASS_TIMEOUT)
+    connection.setReadTimeout(OVERPASS_TIMEOUT)
 
     connection.requestMethod = GET
     def ok = connection.responseCode == RESPONSECODE_OK
     connection.disconnect()
     return ok
 }
+
+/**
+ * Return a description of the response in case of error
+ * @param connection
+ * @throws IOException
+ */
+private void handleResponseCode(HttpURLConnection connection) throws IOException {
+    int httpResponseCode = connection.getResponseCode()
+    if(httpResponseCode==504) {
+        throw new IOException("""504 Gateway Timeout is sent if the server has already so much load that the request cannot be executed.\n
+        In most cases, it is best to try again later. Please note that the server decides this based on the timeout and maxsize \n
+        parameters of the request, so smaller values for them may also make the request acceptable.""")
+    }else if(httpResponseCode==400){
+        throw new IOException("400 Bad Request.The request has a syntax error")
+    }else if(httpResponseCode==429){
+        throw new IOException("429 Too Many Requests. You send too many queries from the same IP.")
+    }
+    else if (httpResponseCode < 200 || httpResponseCode > 299) {
+        throw new IOException(connection.getResponseMessage())
+    }
+}
+
+

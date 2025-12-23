@@ -286,7 +286,8 @@ def saveInFileWithIntersection(def outputTable, def filePath, H2GIS h2gis_dataso
             CREATE TABLE $tmp_export as 
             as select * EXCEPT(EXPLOD_ID)  from ST_EXPLODE('(
             select ${columns.join(",")}, 
-            ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) )as the_geom 
+            CASE WHEN ST_CONTAINS(ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}), the_geom) then the_geom else
+            ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) ) end as the_geom 
             FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})))')
             """)
             h2gis_datasource.save(tmp_export, filePath, deleteOutputData)
@@ -300,7 +301,9 @@ def saveInFileWithIntersection(def outputTable, def filePath, H2GIS h2gis_dataso
             DROP TABLE IF EXISTS $tmp_export;
             CREATE TABLE $tmp_export as 
             * EXCEPT(EXPLOD_ID)  from ST_EXPLODE('(
-            select ${columns.join(",")}, ST_TRANSFORM(ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})),$outputSRID) as the_geom 
+            select ${columns.join(",")}, 
+            CASE WHEN ST_CONTAINS(ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}), the_geom) then the_geom else 
+            ST_TRANSFORM(ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})),$outputSRID) end as the_geom 
             FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})))')
             """)
                 h2gis_datasource.save(tmp_export, filePath, deleteOutputData)
@@ -336,8 +339,8 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
  * @return
  */
 def getTableToSave(H2GIS h2gis_datasource,String h2gis_table_to_save, Integer targetTableSrid,  Collection columnsToKeep, String filter){
-    if(columnsToKeep.contains("THE_GEOM)")) {
-        List columns = columnsToKeep.findAll {it -> it!="THE_GEOM"}
+    if(columnsToKeep.contains("THE_GEOM")) {
+        List columns = columnsToKeep.findAll() {it -> it!="THE_GEOM"} asList()
         if(targetTableSrid) {
             columns.add("ST_TRANSFORM(THE_GEOM, $targetTableSrid) as the_geom")
         }

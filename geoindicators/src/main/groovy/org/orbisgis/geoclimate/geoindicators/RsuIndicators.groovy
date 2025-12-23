@@ -2452,7 +2452,8 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             FROM $road  where ZINDEX=0 ;
             CREATE SPATIAL INDEX IF NOT EXISTS ids_$roadTable_zindex0_buffer ON $roadTable_zindex0_buffer(the_geom);
             CREATE TABLE $road_tmp AS SELECT
-            ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) AS the_geom, b.${id_zone}, a.type FROM
+            CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) then a.the_geom else
+            ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) end AS the_geom, b.${id_zone}, a.type FROM
             $roadTable_zindex0_buffer AS a, $zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.${id_zone}, a.type;
             DROP TABLE IF EXISTS $roadTable_zindex0_buffer;
             """)

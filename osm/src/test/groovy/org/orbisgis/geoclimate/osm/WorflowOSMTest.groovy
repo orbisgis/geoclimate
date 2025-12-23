@@ -753,7 +753,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "input"       : [
                         "locations": [location],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                         "area":100000,
-                        "timeout":1800,
+                        "timeout":180,
                         "maxsize":1036870912
                         //"date":"2017-12-31T19:20:00Z",
                         /*"timeout":182,
