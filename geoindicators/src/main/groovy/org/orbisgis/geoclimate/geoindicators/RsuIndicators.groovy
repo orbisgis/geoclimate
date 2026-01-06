@@ -2454,7 +2454,8 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
             CREATE TABLE $road_tmp AS SELECT
             CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) then a.the_geom else
             ST_CollectionExtract(st_intersection(st_union(st_accum(a.the_geom)),b.the_geom),3) end AS the_geom, b.${id_zone}, a.type FROM
-            $roadTable_zindex0_buffer AS a, $zone AS b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.${id_zone}, a.type;
+            $roadTable_zindex0_buffer AS a, $zone AS b 
+            WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom) GROUP BY b.${id_zone}, a.type, a.the_geom;
             DROP TABLE IF EXISTS $roadTable_zindex0_buffer;
             """)
             tablesToMerge += ["$road_tmp": "select ST_ToMultiLine(the_geom) as the_geom, ${id_zone} from $road_tmp WHERE ST_ISEMPTY(THE_GEOM)=false"]
