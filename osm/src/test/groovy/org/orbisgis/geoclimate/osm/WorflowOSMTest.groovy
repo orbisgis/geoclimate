@@ -753,7 +753,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "input"       : [
                         "locations": [location],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
                         "area":100000,
-                        "timeout":1800,
+                        "timeout":180,
                         "maxsize":1036870912
                         //"date":"2017-12-31T19:20:00Z",
                         /*"timeout":182,
@@ -783,7 +783,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "rowCol": true,
                                 "output" : "geojson",
                                 "indicators": [
-                                        "BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP",
+                                        "BUILDING_FRACTION", "BUILDING_HEIGHT",
                                         "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                                         "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                                         "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",

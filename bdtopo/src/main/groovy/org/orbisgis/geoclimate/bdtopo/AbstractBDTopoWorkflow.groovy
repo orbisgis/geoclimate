@@ -30,7 +30,6 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ITable
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
-import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 
 import java.sql.Connection
 import java.sql.SQLException
@@ -557,7 +556,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     if (!list_indicators) {
                         throw new Exception("The list of indicator names cannot be null or empty")
                     }
-                    def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
+                    def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                                                    "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                    "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                                    "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO",
@@ -1196,10 +1195,6 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         //Export impervious
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.impervious, id_zone, h2gis_datasource, h2gis_tables.impervious
                 , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.impervious))
-
-        //Export population table
-        abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone, h2gis_datasource, h2gis_tables.population
-                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.population))
 
         //Export building_updated table
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.building_updated, id_zone, h2gis_datasource, h2gis_tables.building_updated

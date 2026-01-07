@@ -55,10 +55,6 @@ The building layer represents the footprint of the building as a set of Polygons
      - INTEGER
      - *not null ; >-4 ; <4*
      - Defines the position with respect to the ground. 0 indicates that the object is on the ground. 1 to 4 indicates that the objects are above the ground surface. -4 to -1 indicates that the object is underground.
-   * - pop
-     - FLOAT
-     -
-     - Number of inhabitants computed from WorldPop database: https://www.worldpop.org/. This column is optional.
 
 type and main_use column values
 -------------------------------

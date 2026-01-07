@@ -178,11 +178,6 @@
             </dependency>
             <dependency>
                 <groupId>org.orbisgis.geoclimate</groupId>
-                <artifactId>worldpoptools</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.orbisgis.geoclimate</groupId>
                 <artifactId>geoclimate</artifactId>
                 <version>${project.version}</version>
             </dependency>

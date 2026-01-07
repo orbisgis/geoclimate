@@ -518,7 +518,7 @@ def buildIndexes(JdbcDataSource datasource, String osmTablesPrefix) throws Excep
     if (!osmTablesPrefix) {
         throw new Exception("The osmTablesPrefix should not be null or empty.")
     }
-    datasource.execute """
+    datasource.execute("""
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_node_index                     ON ${osmTablesPrefix}_node(id_node);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_node_tag_id_node_index         ON ${osmTablesPrefix}_node_tag(id_node);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_node_tag_tag_key_index         ON ${osmTablesPrefix}_node_tag(tag_key);
@@ -536,7 +536,7 @@ def buildIndexes(JdbcDataSource datasource, String osmTablesPrefix) throws Excep
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_tag_tag_value_index   ON ${osmTablesPrefix}_relation_tag(tag_value);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_member_id_relation_index   ON ${osmTablesPrefix}_way_member(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_id_way                     ON ${osmTablesPrefix}_way(id_way);
-        """.toString()
+        """)
     return true
 }
 

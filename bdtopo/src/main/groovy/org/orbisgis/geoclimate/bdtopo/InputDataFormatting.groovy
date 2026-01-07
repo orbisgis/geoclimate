@@ -54,7 +54,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
     //Create the final building table
     datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName (THE_GEOM geometry, ID_BUILD integer, ID_SOURCE varchar(24), 
-            HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer, ROOF_SHAPE VARCHAR);""".toString())
+            HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT, NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX integer, ROOF_SHAPE VARCHAR);""")
 
     if (building) {
         if (datasource.hasTable(building)) {
