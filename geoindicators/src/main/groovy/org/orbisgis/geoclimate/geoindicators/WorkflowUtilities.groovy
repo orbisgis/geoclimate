@@ -343,6 +343,8 @@ def getTableToSave(H2GIS h2gis_datasource,String h2gis_table_to_save, Integer ta
         List columns = columnsToKeep.findAll() {it -> it!="THE_GEOM"} asList()
         if(targetTableSrid) {
             columns.add("ST_TRANSFORM(THE_GEOM, $targetTableSrid) as the_geom")
+        }else{
+            columns.add("THE_GEOM")
         }
         return h2gis_datasource.getSpatialTable("(SELECT ${columns.join(",")} from ${h2gis_table_to_save} ${filter?filter:""})".toString())
     }

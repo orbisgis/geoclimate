@@ -302,7 +302,8 @@ abstract class WorkflowAbstractTest {
             def outputTables = ["building_indicators": "building_indicators",
                                 "rsu_indicators"     : "rsu_indicators",
                                 "rsu_lcz"            : "rsu_lcz",
-                                "zone"               : "zone", "grid_indicators": "grid_indicators"]
+                                "zone"               : "zone",
+                                "grid_indicators": "grid_indicators"]
             //Drop all output tables if exist
             externalDB.execute("DROP TABLE IF EXISTS ${outputTables.values().join(",")};".toString())
             def bdTopoParameters = [
