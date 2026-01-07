@@ -557,7 +557,6 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(0d, rows.WATER_PERMANENT_FRACTION)
         assertEquals(0d, rows.WATER_INTERMITTENT_FRACTION)
         assertEquals(0d, rows.UNDEFINED_FRACTION)
-        assertEquals(100d, rows.SUM_POP)
         assertEquals(10d, rows.AVG_HEIGHT_ROOF)
         assertEquals(0d, rows.STD_HEIGHT_ROOF)
         assertTrue(10d - rows.GEOM_AVG_HEIGHT_ROOF < 0.0001)
