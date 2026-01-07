@@ -1874,9 +1874,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if ((it == "BUILDING_HEIGHT_WEIGHTED" || it == "STREET_WIDTH") && building) {
             weightedBuildingIndicators["height_roof"] = ["area": ["AVG", "STD"]]
         }
-        if (it == "BUILDING_POP" && building) {
-            unweightedBuildingIndicators.put("pop", ["SUM"])
-        }
         if ((it == "HEIGHT_OF_ROUGHNESS_ELEMENTS" || it == "TERRAIN_ROUGHNESS") && building) {
             height_roof_unweighted_list.add("GEOM_AVG")
         }
