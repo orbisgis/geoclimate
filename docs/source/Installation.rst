@@ -36,6 +36,13 @@ Download and Run GeoClimate
 
       java -jar geoclimate_jar_name.jar -h
 
+You should obtain the following
+
+.. figure:: /_static/images/geoclimate_cli.png
+   :alt: Geoclimate CLI
+
+   Geoclimate CLI
+
 --------------
 
 Optional installations
