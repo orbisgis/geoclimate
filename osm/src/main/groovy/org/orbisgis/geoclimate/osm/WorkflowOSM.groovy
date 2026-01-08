@@ -20,8 +20,6 @@
 package org.orbisgis.geoclimate.osm
 
 import groovy.transform.BaseScript
-import org.h2.tools.DeleteDbFiles
-import org.h2gis.functions.io.utility.IOMethods
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeographyUtilities
@@ -659,11 +657,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames,
                             results, id_zone, srid, outputSRID, reproject, excluded_columns,outputZoneGeometry)
                 }
-                outputTableNamesResult.put(id_zone in Collection ? id_zone.join("_") : id_zone, results.findAll { it.value != null })
+                outputTableNamesResult.put(Geoindicators.WorkflowUtilities.formatLocation(id_zone), results.findAll { it.value != null })
                 h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
             }
         } catch (Exception e) {
-            saveLogZoneTable(h2gis_datasource, databaseFolder, id_zone in Collection ? id_zone.join("_") : id_zone, osm_zone_geometry, e.getLocalizedMessage())
+            saveLogZoneTable(h2gis_datasource, databaseFolder, Geoindicators.WorkflowUtilities.formatLocation(id_zone), osm_zone_geometry, e.getLocalizedMessage())
             //eat the exception and process other zone
             warn("The zone $id_zone has not been processed. \nCause :  \n${e.getLocalizedMessage()}")
         }
@@ -756,11 +754,11 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
 
         datasource.execute """drop table if exists ${outputZoneTable}; 
         create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${source_geom_utm.toString()}', ${epsg}), '${zoneToExtract.toString()}');""".toString()
+        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${source_geom_utm.toString()}', ${epsg}), '${Geoindicators.WorkflowUtilities.formatLocation(zoneToExtract)}');""".toString()
 
         datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; 
          create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, lat_lon_bbox_geom_extended, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
+        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, lat_lon_bbox_geom_extended, epsg).toString()}',${epsg}), '${Geoindicators.WorkflowUtilities.formatLocation(zoneToExtract)}');
         """.toString()
 
         return ["utm_zone_table"         : outputZoneTable,
@@ -1021,7 +1019,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
 def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID,
                     def reproject, def deleteOutputData, def outputGrid,Geometry outputZoneGeometry) throws Exception {
     //Create a subfolder to store each results
-    def folderName = id_zone in Collection ? id_zone.join("_") : id_zone
+    def folderName = Geoindicators.WorkflowUtilities.formatLocation(id_zone)
     def subFolder = new File(ouputFolder.getAbsolutePath() + File.separator + subFolderName + folderName)
     if (!subFolder.exists()) {
         subFolder.mkdir()
@@ -1176,7 +1174,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
     if (output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '${id_zone.replace("'","''")}'".toString())
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '${id_zone.replace("'","''")}'")
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 100
