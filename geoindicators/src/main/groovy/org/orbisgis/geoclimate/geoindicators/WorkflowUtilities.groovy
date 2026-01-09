@@ -352,3 +352,24 @@ def getTableToSave(H2GIS h2gis_datasource,String h2gis_table_to_save, Integer ta
         return h2gis_datasource.getTable("(SELECT ${columnsToKeep.join(",")} from ${h2gis_table_to_save} ${filter?filter:""})".toString())
     }
 }
+
+/**
+ * Format the location value
+ * @param zone The location value can take the following forms :
+ * - a place name from OSM (e.g Paimpol)
+ * - a collection of 4 coordinates to define a bbox (e.g [43.726898, 7.298452, 43.727677, 7.299632])
+ * - a collections of 3 coordinates to define a point plus a distance in meters (e.g [43.726898, 7.298452, 100])
+ * @return if the location value is a collection concatenates the coordinates with the delimiter '_'
+ * and returns the concatenated string
+ * else add a quotation mark as an escape character
+ */
+def formatLocation(def location) throws Exception {
+    if (location in Collection) {
+        return location.join("_")
+    } else if (location instanceof String) {
+        return location.trim().replace("'","''")
+    } else {
+        throw new Exception("Invalid location input. \n" +
+                "The location input must be a string value or an array of 4 coordinates to define a bbox or 3 values to define a point plus a distance in meters ")
+    }
+}

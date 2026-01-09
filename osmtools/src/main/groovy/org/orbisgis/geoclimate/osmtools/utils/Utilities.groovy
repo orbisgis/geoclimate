@@ -801,11 +801,16 @@ boolean executeOverPassQuery(String query, File outputOSMFile) {
         connection.setReadTimeout(timeout)
         debug "Executing query... $query"
         connection.connect()
-        handleResponseCode(connection)
+        try {
+            handleResponseCode(connection)
+        } catch (IOException e) {
+            error("Cannot execute the overpass query. Cause : ${e.getMessage()}")
+            return false
+        }
         info "Downloading the OSM data from overpass api in ${outputOSMFile}"
         //Save the result in a file
         outputOSMFile << connection.inputStream
-    } catch (IOException e) {
+    } catch (Exception e) {
         error("Cannot execute the overpass query. Cause : ${e.getMessage()}")
     }
     finally {

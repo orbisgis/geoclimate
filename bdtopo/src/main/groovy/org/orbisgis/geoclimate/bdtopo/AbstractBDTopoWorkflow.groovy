@@ -19,8 +19,7 @@
  */
 package org.orbisgis.geoclimate.bdtopo
 
-import org.h2.tools.DeleteDbFiles
-import org.h2gis.functions.io.utility.IOMethods
+
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.URIUtilities
@@ -217,9 +216,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             if (tablesLinked) {
                 locations.each { location ->
                     //We must extract the data from the shapefiles for each locations
+                    def formatedZone = Geoindicators.WorkflowUtilities.formatLocation(location)
                     try {
                         if (filterLinkedShapeFiles(location, processing_parameters.distance, tablesLinked, sourceSrid, inputSRID, h2gis_datasource)) {
-                            def formatedZone = checkAndFormatLocations(location)
                             if (formatedZone) {
                                 def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters,
                                         createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
@@ -230,8 +229,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             }
                         }
                     } catch (Exception e) {
-                        String new_location =location in Collection ? location.join("_") : location
-                        saveLogZoneTable(h2gis_datasource, databaseFolder, new_location, e.getLocalizedMessage())
+                        saveLogZoneTable(h2gis_datasource, databaseFolder, formatedZone, e.getLocalizedMessage())
                         //eat the exception and process other zone
                         warn("The zone $location has not been processed. \nCause :  \n${e.getLocalizedMessage()}")
                     }
@@ -282,7 +280,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         }
                     }
                 } catch (Exception e) {
-                    saveLogZoneTable(h2gis_datasource, databaseFolder, location in Collection ? location.join("_") : location, e.getLocalizedMessage())
+                    saveLogZoneTable(h2gis_datasource, databaseFolder, Geoindicators.WorkflowUtilities.formatLocation(location), e.getLocalizedMessage())
                     //eat the exception and process other zone
                     warn("The zone $location has not been processed. Please check the log table to get more informations.")
                 }
@@ -672,23 +670,6 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 "grid_target",
                 "zone_extended",
                 "building_updated"]
-    }
-
-
-    /**
-     * Sanity check for the location value
-     * @param id_zones
-     * @return
-     */
-    def checkAndFormatLocations(def locations) throws Exception {
-        if (locations in Collection) {
-            return locations.join("_")
-        } else if (locations instanceof String) {
-            return locations.trim()
-        } else {
-            throw new Exception("Invalid location input. \n" +
-                    "The location input must be a string value or an array of 4 coordinates to define a bbox ")
-        }
     }
 
     /**
