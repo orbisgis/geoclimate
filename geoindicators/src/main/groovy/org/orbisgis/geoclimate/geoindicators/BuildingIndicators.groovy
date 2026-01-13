@@ -140,14 +140,30 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
     // To avoid overwriting the output files of this step, a unique identifier is created
     // Temporary table names
     def build_intersec = postfix "build_intersec"
+    def building_touches = postfix "building_touches"
 
     // The name of the outputTableName is constructed
     def outputTableName = prefix prefixName, BASE_NAME
 
-    datasource.createSpatialIndex(building, "the_geom")
-    datasource.createIndex(building, "id_build")
+    datasource.createSpatialIndex(building, GEOMETRIC_FIELD)
+    datasource.createIndex(building, ID_FIELD)
 
-    def query = " CREATE TABLE $build_intersec AS SELECT "
+    def query = """ 
+    DROP TABLE IF EXISTS $building_touches;
+    CREATE TABLE $building_touches AS
+    SELECT 
+                    ST_INTERSECTION(st_makevalid(a.$GEOMETRIC_FIELD),
+                    st_makevalid(b.$GEOMETRIC_FIELD)) AS the_geom,
+                    a.$ID_FIELD, 
+                    ST_PERIMETER(a.$GEOMETRIC_FIELD) + ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)) AS perimeter, 
+                    a.$HEIGHT_WALL AS a_height_wall, 
+                    b.$HEIGHT_WALL AS b_height_wall 
+                FROM $building a, $building b 
+                WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD 
+                    AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) 
+                    AND a.$ID_FIELD <> b.$ID_FIELD;
+    CREATE INDEX ON $building_touches($ID_FIELD);
+    CREATE TABLE $build_intersec AS SELECT """
 
     // The operation names are transformed into lower case
     operations.replaceAll { it.toLowerCase() }
@@ -170,18 +186,7 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
     operations.each {
         list << "(CASE WHEN b.$it is null then 0 else b.$it END) as $it"
     }
-    query += """$ID_FIELD FROM (
-                SELECT 
-                    ST_INTERSECTION(st_makevalid(a.$GEOMETRIC_FIELD),
-                    st_makevalid(b.$GEOMETRIC_FIELD)) AS the_geom,
-                    a.$ID_FIELD, 
-                    ST_PERIMETER(a.$GEOMETRIC_FIELD) + ST_PERIMETER(ST_HOLES(a.$GEOMETRIC_FIELD)) AS perimeter, 
-                    a.$HEIGHT_WALL AS a_height_wall, 
-                    b.$HEIGHT_WALL AS b_height_wall 
-                FROM $building a, $building b 
-                WHERE a.$GEOMETRIC_FIELD && b.$GEOMETRIC_FIELD 
-                    AND ST_INTERSECTS(a.$GEOMETRIC_FIELD, b.$GEOMETRIC_FIELD) 
-                    AND a.$ID_FIELD <> b.$ID_FIELD)
+    query += """$ID_FIELD FROM $building_touches
                 GROUP BY $ID_FIELD;
                 CREATE INDEX IF NOT EXISTS buff_id ON $build_intersec ($ID_FIELD);
                 DROP TABLE IF EXISTS $outputTableName; 
@@ -190,7 +195,7 @@ String neighborsProperties(JdbcDataSource datasource, String building, List oper
                     FROM $building a 
                     LEFT JOIN $build_intersec b 
                     ON a.$ID_FIELD = b.$ID_FIELD;
-                DROP TABLE IF EXISTS $build_intersec"""
+                DROP TABLE IF EXISTS $build_intersec,$building_touches;"""
 
     try {
         datasource.execute(query)
@@ -310,8 +315,8 @@ String minimumBuildingSpacing(JdbcDataSource datasource, String building, float 
         // The name of the outputTableName is constructed
         def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-        datasource.createSpatialIndex(building, "the_geom")
-        datasource.createIndex(building, "id_build")
+        datasource.createSpatialIndex(building, GEOMETRIC_FIELD)
+        datasource.createIndex(building, ID_FIELD)
 
         datasource.execute("""
                 DROP TABLE IF EXISTS $build_min_distance; 
@@ -469,7 +474,7 @@ String likelihoodLargeBuilding(JdbcDataSource datasource, String building, Strin
         // The name of the outputTableName is constructed
         def outputTableName = prefix prefixName, "building_" + BASE_NAME
 
-        datasource.createIndex(building, "id_build")
+        datasource.createIndex(building, ID_FIELD_BU)
 
         // The calculation of the logistic function is performed only for buildings having no neighbors
         datasource.execute("""DROP TABLE IF EXISTS $outputTableName; 
@@ -536,7 +541,9 @@ String buildingPopulation(JdbcDataSource datasource, String inputBuilding, Strin
         //Filtering the building to get only residential and intersect it with the population table
         datasource.execute("""
                 drop table if exists $inputBuildingTableName_pop;
-                CREATE TABLE $inputBuildingTableName_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)))*a.NB_LEV)  as area_building, a.$ID_BUILDING, 
+                CREATE TABLE $inputBuildingTableName_pop AS SELECT (ST_AREA(
+                CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) then a.the_geom else
+                ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)) end )*a.NB_LEV)  as area_building, a.$ID_BUILDING, 
                 b.id_pop, ${popColumns.join(",")} from
                 $inputBuilding as a, $inputPopulation as b where a.the_geom && b.the_geom and
                 st_intersects(a.the_geom, b.the_geom) and (a.main_use in ('residential', 'building') 

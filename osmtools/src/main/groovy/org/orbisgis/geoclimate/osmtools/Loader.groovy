@@ -216,6 +216,7 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) t
     }
 }
 
+
 /**
  * This process extracts OSM data as an XML file using the Overpass API
  *
@@ -232,7 +233,7 @@ String extract(String overpassQuery) throws Exception {
     def bboxUrl = OSMTools.Utilities.utf8ToUrl(overpassQuery)
     //hash the query to cache it
     def queryHash = bboxUrl.digest('SHA-256')
-    def outputOSMFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "${queryHash}.osm")
+    def outputOSMFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "${queryHash}.osm.gz")
     def osmFilePath = outputOSMFile.absolutePath
     if (outputOSMFile.exists()) {
         if (outputOSMFile.length() == 0) {

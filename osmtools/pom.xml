@@ -90,6 +90,22 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/osmtools.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/osmtools.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
     </build>
 
     <distributionManagement>

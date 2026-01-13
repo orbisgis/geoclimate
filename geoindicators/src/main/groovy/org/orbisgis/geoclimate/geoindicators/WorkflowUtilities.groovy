@@ -286,7 +286,8 @@ def saveInFileWithIntersection(def outputTable, def filePath, H2GIS h2gis_dataso
             CREATE TABLE $tmp_export as 
             as select * EXCEPT(EXPLOD_ID)  from ST_EXPLODE('(
             select ${columns.join(",")}, 
-            ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) )as the_geom 
+            CASE WHEN ST_CONTAINS(ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}), the_geom) then the_geom else
+            ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) ) end as the_geom 
             FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})))')
             """)
             h2gis_datasource.save(tmp_export, filePath, deleteOutputData)
@@ -300,7 +301,9 @@ def saveInFileWithIntersection(def outputTable, def filePath, H2GIS h2gis_dataso
             DROP TABLE IF EXISTS $tmp_export;
             CREATE TABLE $tmp_export as 
             * EXCEPT(EXPLOD_ID)  from ST_EXPLODE('(
-            select ${columns.join(",")}, ST_TRANSFORM(ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})),$outputSRID) as the_geom 
+            select ${columns.join(",")}, 
+            CASE WHEN ST_CONTAINS(ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}), the_geom) then the_geom else 
+            ST_TRANSFORM(ST_INTERSECTION(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})),$outputSRID) end as the_geom 
             FROM $outputTable WHERE the_geom && ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()}) and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${zoneToClip}',${zoneToClip.getSRID()})))')
             """)
                 h2gis_datasource.save(tmp_export, filePath, deleteOutputData)
@@ -336,14 +339,37 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
  * @return
  */
 def getTableToSave(H2GIS h2gis_datasource,String h2gis_table_to_save, Integer targetTableSrid,  Collection columnsToKeep, String filter){
-    if(columnsToKeep.contains("THE_GEOM)")) {
-        List columns = columnsToKeep.findAll {it -> it!="THE_GEOM"}
+    if(columnsToKeep.contains("THE_GEOM")) {
+        List columns = columnsToKeep.findAll() {it -> it!="THE_GEOM"} asList()
         if(targetTableSrid) {
             columns.add("ST_TRANSFORM(THE_GEOM, $targetTableSrid) as the_geom")
+        }else{
+            columns.add("THE_GEOM")
         }
         return h2gis_datasource.getSpatialTable("(SELECT ${columns.join(",")} from ${h2gis_table_to_save} ${filter?filter:""})".toString())
     }
     else{
         return h2gis_datasource.getTable("(SELECT ${columnsToKeep.join(",")} from ${h2gis_table_to_save} ${filter?filter:""})".toString())
+    }
+}
+
+/**
+ * Format the location value
+ * @param zone The location value can take the following forms :
+ * - a place name from OSM (e.g Paimpol)
+ * - a collection of 4 coordinates to define a bbox (e.g [43.726898, 7.298452, 43.727677, 7.299632])
+ * - a collections of 3 coordinates to define a point plus a distance in meters (e.g [43.726898, 7.298452, 100])
+ * @return if the location value is a collection concatenates the coordinates with the delimiter '_'
+ * and returns the concatenated string
+ * else add a quotation mark as an escape character
+ */
+def formatLocation(def location) throws Exception {
+    if (location in Collection) {
+        return location.join("_")
+    } else if (location instanceof String) {
+        return location.trim().replace("'","''")
+    } else {
+        throw new Exception("Invalid location input. \n" +
+                "The location input must be a string value or an array of 4 coordinates to define a bbox or 3 values to define a point plus a distance in meters ")
     }
 }

@@ -78,13 +78,14 @@ String gridPopulation(JdbcDataSource datasource, String gridTable, String popula
 
         datasource.execute("""
                 drop table if exists $gridTable_pop;
-                CREATE TABLE $gridTable_pop AS SELECT (ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom))))  as area_rsu, a.$ID_RSU, 
+                CREATE TABLE $gridTable_pop AS SELECT 
+                ST_AREA(ST_INTERSECTION(a.the_geom, st_force2D(b.the_geom)))  as area_rsu, a.$ID_RSU, 
                 b.id_pop, ${popColumns.join(",")} from
                 $gridTable as a, $populationTable as b where a.the_geom && b.the_geom and
                 st_intersects(a.the_geom, b.the_geom);
                 create index on $gridTable_pop ($ID_RSU);
                 create index on $gridTable_pop ($ID_POP);
-            """.toString())
+            """)
 
         //Aggregate population values
         datasource.execute("""drop table if exists $gridTable_pop_sum, $gridTable_area_sum;

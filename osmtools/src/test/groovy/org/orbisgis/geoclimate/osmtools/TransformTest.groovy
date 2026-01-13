@@ -811,6 +811,31 @@ class TransformTest extends AbstractOSMToolsTest {
         }
     }
 
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void testPerf() {
+        long start = System.currentTimeMillis()
+        def bbox = [43.4, 1.4, 43.6, 1.6]
+        def query = OSMTools.Utilities.buildOSMQuery(bbox)
+        if (!query.isEmpty()) {
+            def extract = OSMTools.Loader.extract(query)
+            if (extract) {
+                def prefix = "OSM"
+                assertTrue OSMTools.Loader.load(ds, prefix, extract)
+                //Create building layer
+                def tags = ["amenity", "landuse", "building","railway", "water"]
+                String outputTableName = OSMTools.Transform.toPolygons(ds, prefix, 4326, tags)
+                ds.save(outputTableName, "/tmp/polygons.fgb", true)
+            }
+        }
+
+        println("Time "+ (System.currentTimeMillis()-start)/1000)
+
+    }
+
     @Test
     void buildAllPolygons() {
         def bbox = [47.647353, -2.090192, 47.649413, -2.087274]

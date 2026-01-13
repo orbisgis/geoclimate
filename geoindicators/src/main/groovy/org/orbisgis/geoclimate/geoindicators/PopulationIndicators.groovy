@@ -127,10 +127,12 @@ Map multiScalePopulation(JdbcDataSource datasource, String populationTable, List
                     tablesToDrop << buildingGrid_inter
                     datasource.execute("""
                                 DROP TABLE IF EXISTS $buildingGrid_inter;
-                                CREATE TABLE $buildingGrid_inter AS SELECT ST_AREA(ST_INTERSECTION(a.the_geom, b.the_geom)) 
-                                AS area_intersects, st_area(b.the_geom) as area_building, ${popColumns.join(",")},a.id_grid from $gridTable as a, $buildingTable as b
+                                CREATE TABLE $buildingGrid_inter AS SELECT ST_AREA(
+                                ST_INTERSECTION(a.the_geom, b.the_geom)) 
+                                AS area_intersects, st_area(b.the_geom) as area_building, ${popColumns.join(",")},a.id_grid 
+                                from $gridTable as a, $buildingTable as b
                                 where a.the_geom && b.the_geom and ST_Intersects(a.the_geom, b.the_geom);                                
-                            """.toString())
+                            """)
 
                     //Compute the population by cells
                     def buildingPopGrid_tmp = postfix("building_grid_pop_tmp")
