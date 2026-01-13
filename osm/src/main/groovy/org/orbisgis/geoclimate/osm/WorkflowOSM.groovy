@@ -239,19 +239,9 @@ Map workflow(def input) throws Exception {
         throw new Exception("The area of the bounding box to be extracted from OSM must be greater than 0 km²")
     }
     def overpass_timeout = inputParameters.get("timeout")
-    if (!overpass_timeout) {
-        overpass_timeout = 180
-    } else if (overpass_timeout < 180) {
-        throw new Exception("The timeout value must be greater than the default value : 180 s")
-    }
 
     def overpass_maxsize = inputParameters.get("maxsize")
 
-    if (!overpass_maxsize) {
-        overpass_maxsize = 536870912
-    } else if (overpass_maxsize <= 536870912) {
-        throw new Exception("The maxsize value must be greater than the default value :  536870912 (512 MB)")
-    }
 
     //Change the endpoint to get the overpass data
     def overpass_enpoint = inputParameters.get("endpoint")
@@ -431,7 +421,15 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 if (overpass_date) {
                     osm_date = "[date:\"$overpass_date\"]"
                 }
-                def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQuery(zones.osm_envelope_extented, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                def timeout = ""
+                if (overpass_timeout) {
+                    timeout="[timeout:$overpass_timeout]"
+                }
+                def maxsize =""
+                if(overpass_maxsize){
+                    maxsize="[maxsize:$overpass_maxsize]"
+                }
+                def query = "$timeout$maxsize$osm_date" + OSMTools.Utilities.buildOSMQuery(zones.osm_envelope_extented, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
                 if (downloadAllOSMData) {
                     //Create a custom OSM query to download all requiered data. It will take more time and resources
@@ -440,7 +438,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                                       "leisure", "highway", "natural",
                                       "landuse", "landcover",
                                       "vegetation", "waterway", "area", "aeroway", "area:aeroway", "tourism", "sport", "power"]
-                    query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.osm_envelope_extented, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                    query = "$timeout$maxsize$osm_date" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.osm_envelope_extented, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                 }
                 def extract = OSMTools.Loader.extract(query)
                 //We must build the GIS layers on the extended bbox area

@@ -103,7 +103,8 @@
       "well_cluster",
       "factory",
       "wellsite",
-      "port"
+      "port",
+      "storage"
     ],
     "military": [
       "bunker",
@@ -193,7 +194,7 @@
       "emergency", "fire_station"
     ],
     "heritage": ["castle"],
-    "industrial": ["port","refinery"],
+    "industrial": ["port","refinery", "storage"],
     "military": [],
     "monument": [],
     "office": [],

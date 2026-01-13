@@ -722,7 +722,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Redon"
-        location = [43.4, 1.4, 43.6, 1.6]
+        location = [50.5, 2.8, 50.6, 2.9 ]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
@@ -751,14 +751,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [location],//["Pont-de-Veyle"],//[nominatim["bbox"]],//["Lorient"],
-                        "area":100000,
+                        "locations": [location],
+                        //"area":100000,
                         "timeout":180,
-                        "maxsize":1036870912
                         //"date":"2017-12-31T19:20:00Z",
-                        /*"timeout":182,
-                        "maxsize": 536870918,
-                        "endpoint":"https://lz4.overpass-api.de/api"*/],
+                        //"maxsize": 536870918,
+                        //"endpoint":"https://lz4.overpass-api.de/api"
+                        ],
                 "output"      : [
                         "folder": directory]
                         /*[

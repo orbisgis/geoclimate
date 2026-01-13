@@ -68,6 +68,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
         def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
         def mappingTypeAndUse = parametersMap.type
         def typeAndLevel = parametersMap.level
+        def building_uses = parametersMap."building:use"
         def queryMapper = "SELECT "
         def columnToMap = parametersMap.columns
         if (datasource.getRowCount(building) > 0) {
@@ -82,6 +83,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 def id_build = 1;
                 datasource.withBatch(100) { stmt ->
                     datasource.eachRow(queryMapper) { row ->
+                        def  rowData  = row.toRowResult()
                         Geometry geom = row.the_geom
                         def row_id = row.id
                         if (pZone.intersects(geom)) {
@@ -94,7 +96,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                             if(use==null) {
                                 use="undefined"
                             }
-                            String building_use = row."building:use"
+                            String building_use = formatBuildingUse(row, building_uses)
                             if(building_use){
                                 use=building_use
                             }
@@ -812,6 +814,32 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
     return outputTableName
 }
 
+/**
+ * Format the building:use value
+ * @param row the input data
+ * @param usesMap a list of allowed main uses
+ * @return a valid main_use
+ */
+static String formatBuildingUse(def row,Map usesMap) {
+    String building_use = row."building:use"
+    if(building_use){
+        String lowerUse =building_use.trim().toLowerCase()
+        def use =null
+        for (entry in usesMap) {
+            def key =entry.key
+            if(key==lowerUse){
+                use= key
+                break
+            }
+            else if(entry.value.contains(lowerUse)){
+                use= key
+                break
+            }
+        }
+        return use
+    }
+    return null
+}
 /**
  * This function defines the input values for both columns type and use to follow the constraints
  * of the geoClimate Input Model

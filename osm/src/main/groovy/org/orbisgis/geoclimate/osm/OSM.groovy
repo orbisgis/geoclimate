@@ -43,7 +43,7 @@ abstract class OSM extends AbstractScript {
      * @param input
      * @return
      */
-    static Map workflow(def input) {
+    static Map workflow(def input) throws Exception{
         WorkflowOSM workflowOSM = new WorkflowOSM()
         return workflowOSM.workflow(input)
     }
