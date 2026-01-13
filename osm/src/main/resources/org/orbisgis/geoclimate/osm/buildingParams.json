@@ -193,7 +193,7 @@
     "shed": 0,
     "garage": 0,
     "civic": 1,
-    "service":0,
+    "service": 0,
     "manufacture": 0,
     "storage_tank": 0,
     "slurry_tank": 0
@@ -1370,7 +1370,8 @@
     },
     "garage": {
       "building": [
-        "garages", "garage"
+        "garages",
+        "garage"
       ]
     },
     "civic": {
@@ -1398,5 +1399,88 @@
         "slurry_tank"
       ]
     }
+  },
+  "building:use": {
+    "education": [
+      "education",
+      "school",
+      "university",
+      "research",
+      "educational",
+      "kindergarten"
+    ],
+    "commercial": [
+      "retail",
+      "fast_food",
+      "shop",
+      "car_wash",
+      "restaurant",
+      "warehouse",
+      "boat_storage",
+      "foodservice",
+      "marketplace"
+    ],
+    "industrial": [
+      "storage",
+      "car_repair",
+      "car",
+      "depot",
+      "chemical",
+      "factory"
+    ],
+    "residential": [
+      "apartments",
+      "residental",
+      "residence",
+      "residentail",
+      "house",
+      "detached",
+      "dormitory",
+      "accommodation",
+      "semidetached_house"
+    ],
+    "religious": [
+      "church",
+      "place_of_worship"
+    ],
+    "entertainment_arts_culture": [
+      "exhibition",
+      "museum",
+      "auditorium",
+      "arts_centre",
+      "cultural",
+      "leisure"
+    ],
+    "office": [
+    ],
+    "agricultural": [
+      "equestrian",
+      "barn",
+      "forestry",
+      "greenhouse"
+    ],
+    "garage": [
+      "garages"
+    ],
+    "sport": [],
+    "healthcare": [
+      "medical",
+      "hospital"
+    ],
+    "government": [
+    ],
+    "tourism": [
+      "hotel"
+    ],
+    "civic": [],
+    "transport": [
+      "transportation",
+      "railway",
+      "carpark",
+      "service",
+      "parking"
+    ],
+    "shelter": [],
+    "military": []
   }
 }
