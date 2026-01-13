@@ -20,8 +20,6 @@
 package org.orbisgis.geoclimate.osm
 
 import groovy.transform.BaseScript
-import org.h2.tools.DeleteDbFiles
-import org.h2gis.functions.io.utility.IOMethods
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeographyUtilities
@@ -35,7 +33,6 @@ import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 import org.orbisgis.geoclimate.osmtools.OSMTools
 import org.orbisgis.geoclimate.osmtools.utils.OSMElement
-import org.orbisgis.geoclimate.worldpoptools.WorldPopTools
 
 import java.sql.SQLException
 
@@ -242,19 +239,9 @@ Map workflow(def input) throws Exception {
         throw new Exception("The area of the bounding box to be extracted from OSM must be greater than 0 km²")
     }
     def overpass_timeout = inputParameters.get("timeout")
-    if (!overpass_timeout) {
-        overpass_timeout = 900
-    } else if (overpass_timeout <= 180) {
-        throw new Exception("The timeout value must be greater than the default value : 180 s")
-    }
 
     def overpass_maxsize = inputParameters.get("maxsize")
 
-    if (!overpass_maxsize) {
-        overpass_maxsize = 536870912
-    } else if (overpass_maxsize <= 536870912) {
-        throw new Exception("The maxsize value must be greater than the default value :  536870912 (512 MB)")
-    }
 
     //Change the endpoint to get the overpass data
     def overpass_enpoint = inputParameters.get("endpoint")
@@ -290,7 +277,6 @@ Map workflow(def input) throws Exception {
                                     "sea_land_mask",
                                     "building_updated",
                                     "road_traffic",
-                                    "population",
                                     "ground_acoustic",
                                     "urban_sprawl_areas",
                                     "urban_cool_areas",
@@ -435,7 +421,15 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 if (overpass_date) {
                     osm_date = "[date:\"$overpass_date\"]"
                 }
-                def query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQuery(zones.osm_envelope_extented, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                def timeout = ""
+                if (overpass_timeout) {
+                    timeout="[timeout:$overpass_timeout]"
+                }
+                def maxsize =""
+                if(overpass_maxsize){
+                    maxsize="[maxsize:$overpass_maxsize]"
+                }
+                def query = "$timeout$maxsize$osm_date" + OSMTools.Utilities.buildOSMQuery(zones.osm_envelope_extented, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
 
                 if (downloadAllOSMData) {
                     //Create a custom OSM query to download all requiered data. It will take more time and resources
@@ -444,7 +438,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                                       "leisure", "highway", "natural",
                                       "landuse", "landcover",
                                       "vegetation", "waterway", "area", "aeroway", "area:aeroway", "tourism", "sport", "power"]
-                    query = "[timeout:$overpass_timeout][maxsize:$overpass_maxsize]$osm_date" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.osm_envelope_extented, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+                    query = "$timeout$maxsize$osm_date" + OSMTools.Utilities.buildOSMQueryWithAllData(zones.osm_envelope_extented, keysValues, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
                 }
                 def extract = OSMTools.Loader.extract(query)
                 //We must build the GIS layers on the extended bbox area
@@ -661,11 +655,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames,
                             results, id_zone, srid, outputSRID, reproject, excluded_columns,outputZoneGeometry)
                 }
-                outputTableNamesResult.put(id_zone in Collection ? id_zone.join("_") : id_zone, results.findAll { it.value != null })
+                outputTableNamesResult.put(Geoindicators.WorkflowUtilities.formatLocation(id_zone), results.findAll { it.value != null })
                 h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
             }
         } catch (Exception e) {
-            saveLogZoneTable(h2gis_datasource, databaseFolder, id_zone in Collection ? id_zone.join("_") : id_zone, osm_zone_geometry, e.getLocalizedMessage())
+            saveLogZoneTable(h2gis_datasource, databaseFolder, Geoindicators.WorkflowUtilities.formatLocation(id_zone), osm_zone_geometry, e.getLocalizedMessage())
             //eat the exception and process other zone
             warn("The zone $id_zone has not been processed. \nCause :  \n${e.getLocalizedMessage()}")
         }
@@ -758,11 +752,11 @@ def extractOSMZone(def datasource, def zoneToExtract, def distance, def bbox_siz
 
         datasource.execute """drop table if exists ${outputZoneTable}; 
         create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${source_geom_utm.toString()}', ${epsg}), '${zoneToExtract.toString()}');""".toString()
+        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${source_geom_utm.toString()}', ${epsg}), '${Geoindicators.WorkflowUtilities.formatLocation(zoneToExtract)}');""".toString()
 
         datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; 
          create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, lat_lon_bbox_geom_extended, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
+        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, lat_lon_bbox_geom_extended, epsg).toString()}',${epsg}), '${Geoindicators.WorkflowUtilities.formatLocation(zoneToExtract)}');
         """.toString()
 
         return ["utm_zone_table"         : outputZoneTable,
@@ -909,7 +903,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                 if (!list_indicators) {
                     throw new Exception("The list of indicator names cannot be null or empty")
                 }
-                def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_POP", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
+                def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
                                                "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                                "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DISTRIBUTION",
@@ -1023,7 +1017,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
 def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID,
                     def reproject, def deleteOutputData, def outputGrid,Geometry outputZoneGeometry) throws Exception {
     //Create a subfolder to store each results
-    def folderName = id_zone in Collection ? id_zone.join("_") : id_zone
+    def folderName = Geoindicators.WorkflowUtilities.formatLocation(id_zone)
     def subFolder = new File(ouputFolder.getAbsolutePath() + File.separator + subFolderName + folderName)
     if (!subFolder.exists()) {
         subFolder.mkdir()
@@ -1151,10 +1145,6 @@ def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.sea_land_mask, id_zone, h2gis_datasource, h2gis_tables.sea_land_mask
             , whereIntersects, inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.sea_land_mask))
 
-    //Export population table
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.population, id_zone, h2gis_datasource, h2gis_tables.population
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.population))
-
     //Export building_updated table
     abstractModelTableBatchExportTable(output_datasource, outputTableNames.building_updated, id_zone, h2gis_datasource, h2gis_tables.building_updated
             , "", inputSRID, outputSRID, false,excluded_columns.get(outputTableNames.building_updated))
@@ -1182,7 +1172,7 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
     if (output_table) {
         if (h2gis_datasource.hasTable(h2gis_table_to_save)) {
             if (output_datasource.hasTable(output_table)) {
-                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '${id_zone.replace("'","''")}'".toString())
+                output_datasource.execute("DELETE FROM $output_table WHERE id_zone= '${id_zone.replace("'","''")}'")
                 //If the table exists we populate it with the last result
                 info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                 int BATCH_MAX_SIZE = 100
@@ -1190,8 +1180,9 @@ def abstractModelTableBatchExportTable(JdbcDataSource output_datasource,
                 Map columnsToKeepWithType =h2gis_datasource.getColumnNamesTypes(h2gis_table_to_save)
                 def columnNamesToSave =  columnsToKeepWithType.keySet()
                 if(excluded_columns) {
-                    columnsToKeepWithType = columnsToKeepWithType.findAll{it-> !excluded_columns.contains(it.key)}
-                    columnNamesToSave =  columnsToKeepWithType.keySet()
+                    columnsToKeepWithType.removeAll{ it->
+                        excluded_columns.contains(it.key)
+                    }
                 }
                 ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource,columnNamesToSave)
                 if (inputRes) {
@@ -1321,9 +1312,11 @@ def indicatorTableBatchExportTable(JdbcDataSource output_datasource, def output_
                     info "Start to export the table $h2gis_table_to_save into the table $output_table for the zone $id_zone"
                     int BATCH_MAX_SIZE = 100
                     //We must exclude the columns to save in the database
-                    Map columnsToKeepWithType =[:]
+                    Map columnsToKeepWithType =h2gis_datasource.getColumnNamesTypes(h2gis_table_to_save)
                     if(excluded_columns) {
-                        columnsToKeepWithType = h2gis_datasource.getColumnNamesTypes(h2gis_table_to_save).findAll{it-> !excluded_columns.contains(it.key)}
+                        columnsToKeepWithType.removeAll{ it->
+                            excluded_columns.contains(it.key)
+                        }
                     }
                     def columnNamesToSave =  columnsToKeepWithType.keySet()
                     ITable inputRes = prepareTableOutput(h2gis_table_to_save, filter, inputSRID, h2gis_datasource, output_table, outputSRID, output_datasource, columnNamesToSave)

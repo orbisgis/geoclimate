@@ -469,12 +469,14 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
             CREATE INDEX ON $relationFilteredKeys(id_relation);
             DROP TABLE IF EXISTS $ways_list_relations;
             CREATE TABLE $ways_list_relations as SELECT br.id_way, br.id_relation, br.role, br.way_order 
-            FROM ${osmTablesPrefix}_way_member br, $relationFilteredKeys as r WHERE br.id_relation=r.id_relation""")
+            FROM ${osmTablesPrefix}_way_member br, 
+            $relationFilteredKeys as r WHERE br.id_relation=r.id_relation;""")
 
     debug "Build outer polygons"
     def relationsPolygonsOuter = postfix "RELATIONS_POLYGONS_OUTER"
     datasource.execute("""
                 CREATE INDEX ON $relationFilteredKeys(id_relation);
+                CREATE INDEX ON $ways_list_relations(role);
                 DROP TABLE IF EXISTS $relationsPolygonsOuter;
                 CREATE TABLE $relationsPolygonsOuter AS 
                 SELECT st_linemerge(ST_ACCUM(the_geom)) as the_geom, id_relation 
@@ -483,19 +485,18 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                     FROM(
                         SELECT(
                             SELECT ST_ACCUM(the_geom) the_geom 
-                            FROM(
-                                SELECT n.id_node, n.the_geom, wn.id_way idway 
+                            FROM (SELECT n.id_node, n.the_geom, wn.id_way idway 
                                 FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn 
-                                WHERE n.id_node = wn.id_node ORDER BY wn.node_order) 
+                                WHERE n.id_node = wn.id_node ORDER BY wn.node_order)  
                             WHERE  idway = br.id_way) the_geom, br.id_way, br.id_relation, br.role , br.way_order
                         FROM ${ways_list_relations} as br WHERE br.role='outer' ) geom_table
                         WHERE st_numgeometries(the_geom)>=2) 
                 GROUP BY id_relation;
-        """.toString())
+        """)
 
     debug "Build inner polygons"
     def relationsPolygonsInner = postfix "RELATIONS_POLYGONS_INNER"
-    datasource """
+    datasource.execute( """
                 DROP TABLE IF EXISTS $relationsPolygonsInner;
                 CREATE TABLE $relationsPolygonsInner AS 
                 SELECT st_linemerge(ST_ACCUM(the_geom)) the_geom, id_relation 
@@ -504,15 +505,14 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
                     FROM(     
                         SELECT(
                             SELECT ST_ACCUM(the_geom) the_geom 
-                            FROM(
-                                SELECT n.id_node, n.the_geom, wn.id_way idway 
+                            FROM (SELECT n.id_node, n.the_geom, wn.id_way idway 
                                 FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn 
-                                WHERE n.id_node = wn.id_node ORDER BY wn.node_order) 
+                                WHERE n.id_node = wn.id_node ORDER BY wn.node_order)
                             WHERE  idway = br.id_way) the_geom, br.id_way, br.id_relation, br.role 
                         FROM  ${ways_list_relations} as br WHERE br.role='inner') geom_table 
                         WHERE st_numgeometries(the_geom)>=2) 
                 GROUP BY id_relation;
-        """.toString()
+        """)
 
     debug "Explode outer polygons"
     def relationsPolygonsOuterExploded = postfix "RELATIONS_POLYGONS_OUTER_EXPLODED"
@@ -527,14 +527,14 @@ def extractRelationsAsPolygons(JdbcDataSource datasource, String osmTablesPrefix
 
     debug "Explode inner polygons"
     def relationsPolygonsInnerExploded = postfix "RELATIONS_POLYGONS_INNER_EXPLODED"
-    datasource """
+    datasource.execute( """
                 DROP TABLE IF EXISTS $relationsPolygonsInnerExploded;
                 CREATE TABLE $relationsPolygonsInnerExploded AS 
                     SELECT st_makepolygon(the_geom) AS the_geom, id_relation 
                     FROM st_explode('$relationsPolygonsInner') 
                     WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom)
                     AND ST_NPoints(the_geom)>=4; 
-        """.toString()
+        """)
 
     debug "Build all polygon relations"
     def relationsMpHoles = postfix "RELATIONS_MP_HOLES"
@@ -708,8 +708,6 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
             return outputTableName
         }
     }
-
-
     datasource.execute("""
                 DROP TABLE IF EXISTS $waysLinesTmp; 
                 CREATE TABLE  $waysLinesTmp AS 
@@ -746,7 +744,8 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
     query += " GROUP BY a.id_way;"
     datasource.execute(query.toString())
     if (geometry) {
-        def query_out = """DROP TABLE IF EXISTS $outputTableName;
+        def query_out = """
+        DROP TABLE IF EXISTS $outputTableName;
         CREATE TABLE $outputTableName as select * from $allLinesTables as a where """
         int geom_srid = geometry.getSRID()
         if (geom_srid == -1) {
@@ -757,10 +756,10 @@ String extractWaysAsLines(JdbcDataSource datasource, String osmTablesPrefix, int
             query_out += " a.the_geom && st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode) and st_intersects(a.the_geom,st_transform(st_setsrid('$geometry'::geometry, $geom_srid), $epsgCode)) "
         }
         datasource.createSpatialIndex(allLinesTables, "the_geom")
-        datasource """
+        datasource.execute( """
                 $query_out;
                 DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable, $allLinesTables;
-        """.toString()
+        """)
         return outputTableName
     } else {
         datasource """

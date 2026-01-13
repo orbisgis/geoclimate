@@ -152,12 +152,12 @@ abstract class BDTopo extends BDTopoUtils {
         }
     }
 
-    static Map v2(def input) {
+    static Map v2(def input) throws Exception {
         BDTopoV2Workflow bdtopo_v2_workflow = new BDTopoV2Workflow()
         return bdtopo_v2_workflow.execute(input)
     }
 
-    static Map v3(def input) {
+    static Map v3(def input) throws Exception{
         BDTopoV3Workflow bdtopo_v3_workflow = new BDTopoV3Workflow()
         return bdtopo_v3_workflow.execute(input)
     }

@@ -314,8 +314,8 @@ def filterLinkedShapeFiles(def location, float distance, LinkedHashMap inputTabl
         }
         debug "Loading in the H2GIS database $outputTableName"
         h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as  SELECT
-                    ST_INTERSECTION(the_geom, ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID)) as the_geom, CODE_INSEE  from ${inputTables.commune} where the_geom 
-                    && ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID) """.toString())
+                    ST_MakeEnvelope(${location[1]},${location[0]},${location[3]},${location[2]}, $sourceSRID) as the_geom, 
+                    '${location.join("_")}' as CODE_INSEE  """)
     } else if (location instanceof String) {
         debug "Loading in the H2GIS database $outputTableName"
         h2gis_datasource.execute("""DROP TABLE IF EXISTS $outputTableName ; CREATE TABLE $outputTableName as SELECT $formatting_geom, 

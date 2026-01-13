@@ -27,14 +27,21 @@ Download and Run GeoClimate
 1. Download and run GeoClimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Download the lastest stable version of GeoClimate here:
-   https://github.com/orbisgis/geoclimate/releases
+-  Download the last snapshot version of GeoClimate here:
+   https://nightly.link/orbisgis/geoclimate/workflows/CI_snapshot/master/geoclimate-1.0.1-SNAPSHOT.zip
 
 -  Extract the downloaded zip and in the extracted folder, execute :
 
    .. code:: bash
 
-      java -jar Geoclimate.jar -h
+      java -jar geoclimate_jar_name.jar -h
+
+You should obtain the following
+
+.. figure:: /_static/images/geoclimate_cli.png
+   :alt: Geoclimate CLI
+
+   Geoclimate CLI
 
 --------------
 
