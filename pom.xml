@@ -38,15 +38,15 @@
         <!-- Dependencies versions -->
         <junit-version>5.9.2</junit-version>
         <jts-version>1.20.0</jts-version>
-        <h2gis-version>2.2.4-SNAPSHOT</h2gis-version>
-        <h2-version>2.3.232</h2-version>
+        <h2gis-version>2.2.5</h2gis-version>
+        <h2-version>2.4.240</h2-version>
         <cts-version>1.7.1</cts-version>
-        <orbisdata-version>2.1.2-SNAPSHOT</orbisdata-version>
-        <slf4j-version>2.0.16</slf4j-version>
-        <groovy-version>4.0.22</groovy-version>
-        <picocli-version>4.7.6</picocli-version>
-        <commons-io-version>2.16.1</commons-io-version>
-        <commons-compress-version>1.27.1</commons-compress-version>
+        <orbisdata-version>2.1.2</orbisdata-version>
+        <slf4j-version>2.0.17</slf4j-version>
+        <groovy-version>4.0.29</groovy-version>
+        <picocli-version>4.7.7</picocli-version>
+        <commons-io-version>2.21.0</commons-io-version>
+        <commons-compress-version>1.28.0</commons-compress-version>
         <smile-version>2.5.3</smile-version>
         <xstream-version>1.4.19</xstream-version>
         <logback-version>1.4.11</logback-version>
@@ -579,10 +579,18 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
-
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.8.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -691,6 +699,11 @@
     <!-- Environment Settings -->
     <repositories>
         <repository>
+            <id>repo1.maven.org</id>
+            <name>Maven2 repository 1</name>
+            <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
             <name>Central Portal Snapshots</name>
             <id>central-portal-snapshots</id>
             <url>https://central.sonatype.com/repository/maven-snapshots/</url>
@@ -702,15 +715,13 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <distributionManagement>
-        <snapshotRepository>
+    <pluginRepositories>
+        <pluginRepository>
             <id>central</id>
-            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-        </snapshotRepository>
-        <repository>
-            <id>central</id>
-            <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
+            <url>https://repo1.maven.org/maven2</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </pluginRepository>
+    </pluginRepositories>
 </project>
