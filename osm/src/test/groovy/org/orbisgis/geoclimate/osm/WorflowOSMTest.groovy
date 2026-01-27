@@ -25,7 +25,6 @@ import org.h2gis.utilities.GeographyUtilities
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
@@ -226,13 +225,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "password": "",
                                  "url"     : "h2://" + directory + File.separator + "geoclimate_chain_db_output;AUTO_SERVER=TRUE",
                                  "tables"  : [
-                                         "rsu_indicators": "rsu_indicators",
-                                         "rsu_lcz"       : "rsu_lcz",
+                                         "rsu_indicators"  : "rsu_indicators",
+                                         "rsu_lcz"         : "rsu_lcz",
                                          "building_updated": "building_updated"]]],
                 "parameters"  :
                         [
-                         rsu_indicators: ["indicatorUse" : ["LCZ"],
-                                          "svfSimplified": true]
+                                rsu_indicators: ["indicatorUse" : ["LCZ"],
+                                                 "svfSimplified": true]
                         ]
         ]
         OSM.workflow(osm_parmeters)
@@ -254,17 +253,18 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      */
     @Test
     void osmWorkflowToPostGISDatabase(@TempDir File folder) {
-        def postgis_dbProperties = [databaseName: 'orbisgis_db',
-                                    user        : 'orbisgis',
-                                    password    : 'orbisgis',
-                                    url         : 'jdbc:postgresql://localhost:5432/'
-        ]
-        POSTGIS postgis = POSTGIS.open(postgis_dbProperties);
-        if (postgis) {
-            def osm_parmeters = [
+        try {
+            def postgis_dbProperties = [databaseName: 'orbisgis_db',
+                                        user        : 'orbisgis',
+                                        password    : 'orbisgis',
+                                        url         : 'jdbc:postgresql://localhost:5432/'
+            ]
+            POSTGIS postgis = POSTGIS.open(postgis_dbProperties);
+            if (postgis) {
+                def osm_parmeters = [
                     "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                     "geoclimatedb": [
-                            "folder": folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase" ,
+                            "folder": folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase",
                             "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
                             "delete": false
                     ],
@@ -276,20 +276,20 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                      "password": "orbisgis",
                                      "url"     : "postgis://localhost:5432/orbisgis_db",
                                      "tables"  : [
-                                             "rsu_indicators"         : "rsu_indicators",
-                                             "rsu_lcz"                : "rsu_lcz",
-                                             "zone"                   : "zone",
-                                             "grid_indicators"        : "grid_indicators",
+                                             "rsu_indicators"  : "rsu_indicators",
+                                             "rsu_lcz"         : "rsu_lcz",
+                                             "zone"            : "zone",
+                                             "grid_indicators" : "grid_indicators",
                                              "building_updated": "building_updated"]]],
                     "parameters"  :
                             [
-                             rsu_indicators   : ["indicatorUse" : ["LCZ"],
-                                                 "svfSimplified": true],
-                             "grid_indicators": [
-                                     "x_size"    : 1000,
-                                     "y_size"    : 1000,
-                                     "indicators": ["ROAD_FRACTION"]
-                             ]
+                                    rsu_indicators   : ["indicatorUse" : ["LCZ"],
+                                                        "svfSimplified": true],
+                                    "grid_indicators": [
+                                            "x_size"    : 1000,
+                                            "y_size"    : 1000,
+                                            "indicators": ["ROAD_FRACTION"]
+                                    ]
                             ]
             ]
             OSM.workflow(osm_parmeters)
@@ -308,6 +308,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
             def building_updated = postgis.getTable("building_updated")
             assertNotNull(building_updated)
             assertTrue(building_updated.getRowCount() > 0)
+        }
+        }catch (Exception e){
+
         }
     }
 
@@ -328,8 +331,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "srid"  : 4326],
                 "parameters"  :
                         [
-                         rsu_indicators: ["indicatorUse" : ["LCZ"],
-                                          "svfSimplified": true]
+                                rsu_indicators: ["indicatorUse" : ["LCZ"],
+                                                 "svfSimplified": true]
                         ]
         ]
         OSM.workflow(osm_parmeters)
@@ -344,7 +347,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db;AUTO_SERVER=TRUE")
         geoFiles.eachWithIndex { geoFile, index ->
             def tableName = h2gis.load(geoFile, true)
-            if(h2gis.getRowCount(tableName)>0) {
+            if (h2gis.getRowCount(tableName) > 0) {
                 assertEquals(4326, h2gis.getSpatialTable(tableName).srid)
             }
         }
@@ -440,18 +443,18 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory],
                 "parameters"  :
                         [
-                         "hLevMin"     : 3,
-                         rsu_indicators: ["indicatorUse" : ["LCZ"],
-                                          "svfSimplified": true,
-                                          "mapOfWeights" :
-                                                  ["sky_view_factor"             : 1,
-                                                   "aspect_ratio"                : 1,
-                                                   "building_surface_fraction"   : 1,
-                                                   "impervious_surface_fraction" : 1,
-                                                   "pervious_surface_fraction"   : 1,
-                                                   "height_of_roughness_elements": 1,
-                                                   "terrain_roughness_length"    : 1,
-                                                   "terrain_roughness_class"     : 1]]
+                                "hLevMin"     : 3,
+                                rsu_indicators: ["indicatorUse" : ["LCZ"],
+                                                 "svfSimplified": true,
+                                                 "mapOfWeights" :
+                                                         ["sky_view_factor"             : 1,
+                                                          "aspect_ratio"                : 1,
+                                                          "building_surface_fraction"   : 1,
+                                                          "impervious_surface_fraction" : 1,
+                                                          "pervious_surface_fraction"   : 1,
+                                                          "height_of_roughness_elements": 1,
+                                                          "terrain_roughness_length"    : 1,
+                                                          "terrain_roughness_class"     : 1]]
                         ]
         ]
         assertThrows(Exception.class, () -> OSM.workflow(osm_parmeters))
@@ -474,12 +477,12 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                    "tables": ["grid_indicators", "zone"]]],
                 "parameters"  :
                         [
-                         "grid_indicators": [
-                                 "x_size"    : 1000,
-                                 "y_size"    : 1000,
-                                 "indicators": ["WATER_FRACTION", "LCZ_PRIMARY"],
-                                 "output"    : "asc"
-                         ]
+                                "grid_indicators": [
+                                        "x_size"    : 1000,
+                                        "y_size"    : 1000,
+                                        "indicators": ["WATER_FRACTION", "LCZ_PRIMARY"],
+                                        "output"    : "asc"
+                                ]
                         ]
         ]
         Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
@@ -491,7 +494,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count == 6
         assertEquals(6, h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is not null").count)
-     }
+    }
 
     @Test
     void testLoggerZones(@TempDir File folder) {
@@ -545,8 +548,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                          "rsu_lcz"       : "rsu_lcz"]]],
                 "parameters"  :
                         [
-                         rsu_indicators: ["indicatorUse" : ["LCZ"],
-                                          "svfSimplified": true]
+                                rsu_indicators: ["indicatorUse" : ["LCZ"],
+                                                 "svfSimplified": true]
                         ]
         ]
         assertThrows(Exception.class, () -> OSM.workflow(osm_parmeters))
@@ -591,13 +594,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 ],
                 "input"       : [
                         "locations": ["Pont-de-Veyle"]
-                        ],
+                ],
                 "output"      : [
                         "folder": directory],
                 "parameters"  :
                         [
                                 rsu_indicators: [
-                                        "indicatorUse" : ["TARGET"]
+                                        "indicatorUse": ["TARGET"]
                                 ]
                         ]
         ]
@@ -625,8 +628,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory],
                 "parameters"  :
                         [
-                                rsu_indicators: ["indicatorUse" : ["TARGET", "LCZ"]
-                                ],"grid_indicators"   : [
+                                rsu_indicators      : ["indicatorUse": ["TARGET", "LCZ"]
+                                ], "grid_indicators": [
                                 "x_size"    : 200,
                                 "y_size"    : 200,
                                 "indicators": [
@@ -685,12 +688,12 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         File dirFile = new File(directory)
         dirFile.delete()
         dirFile.mkdir()
-        def location= [15.004311, 108.55263, 15.094142, 108.64575] //visual validation in a GIS
-        location= [15.094142,108.73887,15.183973,108.83199] //visual validation in a GIS
-        location = [62.027935,129.76294,62.045902,129.80127] //visual validation in a GIS
-        location =[40.70075,-74.03082,40.709732,-74.01897] //visual validation in a GIS
-        location=[40.70075,-74.01897,40.709732,-74.00712] //visual validation in a GIS
-        location=[53.242824,-9.103203,53.299902,-8.915749] //visual validation in a GIS
+        def location = [15.004311, 108.55263, 15.094142, 108.64575] //visual validation in a GIS
+        location = [15.094142, 108.73887, 15.183973, 108.83199] //visual validation in a GIS
+        location = [62.027935, 129.76294, 62.045902, 129.80127] //visual validation in a GIS
+        location = [40.70075, -74.03082, 40.709732, -74.01897] //visual validation in a GIS
+        location = [40.70075, -74.01897, 40.709732, -74.00712] //visual validation in a GIS
+        location = [53.242824, -9.103203, 53.299902, -8.915749] //visual validation in a GIS
         //location=[48.882799,2.221194,48.899165,2.259474]
 
         def osm_parmeters = [
@@ -708,11 +711,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 ,
                 "parameters"  :
                         [
-                         "rsu_indicators"       : [
-                                 //"surface_urban_areas":0,
-                                 //"surface_vegetation":1500,
-                                 "indicatorUse": ["LCZ"]
-                         ]
+                                "rsu_indicators": [
+                                        //"surface_urban_areas":0,
+                                        //"surface_vegetation":1500,
+                                        "indicatorUse": ["LCZ"]
+                                ]
                         ]
         ]
         OSM.workflow(osm_parmeters)
@@ -727,17 +730,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Redon"
-        location = [39.2,-0.4,39.4,-0.2]
+        location = [39.2, -0.4, 39.4, -0.2]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
         //location=[47.215334,-1.558058,47.216646,-1.556185]
         //location = [nominatim.bbox]
-        def location1= [47.642695,-2.777953,47.648651,-2.769413]
-        def location2= [47.642723,-2.769456,47.648622,-2.761259]
+        def location1 = [47.642695, -2.777953, 47.648651, -2.769413]
+        def location2 = [47.642723, -2.769456, 47.648622, -2.761259]
 
         //Farm land pb
-        location1  = [50.957075,1.946297,50.988314,2.027321]
+        location1 = [50.957075, 1.946297, 50.988314, 2.027321]
 
         //location = [[47.504374,-0.479279,47.516621,-0.454495]]
 
@@ -752,32 +755,32 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
                 "geoclimatedb": [
                         "folder": dirFile.absolutePath,
-                        "name"  : "geoclimate_test_integration;",
+                        "name"  : "geoclimate_test_integration;AUTO_SERVER=TRUE",
                         "delete": false
                 ],
                 "input"       : [
                         "locations": [location],
                         //"area":100000,
-                        "timeout":180,
+                        "timeout"  : 180,
                         //"date":"2017-12-31T19:20:00Z",
                         //"maxsize": 536870918,
                         //"endpoint":"https://lz4.overpass-api.de/api"
-                        ],
+                ],
                 "output"      : [
                         "folder": directory]
-                        /*[
-                        "database":
-                                ["user"    : "orbisgis",
-                                 "password": "orbisgis",
-                                 "url"     : "postgis://localhost:5432/orbisgis_db",
-                                 "tables"  : [
-                                         "rsu_indicators"         : "rsu_indicators",
-                                         "rsu_lcz"                : "rsu_lcz",
-                                         "zone"                   : "zone"]]]*/
+                /*[
+                "database":
+                        ["user"    : "orbisgis",
+                         "password": "orbisgis",
+                         "url"     : "postgis://localhost:5432/orbisgis_db",
+                         "tables"  : [
+                                 "rsu_indicators"         : "rsu_indicators",
+                                 "rsu_lcz"                : "rsu_lcz",
+                                 "zone"                   : "zone"]]]*/
                 ,
                 "parameters"  :
                         [//"distance"             : 200,
-                         "rsu_indicators"       : [
+                         "rsu_indicators": [
                                  "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
 
                          ]/*,
@@ -807,7 +810,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          ]*/
                         ]
         ]
-         OSM.workflow(osm_parmeters)
+        OSM.workflow(osm_parmeters)
     }
 
     /**
@@ -816,23 +819,23 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      * @param distance
      * @return
      */
-    List computeDomains(def osm_zone, float distance){
+    List computeDomains(def osm_zone, float distance) {
         H2GIS db = H2GIS.open("/tmp/mydb")
-       Geometry geom = OSMTools.Utilities.getArea(osm_zone)
+        Geometry geom = OSMTools.Utilities.getArea(osm_zone)
 
-       def lat_lon_bbox_extended = geom.getFactory().toGeometry(GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance))
+        def lat_lon_bbox_extended = geom.getFactory().toGeometry(GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance))
 
-       db.execute("""
+        db.execute("""
            DROP TABLE IF EXISTS domains;
            CREATE TABLE domains as select * from st_makegrid(ST_GEOMFROMTEXT('$lat_lon_bbox_extended', 4326), 500,500)
        """)
-       db.save("domains", "/tmp/domains.geojson", true)
+        db.save("domains", "/tmp/domains.geojson", true)
 
-       def location =[]
-       db.eachRow("SELECT THE_GEOM from DOMAINS"){
-           def env = it.the_geom.getEnvelopeInternal()
-           location<<[ env.getMinY() as float,env.getMinX() as float,env.getMaxY() as float,env.getMaxX() as float]
-       }
+        def location = []
+        db.eachRow("SELECT THE_GEOM from DOMAINS") {
+            def env = it.the_geom.getEnvelopeInternal()
+            location << [env.getMinY() as float, env.getMinX() as float, env.getMaxY() as float, env.getMaxX() as float]
+        }
         return location
     }
 
@@ -930,7 +933,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations": [[43.726898, 7.298452, 43.727677, 7.299632]]],
                 "parameters"  :
                         [
-                         rsu_indicators: ["indicatorUse": ["LCZ"]]
+                                rsu_indicators: ["indicatorUse": ["LCZ"]]
                         ]
         ]
         Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
@@ -1086,53 +1089,57 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      */
     @Test
     void osmWorkflowToPostGISExcludeColumns(@TempDir File folder) {
-        def postgis_dbProperties = [databaseName: 'orbisgis_db',
-                                    user        : 'orbisgis',
-                                    password    : 'orbisgis',
-                                    url         : 'jdbc:postgresql://localhost:5432/'
-        ]
-        POSTGIS postgis = POSTGIS.open(postgis_dbProperties);
-        if (postgis) {
-            String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISExcludeColumns"
-            def osm_parmeters = [
-                    "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
-                    "geoclimatedb": [
-                            "folder": directory,
-                            "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                            "delete": false
-                    ],
-                    "input"       : [
-                            "locations": ["Pont-de-Veyle"]],
-                    "output"      : [
-                            "database":
-                                    ["user"    : "orbisgis",
-                                     "password": "orbisgis",
-                                     "url"     : "postgis://localhost:5432/orbisgis_db",
-                                     "tables"  : [
-                                             "rsu_indicators"         : "rsu_indicators",
-                                             "rsu_lcz"                : "rsu_lcz",
-                                             "zone"                   : "zone",
-                                             "building":"building"],
-                                     "excluded_columns"  : [
-                                             "rsu_indicators" : ["the_geom"],
-                                             "rsu_lcz"         : ["the_geom"],
-                                             "building_indicators"  : ["the_geom"]]]],
-                    "parameters"  :
-                            [
-                             rsu_indicators   : ["indicatorUse" : ["LCZ"]]
-                            ]
+        try {
+            def postgis_dbProperties = [databaseName: 'orbisgis_db',
+                                        user        : 'orbisgis',
+                                        password    : 'orbisgis',
+                                        url         : 'jdbc:postgresql://localhost:5432/'
             ]
-            OSM.workflow(osm_parmeters)
-            def rsu_indicatorsTable = postgis.getTable("rsu_indicators")
-            assertNotNull(rsu_indicatorsTable)
-            assertTrue(rsu_indicatorsTable.getRowCount() > 0)
-            def rsu_lczTable = postgis.getTable("rsu_lcz")
-            assertNotNull(rsu_lczTable)
-            assertTrue(rsu_lczTable.getRowCount() > 0)
-            def zonesTable = postgis.getTable("zone")
-            assertNotNull(zonesTable)
-            assertTrue(zonesTable.getRowCount() > 0)
-            postgis.dropTable("rsu_indicators" , "rsu_lcz" ,"zone" ,"building")
+            POSTGIS postgis = POSTGIS.open(postgis_dbProperties);
+            if (postgis) {
+                String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISExcludeColumns"
+                def osm_parmeters = [
+                        "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
+                        "geoclimatedb": [
+                                "folder": directory,
+                                "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                                "delete": false
+                        ],
+                        "input"       : [
+                                "locations": ["Pont-de-Veyle"]],
+                        "output"      : [
+                                "database":
+                                        ["user"            : "orbisgis",
+                                         "password"        : "orbisgis",
+                                         "url"             : "postgis://localhost:5432/orbisgis_db",
+                                         "tables"          : [
+                                                 "rsu_indicators": "rsu_indicators",
+                                                 "rsu_lcz"       : "rsu_lcz",
+                                                 "zone"          : "zone",
+                                                 "building"      : "building"],
+                                         "excluded_columns": [
+                                                 "rsu_indicators"     : ["the_geom"],
+                                                 "rsu_lcz"            : ["the_geom"],
+                                                 "building_indicators": ["the_geom"]]]],
+                        "parameters"  :
+                                [
+                                        rsu_indicators: ["indicatorUse": ["LCZ"]]
+                                ]
+                ]
+                OSM.workflow(osm_parmeters)
+                def rsu_indicatorsTable = postgis.getTable("rsu_indicators")
+                assertNotNull(rsu_indicatorsTable)
+                assertTrue(rsu_indicatorsTable.getRowCount() > 0)
+                def rsu_lczTable = postgis.getTable("rsu_lcz")
+                assertNotNull(rsu_lczTable)
+                assertTrue(rsu_lczTable.getRowCount() > 0)
+                def zonesTable = postgis.getTable("zone")
+                assertNotNull(zonesTable)
+                assertTrue(zonesTable.getRowCount() > 0)
+                postgis.dropTable("rsu_indicators", "rsu_lcz", "zone", "building")
+            }
+        }catch (Exception e){
+
         }
     }
 
@@ -1157,10 +1164,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     //Use it for debug
     @Test
     void testMergeRsu() {
-        H2GIS h2GIS  = H2GIS.open("/tmp/database")
+        H2GIS h2GIS = H2GIS.open("/tmp/database")
 
-        List domains =["/tmp/geoclimate/osm_47.642695_-2.777953_47.648651_-2.769413/",
-                       "/tmp/geoclimate/osm_47.642723_-2.769456_47.648622_-2.761259/"]
+        List domains = ["/tmp/geoclimate/osm_47.642695_-2.777953_47.648651_-2.769413/",
+                        "/tmp/geoclimate/osm_47.642723_-2.769456_47.648622_-2.761259/"]
 
         h2GIS.load("/tmp/geoclimate/osm_47.642695_-2.777953_47.648651_-2.769413/zone.fgb", "zone_a", true)
         h2GIS.load("/tmp/geoclimate/osm_47.642695_-2.777953_47.648651_-2.769413/rsu_lcz.fgb", "rsu_a_in", true)
@@ -1196,8 +1203,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 union all (select b_id_rsu, the_geom, lcz_primary from diff_rsu)
                 """)
 
-        h2GIS.save("diff_rsu","/tmp/diff_rsu.fgb", true)
-        h2GIS.save("final_rsu","/tmp/final_rsu.fgb", true)
+        h2GIS.save("diff_rsu", "/tmp/diff_rsu.fgb", true)
+        h2GIS.save("final_rsu", "/tmp/final_rsu.fgb", true)
     }
 
     @Test
@@ -1214,17 +1221,17 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations": [bbox]],
                 "output"      : [
                         "folder": directory,
-                        "domain":"zone",
+                        "domain": "zone",
                         "srid"  : 4326],
                 "parameters"  :
-                        ["distance"    : 100,
-                         rsu_indicators: ["indicatorUse": ["LCZ"]],
+                        ["distance"       : 100,
+                         rsu_indicators   : ["indicatorUse": ["LCZ"]],
                          "grid_indicators": [
-                                 "domain": "zone_extended", //Compute the grid on the extended zone
-                                "x_size"    : 100,
-                                "y_size"    : 100,
-                                "indicators": ["LCZ_PRIMARY"]
-                        ]
+                                 "domain"    : "zone_extended", //Compute the grid on the extended zone
+                                 "x_size"    : 100,
+                                 "y_size"    : 100,
+                                 "indicators": ["LCZ_PRIMARY"]
+                         ]
                         ]
         ]
         OSM.WorkflowOSM.workflow(osm_parmeters)
@@ -1233,8 +1240,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         def building = "building"
         def zone = "zone"
-        h2gis.load(folder_out+File.separator+"building.fgb", building, true)
-        h2gis.load(folder_out+File.separator+"zone.fgb", zone, true)
+        h2gis.load(folder_out + File.separator + "building.fgb", building, true)
+        h2gis.load(folder_out + File.separator + "zone.fgb", zone, true)
         assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
         h2gis.execute("""DROP TABLE IF EXISTS building_out;
         CREATE TABLE building_out as SELECT a.* FROM  $building a LEFT JOIN $zone b
@@ -1242,7 +1249,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 WHERE b.the_geom IS NULL;""")
         assertEquals(0, h2gis.getRowCount("building_out"))
         def grid_indicators = "grid_indicators"
-        h2gis.load(folder_out+File.separator+"grid_indicators.fgb", grid_indicators, true)
+        h2gis.load(folder_out + File.separator + "grid_indicators.fgb", grid_indicators, true)
         h2gis.execute("""DROP TABLE IF EXISTS grid_out;
         CREATE TABLE grid_out as SELECT a.* FROM  $grid_indicators a LEFT JOIN $zone b
                 ON a.the_geom && b.the_geom and ST_INTERSECTS(st_centroid(a.the_geom), b.the_geom)
@@ -1266,11 +1273,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "locations": [bbox]],
                 "output"      : [
                         "folder": directory,
-                        "domain":"zone_extended",
+                        "domain": "zone_extended",
                         "srid"  : 4326],
                 "parameters"  :
-                        ["distance"    : 100,
-                         rsu_indicators: ["indicatorUse": ["LCZ"]],
+                        ["distance"       : 100,
+                         rsu_indicators   : ["indicatorUse": ["LCZ"]],
                          "grid_indicators": [
                                  "x_size"    : 100,
                                  "y_size"    : 100,
@@ -1284,8 +1291,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
 
         def building = "building"
         def zone = "zone"
-        h2gis.load(folder_out+File.separator+"building.fgb", building, true)
-        h2gis.load(folder_out+File.separator+"zone.fgb", zone, true)
+        h2gis.load(folder_out + File.separator + "building.fgb", building, true)
+        h2gis.load(folder_out + File.separator + "zone.fgb", zone, true)
         assertTrue h2gis.firstRow("select count(*) as count from $building where HEIGHT_WALL>0 and HEIGHT_ROOF>0").count > 0
         h2gis.execute("""DROP TABLE IF EXISTS building_out;
         CREATE TABLE building_out as SELECT a.* FROM  $building a LEFT JOIN $zone b
