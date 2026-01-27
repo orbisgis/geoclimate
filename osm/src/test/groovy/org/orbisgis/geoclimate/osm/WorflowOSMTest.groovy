@@ -45,22 +45,27 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @BeforeAll
     static void copyOSMFiles() {
         //Here we copy osm files stored in resources to avoid overpass query
-        def overpass_file_pont_de_veyle = new File(WorflowOSMTest.class.getResource("overpass_pont_de_veyle.osm").toURI())
+        def overpass_file_pont_de_veyle = new File(WorflowOSMTest.class.getResource("overpass_pont_de_veyle.osm.gz").toURI())
         //The sha encoding used to set a name to the file by OSMTools
-        def pont_de_veyle_query_sha = "4e8e5b748c6b5b571ebac46714aaaeba112045e541facef8623a1fc233004255"
-        def copy_pont_de_veyle = new File(System.getProperty("java.io.tmpdir") + File.separator + pont_de_veyle_query_sha + ".osm")
+        def pont_de_veyle_query_sha = "e1fead289bf9a9373fa38d8aea1dca534ac47ec4a4fd9a8e357538430b32b868"
+        def copy_pont_de_veyle = new File(System.getProperty("java.io.tmpdir") + File.separator + pont_de_veyle_query_sha + ".osm.gz")
         FileUtils.copyFile(overpass_file_pont_de_veyle, copy_pont_de_veyle)
-        def overpass_file_bbox = new File(WorflowOSMTest.class.getResource("overpass_bbox.osm").toURI())
+        def overpass_file_bbox = new File(WorflowOSMTest.class.getResource("overpass_bbox.osm.gz").toURI())
         //The sha encoding used to set a name to the file by OSMTools
-        def bbox_query_sha = "5c4099c626089c4dd6f612b77ce6c4c0b7f4ddbd81d1dd2e36598601c972e5da"
-        def copy_bbox = new File(System.getProperty("java.io.tmpdir") + File.separator + bbox_query_sha + ".osm")
+        def bbox_query_sha = "c8e38f1be09701ea419fbe92853f7a6a9e40333a8aa91c6859d24bfd2697dab9"
+        def copy_bbox = new File(System.getProperty("java.io.tmpdir") + File.separator + bbox_query_sha + ".osm.gz")
         FileUtils.copyFile(overpass_file_bbox, copy_bbox)
-        def overpass_file_bbox_logger = new File(WorflowOSMTest.class.getResource("overpass_bbox_logger.osm").toURI())
+        def overpass_file_bbox_logger = new File(WorflowOSMTest.class.getResource("overpass_bbox_logger.osm.gz").toURI())
         //The sha encoding used to set a name to the file by OSMTools
-        def bbox_logger_query_sha = "7da2d1cd63290068a75fb5f94510c8461e65f5790f9f8c6b97aab8204ef4699e"
-        def copy_bbox_logger = new File(System.getProperty("java.io.tmpdir") + File.separator + bbox_logger_query_sha + ".osm")
+        def bbox_logger_query_sha = "66088df9da4290c43ebd985637ed6a04b63bf2c097a76ed75cde9ec49d8d69b4"
+        def copy_bbox_logger = new File(System.getProperty("java.io.tmpdir") + File.separator + bbox_logger_query_sha + ".osm.gz")
         FileUtils.copyFile(overpass_file_bbox_logger, copy_bbox_logger)
 
+        def overpass_estimate_building_height = new File(WorflowOSMTest.class.getResource("overpass_estimate_building_height.osm.gz").toURI())
+        //The sha encoding used to set a name to the file by OSMTools
+        def overpass_estimate_building_height_query_sha = "d1f30167dd93c1e0343efe32d99da1f169d07dddcd46bb45a85d8444470fe463"
+        def copy_overpass_estimate_building_height = new File(System.getProperty("java.io.tmpdir") + File.separator + overpass_estimate_building_height_query_sha + ".osm.gz")
+        FileUtils.copyFile(overpass_estimate_building_height, copy_overpass_estimate_building_height)
     }
 
     @Test
@@ -249,38 +254,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      */
     @Test
     void osmWorkflowToPostGISDatabase(@TempDir File folder) {
-        def osm_parmeters = [
-                "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
-                "geoclimatedb": [
-                        "folder": folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase" ,
-                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete": false
-                ],
-                "input"       : [
-                        "locations": ["Pont-de-Veyle"]],
-                "output"      : [
-                        "database":
-                                ["user"    : "orbisgis",
-                                 "password": "orbisgis",
-                                 "url"     : "postgis://localhost:5432/orbisgis_db",
-                                 "tables"  : [
-                                         "rsu_indicators"         : "rsu_indicators",
-                                         "rsu_lcz"                : "rsu_lcz",
-                                         "zone"                   : "zone",
-                                         "grid_indicators"        : "grid_indicators",
-                                         "building_updated": "building_updated"]]],
-                "parameters"  :
-                        [
-                         rsu_indicators   : ["indicatorUse" : ["LCZ"],
-                                             "svfSimplified": true],
-                         "grid_indicators": [
-                                 "x_size"    : 1000,
-                                 "y_size"    : 1000,
-                                 "indicators": ["ROAD_FRACTION"]
-                         ]
-                        ]
-        ]
-        OSM.workflow(osm_parmeters)
         def postgis_dbProperties = [databaseName: 'orbisgis_db',
                                     user        : 'orbisgis',
                                     password    : 'orbisgis',
@@ -288,6 +261,38 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         POSTGIS postgis = POSTGIS.open(postgis_dbProperties);
         if (postgis) {
+            def osm_parmeters = [
+                    "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
+                    "geoclimatedb": [
+                            "folder": folder.absolutePath + File.separator + "osmWorkflowToPostGISDatabase" ,
+                            "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                            "delete": false
+                    ],
+                    "input"       : [
+                            "locations": ["Pont-de-Veyle"]],
+                    "output"      : [
+                            "database":
+                                    ["user"    : "orbisgis",
+                                     "password": "orbisgis",
+                                     "url"     : "postgis://localhost:5432/orbisgis_db",
+                                     "tables"  : [
+                                             "rsu_indicators"         : "rsu_indicators",
+                                             "rsu_lcz"                : "rsu_lcz",
+                                             "zone"                   : "zone",
+                                             "grid_indicators"        : "grid_indicators",
+                                             "building_updated": "building_updated"]]],
+                    "parameters"  :
+                            [
+                             rsu_indicators   : ["indicatorUse" : ["LCZ"],
+                                                 "svfSimplified": true],
+                             "grid_indicators": [
+                                     "x_size"    : 1000,
+                                     "y_size"    : 1000,
+                                     "indicators": ["ROAD_FRACTION"]
+                             ]
+                            ]
+            ]
+            OSM.workflow(osm_parmeters)
             def rsu_indicatorsTable = postgis.getTable("rsu_indicators")
             assertNotNull(rsu_indicatorsTable)
             assertTrue(rsu_indicatorsTable.getRowCount() > 0)
@@ -722,7 +727,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Redon"
-        location = [36.400000,25.600000,36.600000,25.800000]
+        location = [39.2,-0.4,39.4,-0.2]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
@@ -732,7 +737,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def location2= [47.642723,-2.769456,47.648622,-2.761259]
 
         //Farm land pb
-        location1  = [36.400000,25.600000,36.600000,25.800000]
+        location1  = [50.957075,1.946297,50.988314,2.027321]
 
         //location = [[47.504374,-0.479279,47.516621,-0.454495]]
 
@@ -1081,36 +1086,6 @@ class WorflowOSMTest extends WorkflowAbstractTest {
      */
     @Test
     void osmWorkflowToPostGISExcludeColumns(@TempDir File folder) {
-        String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISExcludeColumns"
-        def osm_parmeters = [
-                "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
-                "geoclimatedb": [
-                        "folder": directory,
-                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
-                        "delete": false
-                ],
-                "input"       : [
-                        "locations": ["Pont-de-Veyle"]],
-                "output"      : [
-                        "database":
-                                ["user"    : "orbisgis",
-                                 "password": "orbisgis",
-                                 "url"     : "postgis://localhost:5432/orbisgis_db",
-                                 "tables"  : [
-                                         "rsu_indicators"         : "rsu_indicators",
-                                         "rsu_lcz"                : "rsu_lcz",
-                                         "zone"                   : "zone",
-                                         "building":"building"],
-                                 "excluded_columns"  : [
-                                         "rsu_indicators" : ["the_geom"],
-                                         "rsu_lcz"         : ["the_geom"],
-                                         "building_indicators"  : ["the_geom"]]]],
-                "parameters"  :
-                        [
-                         rsu_indicators   : ["indicatorUse" : ["LCZ"]]
-                        ]
-        ]
-        OSM.workflow(osm_parmeters)
         def postgis_dbProperties = [databaseName: 'orbisgis_db',
                                     user        : 'orbisgis',
                                     password    : 'orbisgis',
@@ -1118,6 +1093,36 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         ]
         POSTGIS postgis = POSTGIS.open(postgis_dbProperties);
         if (postgis) {
+            String directory = folder.absolutePath + File.separator + "osmWorkflowToPostGISExcludeColumns"
+            def osm_parmeters = [
+                    "description" : "Example of configuration file to run the OSM workflow and store the result in a folder",
+                    "geoclimatedb": [
+                            "folder": directory,
+                            "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                            "delete": false
+                    ],
+                    "input"       : [
+                            "locations": ["Pont-de-Veyle"]],
+                    "output"      : [
+                            "database":
+                                    ["user"    : "orbisgis",
+                                     "password": "orbisgis",
+                                     "url"     : "postgis://localhost:5432/orbisgis_db",
+                                     "tables"  : [
+                                             "rsu_indicators"         : "rsu_indicators",
+                                             "rsu_lcz"                : "rsu_lcz",
+                                             "zone"                   : "zone",
+                                             "building":"building"],
+                                     "excluded_columns"  : [
+                                             "rsu_indicators" : ["the_geom"],
+                                             "rsu_lcz"         : ["the_geom"],
+                                             "building_indicators"  : ["the_geom"]]]],
+                    "parameters"  :
+                            [
+                             rsu_indicators   : ["indicatorUse" : ["LCZ"]]
+                            ]
+            ]
+            OSM.workflow(osm_parmeters)
             def rsu_indicatorsTable = postgis.getTable("rsu_indicators")
             assertNotNull(rsu_indicatorsTable)
             assertTrue(rsu_indicatorsTable.getRowCount() > 0)
