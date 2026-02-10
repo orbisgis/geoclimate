@@ -288,7 +288,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                     "grid_indicators": [
                                             "x_size"    : 1000,
                                             "y_size"    : 1000,
-                                            "indicators": ["ROAD_FRACTION"]
+                                            "indicators": ["LAND_TYPE_FRACTION"]
                                     ]
                             ]
             ]
@@ -480,7 +480,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                 "grid_indicators": [
                                         "x_size"    : 1000,
                                         "y_size"    : 1000,
-                                        "indicators": ["WATER_FRACTION", "LCZ_PRIMARY"],
+                                        "indicators": ["LAND_TYPE_FRACTION", "LCZ_PRIMARY"],
                                         "output"    : "asc"
                                 ]
                         ]
@@ -517,7 +517,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "x_size"    : 10,
                                  "y_size"    : 10,
                                  rowCol      : true,
-                                 "indicators": ["WATER_FRACTION"],
+                                 "indicators": ["LAND_TYPE_FRACTION"],
                                  "output"    : "asc"
                          ]
                         ]
@@ -730,7 +730,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Redon"
-        location = [36.40, 25.60, 36.60, 25.80]
+        location = [45.56494, 5.897149, 45.566479, 5.899258]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
@@ -779,30 +779,30 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "zone"                   : "zone"]]]*/
                 ,
                 "parameters"  :
-                        [//"distance"             : 200,
+                        [/*//"distance"             : 200,
                          "rsu_indicators": [
                                  "indicatorUse": ["LCZ", "TEB"] //, "UTRF"]
 
-                         ]/*,
+                         ],*/
                           "grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
-                                "rowCol": true,
+                                "rowCol": false,
                                 "output" : "geojson",
                                 "indicators": [
-                                        "BUILDING_FRACTION", "BUILDING_HEIGHT",
-                                        "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                                        "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
-                                        "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                        "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
-                                        "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
-                                        "PROJECTED_FACADE_DENSITY_DIR", "BUILDING_DIRECTION",
+                                        "LAND_TYPE_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION"/*,
                                         "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
-                                        "LCZ_PRIMARY", "BUILDING_HEIGHT_DISTRIBUTION", "STREET_WIDTH",
-                                        "BUILDING_NUMBER"]
+                                        "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
+                                        "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
+                                        "BUILDING_HEIGHT_DISTRIBUTION",
+                                        "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
+                                        "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
+                                        "PROJECTED_FACADE_DENSITY_DIR", "URBAN_SPRAWL_AREAS",
+                                        "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES","STREET_WIDTH",
+                                        "BUILDING_DIRECTION", "BUILDING_NUMBER"*/]
                                 //"lcz_lod":1
-                        ],
-                         /*
+                        ]/*,
+
 
                          "road_traffic"                                         : true,
                          "noise_indicators"                                     : [
@@ -849,10 +849,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def test = "test"
-        def wrf_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_HEIGHT_WEIGHTED",
-                              "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                              "ROAD_FRACTION", "IMPERVIOUS_FRACTION",
-                              "FREE_EXTullERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
+        def wrf_indicators = ["LAND_TYPE_FRACTION", "BUILDING_HEIGHT", "BUILDING_HEIGHT_WEIGHTED",
+                              "BUILDING_TYPE_FRACTION", "FREE_EXTullERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
                               "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
         def databasePath = '/tmp/geoclimate_chain_dbtest;AUTO_SERVER=TRUE'
         def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]

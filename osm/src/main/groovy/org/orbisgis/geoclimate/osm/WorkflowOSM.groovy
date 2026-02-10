@@ -387,6 +387,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                    def bbox_size,
                    def overpass_timeout, def overpass_maxsize, def overpass_date, String databaseFolder,
                    Map excluded_columns, String  domain) throws Exception {
+    // Define the priorities and superposition for land fraction (for grid indicators)
+    def land_priorities_grid = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+    def land_superposition_grid = [:]
+
     //Store the zone identifier and the names of the tables
     def outputTableNamesResult = [:]
     int nbAreas = id_zones.size()
@@ -620,6 +624,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                             x_size, y_size, srid, rowCol)
                     String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                             grid_indicators_params.indicators,
+                            land_superposition_grid, land_priorities_grid,
                             results.building, roadTableName, vegetationTableName,
                             hydrographicTableName, imperviousTableName,
                             results.rsu_lcz,
@@ -881,14 +886,9 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                     "y_size"    : 100,
                     "output"    : "fgb",
                     "rowCol"    : null, //Default to null
-                    "indicators": ["BUILDING_FRACTION",
+                    "indicators": ["LAND_TYPE_FRACTION",
                                     "BUILDING_HEIGHT",
-                                    "WATER_FRACTION",
-                                    "ROAD_FRACTION",
-                                    "IMPERVIOUS_FRACTION",
-                                    "STREET_WIDTH" ,
-                                    "IMPERVIOUS_FRACTION",
-                                    "VEGETATION_FRACTION"]
+                                    "STREET_WIDTH"]
             ]
             defaultParameters.put("grid_indicators", grid_indicators_tmp)
         }
@@ -903,8 +903,8 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                 if (!list_indicators) {
                     throw new Exception("The list of indicator names cannot be null or empty")
                 }
-                def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
+                def allowed_grid_indicators = ["LAND_TYPE_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION",
+                                               "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                                "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DISTRIBUTION",
                                                "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
@@ -926,14 +926,9 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                     }
                     //Update the GRID indicators list if TARGET output is specified
                     if(target_grid_indicators){
-                        allowedOutputIndicators.addAll(["BUILDING_FRACTION",
+                        allowedOutputIndicators.addAll(["LAND_TYPE_FRACTION",
                                                         "BUILDING_HEIGHT_WEIGHTED",
-                                                        "WATER_FRACTION",
-                                                        "ROAD_FRACTION",
-                                                        "IMPERVIOUS_FRACTION",
-                                                        "STREET_WIDTH" ,
-                                                        "IMPERVIOUS_FRACTION",
-                                                        "VEGETATION_FRACTION"])
+                                                        "STREET_WIDTH"])
                     }
 
                     if(x_size != y_size){
