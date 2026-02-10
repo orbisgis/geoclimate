@@ -536,9 +536,8 @@ class WorkflowGeoIndicatorsTest {
                 "building", null, null, null, null, null,
                 null, null, null)
         assertNull(grid_indicators)
-        def list_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT",
-                               "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+        def list_indicators = ["LAND_TYPE_FRACTION", "BUILDING_HEIGHT",
+                               "BUILDING_TYPE_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
