@@ -331,7 +331,7 @@ abstract class WorkflowAbstractTest {
                                      "x_size"    : 10,
                                      "y_size"    : 10,
                                      "rowCol"    : true,
-                                     "indicators": ["BUILDING_FRACTION"]
+                                     "indicators": ["LAND_TYPE_FRACTION"]
                              ]
                             ]
             ]
@@ -368,7 +368,7 @@ abstract class WorkflowAbstractTest {
                          "grid_indicators": [
                                  "x_size"    : 1000,
                                  "y_size"    : 1000,
-                                 "indicators": ["WATER_FRACTION"]
+                                 "indicators": ["LAND_TYPE_FRACTION"]
                          ]
                         ]
         ]
@@ -524,7 +524,7 @@ abstract class WorkflowAbstractTest {
                                  "x_size"    : 100,
                                  "y_size"    : 100,
                                  "domain"      : "zone_extended",
-                                 "indicators": ["WATER_FRACTION"]
+                                 "indicators": ["LAND_TYPE _FRACTION"]
                          ],
                          "road_traffic"    : true,
                          "noise_indicators": [
