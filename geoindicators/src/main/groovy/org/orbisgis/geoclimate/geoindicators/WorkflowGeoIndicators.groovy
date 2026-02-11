@@ -1852,8 +1852,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
     list_indicators_upper.each {
         if (it == "BUILDING_SURFACE_DENSITY" ||
                 it == "ASPECT_RATIO" || it == "FREE_EXTERNAL_FACADE_DENSITY" || it == "STREET_WIDTH") {
-            priorities = ["building"]
-            superpositions = [:]
+            if(!priorities.contains("building")){
+                priorities.add("building")
+            }
         }
         if (it == "BUILDING_HEIGHT" && building) {
             height_roof_unweighted_list.addAll(["AVG", "STD"])
@@ -1987,11 +1988,27 @@ String rasterizeIndicators(JdbcDataSource datasource,
             def gridForWidth = Geoindicators.DataUtils.joinTables(datasource, tablesToJoinForWidth, "grid_for_width")
             tablesToDrop << gridForWidth
 
+            // Need to consider the full building fraction if superpositions is added
+            def all_building_frac_name = "building_fraction"
+            if(superpositions){
+                def superpositions_upper = [:]
+                superpositions.each {key, values ->
+                    superpositions_upper[key.toUpperCase()] = values.collect { it.toUpperCase() }
+                }
+                if(superpositions_upper.values().contains("BUILDING")){
+                    all_building_frac_name = "TMP_BUILD_FRAC"
+                    def all_build_frac_calc = "BUILDING_FRACTION + ${superpositions_upper.keySet()[0]}_BUIDLING_FRACTION"
+                    datasource
+                    """ALTER TABLE $gridForWidth ADD COLUMN $all_building_frac_name DOUBLE;
+                    UPDATE $gridForWidth SET $all_building_frac_name = (SELECT $all_build_frac_calc FROM $gridForWidth)"""
+                }
+            }
+
             // Compute the aspect_ratio (and street width if needed)
             if (list_indicators_upper.intersect(["ASPECT_RATIO", "STREET_WIDTH"]) && building) {
                 datasource "ALTER TABLE $gridForWidth RENAME COLUMN $grid_column_identifier TO ID_RSU"
                 def aspectRatio = Geoindicators.RsuIndicators.aspectRatio(datasource, gridForWidth,
-                        "free_external_facade_density", "building_fraction", prefixName)
+                        "free_external_facade_density", all_building_frac_name, prefixName)
                 datasource "ALTER TABLE $aspectRatio RENAME COLUMN ID_RSU TO $grid_column_identifier"
                 indicatorTablesToJoin.put(aspectRatio, grid_column_identifier)
                 tablesToDrop << aspectRatio
@@ -2014,7 +2031,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                         datasource, freeFacadeDensityExact,
                         surfaceFractionsProcess,
                         "FREE_EXTERNAL_FACADE_DENSITY",
-                        "building_fraction", grid_column_identifier, prefixName)
+                        all_building_frac_name, grid_column_identifier, prefixName)
                 if (buildingSurfDensity) {
                     if (list_indicators_upper.contains("BUILDING_SURFACE_DENSITY")) {
                         indicatorTablesToJoin.put(buildingSurfDensity, grid_column_identifier)

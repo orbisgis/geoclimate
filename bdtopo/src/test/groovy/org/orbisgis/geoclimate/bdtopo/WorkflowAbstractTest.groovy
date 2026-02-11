@@ -260,7 +260,7 @@ abstract class WorkflowAbstractTest {
                          "grid_indicators": [
                                  "x_size"    : 1000,
                                  "y_size"    : 1000,
-                                 "indicators": ["WATER_FRACTION"]
+                                 "indicators": ["LAND_TYPE_FRACTION"]
                          ]
                         ]
         ]

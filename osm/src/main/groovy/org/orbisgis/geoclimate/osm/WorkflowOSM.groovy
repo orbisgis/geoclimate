@@ -388,8 +388,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                    def overpass_timeout, def overpass_maxsize, def overpass_date, String databaseFolder,
                    Map excluded_columns, String  domain) throws Exception {
     // Define the priorities and superposition for land fraction (for grid indicators)
-    def land_priorities_grid = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
-    def land_superposition_grid = [:]
+    def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfPriorities"]
+    def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfSuperpositions"]
 
     //Store the zone identifier and the names of the tables
     def outputTableNamesResult = [:]

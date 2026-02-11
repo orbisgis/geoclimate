@@ -848,8 +848,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  */
     def computeGridIndicators(H2GIS h2gis_datasource, def id_zone, def srid, def processing_parameters, def results) {
         // Define the priorities and superposition for land fraction (for grid indicators)
-        def land_priorities_grid = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
-        def land_superposition_grid = [:]
+        def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfPriorities"]
+        def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfSuperpositions"]
 
         def grid_indicators_params = processing_parameters.grid_indicators
         //Compute the grid indicators
