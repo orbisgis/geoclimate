@@ -905,7 +905,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     }
                     //We must transform the grid_indicators to produce the target land input
                     if(processing_parameters.rsu_indicators.indicatorUse.contains("TARGET")){
-                        results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators, x_size))
+                        results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators,
+                                x_size, land_superposition_grid))
                     }
                     info("End computing grid_indicators")
                 }
