@@ -401,9 +401,9 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
                             IMPERVIOUS_FRACTION + RAIL_FRACTION + UNDEFINED_FRACTION  AS "conc",
                             HIGH_VEGETATION_FRACTION  ${if(superpositions_upper.values()[0].contains("ROAD")){"+ ${superpositions.keySet()[0]}_ROAD_FRACTION"}else{""}}
                                 ${if(superpositions_upper.values()[0].contains("WATER_PERMANENT")){"+ ${superpositions.keySet()[0]}_WATER_PERMANENT_FRACTION"}else{""}} 
-                                ${if(superpositions_upper.values()[0].contains("WATER_INTERMITTENT")){"+ ${superpositions.keySet()[0]}_WATER_PERMANENT_FRACTION"}else{""}} 
+                                ${if(superpositions_upper.values()[0].contains("WATER_INTERMITTENT")){"+ ${superpositions.keySet()[0]}_WATER_INTERMITTENT_FRACTION"}else{""}} 
                                 ${if(superpositions_upper.values()[0].contains("IMPERVIOUS")){"+ ${superpositions.keySet()[0]}_IMPERVIOUS_FRACTION"}else{""}}        
-                                ${if(superpositions_upper.values()[0].contains("RAIL")){"+ ${superpositions.keySet()[0]}_LOW_VEGETATION_FRACTION"}else{""}}        
+                                ${if(superpositions_upper.values()[0].contains("RAIL")){"+ ${superpositions.keySet()[0]}_RAIL_FRACTION"}else{""}}        
                                 ${if(superpositions_upper.values()[0].contains("LOW_VEGETATION")){"+ ${superpositions.keySet()[0]}_LOW_VEGETATION_FRACTION"}else{""}} AS "Veg",                
                             LOW_VEGETATION_FRACTION  AS "dry",
                             0  AS "irr",
