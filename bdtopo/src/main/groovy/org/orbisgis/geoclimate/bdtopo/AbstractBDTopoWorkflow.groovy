@@ -531,14 +531,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         "y_size"    : 100,
                         "output"    : "fgb",
                         "rowCol"    : null, //Default to null
-                        "indicators": ["BUILDING_FRACTION",
+                        "indicators": ["LAND_TYPE_FRACTION",
                                        "BUILDING_HEIGHT_WEIGHTED",
-                                       "WATER_FRACTION",
-                                       "ROAD_FRACTION",
-                                       "IMPERVIOUS_FRACTION",
-                                       "STREET_WIDTH" ,
-                                       "IMPERVIOUS_FRACTION",
-                                       "VEGETATION_FRACTION"]
+                                       "STREET_WIDTH"]
                 ]
                 defaultParameters.put("grid_indicators", grid_indicators_tmp)
             }
@@ -554,11 +549,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     if (!list_indicators) {
                         throw new Exception("The list of indicator names cannot be null or empty")
                     }
-                    def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                                                   "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION", "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
+                    def allowed_grid_indicators = ["LAND_TYPE_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION",
+                                                   "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION", "LCZ_FRACTION",
+                                                   "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                    "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
-                                                   "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO",
-                                                   "SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS", "PROJECTED_FACADE_DENSITY_DIR", "URBAN_SPRAWL_AREAS",
+                                                   "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION",
+                                                   "ASPECT_RATIO", "SVF", "HEIGHT_OF_ROUGHNESS_ELEMENTS",
+                                                   "TERRAIN_ROUGHNESS", "PROJECTED_FACADE_DENSITY_DIR", "URBAN_SPRAWL_AREAS",
                                                    "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES", "STREET_WIDTH",
                                                    "BUILDING_DIRECTION", "BUILDING_NUMBER"]
                     def allowedOutputIndicators = list_indicators.findAll{
@@ -575,14 +572,9 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         }
                         //Update the GRID indicators list if TARGET output is specified
                         if(target_grid_indicators){
-                            allowedOutputIndicators.addAll(["BUILDING_FRACTION",
+                            allowedOutputIndicators.addAll(["LAND_TYPE_FRACTION",
                                                             "BUILDING_HEIGHT",
-                                                            "WATER_FRACTION",
-                                                            "ROAD_FRACTION",
-                                                            "IMPERVIOUS_FRACTION",
-                                                            "STREET_WIDTH" ,
-                                                            "IMPERVIOUS_FRACTION",
-                                                            "VEGETATION_FRACTION"])
+                                                            "STREET_WIDTH"])
                         }
                         if(x_size != y_size){
                             throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
@@ -855,6 +847,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @return
  */
     def computeGridIndicators(H2GIS h2gis_datasource, def id_zone, def srid, def processing_parameters, def results) {
+        // Define the priorities and superposition for land fraction (for grid indicators)
+        def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfPriorities"]
+        def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfSuperpositions"]
+
         def grid_indicators_params = processing_parameters.grid_indicators
         //Compute the grid indicators
         if (grid_indicators_params) {
@@ -890,6 +886,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             if (gridTableName) {
                 String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, gridTableName,
                         grid_indicators_params.indicators,
+                        land_superposition_grid, land_priorities_grid,
                         results.building, results.road, results.vegetation,
                         results.water, results.impervious,
                         results.rsu_lcz, results.rsu_utrf_area, "", "",
@@ -908,7 +905,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     }
                     //We must transform the grid_indicators to produce the target land input
                     if(processing_parameters.rsu_indicators.indicatorUse.contains("TARGET")){
-                        results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators, x_size))
+                        results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators,
+                                x_size, land_superposition_grid))
                     }
                     info("End computing grid_indicators")
                 }
