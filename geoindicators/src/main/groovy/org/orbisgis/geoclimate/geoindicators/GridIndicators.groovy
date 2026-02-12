@@ -379,7 +379,7 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
  *
  * @author Erwan Bocher, CNRS
  */
-String formatGrid4Target(JdbcDataSource datasource, String gridTable, float resolution, Map land_superposition_grid) throws Exception{
+String formatGrid4Target(JdbcDataSource datasource, String gridTable, float resolution, Map superpositions) throws Exception{
     //Format target landcover
     def grid_target = postfix("grid_target")
     try {
