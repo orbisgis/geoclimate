@@ -590,6 +590,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "geoclimatedb": [
                         "folder": directory,
                         "name"  : "geoclimate_chain_db",
+
                         "delete": false
                 ],
                 "input"       : [
