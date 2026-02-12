@@ -53,9 +53,8 @@ The configuration file below uses this bounding box method with OSM.
                "rowCol": false,
                "output": "geojson",
                "indicators": [
-                   "BUILDING_FRACTION", "BUILDING_HEIGHT", 
-                   "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                   "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+                   "LAND_TYPE_FRACTION", "BUILDING_HEIGHT", 
+                   "BUILDING_TYPE_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                    "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                    "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
                    "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
@@ -116,12 +115,7 @@ Note that the EPSG code for the projection system here is 2154 and not
                "rowCol": false,
                "output": "geojson",
                "indicators": [
-                   "BUILDING_FRACTION",
-                   "BUILDING_HEIGHT",
-                   "WATER_FRACTION",
-                   "VEGETATION_FRACTION",
-                   "ROAD_FRACTION",
-                   "IMPERVIOUS_FRACTION",
+                   "LAND_TYPE_FRACTION",
                    "LCZ_FRACTION"
                ]
            }
