@@ -4,10 +4,8 @@ Grid indicators
 The table grid_indicators contains the grid cell identifier (id_grid)
 and a certain number of indicators described below. When calculating
 grid indicators, you can calculate only a subset of these indicators.
-The whole list is the following: ["BUILDING_FRACTION",
-"BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION",
-"WATER_FRACTION", "VEGETATION_FRACTION", "ROAD_FRACTION",
-"IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+The whole list is the following: ["LAND_TYPE_FRACTION",
+"BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
 "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
 "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
 "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
@@ -22,17 +20,26 @@ ID_ROW, ID_COL, ID_GRID
 Cells are numbered from the lower left corner to the upper right corner and then continuing on the rigth side of the next row, and so on until the last cell at the upper-right side of the raster.
 
 
-BUILDING_FRACTION
+LAND_TYPE_FRACTION
 ---------------------
 
-**Corresponding name in the table**: BUILDING_FRACTION
+Two types of indicators are calculated: fraction of a land type X with no superimposition and fraction of a land type X superimposing a land type Y
 
-**Description**: Total building fraction. If superimposed with other
-layers, it is not counted twice. Instead, the following priorities are
-used: "water", "building", "high_vegetation", "low_vegetation", "road",
-"impervious".
+The first:
 
-**Method**: SUM(Bu_Area after superimposition removal) / Cell_Area
+**Corresponding name in the table**: X_FRACTION (e.g. BUILDING_FRACTION, ROAD_FRACTION, etc.)
+
+**Description**: Fraction of the X input layer within the RSU which is not superimposed with any other Y input layer (note that the vegetation layer is split into a low_vegetation layer and a high_vegetation layer). Superimposed layer fraction are calculated in 'X_Y_FRACTION' when they are physically relevant (e.g. high_vegetation above impervious). When not relevant (e.g. low_vegetation and impervious), only one of the intersected layers is kept for fraction calculation. By default, superimposition is considered only between high_vegetation and all other layers and otherwise intersected layers are kept in the following priority order: "water", "building", "high_vegetation", "low_vegetation", "road", "impervious".
+
+**Method**: ``SUM(X_Area without superimposition) / RSU_Area``
+
+The second:
+
+**Corresponding name in the table**: X_Y_FRACTION (e.g. HIGH_VEGETATION_BUILDING_FRACTION, HIGH_VEGETATION_ROAD_FRACTION, etc.)
+
+**Description**: Fraction of the X input layer within the RSU which superimposed the Y input layer (note that the vegetation layer is split into a low_vegetation layer and a high_vegetation layer). Superimposed layer fraction are calculated when they are physically relevant (e.g. high_vegetation above impervious). By default, superimposition is considered only between high_vegetation and all other layers and otherwise intersected layers.
+
+**Method**: ``SUM(X_Area superimposing Y) / RSU_Area``
 
 
 BUILDING_TYPE_FRACTION
