@@ -524,7 +524,7 @@ abstract class WorkflowAbstractTest {
                                  "x_size"    : 100,
                                  "y_size"    : 100,
                                  "domain"      : "zone_extended",
-                                 "indicators": ["LAND_TYPE _FRACTION"]
+                                 "indicators": ["LAND_TYPE_FRACTION"]
                          ],
                          "road_traffic"    : true,
                          "noise_indicators": [
