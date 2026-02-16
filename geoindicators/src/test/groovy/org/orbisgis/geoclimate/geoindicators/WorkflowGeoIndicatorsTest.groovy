@@ -532,30 +532,25 @@ class WorkflowGeoIndicatorsTest {
         """.toString())
         String grid = Geoindicators.WorkflowGeoIndicators.createGrid(datasource, datasource.getExtent("building"), 10, 10, 0)
         assertNotNull(grid)
-        String grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, [],
+        List priorities = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
+        Map superpositions = [:]
+        String grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, [],superpositions,priorities,
                 "building", null, null, null, null, null,
                 null, null, null)
         assertNull(grid_indicators)
-        def list_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT",
-                               "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
+        def list_indicators = ["LAND_TYPE_FRACTION", "BUILDING_HEIGHT",
+                               "BUILDING_TYPE_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY",
                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY",
                                "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
                                "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
                                "STREET_WIDTH"]
-        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators,
+        grid_indicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(datasource, grid, list_indicators,superpositions,priorities,
                 "building", null, null, null, null, null,
                 null, null, null)
         assertNotNull(grid_indicators)
         assertEquals(1, datasource.getRowCount(grid_indicators))
         def rows = datasource.firstRow("select * from $grid_indicators".toString())
         assertEquals(1d, rows.BUILDING_FRACTION)
-        assertEquals(0d, rows.HIGH_VEGETATION_FRACTION)
-        assertEquals(0d, rows.IMPERVIOUS_FRACTION)
-        assertEquals(0d, rows.LOW_VEGETATION_FRACTION)
-        assertEquals(0d, rows.ROAD_FRACTION)
-        assertEquals(0d, rows.WATER_PERMANENT_FRACTION)
-        assertEquals(0d, rows.WATER_INTERMITTENT_FRACTION)
         assertEquals(0d, rows.UNDEFINED_FRACTION)
         assertEquals(10d, rows.AVG_HEIGHT_ROOF)
         assertEquals(0d, rows.STD_HEIGHT_ROOF)

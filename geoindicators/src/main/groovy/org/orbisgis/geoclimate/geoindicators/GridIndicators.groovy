@@ -374,25 +374,53 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
  * @param datasource input database
  * @param gridTable input grid_indicators
  * @param resolution grid resolution in meters
+ * @param land_superposition_grid Map defining land superpositions (eg. high vegetation and low vegetation)
  * @return raw target grid
  *
  * @author Erwan Bocher, CNRS
  */
-String formatGrid4Target(JdbcDataSource datasource, String gridTable, float resolution) throws Exception{
+String formatGrid4Target(JdbcDataSource datasource, String gridTable, float resolution, Map superpositions) throws Exception{
+    // Put to upper case the land type defined in the superposition map
+    def superpositions_upper = [:]
+    superpositions.each {key, values ->
+        superpositions_upper[key.toUpperCase()] = values.collect { it.toUpperCase() }
+    }
+
     //Format target landcover
     def grid_target = postfix("grid_target")
     try {
+
+        String roof_column = "BUILDING_FRACTION"
+        String veg_column = "HIGH_VEGETATION_FRACTION"
+        List high_vegetation_superposition = superpositions.get("high_vegetation")
+        high_vegetation_superposition.each {it->
+            if(it=="building"){
+                roof_column+= "+ high_vegetation_${it}_fraction "
+            }else if(it=="road"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="rail"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="water_permanent"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="water_intermittent"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="low_vegetation"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="impervious"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }
+        }
         datasource.execute("""
                             DROP TABLE IF EXISTS ${grid_target};
                             CREATE TABLE ${grid_target} as SELECT
                             THE_GEOM,
                             ID_COL, ID_ROW,
                             CAST(row_number() over(ORDER BY ID_ROW DESC) as integer) as "FID",
-                            BUILDING_FRACTION  AS "roof",
+                            ${roof_column} AS "roof",
                             ROAD_FRACTION AS "road",
-                            WATER_PERMANENT_FRACTION AS "watr",
-                            IMPERVIOUS_FRACTION + UNDEFINED_FRACTION AS "conc",
-                            HIGH_VEGETATION_FRACTION AS "Veg",                            
+                            WATER_PERMANENT_FRACTION  AS "watr",
+                            IMPERVIOUS_FRACTION + RAIL_FRACTION + UNDEFINED_FRACTION  AS "conc",
+                            ${veg_column} AS "Veg",                
                             LOW_VEGETATION_FRACTION  AS "dry",
                             0  AS "irr",
                             AVG_HEIGHT_ROOF_AREA_WEIGHTED AS "H",                            

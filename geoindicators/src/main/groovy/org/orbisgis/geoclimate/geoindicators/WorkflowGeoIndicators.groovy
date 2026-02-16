@@ -1088,8 +1088,8 @@ Map getParameters() {
             "levelForRoads"                    : [0],
             "angleRangeSizeBuDirection"        : 30,
             "angleRangeSizeRoDirection"        : 30,
-            "surfSuperpositions"               : ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]],
-            "surfPriorities"                   : ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
+            "surfSuperpositions"               : getSurfaceSuperpositions(),
+            "surfPriorities"                   : getSurfacePriorities(),
             "buildingAreaTypeAndCompositionLcz": ["undefined_lcz"     : ["building", "undefined"],
                                                   "light_industry_lcz": ["industrial", "factory", "warehouse", "port", "manufacture"],
                                                   "commercial_lcz"    : ["commercial", "shop", "retail", "port",
@@ -1149,6 +1149,25 @@ Map getParameters() {
                                                                                    "high_vegetation_water_permanent_fraction"]],
             "buildingFractions"                : ["high_vegetation_building_fraction", "building_fraction"]]
 
+}
+
+/**
+ * Ordering list of land surfaces
+ * This order is used to prioritise the calculation of land fractions
+ * water_permanent takes priority over all other types, etc.
+ * @return a list
+ */
+List getSurfacePriorities(){
+    return  ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"]
+}
+
+/**
+ * Rules for overlapping between the different types of lands
+ *
+ * @return
+ */
+Map getSurfaceSuperpositions(){
+    return ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]]
 }
 
 /**
@@ -1712,6 +1731,8 @@ def computeZoneStats(JdbcDataSource datasource, String zone, String building_ind
  */
 String rasterizeIndicators(JdbcDataSource datasource,
                            String grid, List list_indicators,
+                           Map superpositions = ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]],
+                           List priorities = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
                            String building, String road, String vegetation,
                            String water, String impervious, String rsu_lcz,
                            String rsu_utrf_area, String rsu_utrf_floor_area, String sea_land_mask,
@@ -1843,30 +1864,16 @@ String rasterizeIndicators(JdbcDataSource datasource,
     // and also set which type of statistics is needed if "BUILDING_HEIGHT" is activated
     def surfaceFractionsProcess
     def columnFractionsList = [:]
-    def priorities = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
 
     def unweightedBuildingIndicators = [:]
     def weightedBuildingIndicators = [:]
     HashSet height_roof_unweighted_list = new HashSet()
     list_indicators_upper.each {
-        if (it == "BUILDING_FRACTION"
-                || it == "BUILDING_SURFACE_DENSITY" ||
+        if (it == "BUILDING_SURFACE_DENSITY" ||
                 it == "ASPECT_RATIO" || it == "FREE_EXTERNAL_FACADE_DENSITY" || it == "STREET_WIDTH") {
-            columnFractionsList.put(priorities.indexOf("building"), "building")
-        }
-        if (it == "WATER_FRACTION") {
-            columnFractionsList.put(priorities.indexOf("water_permanent"), "water_permanent")
-            columnFractionsList.put(priorities.indexOf("water_intermittent"), "water_intermittent")
-        }
-        if (it == "VEGETATION_FRACTION") {
-            columnFractionsList.put(priorities.indexOf("high_vegetation"), "high_vegetation")
-            columnFractionsList.put(priorities.indexOf("low_vegetation"), "low_vegetation")
-        }
-        if (it == "ROAD_FRACTION") {
-            columnFractionsList.put(priorities.indexOf("road"), "road")
-        }
-        if (it == "IMPERVIOUS_FRACTION") {
-            columnFractionsList.put(priorities.indexOf("impervious"), "impervious")
+            if(!priorities.contains("building")){
+                priorities.add("building")
+            }
         }
         if (it == "BUILDING_HEIGHT" && building) {
             height_roof_unweighted_list.addAll(["AVG", "STD"])
@@ -1883,8 +1890,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     // Calculate all surface fractions indicators on the GRID cell
-    if (columnFractionsList) {
-        def priorities_tmp = columnFractionsList.values().sort()
+    if (priorities) {
         // Need to create the smallest geometries used as input of the surface fraction process
         String superpositionsTableGrid = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
                 grid, grid_column_identifier,
@@ -1893,7 +1899,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (superpositionsTableGrid) {
             surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions(
                     datasource, grid, grid_column_identifier, superpositionsTableGrid,
-                    [:], priorities_tmp, prefixName)
+                    superpositions, priorities, prefixName)
             indicatorTablesToJoin.put(surfaceFractionsProcess, grid_column_identifier)
             tablesToJoinForWidth.put(surfaceFractionsProcess, grid_column_identifier)
 
@@ -2001,11 +2007,27 @@ String rasterizeIndicators(JdbcDataSource datasource,
             def gridForWidth = Geoindicators.DataUtils.joinTables(datasource, tablesToJoinForWidth, "grid_for_width")
             tablesToDrop << gridForWidth
 
+            // Need to consider the full building fraction if superpositions is added
+            def all_building_frac_name = "building_fraction"
+            if(superpositions){
+                def superpositions_upper = [:]
+                superpositions.each {key, values ->
+                    superpositions_upper[key.toUpperCase()] = values.collect { it.toUpperCase() }
+                }
+                if(superpositions_upper.values().contains("BUILDING")){
+                    all_building_frac_name = "TMP_BUILD_FRAC"
+                    def all_build_frac_calc = "BUILDING_FRACTION + ${superpositions_upper.keySet()[0]}_BUIDLING_FRACTION"
+                    datasource.execute(
+                    """ALTER TABLE $gridForWidth ADD COLUMN $all_building_frac_name DOUBLE PRECISION;
+                    UPDATE $gridForWidth SET $all_building_frac_name = (SELECT $all_build_frac_calc FROM $gridForWidth)""")
+                }
+            }
+
             // Compute the aspect_ratio (and street width if needed)
             if (list_indicators_upper.intersect(["ASPECT_RATIO", "STREET_WIDTH"]) && building) {
                 datasource "ALTER TABLE $gridForWidth RENAME COLUMN $grid_column_identifier TO ID_RSU"
                 def aspectRatio = Geoindicators.RsuIndicators.aspectRatio(datasource, gridForWidth,
-                        "free_external_facade_density", "building_fraction", prefixName)
+                        "free_external_facade_density", all_building_frac_name, prefixName)
                 datasource "ALTER TABLE $aspectRatio RENAME COLUMN ID_RSU TO $grid_column_identifier"
                 indicatorTablesToJoin.put(aspectRatio, grid_column_identifier)
                 tablesToDrop << aspectRatio
@@ -2028,7 +2050,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
                         datasource, freeFacadeDensityExact,
                         surfaceFractionsProcess,
                         "FREE_EXTERNAL_FACADE_DENSITY",
-                        "building_fraction", grid_column_identifier, prefixName)
+                        all_building_frac_name, grid_column_identifier, prefixName)
                 if (buildingSurfDensity) {
                     if (list_indicators_upper.contains("BUILDING_SURFACE_DENSITY")) {
                         indicatorTablesToJoin.put(buildingSurfDensity, grid_column_identifier)

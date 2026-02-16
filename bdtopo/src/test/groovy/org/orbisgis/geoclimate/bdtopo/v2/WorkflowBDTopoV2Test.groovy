@@ -190,7 +190,7 @@ class WorkflowBDTopoV2Test extends WorkflowAbstractTest {
                          "grid_indicators" : [
                                  "x_size"    : 100,
                                  "y_size"    : 100,
-                                 "indicators": ["WATER_FRACTION"]
+                                 "indicators": ["LAND_TYPE_FRACTION"]
                                  ,"domain":"zone_extended"
                          ],
                          "road_traffic"    : true,

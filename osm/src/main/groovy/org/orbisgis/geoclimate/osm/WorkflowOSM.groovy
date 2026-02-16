@@ -346,7 +346,7 @@ Map workflow(def input) throws Exception {
             throw new Exception("Cannot load the local H2GIS database to run Geoclimate")
         }
         try {
-        Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters, locations.findAll { it }, file_outputFolder, outputFileTables,
+        Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters , locations.findAll { it }, file_outputFolder, outputFileTables,
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, osm_size_area,
                 overpass_timeout, overpass_maxsize, osm_date, databaseFolder,
                 excluded_output_db_columns, domain)
@@ -571,12 +571,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     Geoindicators.WorkflowGeoIndicators.computeZoneStats(h2gis_datasource, results.zone,
                             results.building_indicators, results.block_indicators, results.rsu_indicators, start, results.nb_building_updated)
                 }
-
                 def noise_indicators = processing_parameters.noise_indicators
                 if (noise_indicators) {
                     if (noise_indicators.ground_acoustic) {
                         def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, outputZoneGeometry, 200, 200)
-
                         String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, outputTable, "id_grid",
                                 results.building, roadTableName, hydrographicTableName,
                                 vegetationTableName, imperviousTableName)
@@ -615,11 +613,17 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         x_size = grid_indicators_params.x_size
                         y_size = grid_indicators_params.y_size
                     }
+
+                    // Define the priorities and superposition for land fraction (for grid indicators)
+                    def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getSurfacePriorities()
+                    def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getSurfaceSuperpositions()
+
                     //We must compute the best number of row and col
                     String grid = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, grid_zone,
                             x_size, y_size, srid, rowCol)
                     String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                             grid_indicators_params.indicators,
+                            land_superposition_grid, land_priorities_grid,
                             results.building, roadTableName, vegetationTableName,
                             hydrographicTableName, imperviousTableName,
                             results.rsu_lcz,
@@ -641,7 +645,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         }
                         //We must transform the grid_indicators to produce the target land input
                         if(rsu_indicators_params.indicatorUse.contains("TARGET")){
-                            results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators, x_size))
+                            results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators,
+                                    x_size, land_superposition_grid))
                         }
                         info("End computing grid_indicators")
                     }
@@ -881,14 +886,9 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                     "y_size"    : 100,
                     "output"    : "fgb",
                     "rowCol"    : null, //Default to null
-                    "indicators": ["BUILDING_FRACTION",
+                    "indicators": ["LAND_TYPE_FRACTION",
                                     "BUILDING_HEIGHT",
-                                    "WATER_FRACTION",
-                                    "ROAD_FRACTION",
-                                    "IMPERVIOUS_FRACTION",
-                                    "STREET_WIDTH" ,
-                                    "IMPERVIOUS_FRACTION",
-                                    "VEGETATION_FRACTION"]
+                                    "STREET_WIDTH"]
             ]
             defaultParameters.put("grid_indicators", grid_indicators_tmp)
         }
@@ -903,8 +903,8 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                 if (!list_indicators) {
                     throw new Exception("The list of indicator names cannot be null or empty")
                 }
-                def allowed_grid_indicators = ["BUILDING_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION", "WATER_FRACTION", "VEGETATION_FRACTION",
-                                               "ROAD_FRACTION", "IMPERVIOUS_FRACTION", "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
+                def allowed_grid_indicators = ["LAND_TYPE_FRACTION", "BUILDING_HEIGHT", "BUILDING_TYPE_FRACTION",
+                                               "UTRF_AREA_FRACTION", "UTRF_FLOOR_AREA_FRACTION",
                                                "LCZ_FRACTION", "LCZ_PRIMARY", "FREE_EXTERNAL_FACADE_DENSITY",
                                                "BUILDING_HEIGHT_WEIGHTED", "BUILDING_SURFACE_DENSITY", "BUILDING_HEIGHT_DISTRIBUTION",
                                                "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION", "ASPECT_RATIO", "SVF",
@@ -926,14 +926,9 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                     }
                     //Update the GRID indicators list if TARGET output is specified
                     if(target_grid_indicators){
-                        allowedOutputIndicators.addAll(["BUILDING_FRACTION",
+                        allowedOutputIndicators.addAll(["LAND_TYPE_FRACTION",
                                                         "BUILDING_HEIGHT_WEIGHTED",
-                                                        "WATER_FRACTION",
-                                                        "ROAD_FRACTION",
-                                                        "IMPERVIOUS_FRACTION",
-                                                        "STREET_WIDTH" ,
-                                                        "IMPERVIOUS_FRACTION",
-                                                        "VEGETATION_FRACTION"])
+                                                        "STREET_WIDTH"])
                     }
 
                     if(x_size != y_size){
