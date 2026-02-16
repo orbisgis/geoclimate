@@ -1088,8 +1088,8 @@ Map getParameters() {
             "levelForRoads"                    : [0],
             "angleRangeSizeBuDirection"        : 30,
             "angleRangeSizeRoDirection"        : 30,
-            "surfSuperpositions"               : ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]],
-            "surfPriorities"                   : ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"],
+            "surfSuperpositions"               : getSurfaceSuperpositions(),
+            "surfPriorities"                   : getSurfacePriorities(),
             "buildingAreaTypeAndCompositionLcz": ["undefined_lcz"     : ["building", "undefined"],
                                                   "light_industry_lcz": ["industrial", "factory", "warehouse", "port", "manufacture"],
                                                   "commercial_lcz"    : ["commercial", "shop", "retail", "port",
@@ -1149,6 +1149,25 @@ Map getParameters() {
                                                                                    "high_vegetation_water_permanent_fraction"]],
             "buildingFractions"                : ["high_vegetation_building_fraction", "building_fraction"]]
 
+}
+
+/**
+ * Ordering list of land surfaces
+ * This order is used to prioritise the calculation of land fractions
+ * water_permanent takes priority over all other types, etc.
+ * @return a list
+ */
+List getSurfacePriorities(){
+    return  ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "rail", "road", "impervious"]
+}
+
+/**
+ * Rules for overlapping between the different types of lands
+ *
+ * @return
+ */
+Map getSurfaceSuperpositions(){
+    return ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]]
 }
 
 /**
@@ -1998,9 +2017,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 if(superpositions_upper.values().contains("BUILDING")){
                     all_building_frac_name = "TMP_BUILD_FRAC"
                     def all_build_frac_calc = "BUILDING_FRACTION + ${superpositions_upper.keySet()[0]}_BUIDLING_FRACTION"
-                    datasource
-                    """ALTER TABLE $gridForWidth ADD COLUMN $all_building_frac_name DOUBLE;
-                    UPDATE $gridForWidth SET $all_building_frac_name = (SELECT $all_build_frac_calc FROM $gridForWidth)"""
+                    datasource.execute(
+                    """ALTER TABLE $gridForWidth ADD COLUMN $all_building_frac_name DOUBLE PRECISION;
+                    UPDATE $gridForWidth SET $all_building_frac_name = (SELECT $all_build_frac_calc FROM $gridForWidth)""")
                 }
             }
 

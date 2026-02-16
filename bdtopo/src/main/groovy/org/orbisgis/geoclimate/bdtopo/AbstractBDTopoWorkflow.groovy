@@ -848,9 +848,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  */
     def computeGridIndicators(H2GIS h2gis_datasource, def id_zone, def srid, def processing_parameters, def results) {
         // Define the priorities and superposition for land fraction (for grid indicators)
-        def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfPriorities"]
-        def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfSuperpositions"]
-
+        def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getSurfacePriorities()
+        def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getSurfaceSuperpositions()
         def grid_indicators_params = processing_parameters.grid_indicators
         //Compute the grid indicators
         if (grid_indicators_params) {
@@ -859,25 +858,24 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             int y_size
             def rowCol = grid_indicators_params.rowCol
             def grid_zone
-            if(grid_indicators_params.domain=="zone_extended") { //Must the forced due to the zone parameter
+            if (grid_indicators_params.domain == "zone_extended") { //Must the forced due to the zone parameter
                 grid_zone = h2gis_datasource.getExtent(results.zone_extended)
-            }else if(grid_indicators_params.domain==null){
-                if(processing_parameters.domain=="zone"){
+            } else if (grid_indicators_params.domain == null) {
+                if (processing_parameters.domain == "zone") {
                     grid_zone = h2gis_datasource.getExtent(results.zone)
-                }else if(processing_parameters.domain=="zone_extended"){
+                } else if (processing_parameters.domain == "zone_extended") {
                     grid_zone = h2gis_datasource.getExtent(results.zone_extended)
                 }
-            }
-            else  {
+            } else {
                 grid_zone = h2gis_datasource.getExtent(results.zone)
             }
-            if(rowCol==null){
+            if (rowCol == null) {
                 //Let's compute the number of row and col
-                rowCol=true
-                Envelope envGeom  = grid_zone.getEnvelopeInternal()
-                x_size=(int) Math.max(Math.round(envGeom.getWidth()/grid_indicators_params.x_size),1)
-                y_size=(int) Math.max(Math.round(envGeom.getHeight()/grid_indicators_params.y_size),1)
-            }else{
+                rowCol = true
+                Envelope envGeom = grid_zone.getEnvelopeInternal()
+                x_size = (int) Math.max(Math.round(envGeom.getWidth() / grid_indicators_params.x_size), 1)
+                y_size = (int) Math.max(Math.round(envGeom.getHeight() / grid_indicators_params.y_size), 1)
+            } else {
                 x_size = grid_indicators_params.x_size
                 y_size = grid_indicators_params.y_size
             }
@@ -904,7 +902,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         results.put("grid_indicators", sprawl_indic.grid_indicators)
                     }
                     //We must transform the grid_indicators to produce the target land input
-                    if(processing_parameters.rsu_indicators.indicatorUse.contains("TARGET")){
+                    if (processing_parameters.rsu_indicators.indicatorUse.contains("TARGET")) {
                         results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators,
                                 x_size, land_superposition_grid))
                     }

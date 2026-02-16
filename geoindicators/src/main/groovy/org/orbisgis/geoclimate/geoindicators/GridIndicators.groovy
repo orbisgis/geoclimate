@@ -389,22 +389,38 @@ String formatGrid4Target(JdbcDataSource datasource, String gridTable, float reso
     //Format target landcover
     def grid_target = postfix("grid_target")
     try {
+
+        String roof_column = "BUILDING_FRACTION"
+        String veg_column = "HIGH_VEGETATION_FRACTION"
+        List high_vegetation_superposition = superpositions.get("high_vegetation")
+        high_vegetation_superposition.each {it->
+            if(it=="building"){
+                roof_column+= "+ high_vegetation_${it}_fraction "
+            }else if(it=="road"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="rail"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="water_permanent"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="water_intermittent"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="low_vegetation"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }else if(it=="impervious"){
+                veg_column+=" + high_vegetation_${it}_fraction "
+            }
+        }
         datasource.execute("""
                             DROP TABLE IF EXISTS ${grid_target};
                             CREATE TABLE ${grid_target} as SELECT
                             THE_GEOM,
                             ID_COL, ID_ROW,
                             CAST(row_number() over(ORDER BY ID_ROW DESC) as integer) as "FID",
-                            BUILDING_FRACTION ${if(superpositions_upper.values()[0].contains("BUILDING")){"+ ${superpositions.keySet()[0]}_BUILDING_FRACTION"}else{""}} AS "roof",
+                            ${roof_column} AS "roof",
                             ROAD_FRACTION AS "road",
                             WATER_PERMANENT_FRACTION  AS "watr",
                             IMPERVIOUS_FRACTION + RAIL_FRACTION + UNDEFINED_FRACTION  AS "conc",
-                            HIGH_VEGETATION_FRACTION  ${if(superpositions_upper.values()[0].contains("ROAD")){"+ ${superpositions.keySet()[0]}_ROAD_FRACTION"}else{""}}
-                                ${if(superpositions_upper.values()[0].contains("WATER_PERMANENT")){"+ ${superpositions.keySet()[0]}_WATER_PERMANENT_FRACTION"}else{""}} 
-                                ${if(superpositions_upper.values()[0].contains("WATER_INTERMITTENT")){"+ ${superpositions.keySet()[0]}_WATER_INTERMITTENT_FRACTION"}else{""}} 
-                                ${if(superpositions_upper.values()[0].contains("IMPERVIOUS")){"+ ${superpositions.keySet()[0]}_IMPERVIOUS_FRACTION"}else{""}}        
-                                ${if(superpositions_upper.values()[0].contains("RAIL")){"+ ${superpositions.keySet()[0]}_RAIL_FRACTION"}else{""}}        
-                                ${if(superpositions_upper.values()[0].contains("LOW_VEGETATION")){"+ ${superpositions.keySet()[0]}_LOW_VEGETATION_FRACTION"}else{""}} AS "Veg",                
+                            ${veg_column} AS "Veg",                
                             LOW_VEGETATION_FRACTION  AS "dry",
                             0  AS "irr",
                             AVG_HEIGHT_ROOF_AREA_WEIGHTED AS "H",                            

@@ -346,7 +346,7 @@ Map workflow(def input) throws Exception {
             throw new Exception("Cannot load the local H2GIS database to run Geoclimate")
         }
         try {
-        Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters, locations.findAll { it }, file_outputFolder, outputFileTables,
+        Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters , locations.findAll { it }, file_outputFolder, outputFileTables,
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, osm_size_area,
                 overpass_timeout, overpass_maxsize, osm_date, databaseFolder,
                 excluded_output_db_columns, domain)
@@ -387,10 +387,6 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                    def bbox_size,
                    def overpass_timeout, def overpass_maxsize, def overpass_date, String databaseFolder,
                    Map excluded_columns, String  domain) throws Exception {
-    // Define the priorities and superposition for land fraction (for grid indicators)
-    def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfPriorities"]
-    def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getParameters()["surfSuperpositions"]
-
     //Store the zone identifier and the names of the tables
     def outputTableNamesResult = [:]
     int nbAreas = id_zones.size()
@@ -575,12 +571,10 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     Geoindicators.WorkflowGeoIndicators.computeZoneStats(h2gis_datasource, results.zone,
                             results.building_indicators, results.block_indicators, results.rsu_indicators, start, results.nb_building_updated)
                 }
-
                 def noise_indicators = processing_parameters.noise_indicators
                 if (noise_indicators) {
                     if (noise_indicators.ground_acoustic) {
                         def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, outputZoneGeometry, 200, 200)
-
                         String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, outputTable, "id_grid",
                                 results.building, roadTableName, hydrographicTableName,
                                 vegetationTableName, imperviousTableName)
@@ -619,6 +613,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         x_size = grid_indicators_params.x_size
                         y_size = grid_indicators_params.y_size
                     }
+
+                    // Define the priorities and superposition for land fraction (for grid indicators)
+                    def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getSurfacePriorities()
+                    def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getSurfaceSuperpositions()
+
                     //We must compute the best number of row and col
                     String grid = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, grid_zone,
                             x_size, y_size, srid, rowCol)
