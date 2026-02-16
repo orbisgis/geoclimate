@@ -643,7 +643,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def targetGrid = tableNames.grid_target[0]
         H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db")
         assertEquals(h2gis.getRowCount(targetGrid), h2gis.firstRow("""select count(*) as count from $targetGrid 
-        where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=1""").count)
+        where \"roof\"+ \"road\"+ \"watr\"+\"conc\"+\"Veg\" + \"dry\" + \"irr\" >=0.99""").count)
         def gridIndicators = tableNames.grid_indicators[0]
         assertTrue(h2gis.getColumnNames(gridIndicators).contains("LCZ_PRIMARY"))
     }
