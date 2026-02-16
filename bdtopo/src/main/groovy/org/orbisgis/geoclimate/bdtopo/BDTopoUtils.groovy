@@ -59,7 +59,7 @@ abstract class BDTopoUtils extends AbstractScript {
     static List bbox(Geometry geometry) {
         if (geometry) {
             Envelope env = geometry.getEnvelopeInternal()
-            return [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
+            return [env.getMinY() as float, env.getMinX() as float, env.getMaxY() as float, env.getMaxX() as float]
         }
         return
     }
@@ -73,7 +73,7 @@ abstract class BDTopoUtils extends AbstractScript {
      */
     static List bbox(Envelope env) {
         if (env) {
-            return [env.getMinY(), env.getMinX(), env.getMaxY(), env.getMaxX()]
+            return [env.getMinY() as float, env.getMinX() as float, env.getMaxY() as float, env.getMaxX() as float]
         }
         return
     }
