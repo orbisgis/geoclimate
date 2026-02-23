@@ -28,7 +28,7 @@ Download and Run GeoClimate
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  Download the last snapshot version of GeoClimate here:
-   https://nightly.link/orbisgis/geoclimate/workflows/CI_snapshot/master/geoclimate-1.0.1-SNAPSHOT.zip
+   https://nightly.link/orbisgis/geoclimate/workflows/CI_snapshot/master/geoclimate-1.3.0-SNAPSHOT.zip
 
 -  Extract the downloaded zip and in the extracted folder, execute :
 
