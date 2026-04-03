@@ -124,7 +124,7 @@ BUILDING_DIRECTION_EQUALITY
 
 → ``Sum(Min(1/nb_direction, length_dir_i/length_all_dir))``
 
-**Range of values**: [``nb_direction``, ``1``] - the higher the value the most equal is the distribution
+**Range of values**: [``1/nb_direction``, ``1``] - the higher the value the most equal is the distribution
 
 BUILDING_DIRECTION_UNIQUENESS
 -----------------------------
