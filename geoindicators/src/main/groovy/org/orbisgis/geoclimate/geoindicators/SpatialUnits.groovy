@@ -231,6 +231,7 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
 
             // 3. SPLIT THE WRONG GEOMETRIES AND IDENTIFY WRONG SHAPES
             // Split the geometries
+
             datasource.execute """
             CREATE SPATIAL INDEX IF NOT EXISTS idx ON $RSU_WRONG_SHAPE(THE_GEOM);
             CREATE SPATIAL INDEX IF NOT EXISTS idx ON $GRID(THE_GEOM);
@@ -240,7 +241,7 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
             CAST((row_number() over()) as Integer) AS ID_GRID,
                     THE_GEOM
             FROM ST_EXPLODE('(SELECT 	a.$COLUMN_ID_NAME,
-                                        ST_CLIP(a.THE_GEOM, ST_ACCUM(b.the_GEOM)) AS THE_GEOM
+                                        st_intersection(a.THE_GEOM, st_accum(b.the_GEOM)) AS THE_GEOM
                             FROM $RSU_WRONG_SHAPE a, $GRID b
                             WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM)
                             GROUP BY a.$COLUMN_ID_NAME)');"""
