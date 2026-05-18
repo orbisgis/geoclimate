@@ -240,11 +240,11 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
             AS SELECT $COLUMN_ID_NAME,
             CAST((row_number() over()) as Integer) AS ID_GRID,
                     THE_GEOM
-            FROM ST_EXPLODE('(SELECT 	a.$COLUMN_ID_NAME,
-                                        st_intersection(a.THE_GEOM, st_accum(b.the_GEOM)) AS THE_GEOM
-                            FROM $RSU_WRONG_SHAPE a, $GRID b
-                            WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM)
-                            GROUP BY a.$COLUMN_ID_NAME)');"""
+            FROM (SELECT 	a.$COLUMN_ID_NAME,
+                            ST_INTERSECTION(b.THE_GEOM, a.the_GEOM) AS THE_GEOM
+                FROM $RSU_WRONG_SHAPE a, $GRID b
+                WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM));"""
+
 
             // Calculates the shape indicator
             datasource.execute """
