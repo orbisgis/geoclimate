@@ -61,11 +61,8 @@ class GeoIndicatorsExtensionModuleTests {
         File outputFile = new File(folder, "geometry.fgb")
         geom.save(h2GIS, outputFile.getAbsolutePath())
         h2GIS.load(outputFile.getAbsolutePath(), "mygeom", true)
-        ISpatialTable table = h2GIS.getSpatialTable("mygeom")
-        assertTrue(table.getRowCount() == 1)
-        table.next()
-        assertEquals(4326, table.getGeometry(1).getSRID())
+        assertTrue(h2GIS.getRowCount("mygeom") == 1)
+        assertEquals(4326, h2GIS.getSrid("mygeom"))
     }
-
 
 }
