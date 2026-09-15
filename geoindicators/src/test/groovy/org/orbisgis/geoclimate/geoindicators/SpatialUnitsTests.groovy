@@ -31,6 +31,7 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
+import org.orbisgis.geoclimate.utils.LoggerUtils
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -442,5 +443,19 @@ class SpatialUnitsTests {
         String sprawl_areas = Geoindicators.SpatialUnits.computeSprawlAreas(h2GIS, "grid", 250/2)
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(312500, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
+    }
+
+
+    @Test
+    void debug() {
+        System.setProperty(LoggerUtils.LOGLEVEL_KEY, "DEBUG")
+        String rsuToModify = h2GIS.load("/home/ebocher/Téléchargements/deode_test/rsuToModify.fgb", true)
+        String water = h2GIS.load("/home/ebocher/Téléchargements/deode_test/water.fgb", true);
+        String zone = h2GIS.load("/home/ebocher/Téléchargements/deode_test/zone.fgb", true);
+
+
+       String result = Geoindicators.SpatialUnits.removeLongRsu(h2GIS,  rsuToModify,  water,  zone,
+                1d,  "osm")
+
     }
 }
