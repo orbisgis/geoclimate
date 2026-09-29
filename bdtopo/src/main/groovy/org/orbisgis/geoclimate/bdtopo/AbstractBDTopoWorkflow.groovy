@@ -530,7 +530,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         "x_size"    : 100,
                         "y_size"    : 100,
                         "output"    : "fgb",
-                        "rowCol"    : null, //Default to null
+                        "rowCol"    : false, //Default to false
+                        "angle"     : 0.0,
                         "indicators": ["LAND_TYPE_FRACTION",
                                        "BUILDING_HEIGHT_WEIGHTED",
                                        "STREET_WIDTH"]
@@ -540,6 +541,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             else if (grid_indicators) {
                 def x_size = grid_indicators.x_size
                 def y_size = grid_indicators.y_size
+                def rowCol = grid_indicators.rowCol
                 def list_indicators = grid_indicators.indicators
                 if (x_size && y_size) {
                     if (x_size <= 0 || y_size <= 0) {
@@ -576,14 +578,15 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                             "BUILDING_HEIGHT",
                                                             "STREET_WIDTH"])
                         }
-                        if(x_size != y_size){
-                            throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                        if(x_size != y_size && rowCol != true){
+                            throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions when rowCol is not true")
                         }
                         def grid_indicators_tmp = [
                                 "x_size"    : x_size,
                                 "y_size"    : y_size,
                                 "output"    : "fgb",
-                                "rowCol"    : null, //Default to null
+                                "rowCol"    : false, //Default to false
+                                "angle"     : 0.0,
                                 "indicators": allowedOutputIndicators
                         ]
                         def grid_output = grid_indicators.output
@@ -856,6 +859,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             info("Start computing grid_indicators")
             int x_size
             int y_size
+            double angle = 0
             def rowCol = grid_indicators_params.rowCol
             def grid_zone
             if (grid_indicators_params.domain == "zone_extended") { //Must the forced due to the zone parameter
@@ -869,18 +873,13 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             } else {
                 grid_zone = h2gis_datasource.getExtent(results.zone)
             }
-            if (rowCol == null) {
-                //Let's compute the number of row and col
-                rowCol = true
-                Envelope envGeom = grid_zone.getEnvelopeInternal()
-                x_size = (int) Math.max(Math.round(envGeom.getWidth() / grid_indicators_params.x_size), 1)
-                y_size = (int) Math.max(Math.round(envGeom.getHeight() / grid_indicators_params.y_size), 1)
-            } else {
-                x_size = grid_indicators_params.x_size
-                y_size = grid_indicators_params.y_size
-            }
+
+            x_size = grid_indicators_params.x_size
+            y_size = grid_indicators_params.y_size
+            angle = grid_indicators_params.angle
+
             String gridTableName = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, grid_zone,
-                    x_size, y_size, srid, rowCol)
+                    x_size, y_size, srid, rowCol, angle)
             if (gridTableName) {
                 String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, gridTableName,
                         grid_indicators_params.indicators,

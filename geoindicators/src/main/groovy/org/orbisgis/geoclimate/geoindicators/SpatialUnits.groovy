@@ -536,12 +536,13 @@ String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetT
  * @param tableName A Table that contains the geometry of the grid
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
+ * @param angle The angle of grid rotation in degree
  * @return The name of the created table
  *
  * @author Emmanuel Renault, CNRS, 2020
  * */
 String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
-                  double deltaY, boolean rowCol = false, String prefixName = "") throws Exception {
+                  double deltaY, boolean rowCol = false, String prefixName = "", double angle = 0) throws Exception {
     if (rowCol) {
         if (!deltaX || !deltaY || deltaX < 1 || deltaY < 1) {
             throw new IllegalArgumentException("Invalid grid size padding. Must be greater or equal than 1")
@@ -559,11 +560,13 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
     def outputTableName = prefix prefixName, BASENAME
     datasource "DROP TABLE IF EXISTS $outputTableName;"
 
+    angle = Math.toRadians(angle) //Transform angle in degree to radian
+
     if (datasource instanceof H2GIS) {
         debug "Creating grid with H2GIS"
         datasource """
                            CREATE TABLE $outputTableName AS SELECT the_geom, id as id_grid,ID_COL, ID_ROW FROM 
-                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,false, $rowCol);
+                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,false, $rowCol, $angle);
                            """.toString()
     } else if (datasource instanceof POSTGIS) {
         debug "Creating grid with POSTGIS"
@@ -574,7 +577,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
             def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
             datasource.execute(createTable.toString())
             preparedStatement = outputConnection.prepareStatement(insertTable.toString())
-            def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, rowCol)
+            def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, false, rowCol, angle)
             long batch_size = 0
             int batchSize = 1000
 
