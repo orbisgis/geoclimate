@@ -574,7 +574,6 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 def noise_indicators = processing_parameters.noise_indicators
                 if (noise_indicators) {
                     if (noise_indicators.ground_acoustic) {
-                        //TODO
                         def outputTable = Geoindicators.SpatialUnits.createGrid(h2gis_datasource, outputZoneGeometry, 200, 200)
                         String ground_acoustic = Geoindicators.NoiseIndicators.groundAcousticAbsorption(h2gis_datasource, outputTable, "id_grid",
                                 results.building, roadTableName, hydrographicTableName,

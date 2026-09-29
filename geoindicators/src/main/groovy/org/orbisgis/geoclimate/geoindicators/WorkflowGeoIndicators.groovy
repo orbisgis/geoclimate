@@ -1892,7 +1892,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
     // Calculate all surface fractions indicators on the GRID cell
     if (priorities) {
         // Need to create the smallest geometries used as input of the surface fraction process
-        //TODOGRID
         String superpositionsTableGrid = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
                 grid, grid_column_identifier,
                 building, road, water,
