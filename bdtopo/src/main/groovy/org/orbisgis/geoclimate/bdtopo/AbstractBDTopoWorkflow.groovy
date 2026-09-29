@@ -541,6 +541,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             else if (grid_indicators) {
                 def x_size = grid_indicators.x_size
                 def y_size = grid_indicators.y_size
+                def rowCol = grid_indicators.rowCol
                 def list_indicators = grid_indicators.indicators
                 if (x_size && y_size) {
                     if (x_size <= 0 || y_size <= 0) {
@@ -577,8 +578,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                             "BUILDING_HEIGHT",
                                                             "STREET_WIDTH"])
                         }
-                        if(x_size != y_size){
-                            throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                        if(x_size != y_size && rowCol != true){
+                            throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions when rowCol is not true")
                         }
                         def grid_indicators_tmp = [
                                 "x_size"    : x_size,

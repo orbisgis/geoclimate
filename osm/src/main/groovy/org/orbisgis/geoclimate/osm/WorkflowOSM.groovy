@@ -889,6 +889,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
             def x_size = grid_indicators.x_size
             def y_size = grid_indicators.y_size
             def list_indicators = grid_indicators.indicators
+            def rowCol = grid_indicators.rowCol
             if (x_size && y_size) {
                 if (x_size <= 0 || y_size <= 0) {
                     throw new Exception("Invalid grid size padding. Must be greater that 0")
@@ -924,8 +925,8 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                                                         "STREET_WIDTH"])
                     }
 
-                    if(x_size != y_size){
-                        throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                    if(x_size != y_size && rowCol != true){
+                        throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions when rowCol is not true")
                     }
 
                     def grid_indicators_tmp = [
