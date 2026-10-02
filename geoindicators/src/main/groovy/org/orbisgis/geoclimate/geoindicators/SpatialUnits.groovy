@@ -120,6 +120,11 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
 
     debug "Removing strange rsu shapes"
 
+    // Tolerance used to remove holes and spikes created by ST_SNAP and ST_UNION:
+    def CLEAN_TOLERANCE = 0.01
+    // Tolerance used to snap the wrong shapes to the correct ones
+    def SNAP_TOLERANCE = 0.01
+
     // Name of intermediate tables
     def RSU_NO_WATER = postfix("RSU_NO_WATER")
     def RSU_WATER = postfix("RSU_WATER")
@@ -161,14 +166,15 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 [:], ["water_permanent", "water_intermittent"], tempoPrefix)
 
         // Identify non-water RSU
+        // Index used by the NOT IN sub-query
+        datasource.createIndex(surface_fractions, COLUMN_ID_NAME)
         datasource.execute """
-            CREATE INDEX IF NOT EXISTS id ON $rsuToModify($COLUMN_ID_NAME);
             DROP TABLE IF EXISTS $RSU_NO_WATER;
             CREATE TABLE $RSU_NO_WATER
                 AS SELECT $COLUMN_ID_NAME, THE_GEOM
                 FROM $rsuToModify
-                WHERE  $COLUMN_ID_NAME NOT IN ( SELECT DISTINCT $COLUMN_ID_NAME 
-                                                FROM $surface_fractions 
+                WHERE  $COLUMN_ID_NAME NOT IN ( SELECT DISTINCT $COLUMN_ID_NAME
+                                                FROM $surface_fractions
                                                 WHERE WATER_PERMANENT_FRACTION >= 0.99);"""
 
         // If no land RSU, use rsu water as output
@@ -180,9 +186,9 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
         }
         else{
             // Identify water RSU
+            // Only the joined (right) table needs an index
+            datasource.createIndex(RSU_NO_WATER, COLUMN_ID_NAME)
             datasource.execute """
-            CREATE INDEX IF NOT EXISTS id ON $rsuToModify($COLUMN_ID_NAME);
-            CREATE INDEX IF NOT EXISTS id ON $RSU_NO_WATER($COLUMN_ID_NAME);
             DROP TABLE IF EXISTS $RSU_WATER;
             CREATE TABLE $RSU_WATER
                 AS SELECT a.$COLUMN_ID_NAME, a.THE_GEOM
@@ -217,9 +223,8 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 WHERE SHAPE_RECTANGLE_RATIO < 0.4;"""
 
             // Identify correct RSU
+            datasource.createIndex(RSU_WRONG_SHAPE, COLUMN_ID_NAME)
             datasource.execute """
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SHAPE($COLUMN_ID_NAME);
-            CREATE INDEX IF NOT EXISTS id ON $RSU_WRONG_SHAPE($COLUMN_ID_NAME);
             DROP TABLE IF EXISTS $RSU_CORRECT_SHAPE;
             CREATE TABLE $RSU_CORRECT_SHAPE
                 AS SELECT a.$COLUMN_ID_NAME, a.THE_GEOM
@@ -229,26 +234,20 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 WHERE b.$COLUMN_ID_NAME IS NULL;"""
 
             // 3. SPLIT THE WRONG GEOMETRIES AND IDENTIFY WRONG SHAPES
-            // Split the geometries : jointure spatiale RSU x grille, une paire = une ligne,
-            // avec raccourci ST_COVEREDBY pour les cellules entierement a l'interieur du RSU
-            // (evite l'appel ST_INTERSECTION, plus couteux, quand ce n'est pas necessaire).
+            // Split the geometries
+            datasource.createSpatialIndex(RSU_WRONG_SHAPE, "THE_GEOM")
+            datasource.createSpatialIndex(GRID, "THE_GEOM")
             datasource.execute """
-            CREATE SPATIAL INDEX IF NOT EXISTS idx ON $RSU_WRONG_SHAPE(THE_GEOM);
-            CREATE SPATIAL INDEX IF NOT EXISTS idx ON $GRID(THE_GEOM);
             DROP TABLE IF EXISTS $RSU_SPLITTED;
             CREATE TABLE $RSU_SPLITTED
             AS SELECT $COLUMN_ID_NAME,
-              CAST((row_number() over()) as Integer) AS ID_GRID,
-              THE_GEOM
-            FROM ST_EXPLODE('(SELECT   a.$COLUMN_ID_NAME,
-                                CASE WHEN ST_COVEREDBY(b.THE_GEOM, a.THE_GEOM)
-                                     THEN b.THE_GEOM
-                                     ELSE ST_INTERSECTION(a.THE_GEOM, b.THE_GEOM)
-                                END AS THE_GEOM
-                       FROM $RSU_WRONG_SHAPE a, $GRID b
-                       WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM))')
-            WHERE ST_DIMENSION(THE_GEOM) = 2 AND NOT ST_ISEMPTY(THE_GEOM);
-            """
+            CAST((row_number() over()) as Integer) AS ID_GRID,
+                    THE_GEOM
+            FROM ST_EXPLODE('(SELECT 	a.$COLUMN_ID_NAME,
+                                        st_intersection(a.THE_GEOM, st_accum(b.the_GEOM)) AS THE_GEOM
+                            FROM $RSU_WRONG_SHAPE a, $GRID b
+                            WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM)
+                            GROUP BY a.$COLUMN_ID_NAME)');"""
 
             // Calculates the shape indicator
             datasource.execute """
@@ -270,9 +269,9 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 WHERE SHAPE_CIRCLE_RATIO < 0.8;"""
 
             // Identify correct RSU
+            // ID_GRID is unique (row_number), so an index on ID_GRID is enough for the join
+            datasource.createIndex(RSU_SPLIT_WRONG_SHAPE, "ID_GRID")
             datasource.execute """
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_SHAPE($COLUMN_ID_NAME,ID_GRID);
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_SHAPE($COLUMN_ID_NAME,ID_GRID);
             DROP TABLE IF EXISTS $RSU_SPLIT_CORRECT_SHAPE;
             CREATE TABLE $RSU_SPLIT_CORRECT_SHAPE
                 AS SELECT $COLUMN_ID_NAME, EXPLOD_ID, THE_GEOM
@@ -285,20 +284,17 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
 
             // 4. GATHER SPLITTED CORRECT SHAPES AND SURROUNDING ONES
             // Identify wrong shapes that touche correct ones and calculate length of intersection
-            // NB : ST_BUFFER(...,0) ajoute pour securiser les geometries issues du split,
-            // par coherence avec le meme calcul en section 5.
+            datasource.createSpatialIndex(RSU_SPLIT_CORRECT_SHAPE, "THE_GEOM")
+            datasource.createSpatialIndex(RSU_SPLIT_WRONG_SHAPE, "THE_GEOM")
+            datasource.createIndex(RSU_SPLIT_CORRECT_SHAPE, COLUMN_ID_NAME)
             datasource.execute """
-            CREATE SPATIAL INDEX IF NOT EXISTS idx ON $RSU_SPLIT_CORRECT_SHAPE(THE_GEOM);
-            CREATE SPATIAL INDEX IF NOT EXISTS idx ON $RSU_SPLIT_WRONG_SHAPE(THE_GEOM);
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_CORRECT_SHAPE($COLUMN_ID_NAME);
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_SHAPE($COLUMN_ID_NAME);
             DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_TOUCH;
             CREATE TABLE $RSU_SPLIT_WRONG_TOUCH
                 AS SELECT 	a.$COLUMN_ID_NAME,
                             a.ID_GRID,
                             b.EXPLOD_ID,
                             a.THE_GEOM,
-                            ST_LENGTH(ST_COLLECTIONEXTRACT(ST_INTERSECTION(ST_BUFFER(a.THE_GEOM,0), ST_BUFFER(b.THE_GEOM,0)), 2)) AS VAL
+                            ST_LENGTH(ST_INTERSECTION(a.THE_GEOM, b.THE_GEOM)) AS VAL
                 FROM $RSU_SPLIT_WRONG_SHAPE a
                 LEFT JOIN $RSU_SPLIT_CORRECT_SHAPE b
                 ON a.$COLUMN_ID_NAME = b.$COLUMN_ID_NAME
@@ -306,9 +302,8 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 AND b.EXPLOD_ID IS NOT NULL;"""
 
             // Identify wrong shapes that do not touch correct ones
+            datasource.createIndex(RSU_SPLIT_WRONG_TOUCH, "ID_GRID")
             datasource.execute """
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_SHAPE($COLUMN_ID_NAME, ID_GRID);
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_TOUCH($COLUMN_ID_NAME, ID_GRID);
             DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_NOTOUCH;
             CREATE TABLE $RSU_SPLIT_WRONG_NOTOUCH
                 AS SELECT a.$COLUMN_ID_NAME, a.ID_GRID, a.THE_GEOM
@@ -317,23 +312,19 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 ON a.$COLUMN_ID_NAME = b.$COLUMN_ID_NAME AND a.ID_GRID = b.ID_GRID
                 WHERE b.$COLUMN_ID_NAME IS NULL AND b.ID_GRID IS NULL;"""
 
-            // Union correct shapes with wrong shapes that touch them
+            // Union correct shapes with wrong shapes that touch them.
+            // Each wrong shape is merged with ONE correct part only (longest shared border),
+            // ties being broken by EXPLOD_ID, to avoid overlaps.
             datasource.execute """
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_TOUCH(ID_GRID);
-            CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_TOUCH($COLUMN_ID_NAME);
             DROP TABLE IF EXISTS $RSU_SPLIT_CORRECT_UNION;
             CREATE TABLE $RSU_SPLIT_CORRECT_UNION
                 AS SELECT $COLUMN_ID_NAME, EXPLOD_ID, ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM
                 FROM    (SELECT $COLUMN_ID_NAME, THE_GEOM, EXPLOD_ID
-                        FROM    (SELECT a.$COLUMN_ID_NAME, a.THE_GEOM, a.EXPLOD_ID
-                                FROM $RSU_SPLIT_WRONG_TOUCH a
-                                WHERE VAL = (
-                                    SELECT MAX(b.VAL)
-                                    FROM $RSU_SPLIT_WRONG_TOUCH b
-                                    WHERE b.ID_GRID = a.ID_GRID AND b.$COLUMN_ID_NAME = a.$COLUMN_ID_NAME
-                                    GROUP BY b.ID_GRID, b.$COLUMN_ID_NAME
-                                    )
-                                )
+                        FROM    (SELECT a.$COLUMN_ID_NAME, a.THE_GEOM, a.EXPLOD_ID,
+                                        ROW_NUMBER() OVER (PARTITION BY a.$COLUMN_ID_NAME, a.ID_GRID
+                                                           ORDER BY a.VAL DESC, a.EXPLOD_ID) AS RK
+                                FROM $RSU_SPLIT_WRONG_TOUCH a)
+                        WHERE RK = 1
                         UNION ALL
                         SELECT $COLUMN_ID_NAME, THE_GEOM, EXPLOD_ID
                         FROM $RSU_SPLIT_CORRECT_SHAPE
@@ -341,147 +332,148 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 GROUP BY $COLUMN_ID_NAME, EXPLOD_ID;"""
 
             // Union correct shape RSU and splitted RSU that has correct shape.
-            // Les index sont crees ICI, une seule fois : RSU_ALL_CORRECTS n'est plus jamais
-            // droppee pendant la boucle de la section 5, donc son index spatial persiste
-            // d'une iteration a l'autre au lieu d'etre reconstruit a chaque tour.
+            // The geometries are cleaned
             datasource.execute """
             DROP TABLE IF EXISTS $RSU_ALL_CORRECTS;
             CREATE TABLE $RSU_ALL_CORRECTS
             AS SELECT 	CAST((row_number() over()) as Integer) AS $COLUMN_ID_NAME,
-                    ST_DENSIFY(THE_GEOM, 5) AS THE_GEOM
+                    ST_BUFFER(ST_BUFFER(ST_BUFFER(ST_BUFFER(THE_GEOM, $CLEAN_TOLERANCE, 'join=mitre'),
+                              -$CLEAN_TOLERANCE, 'join=mitre'), -$CLEAN_TOLERANCE, 'join=mitre'), $CLEAN_TOLERANCE, 'join=mitre') AS THE_GEOM
             FROM (SELECT $COLUMN_ID_NAME, THE_GEOM
                     FROM $RSU_CORRECT_SHAPE
                     UNION ALL
                     SELECT $COLUMN_ID_NAME, THE_GEOM
-                    FROM $RSU_SPLIT_CORRECT_UNION);
-            CREATE SPATIAL INDEX IF NOT EXISTS idx ON $RSU_ALL_CORRECTS(THE_GEOM);
-            CREATE INDEX IF NOT EXISTS id ON $RSU_ALL_CORRECTS($COLUMN_ID_NAME);
-            """
+                    FROM $RSU_SPLIT_CORRECT_UNION);"""
 
             // 5. ITERATIVELY MERGE REMAINING WRONG SHAPES TO ADJACENT CORRECT SHAPE RSU
-            def remove_all_wrong = datasource.isEmpty(RSU_SPLIT_WRONG_NOTOUCH.toString())
+            def remove_all_wrong = datasource.getTable(RSU_SPLIT_WRONG_NOTOUCH).isEmpty()
             while(!remove_all_wrong){
-                // Make sure all wrong shape snap correct geometries.
-                // NB : l'index spatial de RSU_ALL_CORRECTS n'est plus recree ici (il persiste
-                // depuis sa creation avant la boucle ou depuis le tour precedent).
+                // RSU_ALL_CORRECTS and RSU_SPLIT_WRONG_NOTOUCH are new tables at each iteration
+                // (created before the loop, then renamed from RSU_CORRECT_ALL / RSU_SPLIT_WRONG_REMAINING),
+                // so their indexes are created once per iteration, here.
+                datasource.createSpatialIndex(RSU_ALL_CORRECTS, "THE_GEOM")
+                datasource.createIndex(RSU_ALL_CORRECTS, COLUMN_ID_NAME)
+                datasource.createSpatialIndex(RSU_SPLIT_WRONG_NOTOUCH, "THE_GEOM")
+
+                // Make sure all wrong shape snap correct geometries
                 datasource.execute """
-                CREATE SPATIAL INDEX IF NOT EXISTS idx ON $RSU_SPLIT_WRONG_NOTOUCH(THE_GEOM);
-                DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_NOTOUCH_SNAP;
-                CREATE TABLE $RSU_SPLIT_WRONG_NOTOUCH_SNAP
+            DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_NOTOUCH_SNAP;
+            CREATE TABLE $RSU_SPLIT_WRONG_NOTOUCH_SNAP
                 AS SELECT   a.$COLUMN_ID_NAME,
-                a.ID_GRID,
-                ST_SNAP(a.THE_GEOM, ST_UNION(ST_ACCUM(b.THE_GEOM)), 0.01) AS THE_GEOM
-                FROM $RSU_SPLIT_WRONG_NOTOUCH a, $RSU_ALL_CORRECTS b
-                WHERE a.THE_GEOM && b.THE_GEOM AND ST_DWITHIN(a.THE_GEOM, b.THE_GEOM, 0.01)
-                GROUP BY a.$COLUMN_ID_NAME, a.ID_GRID;"""
+                            a.ID_GRID,
+                            ST_SNAP(a.THE_GEOM, ST_UNION(ST_ACCUM(b.THE_GEOM)), $SNAP_TOLERANCE) AS THE_GEOM
+                            FROM $RSU_SPLIT_WRONG_NOTOUCH a, $RSU_ALL_CORRECTS b
+                            WHERE a.THE_GEOM && b.THE_GEOM AND ST_DWITHIN(a.THE_GEOM, b.THE_GEOM, $SNAP_TOLERANCE)
+                            GROUP BY a.$COLUMN_ID_NAME, a.ID_GRID;"""
+
 
                 // Identify all correct shape RSU sharing the side with the wrong shape ones
+                datasource.createSpatialIndex(RSU_SPLIT_WRONG_NOTOUCH_SNAP, "THE_GEOM")
                 datasource.execute """
-CREATE SPATIAL INDEX IF NOT EXISTS idx ON $RSU_SPLIT_WRONG_NOTOUCH_SNAP(THE_GEOM);
-DROP TABLE IF EXISTS $RSU_WRONG_CORRECT_REL;
-CREATE TABLE $RSU_WRONG_CORRECT_REL
-    AS SELECT   b.$COLUMN_ID_NAME,
-                a.ID_GRID,
-                a.THE_GEOM,
-                ST_LENGTH(ST_COLLECTIONEXTRACT(ST_INTERSECTION(ST_BUFFER(a.THE_GEOM,0), b.THE_GEOM),2)) AS VAL
-    FROM $RSU_SPLIT_WRONG_NOTOUCH_SNAP a, $RSU_ALL_CORRECTS b
-    WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM);"""
+            DROP TABLE IF EXISTS $RSU_WRONG_CORRECT_REL;
+            CREATE TABLE $RSU_WRONG_CORRECT_REL
+                AS SELECT   b.$COLUMN_ID_NAME,
+                            a.ID_GRID,
+                            a.THE_GEOM,
+                            ST_LENGTH(ST_COLLECTIONEXTRACT(ST_INTERSECTION(ST_BUFFER(a.THE_GEOM,0), b.THE_GEOM),2)) AS VAL
+                FROM $RSU_SPLIT_WRONG_NOTOUCH_SNAP a, $RSU_ALL_CORRECTS b
+                WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM);"""
 
-                // Determine, pour chaque fragment "wrong", le voisin correct avec la plus longue
-                // frontiere commune (les "gagnants"), et calcule la geometrie fusionnee correspondante.
-                // Cette geometrie fusionnee est capturee AVANT toute suppression dans RSU_ALL_CORRECTS.
+                // Keep, for each wrong shape, ONE correct RSU only: the one having the longest shared side
+                // (ties broken by id, to avoid merging the same shape in several RSU)
                 datasource.execute """
-CREATE INDEX IF NOT EXISTS id ON $RSU_WRONG_CORRECT_REL(ID_GRID);
+            DROP TABLE IF EXISTS $RSU_WRONG_CORRECT_REL2;
+            CREATE TABLE $RSU_WRONG_CORRECT_REL2
+                AS SELECT $COLUMN_ID_NAME, THE_GEOM
+                FROM (SELECT $COLUMN_ID_NAME, THE_GEOM,
+                             ROW_NUMBER() OVER (PARTITION BY ID_GRID ORDER BY VAL DESC, $COLUMN_ID_NAME) AS RK
+                      FROM $RSU_WRONG_CORRECT_REL)
+                WHERE RK = 1;"""
 
-DROP TABLE IF EXISTS $RSU_WRONG_CORRECT_REL2;
-CREATE TABLE $RSU_WRONG_CORRECT_REL2 AS
-    SELECT a.$COLUMN_ID_NAME, a.ID_GRID, a.THE_GEOM
-    FROM $RSU_WRONG_CORRECT_REL a
-    WHERE a.VAL = (SELECT MAX(b.VAL) FROM $RSU_WRONG_CORRECT_REL b WHERE b.ID_GRID = a.ID_GRID);
-
-CREATE INDEX IF NOT EXISTS id ON $RSU_WRONG_CORRECT_REL2($COLUMN_ID_NAME);
-
-DROP TABLE IF EXISTS $RSU_CORRECT_ALL;
-CREATE TABLE $RSU_CORRECT_ALL AS
-    SELECT $COLUMN_ID_NAME, ST_DENSIFY(ST_UNION(ST_ACCUM(ST_BUFFER(THE_GEOM, 0))), 5) AS THE_GEOM
-    FROM (
-        SELECT $COLUMN_ID_NAME, THE_GEOM FROM $RSU_WRONG_CORRECT_REL2
-        UNION ALL
-        SELECT a.$COLUMN_ID_NAME, a.THE_GEOM
-        FROM $RSU_ALL_CORRECTS a
-        WHERE EXISTS (SELECT 1 FROM $RSU_WRONG_CORRECT_REL2 w WHERE w.$COLUMN_ID_NAME = a.$COLUMN_ID_NAME)
-    )
-    GROUP BY $COLUMN_ID_NAME;
-"""
-
-                // OPTIMISATION : mise a jour EN PLACE de RSU_ALL_CORRECTS (DELETE puis INSERT),
-                // au lieu de DROP TABLE + CREATE TABLE + RENAME. La table et son index spatial
-                // ne sont plus jamais detruits pendant la boucle : seules les lignes concernees
-                // par une fusion cette iteration sont retirees puis reinserees.
+                // Union the wrong shapes with their correct RSU.
+                // Only the RSU receiving a wrong shape are recomputed (union + cleaning),
+                // the other ones are copied as they are.
+                datasource.createIndex(RSU_WRONG_CORRECT_REL2, COLUMN_ID_NAME)
                 datasource.execute """
-DELETE FROM $RSU_ALL_CORRECTS
-WHERE $COLUMN_ID_NAME IN (SELECT $COLUMN_ID_NAME FROM $RSU_WRONG_CORRECT_REL2);
-
-INSERT INTO $RSU_ALL_CORRECTS ($COLUMN_ID_NAME, THE_GEOM)
-SELECT $COLUMN_ID_NAME, THE_GEOM FROM $RSU_CORRECT_ALL;
-"""
+            DROP TABLE IF EXISTS $RSU_CORRECT_ALL;
+            CREATE TABLE $RSU_CORRECT_ALL
+                AS SELECT $COLUMN_ID_NAME,
+                          ST_BUFFER(ST_BUFFER(ST_BUFFER(ST_BUFFER(ST_UNION(ST_ACCUM(ST_BUFFER(THE_GEOM, 0))), $CLEAN_TOLERANCE, 'join=mitre'),
+                              -$CLEAN_TOLERANCE, 'join=mitre'), -$CLEAN_TOLERANCE, 'join=mitre'), $CLEAN_TOLERANCE, 'join=mitre') AS THE_GEOM
+                FROM (  SELECT $COLUMN_ID_NAME, THE_GEOM
+                        FROM $RSU_WRONG_CORRECT_REL2
+                        UNION ALL
+                        SELECT a.$COLUMN_ID_NAME, a.THE_GEOM
+                        FROM $RSU_ALL_CORRECTS a
+                        WHERE EXISTS (SELECT 1 FROM $RSU_WRONG_CORRECT_REL2 w WHERE w.$COLUMN_ID_NAME = a.$COLUMN_ID_NAME))
+                GROUP BY $COLUMN_ID_NAME
+                UNION ALL
+                SELECT a.$COLUMN_ID_NAME, a.THE_GEOM
+                FROM $RSU_ALL_CORRECTS a
+                WHERE NOT EXISTS (SELECT 1 FROM $RSU_WRONG_CORRECT_REL2 w WHERE w.$COLUMN_ID_NAME = a.$COLUMN_ID_NAME);"""
 
                 // Identify wrong shapes that have not been yet merged with correct ones
+                // ID_GRID is unique, so an index on the joined table's ID_GRID is enough
+                datasource.createIndex(RSU_SPLIT_WRONG_NOTOUCH_SNAP, "ID_GRID")
                 datasource.execute """
-CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_NOTOUCH_SNAP($COLUMN_ID_NAME, ID_GRID);
-CREATE INDEX IF NOT EXISTS id ON $RSU_SPLIT_WRONG_NOTOUCH($COLUMN_ID_NAME, ID_GRID);
-DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_REMAINING;
-CREATE TABLE $RSU_SPLIT_WRONG_REMAINING
-    AS SELECT a.$COLUMN_ID_NAME, a.ID_GRID, a.THE_GEOM
-    FROM $RSU_SPLIT_WRONG_NOTOUCH a
-    LEFT JOIN $RSU_SPLIT_WRONG_NOTOUCH_SNAP b
-    ON a.$COLUMN_ID_NAME = b.$COLUMN_ID_NAME AND a.ID_GRID = b.ID_GRID
-    WHERE b.$COLUMN_ID_NAME IS NULL AND b.ID_GRID IS NULL;"""
+            DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_REMAINING;
+            CREATE TABLE $RSU_SPLIT_WRONG_REMAINING
+                AS SELECT a.$COLUMN_ID_NAME, a.ID_GRID, a.THE_GEOM
+                FROM $RSU_SPLIT_WRONG_NOTOUCH a
+                LEFT JOIN $RSU_SPLIT_WRONG_NOTOUCH_SNAP b
+                ON a.$COLUMN_ID_NAME = b.$COLUMN_ID_NAME AND a.ID_GRID = b.ID_GRID
+                WHERE b.$COLUMN_ID_NAME IS NULL AND b.ID_GRID IS NULL;"""
 
                 // Test whether the number of geometries have decrease. If not, it means some wrong shape geometries are islands
                 // and do not touch other correct land shapes. So they have to be union and merged and that's it
-                if(datasource.getRowCount(RSU_SPLIT_WRONG_NOTOUCH.toString()) == datasource.getRowCount(RSU_SPLIT_WRONG_REMAINING.toString())){
-                    // Iles isolees : fusionnees entre elles et ajoutees directement (INSERT),
-                    // sans DROP/rebuild de RSU_ALL_CORRECTS.
+                if(datasource.getTable(RSU_SPLIT_WRONG_NOTOUCH).size() == datasource.getTable(RSU_SPLIT_WRONG_REMAINING).size()){
                     datasource.execute """
-INSERT INTO $RSU_ALL_CORRECTS ($COLUMN_ID_NAME, THE_GEOM)
-SELECT $COLUMN_ID_NAME, ST_UNION(ST_ACCUM(THE_GEOM)) AS THE_GEOM
-FROM $RSU_SPLIT_WRONG_REMAINING
-GROUP BY $COLUMN_ID_NAME;
-"""
+                    DROP TABLE IF EXISTS $RSU_ALL_CORRECTS;
+                    CREATE TABLE $RSU_ALL_CORRECTS
+                        AS SELECT $COLUMN_ID_NAME,
+                                  ST_BUFFER(ST_BUFFER(ST_BUFFER(ST_BUFFER(ST_UNION(ST_ACCUM(ST_BUFFER(THE_GEOM, 0))), $CLEAN_TOLERANCE, 'join=mitre'),
+                              -$CLEAN_TOLERANCE, 'join=mitre'), -$CLEAN_TOLERANCE, 'join=mitre'), $CLEAN_TOLERANCE, 'join=mitre') AS THE_GEOM
+                        FROM $RSU_SPLIT_WRONG_REMAINING
+                        GROUP BY $COLUMN_ID_NAME
+                        UNION ALL
+                        SELECT $COLUMN_ID_NAME, THE_GEOM
+                        FROM $RSU_CORRECT_ALL;"""
                     remove_all_wrong = true
                 }
                 else{
-                    // Rename tables to make the iterative process work.
-                    // NB : $RSU_ALL_CORRECTS n'est plus renommee ici - elle a deja ete mise a jour
-                    // en place ci-dessus, index spatial compris.
+                    // Rename tables to make the iterative process work
                     datasource.execute """DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_NOTOUCH;
-                            ALTER TABLE $RSU_SPLIT_WRONG_REMAINING RENAME TO $RSU_SPLIT_WRONG_NOTOUCH;"""
+                                        ALTER TABLE $RSU_SPLIT_WRONG_REMAINING RENAME TO $RSU_SPLIT_WRONG_NOTOUCH;"""
+                    datasource.execute """DROP TABLE IF EXISTS $RSU_ALL_CORRECTS;
+                                        ALTER TABLE $RSU_CORRECT_ALL RENAME TO $RSU_ALL_CORRECTS;"""
 
                     // Verify that all there is no remaining wrong shapes
-                    remove_all_wrong = datasource.isEmpty(RSU_SPLIT_WRONG_NOTOUCH.toString())
+                    remove_all_wrong = datasource.getTable(RSU_SPLIT_WRONG_NOTOUCH).isEmpty()
                 }
             }
 
+            // Geometries are already cleaned. The ids are renumbered because water RSU and
+            // isolated islands keep their original id, which may collide with the renumbered ones.
             datasource.execute """
             DROP TABLE IF EXISTS $outputTableName;
             CREATE TABLE $outputTableName
-                AS SELECT $COLUMN_ID_NAME, THE_GEOM
-                FROM $RSU_ALL_CORRECTS
-                WHERE ST_AREA(THE_GEOM) > $area
-                UNION ALL
-                SELECT $COLUMN_ID_NAME, THE_GEOM
-                FROM $RSU_WATER
-                WHERE ST_AREA(THE_GEOM) > $area;
+                AS SELECT CAST((row_number() over()) as Integer) AS $COLUMN_ID_NAME, THE_GEOM
+                FROM (SELECT THE_GEOM
+                      FROM $RSU_ALL_CORRECTS
+                      WHERE NOT ST_ISEMPTY(THE_GEOM) AND ST_AREA(THE_GEOM) > $area
+                      UNION ALL
+                      SELECT THE_GEOM
+                      FROM $RSU_WATER
+                      WHERE ST_AREA(THE_GEOM) > $area);
             """
         }
 
         // Remove intermediate tables
         datasource """
-                    DROP TABLE IF EXISTS $smallestCommun, $surface_fractions, $RSU_WATER, $GRID, $RSU_SHAPE, 
+                    DROP TABLE IF EXISTS $smallestCommun, $surface_fractions, $RSU_NO_WATER, $RSU_WATER, $GRID, $RSU_SHAPE,
                         $RSU_WRONG_SHAPE, $RSU_CORRECT_SHAPE, $RSU_SPLITTED, $RSU_SPLIT_SHAPE, $RSU_SPLIT_WRONG_SHAPE,
-                        $RSU_SPLIT_CORRECT_SHAPE, $RSU_SPLIT_WRONG_TOUCH, $RSU_SPLIT_WRONG_NOTOUCH, 
-                        $RSU_SPLIT_CORRECT_UNION, $RSU_ALL_CORRECTS, $RSU_SPLIT_WRONG_NOTOUCH_SNAP, 
+                        $RSU_SPLIT_CORRECT_SHAPE, $RSU_SPLIT_WRONG_TOUCH, $RSU_SPLIT_WRONG_NOTOUCH,
+                        $RSU_SPLIT_CORRECT_UNION, $RSU_ALL_CORRECTS, $RSU_SPLIT_WRONG_NOTOUCH_SNAP,
                         $RSU_WRONG_CORRECT_REL, $RSU_CORRECT_ALL, $RSU_SPLIT_WRONG_REMAINING, $RSU_WRONG_CORRECT_REL2
                     """.toString()
 
