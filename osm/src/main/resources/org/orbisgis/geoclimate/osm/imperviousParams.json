@@ -45,7 +45,8 @@
     "aeroway",
     "building",
     "power",
-    "type"
+    "type",
+    "plant:source"
   ],
   "type": {
     "parking": {
