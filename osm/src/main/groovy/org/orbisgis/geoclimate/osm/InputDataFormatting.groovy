@@ -784,11 +784,14 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                         Geometry geom = row.the_geom
                         int epsg = geom.getSRID()
                         if (!geom.isEmpty()) {
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                Geometry subGeom = geom.getGeometryN(i)
-                                if (!subGeom.isEmpty()) {
-                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                        stmt.addBatch "insert into $impervious_prepared values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
+                            def plant_source = row."plant:source"
+                            if(!plant_source || plant_source.toLowerCase() != "wind") {
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (!subGeom.isEmpty()) {
+                                        if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                            stmt.addBatch "insert into $impervious_prepared values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
+                                        }
                                     }
                                 }
                             }
