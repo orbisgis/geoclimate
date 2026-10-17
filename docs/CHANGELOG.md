@@ -2,3 +2,4 @@
 
 
 - Force bbox geometry coordinates to float
+- Fix Sonatype publishing
