@@ -52,10 +52,6 @@
             <artifactId>geoindicators</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.orbisgis.geoclimate</groupId>
-            <artifactId>common-utils</artifactId>
-        </dependency>
 
         <!-- Test dependencies -->
         <dependency>
