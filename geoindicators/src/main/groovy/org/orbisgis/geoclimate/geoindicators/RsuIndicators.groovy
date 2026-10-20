@@ -329,7 +329,7 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String id_rsu,
                 CREATE TABLE $svfPts 
                 AS SELECT   a.$ID_COLUMN_RSU, 
                             ST_SVF(ST_GEOMETRYN(a.the_geom,1), ST_ACCUM(ST_UPDATEZ(b.$GEOMETRIC_COLUMN_BU, b.$HEIGHT_WALL)), 
-                                   $rayLength, $numberOfDirection, 5) AS SVF
+                                   $rayLength, $numberOfDirection) AS SVF
                 FROM        $multiptsRSUtot AS a, $correlationBuildingTable AS b 
                 WHERE       ST_EXPAND(a.the_geom, $rayLength) && b.$GEOMETRIC_COLUMN_BU AND 
                             ST_DWITHIN(b.$GEOMETRIC_COLUMN_BU, a.the_geom, $rayLength) 
