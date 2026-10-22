@@ -20,6 +20,7 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
+import org.h2.value.ValueDouble
 import org.h2.value.ValueGeometry
 import org.h2gis.functions.spatial.create.ST_MakeGrid
 import org.locationtech.jts.geom.Geometry
@@ -577,7 +578,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
             def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
             datasource.execute(createTable.toString())
             preparedStatement = outputConnection.prepareStatement(insertTable.toString())
-            def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, false, rowCol, angle)
+            def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, false, rowCol, ValueDouble.get(angle))
             long batch_size = 0
             int batchSize = 1000
 
