@@ -592,27 +592,18 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     outputGrid = grid_indicators_params.output
                     int x_size
                     int y_size
+                    double angle
                     def rowCol = grid_indicators_params.rowCol
                     def grid_zone
                     if(grid_indicators_params.domain=="zone_extended") { //Must the forced due to the zone parameter
                         grid_zone = h2gis_datasource.getExtent(utm_extended_bbox_table)
                     }else if(grid_indicators_params.domain==null){
-                        if(domain=="zone"){
-                            grid_zone = h2gis_datasource.getExtent(utm_zone_table)
-                        }else if(domain=="zone_extended"){
-                            grid_zone = h2gis_datasource.getExtent(utm_extended_bbox_table)
-                        }
+                        grid_zone = outputZoneGeometry
                     }
-                    if(rowCol==null){
-                        //Let's compute the number of row and col
-                        rowCol=true
-                        Envelope envGeom  = grid_zone.getEnvelopeInternal()
-                        x_size=(int) Math.max(Math.ceil(envGeom.getWidth()/grid_indicators_params.x_size),1)
-                        y_size=(int) Math.max(Math.ceil(envGeom.getHeight()/grid_indicators_params.y_size),1)
-                    }else{
-                        x_size = grid_indicators_params.x_size
-                        y_size = grid_indicators_params.y_size
-                    }
+
+                    x_size = grid_indicators_params.x_size
+                    y_size = grid_indicators_params.y_size
+                    angle = grid_indicators_params.angle
 
                     // Define the priorities and superposition for land fraction (for grid indicators)
                     def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getSurfacePriorities()
@@ -620,7 +611,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                     //We must compute the best number of row and col
                     String grid = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, grid_zone,
-                            x_size, y_size, srid, rowCol)
+                            x_size, y_size, srid, rowCol, angle)
                     String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                             grid_indicators_params.indicators,
                             land_superposition_grid, land_priorities_grid,
@@ -885,7 +876,8 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                     "x_size"    : 100,
                     "y_size"    : 100,
                     "output"    : "fgb",
-                    "rowCol"    : null, //Default to null
+                    "rowCol"    : false, //Default to false
+                    "angle"     : 0.0,
                     "indicators": ["LAND_TYPE_FRACTION",
                                     "BUILDING_HEIGHT",
                                     "STREET_WIDTH"]
@@ -896,6 +888,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
             def x_size = grid_indicators.x_size
             def y_size = grid_indicators.y_size
             def list_indicators = grid_indicators.indicators
+            def rowCol = grid_indicators.rowCol
             if (x_size && y_size) {
                 if (x_size <= 0 || y_size <= 0) {
                     throw new Exception("Invalid grid size padding. Must be greater that 0")
@@ -931,15 +924,16 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                                                         "STREET_WIDTH"])
                     }
 
-                    if(x_size != y_size){
-                        throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                    if(x_size != y_size && rowCol != true){
+                        throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions when rowCol is not true")
                     }
 
                     def grid_indicators_tmp = [
                             "x_size"    : x_size,
                             "y_size"    : y_size,
                             "output"    : "fgb",
-                            "rowCol"    : null, //Default to null
+                            "rowCol"    : false, //Default to false
+                            "angle"     : 0.0,
                             "indicators": allowedOutputIndicators
                     ]
                     def grid_output = grid_indicators.output
@@ -957,7 +951,15 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                     def grid_rowCol = Geoindicators.DataUtils.asBoolean(grid_indicators.rowCol)
                     if (grid_rowCol!=null) {
                         grid_indicators_tmp.rowCol = grid_rowCol
+                    } else {
+                        grid_indicators_tmp.rowCol = false
                     }
+
+                    def grid_angle = Geoindicators.DataUtils.asFloat(grid_indicators.angle)
+                    if (grid_angle!=null) {
+                        grid_indicators_tmp.angle = grid_angle
+                    }
+
                     def lcz_lod = Geoindicators.DataUtils.asInteger(grid_indicators.lcz_lod)
                     if (lcz_lod!=null) {
                         if (lcz_lod < 0 && lcz_lod > 10) {

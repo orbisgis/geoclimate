@@ -478,8 +478,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "parameters"  :
                         [
                                 "grid_indicators": [
-                                        "x_size"    : 1000,
-                                        "y_size"    : 1000,
+                                        "x_size"    : 3,
+                                        "y_size"    : 2,
+                                        "rowCol"    : true,
                                         "indicators": ["LAND_TYPE_FRACTION", "LCZ_PRIMARY"],
                                         "output"    : "asc"
                                 ]
@@ -1227,8 +1228,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          rsu_indicators   : ["indicatorUse": ["LCZ"]],
                          "grid_indicators": [
                                  "domain"    : "zone_extended", //Compute the grid on the extended zone
-                                 "x_size"    : 100,
-                                 "y_size"    : 100,
+                                 "x_size"    : 4,
+                                 "y_size"    : 3,
+                                 "rowCol"    : true,
                                  "indicators": ["LCZ_PRIMARY"]
                          ]
                         ]

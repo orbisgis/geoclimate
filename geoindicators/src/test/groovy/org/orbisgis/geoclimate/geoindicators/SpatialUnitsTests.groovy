@@ -233,6 +233,96 @@ class SpatialUnitsTests {
         assert 100 == countRows.numberOfRows
     }
 
+    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
+    @Test
+    void regularGridTestPOSTGISRowCol() {
+        postGIS.execute("DROP TABLE IF EXISTS grid")
+
+        def wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS, box, 7, 7, true)
+        assert outputTable
+        assert postGIS.hasTable(outputTable)
+        def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 49 == countRows.numberOfRows
+    }
+
+    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
+    @Test
+    void regularGridTestH2GISRowCol() {
+        h2GIS.execute("DROP TABLE IF EXISTS grid")
+
+        def wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 7, 7, true)
+        assert outputTable
+        assert h2GIS.hasTable(outputTable)
+        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 49 == countRows.numberOfRows
+    }
+
+    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
+    @Test
+    void regularGridTestPOSTGISAngle1() {
+        postGIS.execute("DROP TABLE IF EXISTS grid")
+
+        def wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS, box, 7, 7, true, '', 45)
+        assert outputTable
+        assert postGIS.hasTable(outputTable)
+        def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 49 == countRows.numberOfRows
+    }
+
+    @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")
+    @Test
+    void regularGridTestH2GISAngle1() {
+        h2GIS.execute("DROP TABLE IF EXISTS grid")
+
+        def wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 7, 7, true, '', 45)
+        assert outputTable
+        assert h2GIS.hasTable(outputTable)
+        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 49 == countRows.numberOfRows
+    }
+
+    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
+    @Test
+    void regularGridTestPOSTGISAngle2() {
+        postGIS.execute("DROP TABLE IF EXISTS grid")
+
+        def wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((0 0, 2 0, 2 2, 0 0 ))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS, box, 4, 4, false, '', -45)
+        assert outputTable
+        assert postGIS.hasTable(outputTable)
+        def countRows = postGIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        def geom = postGIS.firstRow("select the_geom from $outputTable")[0]
+        assertEquals(geom.toString(), "POLYGON ((0 0.0000000000000001, 2.8284271247461903 -2.82842712474619, 5.656854249492381 0.0000000000000003, 2.82842712474619 2.8284271247461903, 0 0.0000000000000001))")
+        assert 1 == countRows.numberOfRows
+    }
+
+    @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")
+    @Test
+    void regularGridTestH2GISAngle2() {
+        h2GIS.execute("DROP TABLE IF EXISTS grid")
+
+        def wktReader = new WKTReader()
+        def box = wktReader.read('POLYGON((0 0, 2 0, 2 2, 0 0 ))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 4, 4, false, '', -45)
+        assert outputTable
+        assert h2GIS.hasTable(outputTable)
+        def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
+        assert 1 == countRows.numberOfRows
+        def geom = h2GIS.firstRow("select the_geom from $outputTable")[0]
+        assertEquals(geom.toString(), "POLYGON ((0 0.0000000000000001, 2.8284271247461903 -2.82842712474619, 5.656854249492381 0.0000000000000003, 2.82842712474619 2.8284271247461903, 0 0.0000000000000001))")
+
+    }
+
+
     @Test
     void sprawlAreasTest1() {
         //Data for test
