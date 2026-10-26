@@ -23,7 +23,6 @@ import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.GeographyUtilities
-import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
@@ -123,6 +122,14 @@ import java.sql.SQLException
  * facade density (Bernard et al. 2018).
  * - prefixName A prefix used to name the output table (default ""). Could be useful in case the user wants to
  * investigate the sensibility of the chain to some input parameters
+ * - grid_indicators Optional map to compute indicators on a regular grid :
+ *      --> "x_size", "y_size" : size of the cells in meters, or number of columns and rows if rowCol is true
+ *      --> "rowCol" : true if x_size and y_size are the number of columns and rows (default false)
+ *      --> "angle" : rotation of the grid in degrees, counter-clockwise, around the centre of the grid domain (default 0).
+ *          A rotated grid can only be saved in the fgb format
+ *      --> "output" : "fgb" (default) or "asc". The asc format needs square and not rotated cells
+ *      --> "domain" : "zone" or "zone_extended", the area covered by the grid
+ *      --> "indicators" : list of grid indicators to compute
  * - mapOfWeights Values that will be used to increase or decrease the weight of an indicator (which are the key
  * of the map) for the LCZ classification step (default : all values to 1)
  * - hLevMin Minimum building level height
@@ -590,37 +597,32 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 if (grid_indicators_params) {
                     info("Start computing grid_indicators")
                     outputGrid = grid_indicators_params.output
-                    int x_size
-                    int y_size
-                    def rowCol = grid_indicators_params.rowCol
+                    int x_size = grid_indicators_params.x_size
+                    int y_size = grid_indicators_params.y_size
+                    boolean rowCol = grid_indicators_params.rowCol ?: false
+                    double angle = grid_indicators_params.angle ?: 0
                     def grid_zone
                     if(grid_indicators_params.domain=="zone_extended") { //Must the forced due to the zone parameter
                         grid_zone = h2gis_datasource.getExtent(utm_extended_bbox_table)
-                    }else if(grid_indicators_params.domain==null){
-                        if(domain=="zone"){
-                            grid_zone = h2gis_datasource.getExtent(utm_zone_table)
-                        }else if(domain=="zone_extended"){
-                            grid_zone = h2gis_datasource.getExtent(utm_extended_bbox_table)
-                        }
-                    }
-                    if(rowCol==null){
-                        //Let's compute the number of row and col
-                        rowCol=true
-                        Envelope envGeom  = grid_zone.getEnvelopeInternal()
-                        x_size=(int) Math.max(Math.ceil(envGeom.getWidth()/grid_indicators_params.x_size),1)
-                        y_size=(int) Math.max(Math.ceil(envGeom.getHeight()/grid_indicators_params.y_size),1)
+                    }else if(grid_indicators_params.domain==null && domain=="zone_extended"){
+                        grid_zone = h2gis_datasource.getExtent(utm_extended_bbox_table)
                     }else{
-                        x_size = grid_indicators_params.x_size
-                        y_size = grid_indicators_params.y_size
+                        grid_zone = h2gis_datasource.getExtent(utm_zone_table)
                     }
 
                     // Define the priorities and superposition for land fraction (for grid indicators)
                     def land_priorities_grid = Geoindicators.WorkflowGeoIndicators.getSurfacePriorities()
                     def land_superposition_grid = Geoindicators.WorkflowGeoIndicators.getSurfaceSuperpositions()
 
-                    //We must compute the best number of row and col
                     String grid = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, grid_zone,
-                            x_size, y_size, srid, rowCol)
+                            x_size, y_size, srid, rowCol, angle)
+                    //Real size of the cells in meters (x_size and y_size are numbers of columns and rows when rowCol is true)
+                    def cellSize = grid ? Geoindicators.WorkflowGeoIndicators.getGridCellSize(h2gis_datasource, grid) : null
+                    float cell_x_size = cellSize ? cellSize.x_size : x_size
+                    float cell_y_size = cellSize ? cellSize.y_size : y_size
+                    if (outputGrid == "asc" && Math.abs(cell_x_size - cell_y_size) > 1e-6 * Math.max(cell_x_size, cell_y_size)) {
+                        warn "The grid cells are not square (${cell_x_size} x ${cell_y_size} m). The ASCII grid output will use the y size as cell size"
+                    }
                     String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                             grid_indicators_params.indicators,
                             land_superposition_grid, land_priorities_grid,
@@ -635,7 +637,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         h2gis_datasource.dropTable(grid)
                         results.put("grid_indicators", rasterizedIndicators)
                         def sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource, rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
-                                Math.max(x_size, y_size).floatValue())
+                                Math.max(cell_x_size, cell_y_size))
                         if (sprawl_indic && sprawl_indic.urban_sprawl_areas) {
                             results.put("urban_sprawl_areas", sprawl_indic.urban_sprawl_areas)
                             if (sprawl_indic.urban_cool_areas) {
@@ -646,7 +648,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                         //We must transform the grid_indicators to produce the target land input
                         if(rsu_indicators_params.indicatorUse.contains("TARGET")){
                             results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators,
-                                    x_size, land_superposition_grid))
+                                    cell_x_size, land_superposition_grid))
                         }
                         info("End computing grid_indicators")
                     }
@@ -885,7 +887,8 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                     "x_size"    : 100,
                     "y_size"    : 100,
                     "output"    : "fgb",
-                    "rowCol"    : null, //Default to null
+                    "rowCol"    : false, //x_size and y_size are cell sizes in meters
+                    "angle"     : 0,
                     "indicators": ["LAND_TYPE_FRACTION",
                                     "BUILDING_HEIGHT",
                                     "STREET_WIDTH"]
@@ -931,15 +934,31 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                                                         "STREET_WIDTH"])
                     }
 
-                    if(x_size != y_size){
-                        throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                    def grid_rowCol = Geoindicators.DataUtils.asBoolean(grid_indicators.rowCol) ?: false
+                    def grid_angle = 0f
+                    if (grid_indicators.angle != null) {
+                        grid_angle = Geoindicators.DataUtils.asFloat(grid_indicators.angle)
+                        if (grid_angle == null || grid_angle.isNaN() || grid_angle.isInfinite()) {
+                            throw new Exception("The grid angle must be a number expressed in degrees")
+                        }
+                    }
+                    boolean rotated = Math.abs(Math.IEEEremainder(grid_angle, 360d)) > 0
+
+                    if (target_grid_indicators) {
+                        if (grid_rowCol) {
+                            throw new Exception("TARGET model needs a cell size in meters. Please set rowCol to false")
+                        }
+                        if (x_size != y_size) {
+                            throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                        }
                     }
 
                     def grid_indicators_tmp = [
                             "x_size"    : x_size,
                             "y_size"    : y_size,
                             "output"    : "fgb",
-                            "rowCol"    : null, //Default to null
+                            "rowCol"    : grid_rowCol,
+                            "angle"     : grid_angle,
                             "indicators": allowedOutputIndicators
                     ]
                     def grid_output = grid_indicators.output
@@ -948,19 +967,23 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                             grid_indicators_tmp.output = grid_output.toLowerCase()
                         }
                     }
+                    if (grid_indicators_tmp.output == "asc") {
+                        if (rotated) {
+                            throw new Exception("The ASCII grid format (asc) does not support rotated grids. Please use the fgb output or set the angle to 0")
+                        }
+                        if (!grid_rowCol && x_size != y_size) {
+                            throw new Exception("The ASCII grid format (asc) supports only square cells. Please set the same x and y resolutions or use the fgb output")
+                        }
+                    }
 
                     String domainP = grid_indicators.domain as String
                     if (domainP!=null && domainP.toLowerCase() in ["zone", "zone_extended"]) {
                         grid_indicators_tmp.domain = domainP.toLowerCase() //Grid is computed to the zone
                     }
 
-                    def grid_rowCol = Geoindicators.DataUtils.asBoolean(grid_indicators.rowCol)
-                    if (grid_rowCol!=null) {
-                        grid_indicators_tmp.rowCol = grid_rowCol
-                    }
                     def lcz_lod = Geoindicators.DataUtils.asInteger(grid_indicators.lcz_lod)
                     if (lcz_lod!=null) {
-                        if (lcz_lod < 0 && lcz_lod > 10) {
+                        if (lcz_lod < 0 || lcz_lod > 10) {
                             throw new Exception("The number of level of details to aggregate the LCZ must be between 0 and 10")
                         }
                         grid_indicators_tmp.put("lcz_lod", lcz_lod)

@@ -1212,6 +1212,39 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
+    void testGridAngleParameters() {
+        def params = OSM.WorkflowOSM.extractProcessingParameters(["grid_indicators": [
+                "x_size": 100, "y_size": 50, "angle": "30",
+                "indicators": ["LAND_TYPE_FRACTION"]]])
+        assertEquals(30f, params.grid_indicators.angle)
+        assertFalse(params.grid_indicators.rowCol)
+        assertEquals("fgb", params.grid_indicators.output)
+
+        params = OSM.WorkflowOSM.extractProcessingParameters(["grid_indicators": [
+                "x_size": 100, "y_size": 100, "angle": 360, "output": "asc",
+                "indicators": ["LAND_TYPE_FRACTION"]]])
+        assertEquals("asc", params.grid_indicators.output)
+
+        //A rotated grid cannot be saved in asc
+        assertThrows(Exception.class, () -> OSM.WorkflowOSM.extractProcessingParameters(["grid_indicators": [
+                "x_size": 100, "y_size": 100, "angle": 30, "output": "asc",
+                "indicators": ["LAND_TYPE_FRACTION"]]]))
+        //asc needs square cells
+        assertThrows(Exception.class, () -> OSM.WorkflowOSM.extractProcessingParameters(["grid_indicators": [
+                "x_size": 100, "y_size": 50, "output": "asc",
+                "indicators": ["LAND_TYPE_FRACTION"]]]))
+        //Invalid angle
+        assertThrows(Exception.class, () -> OSM.WorkflowOSM.extractProcessingParameters(["grid_indicators": [
+                "x_size": 100, "y_size": 100, "angle": "north",
+                "indicators": ["LAND_TYPE_FRACTION"]]]))
+        //TARGET needs a cell size in meters
+        assertThrows(Exception.class, () -> OSM.WorkflowOSM.extractProcessingParameters([
+                "rsu_indicators" : ["indicatorUse": ["TARGET"]],
+                "grid_indicators": ["x_size": 10, "y_size": 10, "rowCol": true,
+                                    "indicators": ["LAND_TYPE_FRACTION"]]]))
+    }
+
+    @Test
     void testClip(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testClip"
         def bbox = [43.726898, 7.298452, 43.727677, 7.299632]
@@ -1232,8 +1265,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                          rsu_indicators   : ["indicatorUse": ["LCZ"]],
                          "grid_indicators": [
                                  "domain"    : "zone_extended", //Compute the grid on the extended zone
-                                 "x_size"    : 100,
-                                 "y_size"    : 100,
+                                 "x_size"    : 4,
+                                 "y_size"    : 3,
+                                 "rowCol"    : true,
                                  "indicators": ["LCZ_PRIMARY"]
                          ]
                         ]

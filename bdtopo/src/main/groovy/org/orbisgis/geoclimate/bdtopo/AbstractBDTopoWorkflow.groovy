@@ -23,7 +23,6 @@ package org.orbisgis.geoclimate.bdtopo
 import org.h2gis.utilities.FileUtilities
 import org.h2gis.utilities.JDBCUtilities
 import org.h2gis.utilities.URIUtilities
-import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.api.dataset.ITable
@@ -530,7 +529,8 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         "x_size"    : 100,
                         "y_size"    : 100,
                         "output"    : "fgb",
-                        "rowCol"    : null, //Default to null
+                        "rowCol"    : false, //x_size and y_size are cell sizes in meters
+                        "angle"     : 0,
                         "indicators": ["LAND_TYPE_FRACTION",
                                        "BUILDING_HEIGHT_WEIGHTED",
                                        "STREET_WIDTH"]
@@ -576,14 +576,30 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                                             "BUILDING_HEIGHT",
                                                             "STREET_WIDTH"])
                         }
-                        if(x_size != y_size){
-                            throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                        def grid_rowCol = Geoindicators.DataUtils.asBoolean(grid_indicators.rowCol) ?: false
+                        def grid_angle = 0f
+                        if (grid_indicators.angle != null) {
+                            grid_angle = Geoindicators.DataUtils.asFloat(grid_indicators.angle)
+                            if (grid_angle == null || grid_angle.isNaN() || grid_angle.isInfinite()) {
+                                throw new Exception("The grid angle must be a number expressed in degrees")
+                            }
+                        }
+                        boolean rotated = Math.abs(Math.IEEEremainder(grid_angle, 360d)) > 0
+
+                        if (target_grid_indicators) {
+                            if (grid_rowCol) {
+                                throw new Exception("TARGET model needs a cell size in meters. Please set rowCol to false")
+                            }
+                            if (x_size != y_size) {
+                                throw new Exception("TARGET model supports only regular grid. Please set the same x and y resolutions")
+                            }
                         }
                         def grid_indicators_tmp = [
                                 "x_size"    : x_size,
                                 "y_size"    : y_size,
                                 "output"    : "fgb",
-                                "rowCol"    : null, //Default to null
+                                "rowCol"    : grid_rowCol,
+                                "angle"     : grid_angle,
                                 "indicators": allowedOutputIndicators
                         ]
                         def grid_output = grid_indicators.output
@@ -592,18 +608,22 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                                 grid_indicators_tmp.output = grid_output.toLowerCase()
                             }
                         }
+                        if (grid_indicators_tmp.output == "asc") {
+                            if (rotated) {
+                                throw new Exception("The ASCII grid format (asc) does not support rotated grids. Please use the fgb output or set the angle to 0")
+                            }
+                            if (!grid_rowCol && x_size != y_size) {
+                                throw new Exception("The ASCII grid format (asc) supports only square cells. Please set the same x and y resolutions or use the fgb output")
+                            }
+                        }
                         String domainP = grid_indicators.domain as String
                         if (domainP!=null && domainP.toLowerCase() in ["zone", "zone_extended"]) {
                             grid_indicators_tmp.domain = domainP.toLowerCase() //Grid is computed to the zone
                         }
 
-                        def grid_rowCol = grid_indicators.rowCol
-                        if (grid_rowCol && grid_rowCol in Boolean) {
-                            grid_indicators_tmp.rowCol = grid_rowCol
-                        }
                         def lcz_lod = grid_indicators.lcz_lod
                         if (lcz_lod && lcz_lod in Integer) {
-                            if (lcz_lod < 0 && lcz_lod > 10) {
+                            if (lcz_lod < 0 || lcz_lod > 10) {
                                 error "The number of level of details to aggregate the LCZ must be between 0 and 10"
                                 return
                             }
@@ -854,33 +874,27 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         //Compute the grid indicators
         if (grid_indicators_params) {
             info("Start computing grid_indicators")
-            int x_size
-            int y_size
-            def rowCol = grid_indicators_params.rowCol
+            int x_size = grid_indicators_params.x_size
+            int y_size = grid_indicators_params.y_size
+            boolean rowCol = grid_indicators_params.rowCol ?: false
+            double angle = grid_indicators_params.angle ?: 0
             def grid_zone
             if (grid_indicators_params.domain == "zone_extended") { //Must the forced due to the zone parameter
                 grid_zone = h2gis_datasource.getExtent(results.zone_extended)
-            } else if (grid_indicators_params.domain == null) {
-                if (processing_parameters.domain == "zone") {
-                    grid_zone = h2gis_datasource.getExtent(results.zone)
-                } else if (processing_parameters.domain == "zone_extended") {
-                    grid_zone = h2gis_datasource.getExtent(results.zone_extended)
-                }
+            } else if (grid_indicators_params.domain == null && processing_parameters.domain == "zone_extended") {
+                grid_zone = h2gis_datasource.getExtent(results.zone_extended)
             } else {
                 grid_zone = h2gis_datasource.getExtent(results.zone)
             }
-            if (rowCol == null) {
-                //Let's compute the number of row and col
-                rowCol = true
-                Envelope envGeom = grid_zone.getEnvelopeInternal()
-                x_size = (int) Math.max(Math.round(envGeom.getWidth() / grid_indicators_params.x_size), 1)
-                y_size = (int) Math.max(Math.round(envGeom.getHeight() / grid_indicators_params.y_size), 1)
-            } else {
-                x_size = grid_indicators_params.x_size
-                y_size = grid_indicators_params.y_size
-            }
             String gridTableName = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, grid_zone,
-                    x_size, y_size, srid, rowCol)
+                    x_size, y_size, srid, rowCol, angle)
+            //Real size of the cells in meters (x_size and y_size are numbers of columns and rows when rowCol is true)
+            def cellSize = gridTableName ? Geoindicators.WorkflowGeoIndicators.getGridCellSize(h2gis_datasource, gridTableName) : null
+            float cell_x_size = cellSize ? cellSize.x_size : x_size
+            float cell_y_size = cellSize ? cellSize.y_size : y_size
+            if (grid_indicators_params.output == "asc" && Math.abs(cell_x_size - cell_y_size) > 1e-6 * Math.max(cell_x_size, cell_y_size)) {
+                warn "The grid cells are not square (${cell_x_size} x ${cell_y_size} m). The ASCII grid output will use the y size as cell size"
+            }
             if (gridTableName) {
                 String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, gridTableName,
                         grid_indicators_params.indicators,
@@ -893,7 +907,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     h2gis_datasource.dropTable(gridTableName)
                     results.put("grid_indicators", rasterizedIndicators)
                     Map sprawl_indic = Geoindicators.WorkflowGeoIndicators.sprawlIndicators(h2gis_datasource, rasterizedIndicators, "id_grid", grid_indicators_params.indicators,
-                            Math.max(x_size, y_size).floatValue())
+                            Math.max(cell_x_size, cell_y_size))
                     if (sprawl_indic && sprawl_indic.urban_sprawl_areas) {
                         results.put("urban_sprawl_areas", sprawl_indic.urban_sprawl_areas)
                         if (sprawl_indic.urban_cool_areas) {
@@ -904,7 +918,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     //We must transform the grid_indicators to produce the target land input
                     if (processing_parameters.rsu_indicators.indicatorUse.contains("TARGET")) {
                         results.put("grid_target", Geoindicators.GridIndicators.formatGrid4Target(h2gis_datasource, rasterizedIndicators,
-                                x_size, land_superposition_grid))
+                                cell_x_size, land_superposition_grid))
                     }
                     info("End computing grid_indicators")
                 }
