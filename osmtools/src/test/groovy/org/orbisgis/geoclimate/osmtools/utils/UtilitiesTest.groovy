@@ -64,6 +64,12 @@ class UtilitiesTest extends AbstractOSMToolsTest {
         h2gis = H2GIS.open(folder.getAbsolutePath() + File.separator + "UtilitiesTest;AUTO_SERVER=TRUE;")
     }
 
+    @AfterAll
+    static void afterAll() {
+        //Close the database before JUnit deletes the temporary folder
+        h2gis.close()
+    }
+
 
     @BeforeEach
     final void beforeEach(TestInfo testInfo) {
@@ -573,7 +579,9 @@ class UtilitiesTest extends AbstractOSMToolsTest {
     @Test
     void getServerStatusTest() {
         def status = OSMTools.Utilities.getServerStatus()
-        assertNotNull status
+        //This test uses the public Overpass server : skip it when the server refuses the request (e.g. 429 on CI)
+        Assumptions.assumeTrue(status != null, "The Overpass server is not available")
+        assertTrue status.contains("Rate limit")
     }
 
 

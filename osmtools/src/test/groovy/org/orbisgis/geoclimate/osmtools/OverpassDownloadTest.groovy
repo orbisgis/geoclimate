@@ -106,6 +106,13 @@ class OverpassDownloadTest {
     }
 
     @Test
+    void serverStatus() {
+        def status = OSMTools.Utilities.getServerStatus()
+        assertNotNull status
+        assertTrue status.contains("slots available now")
+    }
+
+    @Test
     void noRetryOnBadRequest() {
         answers = [{ send(it, 400, "<p><strong style=\"color:#FF0000\">Error</strong>: line 1: parse error</p>") }]
         def file = new File(folder, "data.osm.gz")
