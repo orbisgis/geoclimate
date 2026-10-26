@@ -791,6 +791,9 @@ def getServerStatus(String endPoint) {
     }
 }
 
+/** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
+static @Field utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
+
 /**
  * Method to execute an Overpass query and save the result in a file.
  *
@@ -874,6 +877,7 @@ private Map downloadOverpassData(String endPoint, String query, File outputOSMFi
         connection.setReadTimeout(timeout)
         debug "Executing query on ${endPoint}... $query"
         connection.outputStream.withStream { it.write(("data=" + URLEncoder.encode(query, UTF_8.name())).getBytes(UTF_8)) }
+
         int code = connection.responseCode
         if (code != RESPONSECODE_OK) {
             String message = "${code} ${connection.responseMessage ?: ""}. ${readOverpassError(connection)}".trim()
