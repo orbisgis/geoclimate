@@ -233,6 +233,82 @@ class SpatialUnitsTests {
         assert 100 == countRows.numberOfRows
     }
 
+    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
+    @Test
+    void regularGridTestPOSTGISRowColAngle() {
+        def box = new WKTReader().read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS, box, 7, 7, true, '', 45)
+        assert outputTable
+        assert 49 == postGIS.firstRow("select count(*) as nb from $outputTable".toString()).nb
+    }
+
+    @EnabledIfSystemProperty(named = "test.postgis", matches = "true")
+    @Test
+    void regularGridTestPOSTGISAngle() {
+        def box = new WKTReader().read('POLYGON((0 0, 2 0, 2 2, 0 0))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS, box, 4, 4, false, '', -45)
+        assert outputTable
+        assert 1 == postGIS.firstRow("select count(*) as nb from $outputTable".toString()).nb
+        Geometry cell = postGIS.firstRow("select the_geom from $outputTable".toString()).the_geom
+        Geometry expected = new WKTReader().read('POLYGON ((0 0, 2.8284271247461903 -2.82842712474619, 5.656854249492381 0, 2.82842712474619 2.8284271247461903, 0 0))')
+        assertEquals(0, cell.symDifference(expected).getArea(), 1e-9)
+    }
+
+    @Test
+    void regularGridTestH2GISRowColAngle() {
+        def box = new WKTReader().read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 7, 7, true, '', 45)
+        assert outputTable
+        def stats = h2GIS.firstRow("""select count(*) as nb, sum(st_area(the_geom)) as area,
+                    max(id_col) as ncol, max(id_row) as nrow from $outputTable""".toString())
+        assert 49 == stats.nb
+        assert 7 == stats.ncol
+        assert 7 == stats.nrow
+        //The square rotated by 45 degrees is covered by a grid of side 10*sqrt(2)
+        assertEquals(200d, stats.area as double, 1e-6)
+        //Each cell edge must be oriented at 45 degrees
+        Geometry cell = h2GIS.firstRow("select the_geom from $outputTable limit 1".toString()).the_geom
+        def c = cell.getCoordinates()
+        double edgeAngle = Math.toDegrees(Math.atan2(c[1].y - c[0].y, c[1].x - c[0].x))
+        assertEquals(45d, ((edgeAngle % 90) + 90) % 90, 1e-6)
+    }
+
+    @Test
+    void regularGridTestH2GISAngle() {
+        def box = new WKTReader().read('POLYGON((0 0, 2 0, 2 2, 0 0))')
+        def outputTable = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 4, 4, false, '', -45)
+        assert outputTable
+        assert 1 == h2GIS.firstRow("select count(*) as nb from $outputTable".toString()).nb
+        Geometry cell = h2GIS.firstRow("select the_geom from $outputTable".toString()).the_geom
+        Geometry expected = new WKTReader().read('POLYGON ((0 0, 2.8284271247461903 -2.82842712474619, 5.656854249492381 0, 2.82842712474619 2.8284271247461903, 0 0))')
+        assertEquals(0, cell.symDifference(expected).getArea(), 1e-9)
+    }
+
+    @Test
+    void regularGridTestH2GISFullTurn() {
+        def box = new WKTReader().read('POLYGON((0 0, 10 0, 10 5, 0 5, 0 0))')
+        def grid0 = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 2, 2, false, 'a0')
+        def grid360 = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 2, 2, false, 'a360', 360)
+        assert 0 == h2GIS.firstRow("""select count(*) as nb from $grid0 a, $grid360 b
+                where a.id_grid = b.id_grid and not st_equals(a.the_geom, b.the_geom)""".toString()).nb
+        assert h2GIS.getRowCount(grid0) == h2GIS.getRowCount(grid360)
+    }
+
+    @Test
+    void regularGridTestInvalidAngle() {
+        def box = new WKTReader().read('POLYGON((0 0, 10 0, 10 5, 0 5, 0 0))')
+        assertThrows(IllegalArgumentException.class, () ->
+                Geoindicators.SpatialUnits.createGrid(h2GIS, box, 2, 2, false, '', Double.NaN))
+    }
+
+    @Test
+    void createGridRotated4326() {
+        def box = new WKTReader().read('POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))')
+        box.setSRID(4326)
+        assertThrows(IllegalArgumentException.class, () ->
+                Geoindicators.WorkflowGeoIndicators.createGrid(h2GIS, box, 100, 100, 2154, false, 30))
+    }
+
     @Test
     void sprawlAreasTest1() {
         //Data for test
