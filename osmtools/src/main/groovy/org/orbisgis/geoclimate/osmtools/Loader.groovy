@@ -235,29 +235,16 @@ String extract(String overpassQuery) throws Exception {
     def queryHash = bboxUrl.digest('SHA-256')
     def outputOSMFile = new File(System.getProperty("java.io.tmpdir") + File.separator + "${queryHash}.osm.gz")
     def osmFilePath = outputOSMFile.absolutePath
-    if (outputOSMFile.exists()) {
-        if (outputOSMFile.length() == 0) {
-            outputOSMFile.delete()
-            if (outputOSMFile.createNewFile()) {
-                if (OSMTools.Utilities.executeOverPassQuery(overpassQuery, outputOSMFile)) {
-                    info "The OSM file has been downloaded at ${osmFilePath}."
-                } else {
-                    outputOSMFile.delete()
-                    throw new Exception("Cannot extract the OSM data for the query $overpassQuery")
-                }
-            }
-        } else {
-            debug "\nThe cached OSM file ${osmFilePath} will be re-used for the query :  \n$overpassQuery."
-        }
+    if (outputOSMFile.exists() && outputOSMFile.length() > 0) {
+        debug "\nThe cached OSM file ${osmFilePath} will be re-used for the query :  \n$overpassQuery."
+        return osmFilePath
+    }
+    //The file is written only when the download is complete, so a cached file is always valid
+    if (OSMTools.Utilities.executeOverPassQuery(overpassQuery, outputOSMFile)) {
+        info "The OSM file has been downloaded at ${osmFilePath}."
     } else {
-        if (outputOSMFile.createNewFile()) {
-            if (OSMTools.Utilities.executeOverPassQuery(overpassQuery, outputOSMFile)) {
-                info "The OSM file has been downloaded at ${osmFilePath}."
-            } else {
-                outputOSMFile.delete()
-                throw new Exception("Cannot extract the OSM data for the query $overpassQuery")
-            }
-        }
+        outputOSMFile.delete()
+        throw new Exception("Cannot extract the OSM data for the query $overpassQuery")
     }
     return osmFilePath
 }

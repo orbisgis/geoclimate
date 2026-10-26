@@ -28,9 +28,14 @@ import org.locationtech.jts.geom.*
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.osmtools.OSMTools
 
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.TimeUnit
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 
 import static java.nio.charset.StandardCharsets.UTF_8
 
@@ -711,46 +716,96 @@ static @Field int OVERPASS_TIMEOUT = 180 * 1000
 
 static @Field int RESPONSECODE_OK = 200
 
+/** Default number of attempts on each Overpass endpoint (system property OVERPASS_MAX_ATTEMPTS) */
+static @Field int OVERPASS_MAX_ATTEMPTS = 4
+/** Delay before the first retry in ms, doubled at each new attempt */
+static @Field long OVERPASS_RETRY_DELAY = 10 * 1000
+/** Upper bound of the delay between two attempts in ms */
+static @Field long OVERPASS_MAX_RETRY_DELAY = 120 * 1000
+
+/**
+ * Return the list of the Overpass endpoints to use, the main one first.
+ * The main endpoint is read from the system property OVERPASS_ENDPOINT
+ * (the legacy misspelled name OVERPASS_ENPOINT is still accepted).
+ * Fallback endpoints can be set with the system property OVERPASS_FALLBACK_ENDPOINTS,
+ * as a comma separated list (e.g. https://overpass.kumi.systems/api).
+ *
+ * @return a list of endpoint urls, without trailing slash
+ */
+List<String> getOverpassEndpoints() {
+    def endpoints = []
+    def mainEndPoint = System.getProperty("OVERPASS_ENDPOINT") ?: System.getProperty("OVERPASS_ENPOINT")
+    endpoints << (mainEndPoint ?: OVERPASS_ENDPOINT).toString()
+    def fallbacks = System.getProperty("OVERPASS_FALLBACK_ENDPOINTS")
+    if (fallbacks) {
+        fallbacks.split(",").each {
+            def endPoint = it.trim()
+            if (endPoint) {
+                endpoints << endPoint
+            }
+        }
+    }
+    return endpoints.collect { it.endsWith("/") ? it.substring(0, it.length() - 1) : it }.unique()
+}
+
+/**
+ * Open an http connection, using the http proxy set with the system properties if any.
+ */
+private HttpURLConnection openHttpConnection(URL url) {
+    final String proxyHost = System.getProperty("http.proxyHost")
+    final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"))
+    if (proxyHost != null) {
+        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort))
+        return url.openConnection(proxy) as HttpURLConnection
+    }
+    return url.openConnection() as HttpURLConnection
+}
+
 /**
  * Return the status of the Overpass server.
  * @return A string representation of the overpass status.
  */
 def getServerStatus() {
-    final String proxyHost = System.getProperty("http.proxyHost");
-    final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
-    def connection
-    def endPoint = System.getProperty("OVERPASS_ENDPOINT");
-    if (endPoint) {
-        OVERPASS_STATUS_URL = "${endPoint}/status"
-    }
-    if (proxyHost != null) {
-        def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
-        connection = new URL(OVERPASS_STATUS_URL).openConnection(proxy) as HttpURLConnection
-    } else {
-        connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
-    }
-    connection.setConnectTimeout(OVERPASS_TIMEOUT)
-    connection.setReadTimeout(OVERPASS_TIMEOUT)
+    return getServerStatus(getOverpassEndpoints().first())
+}
 
-    connection.requestMethod = GET
-
-    if (connection.responseCode != RESPONSECODE_OK) {
-        error "Cannot get the status of the server.\n Server answer with code ${connection.responseCode} : " +
-                "${connection.inputStream.text}"
+/**
+ * Return the status of an Overpass server.
+ * @param endPoint the Overpass endpoint (e.g. https://overpass-api.de/api)
+ * @return A string representation of the overpass status.
+ */
+def getServerStatus(String endPoint) {
+    HttpURLConnection connection = openHttpConnection(new URL("${endPoint}/status"))
+    try {
+        connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
+        connection.setConnectTimeout(OVERPASS_TIMEOUT)
+        connection.setReadTimeout(OVERPASS_TIMEOUT)
+        connection.requestMethod = GET
+        if (connection.responseCode != RESPONSECODE_OK) {
+            error "Cannot get the status of the server ${endPoint}.\n Server answer with code ${connection.responseCode}"
+            return null
+        }
+        return connection.inputStream.getText(UTF_8.name())
+    } finally {
+        connection.disconnect()
     }
-    String status = connection.inputStream.text
-    connection.disconnect()
-    return status
 }
 
 /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
 static @Field utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
 
 /**
- * Method to execute an Overpass query and save the result in a file
+ * Method to execute an Overpass query and save the result in a file.
+ *
+ * The query is sent to the main endpoint and then to the fallback endpoints if any
+ * (see {@link #getOverpassEndpoints()}).
+ * Transient errors (429, 502, 503, 504, network errors, truncated or incomplete answers)
+ * are retried with an increasing delay. The data is first written in a temporary file
+ * which is moved to the output file only when the download is complete and valid,
+ * so a broken download can never be reused as a cached file.
  *
  * @param query the Overpass query
- * @param outputOSMFile the output file
+ * @param outputOSMFile the output file. If its name ends with .gz the file is gzipped.
  *
  * @return True if the query has been successfully executed, false otherwise.
  *
@@ -766,57 +821,224 @@ boolean executeOverPassQuery(String query, File outputOSMFile) {
         error "The output file should not be null or empty."
         return false
     }
-    def endPoint = System.getProperty("OVERPASS_ENDPOINT");
-    if (endPoint) {
-        OVERPASS_BASE_URL = "${endPoint}/interpreter?data="
-    }
-    def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
-    final String proxyHost = System.getProperty("http.proxyHost");
-    final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
-    HttpURLConnection connection
-    try {
-        if (proxyHost != null) {
-            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
-            connection = queryUrl.openConnection(proxy) as HttpURLConnection
-        } else {
-            connection = queryUrl.openConnection() as HttpURLConnection
+    int maxAttempts = Math.max(1, Integer.getInteger("OVERPASS_MAX_ATTEMPTS", OVERPASS_MAX_ATTEMPTS))
+    def endpoints = getOverpassEndpoints()
+    String lastMessage = ""
+    for (String endPoint : endpoints) {
+        long delay = OVERPASS_RETRY_DELAY
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            Map result = downloadOverpassData(endPoint, query, outputOSMFile)
+            if (result.ok) {
+                return true
+            }
+            lastMessage = result.message
+            if (!result.retry) {
+                //The query itself is wrong, another try or another server will not help
+                error "Cannot execute the overpass query on ${endPoint}. Cause : ${lastMessage}"
+                return false
+            }
+            if (attempt < maxAttempts) {
+                long wait = Math.min(Math.max(delay, result.waitMs as long), OVERPASS_MAX_RETRY_DELAY)
+                warn "Overpass query failed on ${endPoint} (attempt ${attempt}/${maxAttempts}) : ${lastMessage}\n" +
+                        "Next attempt in ${(long) (wait / 1000)} s."
+                Thread.sleep(wait)
+                delay = Math.min(delay * 2, OVERPASS_MAX_RETRY_DELAY)
+            } else {
+                warn "Overpass query failed on ${endPoint} after ${maxAttempts} attempts : ${lastMessage}"
+            }
         }
-        debug queryUrl
-        connection.requestMethod = GET
-        connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
+    }
+    error "Cannot execute the overpass query on ${endpoints.join(", ")}. Cause : ${lastMessage}"
+    return false
+}
 
-        if (outputOSMFile.absolutePath.endsWith(".osm.gz")) {
+/**
+ * Execute once an Overpass query on one endpoint.
+ *
+ * @return a map with the keys ok (boolean), retry (boolean, true if the error is transient),
+ * waitMs (minimum delay in ms advised by the server before retrying) and message
+ */
+private Map downloadOverpassData(String endPoint, String query, File outputOSMFile) {
+    HttpURLConnection connection = null
+    File tmpFile = null
+    try {
+        connection = openHttpConnection(new URL("${endPoint}/interpreter"))
+        //POST avoids the url length limit for big queries (e.g. complex polygons)
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.setRequestProperty("User-Agent", "GEOCLIMATE/${version()}")
+        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+        boolean gzipOutput = outputOSMFile.name.toLowerCase().endsWith(".gz")
+        if (gzipOutput) {
             connection.setRequestProperty("Accept-Encoding", "gzip")
         }
-
-        Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query);
-        int timeout = OVERPASS_TIMEOUT
-        if (timeoutMatcher.find()) {
-            timeout = (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)));
-        } else {
-            timeout = (int) TimeUnit.MINUTES.toMillis(3);
-        }
-
+        int timeout = getOverpassQueryTimeout(query)
         connection.setConnectTimeout(timeout)
         connection.setReadTimeout(timeout)
-        debug "Executing query... $query"
-        connection.connect()
-        try {
-            handleResponseCode(connection)
-        } catch (IOException e) {
-            error("Cannot execute the overpass query. Cause : ${e.getMessage()}")
-            return false
+        debug "Executing query on ${endPoint}... $query"
+        connection.outputStream.withStream { it.write(("data=" + URLEncoder.encode(query, UTF_8.name())).getBytes(UTF_8)) }
+
+        int code = connection.responseCode
+        if (code != RESPONSECODE_OK) {
+            String message = "${code} ${connection.responseMessage ?: ""}. ${readOverpassError(connection)}".trim()
+            switch (code) {
+                case 429:
+                    long wait = Math.max(getRetryAfter(connection), getOverpassWaitTime(endPoint))
+                    return [ok: false, retry: true, waitMs: wait,
+                            message: "Too Many Requests, too many queries sent from the same IP. ${message}"]
+                case 502:
+                case 503:
+                case 504:
+                    return [ok: false, retry: true, waitMs: getRetryAfter(connection),
+                            message: "The server is overloaded. ${message}"]
+                case 400:
+                    return [ok: false, retry: false, waitMs: 0L, message: "Bad Request, the query has a syntax error. ${message}"]
+                default:
+                    return [ok: false, retry: code >= 500, waitMs: 0L, message: message]
+            }
         }
-        info "Downloading the OSM data from overpass api in ${outputOSMFile}"
-        //Save the result in a file
-        outputOSMFile << connection.inputStream
+
+        info "Downloading the OSM data from ${endPoint} in ${outputOSMFile}"
+        File parent = outputOSMFile.absoluteFile.parentFile
+        if (parent && !parent.exists()) {
+            parent.mkdirs()
+        }
+        tmpFile = File.createTempFile("${outputOSMFile.name}_", ".part", parent)
+        boolean serverGzip = "gzip".equalsIgnoreCase(connection.contentEncoding)
+        InputStream input = connection.inputStream
+        try {
+            tmpFile.withOutputStream { OutputStream output ->
+                if (gzipOutput && !serverGzip) {
+                    def gzip = new GZIPOutputStream(output)
+                    gzip << input
+                    gzip.finish()
+                } else if (!gzipOutput && serverGzip) {
+                    output << new GZIPInputStream(input)
+                } else {
+                    output << input
+                }
+            }
+        } finally {
+            input.close()
+        }
+
+        String problem = checkOverpassFile(tmpFile, gzipOutput)
+        if (problem) {
+            return [ok: false, retry: true, waitMs: 0L, message: problem]
+        }
+        try {
+            Files.move(tmpFile.toPath(), outputOSMFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(tmpFile.toPath(), outputOSMFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+        return [ok: true]
+    } catch (IOException e) {
+        //Timeout, connection reset, truncated gzip stream...
+        return [ok: false, retry: true, waitMs: 0L, message: "${e.class.simpleName} : ${e.message}"]
     } catch (Exception e) {
-        error("Cannot execute the overpass query. Cause : ${e.getMessage()}")
+        return [ok: false, retry: false, waitMs: 0L, message: "${e.class.simpleName} : ${e.message}"]
+    } finally {
+        if (connection != null) {
+            connection.disconnect()
+        }
+        if (tmpFile != null && tmpFile.exists()) {
+            tmpFile.delete()
+        }
     }
-    finally {
-        if (connection != null) connection.disconnect();
+}
+
+/**
+ * Check that a downloaded Overpass file is complete.
+ * Overpass can answer 200 with a partial result and a runtime error remark
+ * (query timeout, out of memory). Reading the whole file also checks the gzip integrity.
+ *
+ * @return null if the file is valid, otherwise a description of the problem
+ */
+private String checkOverpassFile(File file, boolean gzip) {
+    if (!file.exists() || file.length() == 0) {
+        return "The server returned an empty answer"
     }
-    return true
+    InputStream input = new FileInputStream(file)
+    if (gzip) {
+        input = new GZIPInputStream(input)
+    }
+    String problem = null
+    new InputStreamReader(input, UTF_8).withReader { reader ->
+        String line
+        while ((line = reader.readLine()) != null) {
+            if (line.contains("runtime error")) {
+                problem = "The server returned an incomplete answer : ${line.replaceAll("<[^>]*>", "").trim()}"
+                break
+            }
+        }
+    }
+    return problem
+}
+
+/**
+ * Read the error message sent by the Overpass server, without the html tags.
+ */
+private String readOverpassError(HttpURLConnection connection) {
+    try {
+        def errorStream = connection.errorStream
+        if (errorStream == null) {
+            return ""
+        }
+        if ("gzip".equalsIgnoreCase(connection.contentEncoding)) {
+            errorStream = new GZIPInputStream(errorStream)
+        }
+        String text = errorStream.getText(UTF_8.name())
+        def matcher = text =~ /(?s)<strong[^>]*>Error<\/strong>:(.*?)<\/p>/
+        if (matcher.find()) {
+            text = matcher.group(1)
+        }
+        text = text.replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ").trim()
+        return text.length() > 500 ? text.substring(0, 500) + "..." : text
+    } catch (Exception ignored) {
+        return ""
+    }
+}
+
+/**
+ * Return the delay in ms given by the Retry-After http header, 0 if not set.
+ */
+private long getRetryAfter(HttpURLConnection connection) {
+    def retryAfter = connection.getHeaderField("Retry-After")
+    if (retryAfter && retryAfter.trim().isLong()) {
+        return TimeUnit.SECONDS.toMillis(retryAfter.trim() as long)
+    }
+    return 0L
+}
+
+/**
+ * Read the Overpass status page to know when a query slot will be available.
+ *
+ * @return the delay in ms before a slot is available, 0 if unknown or available now
+ */
+private long getOverpassWaitTime(String endPoint) {
+    try {
+        String status = getServerStatus(endPoint)
+        if (!status || status =~ /[1-9]\d* slots? available now/) {
+            return 0L
+        }
+        def waits = (status =~ /in (\d+) seconds/).collect { it[1] as long }
+        return waits ? TimeUnit.SECONDS.toMillis(waits.min() + 1) : 0L
+    } catch (Exception ignored) {
+        return 0L
+    }
+}
+
+/**
+ * Return the http timeout in ms to use for a query : the [timeout:...] value of the query if any,
+ * 3 minutes otherwise.
+ */
+private int getOverpassQueryTimeout(String query) {
+    Matcher timeoutMatcher = Pattern.compile("\\[timeout:(\\d+)\\]").matcher(query)
+    if (timeoutMatcher.find()) {
+        //Let the server some time to send its answer after the query timeout
+        return (int) TimeUnit.SECONDS.toMillis(Integer.parseInt(timeoutMatcher.group(1)) + 30)
+    }
+    return (int) TimeUnit.MINUTES.toMillis(3)
 }
 
 
@@ -846,26 +1068,3 @@ def isNominatimReady() {
     connection.disconnect()
     return ok
 }
-
-/**
- * Return a description of the response in case of error
- * @param connection
- * @throws IOException
- */
-private void handleResponseCode(HttpURLConnection connection) throws IOException {
-    int httpResponseCode = connection.getResponseCode()
-    if(httpResponseCode==504) {
-        throw new IOException("""504 Gateway Timeout is sent if the server has already so much load that the request cannot be executed.\n
-        In most cases, it is best to try again later. Please note that the server decides this based on the timeout and maxsize \n
-        parameters of the request, so smaller values for them may also make the request acceptable.""")
-    }else if(httpResponseCode==400){
-        throw new IOException("400 Bad Request.The request has a syntax error")
-    }else if(httpResponseCode==429){
-        throw new IOException("429 Too Many Requests. You send too many queries from the same IP.")
-    }
-    else if (httpResponseCode < 200 || httpResponseCode > 299) {
-        throw new IOException(connection.getResponseMessage())
-    }
-}
-
-
