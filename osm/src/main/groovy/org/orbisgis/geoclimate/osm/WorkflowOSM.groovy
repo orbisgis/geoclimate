@@ -249,7 +249,7 @@ Map workflow(def input) throws Exception {
     if (!overpass_enpoint) {
         overpass_enpoint = "https://overpass-api.de/api"
     }
-    System.setProperty("OVERPASS_ENPOINT", overpass_enpoint)
+    System.setProperty("OVERPASS_ENDPOINT", overpass_enpoint)
 
     def deleteOSMFile = inputParameters.get("delete")
     if (!deleteOSMFile) {

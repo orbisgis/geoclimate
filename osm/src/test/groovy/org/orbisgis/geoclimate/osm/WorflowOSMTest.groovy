@@ -65,6 +65,11 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def overpass_estimate_building_height_query_sha = "d1f30167dd93c1e0343efe32d99da1f169d07dddcd46bb45a85d8444470fe463"
         def copy_overpass_estimate_building_height = new File(System.getProperty("java.io.tmpdir") + File.separator + overpass_estimate_building_height_query_sha + ".osm.gz")
         FileUtils.copyFile(overpass_estimate_building_height, copy_overpass_estimate_building_height)
+
+        def overpass_file_clip = new File(WorflowOSMTest.class.getResource("overpass_clip.osm.gz").toURI())
+        def clip_query_sha = "a57cccb61f193afd2e6f998ec5b2d83dac318b6a26bce7b815b3d78cf899690f"
+        def copy_clip = new File(System.getProperty("java.io.tmpdir") + File.separator + clip_query_sha + ".osm.gz")
+        FileUtils.copyFile(overpass_file_clip, copy_clip)
     }
 
     @Test
