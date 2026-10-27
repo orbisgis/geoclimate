@@ -192,14 +192,11 @@ class SpatialUnitsTests {
         h2GIS.load(SpatialUnitsTests.getResource("veget_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("hydro_test.geojson"), true)
         h2GIS.load(SpatialUnitsTests.getResource("zone_test.geojson"), true)
-
         def outputTableGeoms = Geoindicators.SpatialUnits.prepareTSUData(h2GIS,
                 'zone_test', 'road_test', 'rail_test', 'veget_test',
                 'hydro_test', "", "", 10000, 2500, 10000, "block")
 
-
         assertNotNull(outputTableGeoms)
-
         assert h2GIS.hasTable(outputTableGeoms)
         def outputTable = Geoindicators.SpatialUnits.createTSU(h2GIS, outputTableGeoms, "", "tsu")
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $outputTable"
@@ -207,14 +204,13 @@ class SpatialUnitsTests {
         assert 237 == countRows.numberOfRows
     }
 
-    @EnabledIfSystemProperty(named = "test.h2gis", matches = "false")
     @Test
     void regularGridTestH2GIS() {
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-180 -80, 180 -80, 180 80, -180 80, -180 -80))')
         def gridP = Geoindicators.SpatialUnits.createGrid(h2GIS, box, 1, 1)
         assertNotNull(gridP)
-        assert h2GIS."$gridP"
+        assert h2GIS.hasTable(gridP)
         def countRows = h2GIS.firstRow "select count(*) as numberOfRows from $gridP".toString()
         assert 57600 == countRows.numberOfRows
     }
@@ -223,7 +219,6 @@ class SpatialUnitsTests {
     @Test
     void regularGridTestPOSTGIS() {
         postGIS.execute("DROP TABLE IF EXISTS grid")
-
         def wktReader = new WKTReader()
         def box = wktReader.read('POLYGON((-5 -5, 5 -5, 5 5, -5 5, -5 -5))')
         def outputTable = Geoindicators.SpatialUnits.createGrid(postGIS, box, 1, 1)

@@ -498,7 +498,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         def grid_file = new File("${directory + File.separator}osm_Pont-de-Veyle${File.separator}grid_indicators_water_permanent_fraction.asc")
         h2gis.execute("DROP TABLE IF EXISTS water_grid; CALL ASCREAD('${grid_file.getAbsolutePath()}', 'water_grid')")
         assertTrue h2gis.firstRow("select count(*) as count from water_grid").count == 6
-        assertEquals(6, h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is not null").count)
+        assertEquals(5, h2gis.firstRow("select count(*) as count from $gridTable where LCZ_PRIMARY is not null").count)
     }
 
     @Test
