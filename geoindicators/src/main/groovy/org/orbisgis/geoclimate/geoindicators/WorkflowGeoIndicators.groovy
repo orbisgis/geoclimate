@@ -2266,15 +2266,19 @@ String cutBuilding(JdbcDataSource datasource, String grid, String building) thro
  * @param x_size x size of the grid
  * @param y_size y size of the grid
  * @param srid used to reproject the grid
- * @param outputTableName the name of grid  table
+ * @param rowCol true if x_size and y_size are the number of columns and rows instead of the cell size
+ * @param angle rotation of the grid in degrees (counter-clockwise). Default 0
  * @return
  */
 String createGrid(JdbcDataSource datasource,
                   Geometry envelope,
                   int x_size, int y_size,
-                  int srid, boolean rowCol = false) throws Exception {
+                  int srid, boolean rowCol = false, double angle = 0) throws Exception {
+    if (Math.abs(Math.IEEEremainder(angle, 360d)) > 0 && envelope.getSRID() == 4326) {
+        throw new IllegalArgumentException("A rotated grid cannot be computed on geographic coordinates (EPSG:4326). Please use a projected geometry")
+    }
     //Start to compute the grid
-    def grid_table_name = Geoindicators.SpatialUnits.createGrid(datasource, envelope, x_size, y_size, rowCol)
+    def grid_table_name = Geoindicators.SpatialUnits.createGrid(datasource, envelope, x_size, y_size, rowCol, "", angle)
     if (grid_table_name) {
         //Reproject the grid in the local UTM
         if (envelope.getSRID() == 4326) {
@@ -2285,6 +2289,24 @@ String createGrid(JdbcDataSource datasource,
         }
         return grid_table_name
     }
+}
+
+/**
+ * Return the size of the cells of a grid created with {@link #createGrid}.
+ * Useful when the grid is defined by a number of columns and rows or when it is rotated.
+ * The first edge of a cell (ID_COL direction) gives the x size, the second one the y size.
+ *
+ * @param datasource connection to the database
+ * @param gridTable the grid table
+ * @return a map with x_size and y_size in the units of the grid SRID, null if the table is empty
+ */
+Map getGridCellSize(JdbcDataSource datasource, String gridTable) throws Exception {
+    def row = datasource.firstRow("SELECT THE_GEOM FROM $gridTable LIMIT 1".toString())
+    if (!row || !row.the_geom) {
+        return null
+    }
+    def coords = ((Geometry) row.the_geom).getCoordinates()
+    return [x_size: coords[0].distance(coords[1]), y_size: coords[1].distance(coords[2])]
 }
 
 /**

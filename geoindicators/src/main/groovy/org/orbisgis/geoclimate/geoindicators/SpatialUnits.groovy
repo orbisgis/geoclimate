@@ -20,7 +20,7 @@
 package org.orbisgis.geoclimate.geoindicators
 
 import groovy.transform.BaseScript
-import org.h2.value.ValueBoolean
+import org.h2.value.ValueDouble
 import org.h2.value.ValueGeometry
 import org.h2gis.functions.spatial.create.ST_MakeGrid
 import org.locationtech.jts.geom.Geometry
@@ -537,12 +537,16 @@ String spatialJoin(JdbcDataSource datasource, String sourceTable, String targetT
  * @param tableName A Table that contains the geometry of the grid
  * @param datasource A connexion to a database (H2GIS, POSTGIS, ...) where are stored the input Table and in which
  *        the resulting database will be stored
+ * @param rowCol true if deltaX and deltaY are the number of columns and rows instead of the cell size
+ * @param prefixName a prefix for the output table name
+ * @param angle rotation of the grid in degrees (counter-clockwise, around the centre of the envelope
+ *        of the input geometry once rotated). Default 0, no rotation
  * @return The name of the created table
  *
  * @author Emmanuel Renault, CNRS, 2020
  * */
 String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
-                  double deltaY, boolean rowCol = false, String prefixName = "") throws Exception {
+                  double deltaY, boolean rowCol = false, String prefixName = "", double angle = 0) throws Exception {
     if (rowCol) {
         if (!deltaX || !deltaY || deltaX < 1 || deltaY < 1) {
             throw new IllegalArgumentException("Invalid grid size padding. Must be greater or equal than 1")
@@ -555,6 +559,11 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
     if (!geometry) {
         throw new IllegalArgumentException("The envelope is null or empty. Cannot compute the grid")
     }
+    if (Double.isNaN(angle) || Double.isInfinite(angle)) {
+        throw new IllegalArgumentException("The grid angle must be a finite value expressed in degrees")
+    }
+    //H2GIS expects the angle in radians
+    double angleRad = Math.toRadians(Math.IEEEremainder(angle, 360d))
 
     def BASENAME = "grid"
     def outputTableName = prefix prefixName, BASENAME
@@ -564,7 +573,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
         debug "Creating grid with H2GIS"
         datasource """
                            CREATE TABLE $outputTableName AS SELECT the_geom, id as id_grid,ID_COL, ID_ROW FROM 
-                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY,false, $rowCol);
+                           ST_MakeGrid(st_geomfromtext('$geometry',${geometry.getSRID()}), $deltaX, $deltaY, false, $rowCol, $angleRad);
                            """.toString()
     } else if (datasource instanceof POSTGIS) {
         debug "Creating grid with POSTGIS"
@@ -575,7 +584,7 @@ String createGrid(JdbcDataSource datasource, Geometry geometry, double deltaX,
             def insertTable = "INSERT INTO $outputTableName VALUES (?, ?, ?, ?);"
             datasource.execute(createTable.toString())
             preparedStatement = outputConnection.prepareStatement(insertTable.toString())
-            def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, ValueBoolean.get(rowCol))
+            def result = ST_MakeGrid.createGrid(outputConnection, ValueGeometry.getFromGeometry(geometry), deltaX, deltaY, false, rowCol, ValueDouble.get(angleRad))
             long batch_size = 0
             int batchSize = 1000
 
