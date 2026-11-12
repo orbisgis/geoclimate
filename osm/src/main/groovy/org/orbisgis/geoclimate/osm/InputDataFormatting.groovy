@@ -524,7 +524,10 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
 
             }
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertRail = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_RAIL, ID_SOURCE, TYPE, CROSSING, ZINDEX, WIDTH, USAGE)
+                    VALUES (:the_geom, :id_rail, :id_source, :type, :crossing, :zindex, :width, :usage)""".toString()
+            datasource.withBatch(1000, insertRail) { psRail ->
                 datasource.eachRow(queryMapper.toString()) { row ->
                     def type = getTypeValue(row, columnNames, mappingType)
                     def zIndex = getZIndex(row.'layer')
@@ -554,15 +557,17 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                         Geometry geom = row.the_geom
                         int epsg = geom.getSRID()
                         for (int i = 0; i < geom.getNumGeometries(); i++) {
-                            stmt.addBatch """
-                                    INSERT INTO $outputTableName values(ST_GEOMFROMTEXT(
-                                    '${geom.getGeometryN(i)}',$epsg), 
-                                    ${rowcount++}, 
-                                    '${row.id}',
-                                    ${singleQuote(type)},
-                                    ${singleQuote(crossing)},
-                                    ${zIndex}, $rail_width, '${row.'usage'}')
-                                """
+                            Geometry subGeom = geom.getGeometryN(i)
+                            subGeom.setSRID(epsg)
+                            psRail.addBatch([
+                                    the_geom : subGeom,
+                                    id_rail  : rowcount++,
+                                    id_source: row.id,
+                                    type     : type,
+                                    crossing : crossing ?: null,
+                                    zindex   : zIndex,
+                                    width    : rail_width,
+                                    usage    : row.'usage' ?: null])
                         }
                     }
                 }

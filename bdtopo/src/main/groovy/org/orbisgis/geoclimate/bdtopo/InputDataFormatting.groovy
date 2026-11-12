@@ -703,93 +703,88 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
  * @param rail The name of the raw rails table in the DB
  * @return The name of the final rails table
  */
-String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") throws Exception {
+String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "", String jsonFilename = "") throws Exception {
     debug('Rails transformation starts')
-    def outputTableName = postfix("RAILS")
+    def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
     datasource.execute """ drop table if exists $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,
-                ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH FLOAT, USAGE VARCHAR(30));""".toString()
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH FLOAT, USAGE VARCHAR(30));""".toString()
 
-    if (rail) {
-        if (datasource.hasTable(rail)) {
-            def queryMapper = "SELECT a.ID_SOURCE, a.TYPE, a.ZINDEX, a.CROSSING, a.WIDTH"
+    if (rail != null) {
+        def paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
+        def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+        def mappingType = parametersMap.get("type")
+        def crossingValues = parametersMap.get("crossing")
+        def queryMapper = "SELECT "
+        def columnToMap = parametersMap.get("columns")
+
+        if (datasource.getRowCount(rail) > 0) {
+            def columnNames = datasource.getColumnNames(rail)
+            columnNames.remove("THE_GEOM")
+            queryMapper += columnsMapper(columnNames, columnToMap)
             if (zone) {
-                datasource.createSpatialIndex(rail, "the_geom")
-                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom " +
-                        "else st_intersection(a.the_geom, b.the_geom) end as the_geom " +
+                datasource.createSpatialIndex(rail)
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else " +
+                        "st_intersection(a.the_geom, b.the_geom) END as the_geom " +
                         "FROM " +
                         "$rail AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom "
             } else {
-                queryMapper += ", a.the_geom FROM $rail  as a"
+                queryMapper += ", a.the_geom as the_geom FROM $rail  as a"
 
             }
-
-            def rail_types = ['LGV'                       : 'highspeed',
-                              'Principale'                : 'rail',
-                              'Voie ferrée principale'    : 'rail',
-                              'Voie de service'           : 'service_track',
-                              'Voie non exploitée'        : 'disused',
-                              'Transport urbain'          : 'tram',
-                              'Funiculaire ou crémaillère': 'funicular',
-                              'Metro'                     : 'subway',
-                              'Métro'                     : 'subway',
-                              'Tramway'                   : 'tram',
-                              'Pont'                      : 'bridge',
-                              'Tunnel'                    : 'tunnel',
-                              'Sans objet'                : null,
-                              'NC'                        : null]
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertRail = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_RAIL, ID_SOURCE, TYPE, CROSSING, ZINDEX, WIDTH, USAGE)
+                    VALUES (:the_geom, :id_rail, :id_source, :type, :crossing, :zindex, :width, :usage)""".toString()
+            datasource.withBatch(1000, insertRail) { psRail ->
                 datasource.eachRow(queryMapper.toString()) { row ->
-                    def rail_type = row.TYPE
-                    if (rail_type) {
-                        rail_type = rail_types.get(rail_type)
-                    } else {
-                        rail_type = "unclassified"
+                    def type = getTypeValue(row, columnNames, mappingType)
+                    def zIndex = getZIndex(row.'layer')
+                    //special treatment if type is subway
+                    if (type == "subway") {
+                        if (!((row.tunnel != null && row.tunnel == "no" && zIndex >= 0)
+                                || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
+                            type = null
+                        }
                     }
-                    def rail_usage = null
-                    if (rail_type in ["highspeed", "rail", "tram", "bridge"]) {
-                        rail_usage = "main"
+                    def crossing = row.'bridge'
+                    if (crossing) {
+                        crossing = crossingValues.bridge.contains(crossing) ? "bridge" : null
+                        if (!zIndex && crossing) {
+                            zIndex = 1
+                        }
                     }
-                    def rail_zindex = row.ZINDEX
-                    if (!rail_zindex) {
-                        rail_zindex = 0
-                    }
-
+                    def gauge = row.'gauge'
                     //1.435 default value for standard gauge
                     //1 constant for balasting
-                    def rail_width = !row.WIDTH ? 1.435 + 1 : row.WIDTH + 1
-                    def rail_crossing = rail_types.get(row.CROSSING)
+                    def rail_width = 1.435 + 1
+                    if (gauge && gauge.isFloat()) {
+                        rail_width = (gauge.toFloat() / 1000) + 1
+                    }
 
-                    if (rail_zindex >= 0 && rail_type) {
+                    if (zIndex >= 0 && type) {
                         Geometry geom = row.the_geom
-                        if (!geom.isEmpty()) {
-                            def epsg = geom.getSRID()
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                Geometry subGeom = geom.getGeometryN(i)
-                                if (!subGeom.isEmpty()) {
-                                    stmt.addBatch """
-                                    INSERT INTO $outputTableName values(ST_GEOMFROMTEXT(
-                                    '${subGeom}',$epsg), 
-                                    ${rowcount++}, 
-                                    '${row.ID_SOURCE}',
-                                    '${rail_type}',
-                                    ${rail_crossing ? "'${rail_crossing}'" : rail_crossing},
-                                    ${rail_zindex},
-                                    ${rail_width},
-                                    ${rail_usage ? "'${rail_usage}'" : rail_usage})
-                                """
-                                }
-                            }
+                        int epsg = geom.getSRID()
+                        for (int i = 0; i < geom.getNumGeometries(); i++) {
+                            Geometry subGeom = geom.getGeometryN(i)
+                            subGeom.setSRID(epsg)
+                            psRail.addBatch([
+                                    the_geom : subGeom,
+                                    id_rail  : rowcount++,
+                                    id_source: row.id,
+                                    type     : type,
+                                    crossing : crossing ?: null,
+                                    zindex   : zIndex,
+                                    width    : rail_width,
+                                    usage    : row.'usage' ?: null])
                         }
                     }
                 }
             }
         }
     }
-    info "Rail formatted"
+    debug('Rails transformation finishes')
     return outputTableName
 }
 
