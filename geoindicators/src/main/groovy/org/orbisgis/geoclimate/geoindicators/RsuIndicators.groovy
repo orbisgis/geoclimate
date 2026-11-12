@@ -280,17 +280,18 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String id_rsu,
 
         // Create the geometries of buildings and RSU holes included within each RSU
         datasource.execute("""
-                DROP TABLE IF EXISTS $rsuDiff, $multiptsRSU, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
-                CREATE TABLE $rsuDiff 
-                AS (SELECT  CASE WHEN   ST_ISEMPTY(st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU))))
-                            THEN        ST_EXTERIORRING(ST_NORMALIZE(a.$GEOMETRIC_COLUMN_RSU))
-                            ELSE        st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))
-                            END         AS the_geom, a.$ID_COLUMN_RSU
-                FROM        $rsu a, $correlationBuildingTable b 
-                WHERE       a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, 
-                            b.$GEOMETRIC_COLUMN_BU)
-                GROUP BY    a.$ID_COLUMN_RSU);
-            """)
+        DROP TABLE IF EXISTS $rsuDiff, $multiptsRSU, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
+        CREATE TABLE $rsuDiff AS
+        SELECT CASE WHEN ST_ISEMPTY(diff) THEN ST_EXTERIORRING(ST_NORMALIZE(rsu_geom))
+                    ELSE diff END AS the_geom, $ID_COLUMN_RSU
+        FROM (SELECT a.$ID_COLUMN_RSU, a.$GEOMETRIC_COLUMN_RSU AS rsu_geom,
+                     ST_DIFFERENCE(a.$GEOMETRIC_COLUMN_RSU, ST_MAKEVALID(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU))) AS diff
+              FROM $rsu a, $correlationBuildingTable b
+              WHERE a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU
+                AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU)
+              GROUP BY a.$ID_COLUMN_RSU) AS t;
+        """)
+        
         datasource.execute("""
                 CREATE INDEX ON $rsuDiff ($ID_COLUMN_RSU);
                 CREATE TABLE $rsuDiffTot AS 
