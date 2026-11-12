@@ -228,7 +228,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     FROM $vegetation  AS a, $vegetation AS b 
                     WHERE a.ID_VEGET <>b.ID_VEGET AND a.the_geom && b.the_geom 
                     AND ST_INTERSECTS(b.the_geom,a.the_geom)
-                    UNION
+                    UNION ALL
                     SELECT a.ID_VEGET as START_NODE, a.ID_VEGET AS END_NODE 
                     FROM $vegetation  AS a);
                     """)
@@ -289,7 +289,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     FROM $water  AS a, $water AS b 
                     WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
                     AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0
-                    UNION SELECT a.ID_WATER as START_NODE, a.ID_WATER AS END_NODE 
+                    UNION ALL SELECT a.ID_WATER as START_NODE, a.ID_WATER AS END_NODE 
                     FROM $water  AS a);""")
 
                     //Recherche des clusters
@@ -341,7 +341,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                             (
                                 SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) as the_geom
                                 FROM $zone) 
-                            UNION ${queryCreateOutputTable.values().join(' union ')};
+                            UNION ALL ${queryCreateOutputTable.values().join(' union ')};
                         DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}
                 """.toString()
             } else {

@@ -319,7 +319,7 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String id_rsu,
                                 FROM    ST_EXPLODE('(SELECT $ID_COLUMN_RSU, ST_LocateAlong(THE_GEOM, 0.5, 0.01) AS THE_GEOM 
                                             FROM $rsuDiffTot
                                             WHERE ST_DIMENSION(THE_GEOM)=1)')
-                            UNION 
+                            UNION ALL
                                 SELECT $ID_COLUMN_RSU, THE_GEOM
                                 FROM $multiptsRSU""")
 
@@ -1589,7 +1589,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             }
             def tmp_tables = postfix "tmp_tables_zindex0"
             datasource.execute("""DROP TABLE if exists $tmp_tables;
-            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zone} integer) AS ${tablesToMerge.values().join(' union ')};
+            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zone} integer) AS ${tablesToMerge.values().join(' union ALL ')};
                """)
 
             //Polygonize the input tables
@@ -2540,7 +2540,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
         }
         def tmp_tables = postfix "tmp_tables_zindex0"
         datasource.execute("""DROP TABLE if exists $tmp_tables;
-            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zone} integer) AS ${tablesToMerge.values().join(' union ')};
+            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zone} integer) AS ${tablesToMerge.values().join(' union ALL ')};
                """)
 
         //Polygonize the input tables

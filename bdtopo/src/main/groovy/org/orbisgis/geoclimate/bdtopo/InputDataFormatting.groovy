@@ -349,7 +349,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 DROP TABLE IF EXISTS $building_updated_merge;
                 CREATE TABLE $building_updated_merge as select
                 a.id_build, 0 AS HEIGHT, 1 as type from $outputTableName a , $buildinType as b where a.id_build=b.id_build
-                union select id_build, HEIGHT ,TYPE from $outputEstimateTableName
+                union all select id_build, HEIGHT ,TYPE from $outputEstimateTableName
                 """)
 
                 //Clean the building_updated table
