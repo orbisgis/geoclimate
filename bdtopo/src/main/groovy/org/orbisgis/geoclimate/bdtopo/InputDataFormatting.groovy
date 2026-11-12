@@ -447,7 +447,10 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                 queryMapper += ", a.the_geom FROM $road  as a"
             }
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertRoad = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_ROAD, ID_SOURCE, WIDTH, TYPE, CROSSING, SURFACE, SIDEWALK, MAXSPEED, DIRECTION, LANES, ZINDEX, TUNNEL)
+                    VALUES (:the_geom, :id_road, :id_source, :width, :type, :crossing, :surface, :sidewalk, :maxspeed, :direction, :lanes, :zindex, :tunnel)""".toString()
+            datasource.withBatch(1000, insertRoad) { psRoad ->
                 datasource.eachRow(queryMapper) { row ->
                     //Default value added here.
                     //TODO : check construction_lineaire layer in a future version
@@ -581,22 +584,21 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (!subGeom.isEmpty()) {
-                                    stmt.addBatch """
-                                        INSERT INTO $outputTableName VALUES(ST_GEOMFROMTEXT(
-                                        '${subGeom}',$epsg), 
-                                        ${rowcount++}, 
-                                        '${ID_SOURCE}', 
-                                        ${qualified_road_width},
-                                        '${qualified_road_type}',
-                                        ${qualified_crossing ? "'${qualified_crossing}'" : qualified_crossing}, 
-                                        '${qualified_road_surface}',
-                                        '${qualified_sidewalk}',
-                                        ${qualified_road_maxspeed},
-                                        ${road_sens},
-                                        ${row.'nb_voies'},
-                                        ${qualified_road_zindex},
-                                        ${tunnel})
-                                        """.toString()
+                                    subGeom.setSRID(epsg)
+                                    psRoad.addBatch([
+                                            the_geom : subGeom,
+                                            id_road  : rowcount++,
+                                            id_source: ID_SOURCE,
+                                            width    : qualified_road_width,
+                                            type     : qualified_road_type,
+                                            crossing : qualified_crossing,
+                                            surface  : qualified_road_surface,
+                                            sidewalk : qualified_sidewalk,
+                                            maxspeed : qualified_road_maxspeed,
+                                            direction: road_sens,
+                                            lanes    : row.'nb_voies',
+                                            zindex   : qualified_road_zindex,
+                                            tunnel   : tunnel])
                                 }
                             }
                         }

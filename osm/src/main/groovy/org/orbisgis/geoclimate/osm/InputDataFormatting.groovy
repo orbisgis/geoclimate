@@ -365,7 +365,10 @@ String formatRoadLayer(
             }
             int rowcount = 1
             def speedPattern = Pattern.compile("([0-9]+)( ([a-zA-Z]+))?", Pattern.CASE_INSENSITIVE)
-            datasource.withBatch(100) { stmt ->
+            def insertRoad = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_ROAD, ID_SOURCE, WIDTH, TYPE, CROSSING, SURFACE, SIDEWALK, MAXSPEED, DIRECTION, LANES, ZINDEX, TUNNEL)
+                    VALUES (:the_geom, :id_road, :id_source, :width, :type, :crossing, :surface, :sidewalk, :maxspeed, :direction, :lanes, :zindex, :tunnel)""".toString()
+            datasource.withBatch(1000, insertRoad) { psRoad ->
                 datasource.eachRow(queryMapper) { row ->
                     def processRow = true
                     def zIndex = getZIndex(row.'layer')
@@ -394,7 +397,7 @@ String formatRoadLayer(
                         }
                         def crossing = row.'bridge'
                         if (crossing) {
-                            crossing = crossingValues.bridge.contains(crossing) ? "'bridge'" : null
+                            crossing = crossingValues.bridge.contains(crossing) ? "bridge" : null
                             if (!zIndex && crossing) {
                                 zIndex = 1
                             }
@@ -453,22 +456,22 @@ String formatRoadLayer(
                                 Geometry geom = row.the_geom
                                 int epsg = geom.getSRID()
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    stmt.addBatch """
-                                    INSERT INTO $outputTableName VALUES(ST_GEOMFROMTEXT(
-                                        '${geom.getGeometryN(i)}',$epsg), 
-                                        ${rowcount++}, 
-                                        '${row.id}', 
-                                        ${width},
-                                        ${singleQuote(type)},
-                                        ${crossing}, 
-                                        ${singleQuote(surface)},
-                                        ${singleQuote(sidewalk)},
-                                        ${maxspeed_value},
-                                        ${direction},
-                                        ${Geoindicators.DataUtils.asInteger(row.'lanes')},
-                                        ${zIndex},
-                                        ${tunnel})
-                                """.toString()
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    subGeom.setSRID(epsg)
+                                    psRoad.addBatch([
+                                            the_geom : subGeom,
+                                            id_road  : rowcount++,
+                                            id_source: row.id,
+                                            width    : width,
+                                            type     : type,
+                                            crossing : crossing ?: null,
+                                            surface  : surface,
+                                            sidewalk : sidewalk,
+                                            maxspeed : maxspeed_value,
+                                            direction: direction,
+                                            lanes    : Geoindicators.DataUtils.asInteger(row.'lanes'),
+                                            zindex   : zIndex,
+                                            tunnel   : tunnel])
                                 }
                             }
                         }
