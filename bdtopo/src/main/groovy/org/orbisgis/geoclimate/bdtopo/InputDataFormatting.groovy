@@ -39,7 +39,7 @@ import org.orbisgis.geoclimate.Geoindicators
  * @return building_updated The name of the table containing the state of estimation for each building
  */
 Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
-                           String urban_areas = "", float h_lev_min = 3) throws Exception {
+                        String urban_areas = "", float h_lev_min = 3) throws Exception {
     if (!h_lev_min) {
         h_lev_min = 3
     }
@@ -250,59 +250,60 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                     "attraction"                : 0
             ]
 
-
             //Formating building table
             def id_build = 1
-            datasource.withBatch(100) { stmt ->
-                datasource.eachRow(queryMapper.toString()) { row ->
-                    def values = row.toRowResult()
-                    def id_source = values.ID_SOURCE
-                    def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
-                    def feature_type = type_use[0]
-                    def feature_main_use = type_use[1]
-                    def height_wall = values.HEIGHT_WALL
-                    def height_roof = values.HEIGHT_ROOF
-                    def nb_lev = 0
-                    //Update height_wall
-                    if (!height_wall) {
-                        height_wall = 0
-                    }
-                    //Update height_roof
-                    if (!height_roof && height_wall) {
-                        height_roof = height_wall
-                    }
-                    //Update NB_LEV, HEIGHT_WALL and HEIGHT_ROOF
-                    def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
-                            feature_type, building_type_level)
+            def insertBuilding = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX)
+                    VALUES (:the_geom, :id_build, :id_source, :height_wall, :height_roof, :nb_lev, :type, :main_use, :zindex)""".toString()
+            def insertEstimate = """INSERT INTO $outputEstimateTableName (ID_BUILD, HEIGHT, TYPE)
+                    VALUES (:id_build, 1, 0)""".toString()
+            datasource.withBatch(1000, insertBuilding) { psBuild ->
+                datasource.withBatch(1000, insertEstimate) { psEstim ->
+                    datasource.eachRow(queryMapper.toString()) { row ->
+                        def values = row.toRowResult()
+                        def id_source = values.ID_SOURCE
+                        def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
+                        def feature_type = type_use[0]
+                        def feature_main_use = type_use[1]
+                        def height_wall = values.HEIGHT_WALL
+                        def height_roof = values.HEIGHT_ROOF
+                        def nb_lev = 0
+                        //Update height_wall
+                        if (!height_wall) {
+                            height_wall = 0
+                        }
+                        //Update height_roof
+                        if (!height_roof && height_wall) {
+                            height_roof = height_wall
+                        }
+                        //Update NB_LEV, HEIGHT_WALL and HEIGHT_ROOF
+                        def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
+                                feature_type, building_type_level)
 
-                    def zIndex = 0
-                    if (formatedHeight.nbLevels > 0) {
-                        Geometry geom = values.the_geom
-                        if (!geom.isEmpty()) {
-                            def srid = geom.getSRID()
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                Geometry subGeom = geom.getGeometryN(i)
-                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                    stmt.addBatch """
-                                                INSERT INTO ${outputTableName} values(
-                                                    ST_GEOMFROMTEXT('${subGeom}',$srid), 
-                                                    $id_build, 
-                                                    '$id_source',
-                                                    ${formatedHeight.heightWall},
-                                                    ${formatedHeight.heightRoof},
-                                                    ${formatedHeight.nbLevels},
-                                                    '${feature_type}',
-                                                    '${feature_main_use}',
-                                                    ${zIndex}, null)
-                                            """.toString()
-
-                                    if (formatedHeight.estimated) {
-                                        stmt.addBatch("""
-                                                INSERT INTO ${outputEstimateTableName} values(
-                                                    $id_build, 1, 0)
-                                                """.toString())
+                        def zIndex = 0
+                        if (formatedHeight.nbLevels > 0) {
+                            Geometry geom = values.the_geom
+                            if (!geom.isEmpty()) {
+                                def srid = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                        subGeom.setSRID(srid)
+                                        psBuild.addBatch([
+                                                the_geom   : subGeom,
+                                                id_build   : id_build,
+                                                id_source  : id_source,
+                                                height_wall: formatedHeight.heightWall,
+                                                height_roof: formatedHeight.heightRoof,
+                                                nb_lev     : formatedHeight.nbLevels,
+                                                type       : feature_type,
+                                                main_use   : feature_main_use,
+                                                zindex     : zIndex])
+                                        if (formatedHeight.estimated) {
+                                            psEstim.addBatch([id_build: id_build])
+                                        }
+                                        id_build++
                                     }
-                                    id_build++
                                 }
                             }
                         }
@@ -311,7 +312,6 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             }
             //Let's use the urban areas table to improve building qualification
             if (urban_areas) {
-
                 datasource.createSpatialIndex(outputTableName, "the_geom")
                 datasource.createIndex(outputTableName, "id_build")
                 datasource.createIndex(outputTableName, "type")

@@ -295,7 +295,7 @@ class InputDataFormattingTest {
         //def nominatim = OSMTools.Utilities.getNominatimData(zoneToExtract)
         // zoneToExtract = nominatim.bbox
 
-       zoneToExtract =  [48.889780,2.226381,48.891529,2.230699]
+       //zoneToExtract =  [48.889780,2.226381,48.891529,2.230699]
 
         //zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
@@ -483,9 +483,7 @@ class InputDataFormattingTest {
                 allModelUses.addAll(inputUses)
             }
         }
-
         assertTrue(!(allOSMTypes - allModelTypes))
         assertTrue(!(allOSMUses - allModelUses))
-
     }
 }
