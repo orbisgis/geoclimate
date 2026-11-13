@@ -686,6 +686,21 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertTrue h2gis.rows("select distinct(g) as g from $ground_acoustic where layer = 'water'".toString()).size() == 1
     }
 
+    @Test
+    void testRsuCleanParameter() {
+        def params = OSM.WorkflowOSM.extractProcessingParameters([
+                "rsu_indicators": ["indicatorUse": ["LCZ"], "rsu_clean": "removeLongRsu"]])
+        assertEquals("removeLongRsu", params.rsu_indicators.rsu_clean)
+
+        params = OSM.WorkflowOSM.extractProcessingParameters([
+                "rsu_indicators": ["indicatorUse": ["LCZ"]]])
+        assertNull(params.rsu_indicators.rsu_clean)
+
+        //Unknown cleaning method
+        assertThrows(Exception.class, () -> OSM.WorkflowOSM.extractProcessingParameters([
+                "rsu_indicators": ["indicatorUse": ["LCZ"], "rsu_clean": "unknown"]]))
+    }
+
     @Disabled
     //Use it to test a list of bboxs collect from various user feedback
     @Test
