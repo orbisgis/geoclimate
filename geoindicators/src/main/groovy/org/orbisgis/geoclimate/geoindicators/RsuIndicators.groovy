@@ -492,8 +492,8 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
                     DROP TABLE IF EXISTS $buildingFree;
                     CREATE TABLE $buildingFree (the_geom GEOMETRY, z_max double precision, z_min double precision)
                     AS (SELECT  ST_TOMULTISEGMENTS(a.the_geom) as the_geom, a.$HEIGHT_WALL as z_max, 0  as z_min
-                    FROM $building a WHERE a.$ID_COLUMN_BU NOT IN (SELECT ID_build_a 
-                    FROM $buildingIntersection)) UNION ALL (SELECT  
+                    FROM $building a LEFT JOIN $buildingIntersection i ON a.$ID_COLUMN_BU = i.ID_build_a
+                    WHERE i.ID_build_a IS NULL) UNION ALL (SELECT  
                     ST_TOMULTISEGMENTS(ST_DIFFERENCE(ST_TOMULTILINE(a.$GEOMETRIC_COLUMN_BU), 
                     ST_UNION(ST_ACCUM(b.the_geom)))) as the_geom, a.$HEIGHT_WALL as z_max, 0 as z_min FROM $building a, 
                     $buildingIntersection b WHERE a.$ID_COLUMN_BU=b.ID_build_a and st_isempty(b.the_geom)=false

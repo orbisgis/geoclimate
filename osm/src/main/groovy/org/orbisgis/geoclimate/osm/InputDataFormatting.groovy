@@ -1299,6 +1299,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                     datasource.execute("""DROP TABLE IF EXISTS $reducedZone;
                     CREATE TABLE $reducedZone as select st_buffer(the_geom, -0.01,2) as the_geom from $zone;""")
 
+                    //ST_NODE is required here : it also converts the reduced zone polygon to lines
                     datasource.execute("""  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
@@ -1312,23 +1313,32 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                         st_explode('(SELECT st_polygonize(st_union(ST_NODE(st_accum(the_geom)))) AS the_geom FROM $mergingDataTable)')
                         as foo where ST_DIMENSION(the_geom) = 2 AND st_area(the_geom) >0;  """)
 
+                    //Add points on both sides of each coastline segment, with the rules sea = 1 on the right (sea side) and
+                    // sea = 0 on the left (land side)
                     datasource.execute("""
                         CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_mask}_the_geom_idx ON $sea_land_mask (THE_GEOM);
                        
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
-                        CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
+                        CREATE TABLE $coastLinesPoints as SELECT the_geom FROM 
                         st_explode('(select ST_ToMultiSegments(
                         CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else 
                         st_intersection(a.the_geom, b.the_geom) END ) as the_geom from $islands_mark as a,
                         $reducedZone as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
-    
-                        CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
+
+                        CREATE TABLE $coastLinesIntersectsPoints AS
+                        SELECT ROW_NUMBER() OVER () AS id, the_geom, sea FROM (
+                            SELECT ST_GeometryN(ST_LocateAlong(the_geom, 0.5, -0.01), 1) AS the_geom, 1 AS sea
+                            FROM $coastLinesPoints WHERE ST_LENGTH(the_geom) > 0
+                            UNION ALL
+                            SELECT ST_GeometryN(ST_LocateAlong(the_geom, 0.5, 0.01), 1) AS the_geom, 0 AS sea
+                            FROM $coastLinesPoints WHERE ST_LENGTH(the_geom) > 0) AS p;
 
                         CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
                         DROP TABLE IF EXISTS $reducedZone;""")
 
                     //Perform triangulation to tag the areas as sea or water
+                    //A polygon is sea when it contains more sea side points than land side points
                     datasource.execute """
                          DROP TABLE IF EXISTS $sea_land_triangles;
                        CREATE TABLE $sea_land_triangles AS 
@@ -1339,34 +1349,35 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                     CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_triangles}_the_geom_idx ON $sea_land_triangles (THE_GEOM);
 
                     DROP TABLE IF EXISTS $sea_id_triangles;
-                    CREATE TABLE $sea_id_triangles AS SELECT DISTINCT a.id FROM $sea_land_triangles a, 
-                    $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
-                                st_intersects(a.THE_GEOM, b.THE_GEOM);  
+                    CREATE TABLE $sea_id_triangles AS SELECT a.id
+                    FROM $sea_land_triangles a, $coastLinesIntersectsPoints b
+                    WHERE a.THE_GEOM && b.THE_GEOM AND st_intersects(a.THE_GEOM, b.THE_GEOM)
+                    GROUP BY a.id
+                    HAVING COUNT(DISTINCT CASE WHEN b.sea = 1 THEN b.id END) >
+                           COUNT(DISTINCT CASE WHEN b.sea = 0 THEN b.id END);
                     CREATE INDEX ON  $sea_id_triangles (id);""".toString()
 
-                    //Set the triangles to sea
-                    datasource.execute """                                     
-                    UPDATE ${sea_land_triangles} SET TYPE='sea' WHERE ID IN(SELECT ID FROM $sea_id_triangles);   
-                    """.toString()
-
-                    //Set the triangles to water
+                    //Find the polygons that contain water
                     datasource.execute """
                     DROP TABLE IF EXISTS $water_id_triangles;
-                    CREATE TABLE $water_id_triangles AS SELECT a.ID
+                    CREATE TABLE $water_id_triangles AS SELECT DISTINCT a.ID
                                 FROM ${sea_land_triangles} a, $water b WHERE a.THE_GEOM && b.THE_GEOM AND
                                 st_intersects( a.THE_GEOM, st_pointonsurface(b.the_geom)) and b.type='water';
-                               
                     CREATE INDEX ON  $water_id_triangles (id);
-                         
-                    --Update water triangles            
-                    UPDATE $sea_land_triangles SET TYPE='water' WHERE ID IN(SELECT ID FROM $water_id_triangles);                         
                          """.toString()
 
-                    //Unioning all geometries
+                    //Build the output from the original polygons, the triangles are only used to find the type
+                    //water has priority over sea
                     datasource.execute("""DROP TABLE if exists ${outputTableName};
-                    create table $outputTableName as select id , 
-                    st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
+                    create table $outputTableName as select a.id, a.the_geom,
+                    CASE WHEN w.id IS NOT NULL THEN 'water'
+                         WHEN s.id IS NOT NULL THEN 'sea'
+                         ELSE a.type END AS type
+                    from $sea_land_mask a
+                    left join $sea_id_triangles s on a.id = s.id
+                    left join $water_id_triangles w on a.id = w.id;
                     """.toString())
+
                 } else {
                     //We look for the type of water
                     def waterTypes = datasource.firstRow("SELECT COUNT(*) as count, type from $water group by type".toString())
@@ -1393,6 +1404,8 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                        SELECT the_geom, EXPLOD_ID  FROM st_explode('(  
                        SELECT ST_LINEMERGE(st_accum(THE_GEOM)) AS the_geom, NULL FROM $coastLinesIntersects)');""".toString()
 
+                //Add points on both sides of each coastline segment, with the rules sea = 1 on the right (sea side) and
+                // sea = 0 on the left (land side)
                 datasource.execute """  
                         CREATE TABLE $mergingDataTable  AS
                         SELECT  THE_GEOM FROM $coastLinesIntersects 
@@ -1407,18 +1420,25 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
 
                         CREATE SPATIAL INDEX IF NOT EXISTS ${islands_mark}_the_geom_idx ON $islands_mark (THE_GEOM);
 
-                        CREATE TABLE $coastLinesPoints as  SELECT ST_LocateAlong(the_geom, 0.5, -0.01) AS the_geom FROM 
-                        st_explode('(select ST_GeometryN(ST_ToMultiSegments(
+                        CREATE TABLE $coastLinesPoints as SELECT the_geom FROM 
+                        st_explode('(select ST_ToMultiSegments(
                         CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else 
-                        st_intersection(a.the_geom, b.the_geom) END ), 1) as the_geom from $islands_mark as a,
+                        st_intersection(a.the_geom, b.the_geom) END ) as the_geom from $islands_mark as a,
                         $zone as b WHERE a.the_geom && b.the_geom AND st_intersects(a.the_geom, b.the_geom))');
-    
-                        CREATE TABLE $coastLinesIntersectsPoints as  SELECT the_geom FROM st_explode('$coastLinesPoints'); 
+
+                        CREATE TABLE $coastLinesIntersectsPoints AS
+                        SELECT ROW_NUMBER() OVER () AS id, the_geom, sea FROM (
+                            SELECT ST_GeometryN(ST_LocateAlong(the_geom, 0.5, -0.01), 1) AS the_geom, 1 AS sea
+                            FROM $coastLinesPoints WHERE ST_LENGTH(the_geom) > 0
+                            UNION ALL
+                            SELECT ST_GeometryN(ST_LocateAlong(the_geom, 0.5, 0.01), 1) AS the_geom, 0 AS sea
+                            FROM $coastLinesPoints WHERE ST_LENGTH(the_geom) > 0) AS p;
 
                         CREATE SPATIAL INDEX IF NOT EXISTS ${coastLinesIntersectsPoints}_the_geom_idx ON $coastLinesIntersectsPoints (THE_GEOM);
                          """.toString()
 
-                //Perform triangulation to tag the areas as sea or water
+                //Perform triangulation to tag the areas as sea
+                //A polygon is sea when it contains more sea side points than land side points
                 datasource.execute """
                          DROP TABLE IF EXISTS $sea_land_triangles;
                        CREATE TABLE $sea_land_triangles AS 
@@ -1429,22 +1449,23 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                     CREATE SPATIAL INDEX IF NOT EXISTS ${sea_land_triangles}_the_geom_idx ON $sea_land_triangles (THE_GEOM);
 
                     DROP TABLE IF EXISTS $sea_id_triangles;
-                    CREATE TABLE $sea_id_triangles AS SELECT DISTINCT a.id FROM $sea_land_triangles a, 
-                    $coastLinesIntersectsPoints b WHERE a.THE_GEOM && b.THE_GEOM AND
-                                st_contains(a.THE_GEOM, b.THE_GEOM);  
+                    CREATE TABLE $sea_id_triangles AS SELECT a.id
+                    FROM $sea_land_triangles a, $coastLinesIntersectsPoints b
+                    WHERE a.THE_GEOM && b.THE_GEOM AND st_intersects(a.THE_GEOM, b.THE_GEOM)
+                    GROUP BY a.id
+                    HAVING COUNT(DISTINCT CASE WHEN b.sea = 1 THEN b.id END) >
+                           COUNT(DISTINCT CASE WHEN b.sea = 0 THEN b.id END);
                     CREATE INDEX ON  $sea_id_triangles (id);
-                    
-                    --Update sea triangles                    
-                    UPDATE ${sea_land_triangles} SET TYPE='sea' WHERE ID IN(SELECT ID FROM $sea_id_triangles);   
                      """.toString()
 
-                //Unioning all geometries
+                //Build the output from the original polygons, the triangles are only used to find the type
                 datasource.execute("""DROP TABLE if exists ${outputTableName};
-                    create table $outputTableName as select id, 
-                    st_union(st_accum(the_geom)) the_geom, type from $sea_land_triangles a group by id, type;
+                    create table $outputTableName as select a.id, a.the_geom,
+                    CASE WHEN s.id IS NOT NULL THEN 'sea' ELSE a.type END AS type
+                    from $sea_land_mask a
+                    left join $sea_id_triangles s on a.id = s.id;
                     """.toString())
             }
-
             datasource.execute("""DROP TABLE IF EXISTS $coastLinesIntersects,
                         $islands_mark, $mergingDataTable,  $coastLinesIntersectsPoints, $coastLinesPoints,$sea_land_mask,
                         $water_filtered_exploded,$water_to_be_filtered, $sea_land_triangles, $sea_id_triangles, $water_id_triangles
@@ -1467,7 +1488,7 @@ String formatSeaLandMask(JdbcDataSource datasource, String coastline, String zon
                                                 CAST(0 AS INTEGER) AS ZINDEX,
                                                 the_geom, 'sea' as type 
                                     from $zone  ;                        
-                            """.toString())
+                            """)
                     return outputTableName
                 }
             }
