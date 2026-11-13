@@ -130,7 +130,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
         CREATE TABLE $outputTableName as 
         SELECT CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME,
         ST_BUFFER(ST_BUFFER(the_geom,-0.01, 'quad_segs=2 endcap=flat  join=mitre'),0.01, 'quad_segs=2 endcap=flat join=mitre') AS the_geom FROM 
-        ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
+        ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_ACCUM(the_geom))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area
         """)
     } else {
@@ -139,7 +139,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
                     CREATE TABLE $outputTableName AS 
                         SELECT CAST((row_number() over()) as Integer)  AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_ACCUM(the_geom))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
     }
     debug "Reference spatial units table created"
