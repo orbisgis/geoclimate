@@ -791,6 +791,7 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
                              hLevMin : 3]
     def rsu_indicators_default = [indicatorUse       : [],
                                   svfSimplified      : true,
+                                  rsu_clean          : null,
                                   surface_vegetation : 10000f,
                                   surface_hydro      : 2500f,
                                   surface_urban_areas: 10f,
@@ -857,6 +858,16 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
             Float surface_urbanAreasP = Geoindicators.DataUtils.asFloat(rsu_indicators.surface_urban_areas)
             if (surface_urbanAreasP!=null) {
                 rsu_indicators_default.surface_urban_areas = surface_urbanAreasP
+            }
+
+            def rsu_cleanP = rsu_indicators.rsu_clean
+            if (rsu_cleanP) {
+                def allowed_rsu_clean = ["removeLongRsu"]
+                if (rsu_cleanP in allowed_rsu_clean) {
+                    rsu_indicators_default.rsu_clean = rsu_cleanP
+                } else {
+                    throw new Exception("Please set a valid rsu_clean method in ${allowed_rsu_clean}".toString())
+                }
             }
 
             def svfSimplifiedP = Geoindicators.DataUtils.asBoolean(rsu_indicators.svfSimplified)

@@ -492,4 +492,28 @@ class SpatialUnitsTests {
         assertEquals(1, h2GIS.firstRow("select count(*) as count from $sprawl_areas".toString()).count)
         assertEquals(312500, h2GIS.firstRow("select st_area(the_geom) as area from $sprawl_areas".toString()).area, 0.0001)
     }
+
+    @Test
+    void createTsuRemoveWrongShapesTest() {
+        h2GIS.load(SpatialUnitsTests.getResource("road_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("rail_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("vegetation_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("water_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("zone_wrongshape_test.fgb"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("sea_land_mask_wrongshape_test.geojson"), true)
+        h2GIS.load(SpatialUnitsTests.getResource("urban_areas_wrongshape_test.geojson"), true)
+
+        def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_wrongshape_test", 1d,
+                'road_wrongshape_test', 'rail_wrongshape_test',
+                'vegetation_wrongshape_test', 'water_wrongshape_test',
+                "sea_land_mask_wrongshape_test", "urban_areas_wrongshape_test",
+                10000d, 2500d,
+                10000d, "test")
+        assertNotNull(createRSU)
+        def rsuWithoutLong = Geoindicators.SpatialUnits.removeLongRsu(h2GIS, createRSU,
+                'water_wrongshape_test', "zone_wrongshape_test", 1d, "test")
+        assertNotNull(rsuWithoutLong)
+        assertTrue(h2GIS.getRowCount(rsuWithoutLong) > 0)
+        assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) AS count FROM $rsuWithoutLong WHERE ST_ISEMPTY(THE_GEOM)".toString()).count)
+    }
 }

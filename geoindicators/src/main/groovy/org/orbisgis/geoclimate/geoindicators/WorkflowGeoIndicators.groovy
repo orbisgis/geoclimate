@@ -970,6 +970,9 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * @param surface_hydro The minimum area of water that will be considered to delineate the RSU (default 2,500 m²)
  * @param snappingTolerance A distance to group the geometries (e.g. two buildings in a block - default 0.01 m)
  * @param prefixName A prefix used to name the output table
+ * @param rsu_clean optional method used to clean the RSU after their creation (null by default).
+ * "removeLongRsu" : the long or strangely shaped RSU are merged with their neighbours
+ * *
  * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
  * be calculated (default is all indicators : ["LCZ", "UTRF", "TEB"])
@@ -985,7 +988,8 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
                           String rsu, double surface_vegetation,
                           double surface_hydro, double surface_urban_areas,
                           double snappingTolerance,boolean clip=true,
-                          List indicatorUse = ["LCZ", "UTRF", "TEB"],  String prefixName = "") throws Exception {
+                          List indicatorUse = ["LCZ", "UTRF", "TEB"],  String prefixName = "",
+                          String rsu_clean = null) throws Exception {
     info "Create the spatial units..."
     def idRsu = "id_rsu"
     def tablesToDrop = []
@@ -995,6 +999,13 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
                 vegetation, water,
                 sea_land_mask, urban_areas, surface_vegetation,
                 surface_hydro, surface_urban_areas, prefixName)
+        // Clean the RSU if a method is set
+        if (rsu_clean == "removeLongRsu") {
+            String rsuWithoutLong = Geoindicators.SpatialUnits.removeLongRsu(datasource, rsu, water,
+                    zone_extended ?: zone, 1d, prefixName)
+            datasource.dropTable(rsu)
+            rsu = rsuWithoutLong
+        }
         // Clip the RSU if the argument is set to true and if the the zone is different than the zone_extended
         if (clip && (zone_extended && zone != zone_extended)) {
             String rsu_tmp = postfix("rsu")
@@ -1067,6 +1078,7 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
 Map getParameters() {
     return [
             "clip"                             : true,
+            "rsu_clean"                        : null,
             "surface_vegetation"               : 10000f,
             "surface_hydro"                    : 2500f,
             "surface_urban_areas"              : 10000f,
@@ -1249,6 +1261,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
     def buildingHeightModelName = inputParameters.buildingHeightModelName
     def indicatorUse = inputParameters.indicatorUse
     def clipGeom = inputParameters.clip
+    String rsu_clean = inputParameters.rsu_clean
     def nb_building_updated = 0
     //Estimate height
     if (inputParameters.buildingHeightModelName && datasource.getRowCount(buildingEstimateTableName) > 0) {
@@ -1266,7 +1279,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                 sea_land_mask, urban_areas, rsuTable,
                 surface_vegetation, surface_hydro, surface_urban_areas,
                 snappingTolerance,
-                buildingHeightModelName, clipGeom, prefixName)
+                buildingHeightModelName, clipGeom, prefixName, rsu_clean)
         if (!estimHeight) {
             throw new Exception("Cannot estimate building height")
         } else {
@@ -1308,7 +1321,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                     water, sea_land_mask, "", rsuTable,
                     surface_vegetation,
                     surface_hydro, surface_urban_areas, snappingTolerance,false,indicatorUse,
-                    prefixName)
+                    prefixName, rsu_clean)
             buildingForGeoCalc = spatialUnitsForCalc.building
             blocksForGeoCalc = spatialUnitsForCalc.block
             rsuForGeoCalc = spatialUnitsForCalc.rsu
@@ -1354,7 +1367,7 @@ Map computeAllGeoIndicators(JdbcDataSource datasource, String zone, String zone_
                 water, sea_land_mask, "", rsuTable,
                 surface_vegetation,
                 surface_hydro, surface_urban_areas, snappingTolerance,clipGeom,indicatorUse,
-                prefixName)
+                prefixName, rsu_clean)
         def relationBuildings = spatialUnits.building
         def relationBlocks = spatialUnits.block
         rsuTable = spatialUnits.rsu
@@ -1387,7 +1400,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
                            String building_estimate, String sea_land_mask, String urban_areas, String rsu,
                            double surface_vegetation, double surface_hydro, double surface_urban_areas,
                            double snappingTolerance, String buildingHeightModelName,
-                           boolean clipGeom, String prefixName = "") throws Exception {
+                           boolean clipGeom, String prefixName = "", String rsu_clean = null) throws Exception {
     if (!building_estimate) {
         throw new IllegalArgumentException("To estimate the building height a table that contains the list of building to estimate must be provided")
     }
@@ -1402,7 +1415,7 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
             building, road, rail, vegetation,
             water, sea_land_mask, urban_areas, rsu,
             surface_vegetation, surface_hydro, surface_urban_areas, snappingTolerance,clipGeom,["UTRF"],
-            prefixName)
+            prefixName, rsu_clean)
     def relationBuildings = spatialUnits.building
     def relationBlocks = spatialUnits.block
     def rsuTable = spatialUnits.rsu
