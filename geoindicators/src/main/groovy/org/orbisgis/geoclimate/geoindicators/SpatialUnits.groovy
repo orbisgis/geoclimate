@@ -130,7 +130,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
         CREATE TABLE $outputTableName as 
         SELECT CAST((row_number() over()) as Integer) as  $COLUMN_ID_NAME,
         ST_BUFFER(ST_BUFFER(the_geom,-0.01, 'quad_segs=2 endcap=flat  join=mitre'),0.01, 'quad_segs=2 endcap=flat join=mitre') AS the_geom FROM 
-        ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
+        ST_EXPLODE('(SELECT ST_POLYGONIZE(ST_UNION(ST_ACCUM(the_geom))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area
         """)
     } else {
@@ -139,7 +139,7 @@ String createTSU(JdbcDataSource datasource, String inputTableName, String zone,
                     CREATE TABLE $outputTableName AS 
                         SELECT CAST((row_number() over()) as Integer)  AS $COLUMN_ID_NAME, ST_SETSRID(ST_BUFFER(ST_BUFFER(the_geom,-0.01, 2), 0.01, 2), $epsg) AS the_geom 
                         FROM ST_EXPLODE('(
-                                SELECT ST_POLYGONIZE(ST_UNION(ST_NODE(ST_ACCUM(the_geom)))) AS the_geom 
+                                SELECT ST_POLYGONIZE(ST_UNION(ST_ACCUM(the_geom))) AS the_geom 
                                 FROM $inputTableName)') where st_area(the_geom) > $area""".toString()
     }
     debug "Reference spatial units table created"
@@ -228,7 +228,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     FROM $vegetation  AS a, $vegetation AS b 
                     WHERE a.ID_VEGET <>b.ID_VEGET AND a.the_geom && b.the_geom 
                     AND ST_INTERSECTS(b.the_geom,a.the_geom)
-                    UNION
+                    UNION ALL
                     SELECT a.ID_VEGET as START_NODE, a.ID_VEGET AS END_NODE 
                     FROM $vegetation  AS a);
                     """)
@@ -289,7 +289,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                     FROM $water  AS a, $water AS b 
                     WHERE a.ID_WATER <>b.ID_WATER AND a.the_geom && b.the_geom 
                     AND ST_INTERSECTS(b.the_geom,a.the_geom) and a.ZINDEX=0
-                    UNION SELECT a.ID_WATER as START_NODE, a.ID_WATER AS END_NODE 
+                    UNION ALL SELECT a.ID_WATER as START_NODE, a.ID_WATER AS END_NODE 
                     FROM $water  AS a);""")
 
                     //Recherche des clusters
@@ -341,7 +341,7 @@ String prepareTSUData(JdbcDataSource datasource, String zone, String road, Strin
                             (
                                 SELECT st_setsrid(ST_ToMultiLine(THE_GEOM),$epsg) as the_geom
                                 FROM $zone) 
-                            UNION ${queryCreateOutputTable.values().join(' union ')};
+                            UNION ALL ${queryCreateOutputTable.values().join(' union ')};
                         DROP TABLE IF EXISTS ${queryCreateOutputTable.keySet().join(' , ')}
                 """.toString()
             } else {

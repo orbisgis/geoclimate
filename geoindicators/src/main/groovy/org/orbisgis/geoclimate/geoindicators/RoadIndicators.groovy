@@ -121,7 +121,17 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
                 } else {
                     queryMapper += "${flatListColumns}, st_force2D(a.the_geom) as the_geom FROM $road  as a where type not in ('track', 'path', 'cycleway', 'steps')"
                 }
-                datasource.withBatch(100) { stmt ->
+                def insertTraffic = """INSERT INTO $outputTableName (THE_GEOM, ID_SOURCE, ROAD_TYPE, SOURCE_ROAD_TYPE,
+                        SURFACE, DIRECTION, SLOPE ,PAVEMENT,
+                        DAY_LV_HOUR, DAY_HV_HOUR , DAY_LV_SPEED  ,DAY_HV_SPEED , 
+                        NIGHT_LV_HOUR , NIGHT_HV_HOUR , NIGHT_LV_SPEED , NIGHT_HV_SPEED , 
+                        EV_LV_HOUR ,EV_HV_HOUR , EV_LV_SPEED , EV_HV_SPEED )
+                        VALUES (:the_geom, :id_source, :road_type, :source_road_type,
+                        :surface, :direction, NULL, :pavement,
+                        :day_lv_hour, :day_hv_hour, :speed, :speed,
+                        :night_lv_hour, :night_hv_hour, :speed, :speed,
+                        :ev_lv_hour, :ev_hv_hour, :speed, :speed)""".toString()
+                datasource.withBatch(1000, insertTraffic) { psTraffic ->
                     datasource.eachRow(queryMapper) { row ->
                         //Find road type
                         def source_road_type = row."type"
@@ -142,16 +152,23 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
                             if (geom) {
                                 //Explode geometries
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    stmt.addBatch """insert into $outputTableName (THE_GEOM, ID_SOURCE, ROAD_TYPE, SOURCE_ROAD_TYPE,
-                                        SURFACE, DIRECTION, SLOPE ,PAVEMENT,
-                                        DAY_LV_HOUR, DAY_HV_HOUR , DAY_LV_SPEED  ,DAY_HV_SPEED , 
-                                        NIGHT_LV_HOUR , NIGHT_HV_HOUR , NIGHT_LV_SPEED , NIGHT_HV_SPEED , 
-                                        EV_LV_HOUR ,EV_HV_HOUR , EV_LV_SPEED , EV_HV_SPEED ) 
-                                        values(ST_GEOMFROMTEXT('${geom.getGeometryN(i)}',$epsg), '${row.id_road}','${road_type}','${source_road_type}',
-                                        '${surface}',${direction},null, '${pavement_value}',
-                                        ${traffic_data.day_lv_hour},${traffic_data.day_hv_hour},${maxspeed_value},${maxspeed_value},
-                                        ${traffic_data.night_lv_hour},${traffic_data.night_hv_hour},${maxspeed_value},${maxspeed_value},
-                                        ${traffic_data.ev_lv_hour},${traffic_data.ev_hv_hour},${maxspeed_value},${maxspeed_value})""".toString()
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    subGeom.setSRID(epsg)
+                                    psTraffic.addBatch([
+                                            the_geom        : subGeom,
+                                            id_source       : row.id_road,
+                                            road_type       : road_type,
+                                            source_road_type: source_road_type,
+                                            surface         : surface,
+                                            direction       : direction,
+                                            pavement        : pavement_value,
+                                            day_lv_hour     : traffic_data.day_lv_hour,
+                                            day_hv_hour     : traffic_data.day_hv_hour,
+                                            night_lv_hour   : traffic_data.night_lv_hour,
+                                            night_hv_hour   : traffic_data.night_hv_hour,
+                                            ev_lv_hour      : traffic_data.ev_lv_hour,
+                                            ev_hv_hour      : traffic_data.ev_hv_hour,
+                                            speed           : maxspeed_value])
                                 }
                             }
                         }
@@ -179,6 +196,7 @@ String build_road_traffic(JdbcDataSource datasource, String road, String zone = 
     }
     return outputTableName
 }
+
 /**
  * Return a pavement identifier according the CNOSSOS-EU specification
  * @param pavements an array of pavement regarding the osm value

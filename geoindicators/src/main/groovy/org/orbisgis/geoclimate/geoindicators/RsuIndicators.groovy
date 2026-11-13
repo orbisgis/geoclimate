@@ -280,17 +280,18 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String id_rsu,
 
         // Create the geometries of buildings and RSU holes included within each RSU
         datasource.execute("""
-                DROP TABLE IF EXISTS $rsuDiff, $multiptsRSU, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
-                CREATE TABLE $rsuDiff 
-                AS (SELECT  CASE WHEN   ST_ISEMPTY(st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU))))
-                            THEN        ST_EXTERIORRING(ST_NORMALIZE(a.$GEOMETRIC_COLUMN_RSU))
-                            ELSE        st_difference(a.$GEOMETRIC_COLUMN_RSU, st_makevalid(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU)))
-                            END         AS the_geom, a.$ID_COLUMN_RSU
-                FROM        $rsu a, $correlationBuildingTable b 
-                WHERE       a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, 
-                            b.$GEOMETRIC_COLUMN_BU)
-                GROUP BY    a.$ID_COLUMN_RSU);
-            """)
+        DROP TABLE IF EXISTS $rsuDiff, $multiptsRSU, $multiptsRSUtot, $rsuDiffTot,$pts_RANG,$pts_order,$ptsRSUtot, $svfPts, $outputTableName;
+        CREATE TABLE $rsuDiff AS
+        SELECT CASE WHEN ST_ISEMPTY(diff) THEN ST_EXTERIORRING(ST_NORMALIZE(rsu_geom))
+                    ELSE diff END AS the_geom, $ID_COLUMN_RSU
+        FROM (SELECT a.$ID_COLUMN_RSU, a.$GEOMETRIC_COLUMN_RSU AS rsu_geom,
+                     ST_DIFFERENCE(a.$GEOMETRIC_COLUMN_RSU, ST_MAKEVALID(ST_ACCUM(b.$GEOMETRIC_COLUMN_BU))) AS diff
+              FROM $rsu a, $correlationBuildingTable b
+              WHERE a.$GEOMETRIC_COLUMN_RSU && b.$GEOMETRIC_COLUMN_BU
+                AND ST_INTERSECTS(a.$GEOMETRIC_COLUMN_RSU, b.$GEOMETRIC_COLUMN_BU)
+              GROUP BY a.$ID_COLUMN_RSU) AS t;
+        """)
+        
         datasource.execute("""
                 CREATE INDEX ON $rsuDiff ($ID_COLUMN_RSU);
                 CREATE TABLE $rsuDiffTot AS 
@@ -319,7 +320,7 @@ String groundSkyViewFactor(JdbcDataSource datasource, String rsu, String id_rsu,
                                 FROM    ST_EXPLODE('(SELECT $ID_COLUMN_RSU, ST_LocateAlong(THE_GEOM, 0.5, 0.01) AS THE_GEOM 
                                             FROM $rsuDiffTot
                                             WHERE ST_DIMENSION(THE_GEOM)=1)')
-                            UNION 
+                            UNION ALL
                                 SELECT $ID_COLUMN_RSU, THE_GEOM
                                 FROM $multiptsRSU""")
 
@@ -491,8 +492,8 @@ String projectedFacadeAreaDistribution(JdbcDataSource datasource, String buildin
                     DROP TABLE IF EXISTS $buildingFree;
                     CREATE TABLE $buildingFree (the_geom GEOMETRY, z_max double precision, z_min double precision)
                     AS (SELECT  ST_TOMULTISEGMENTS(a.the_geom) as the_geom, a.$HEIGHT_WALL as z_max, 0  as z_min
-                    FROM $building a WHERE a.$ID_COLUMN_BU NOT IN (SELECT ID_build_a 
-                    FROM $buildingIntersection)) UNION ALL (SELECT  
+                    FROM $building a LEFT JOIN $buildingIntersection i ON a.$ID_COLUMN_BU = i.ID_build_a
+                    WHERE i.ID_build_a IS NULL) UNION ALL (SELECT  
                     ST_TOMULTISEGMENTS(ST_DIFFERENCE(ST_TOMULTILINE(a.$GEOMETRIC_COLUMN_BU), 
                     ST_UNION(ST_ACCUM(b.the_geom)))) as the_geom, a.$HEIGHT_WALL as z_max, 0 as z_min FROM $building a, 
                     $buildingIntersection b WHERE a.$ID_COLUMN_BU=b.ID_build_a and st_isempty(b.the_geom)=false
@@ -1589,7 +1590,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             }
             def tmp_tables = postfix "tmp_tables_zindex0"
             datasource.execute("""DROP TABLE if exists $tmp_tables;
-            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zone} integer) AS ${tablesToMerge.values().join(' union ')};
+            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zone} integer) AS ${tablesToMerge.values().join(' union ALL ')};
                """)
 
             //Polygonize the input tables
@@ -2540,7 +2541,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
         }
         def tmp_tables = postfix "tmp_tables_zindex0"
         datasource.execute("""DROP TABLE if exists $tmp_tables;
-            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zone} integer) AS ${tablesToMerge.values().join(' union ')};
+            CREATE TABLE $tmp_tables(the_geom GEOMETRY, ${id_zone} integer) AS ${tablesToMerge.values().join(' union ALL ')};
                """)
 
         //Polygonize the input tables

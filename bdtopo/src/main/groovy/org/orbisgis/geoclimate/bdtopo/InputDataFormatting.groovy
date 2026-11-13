@@ -39,7 +39,7 @@ import org.orbisgis.geoclimate.Geoindicators
  * @return building_updated The name of the table containing the state of estimation for each building
  */
 Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone = "",
-                           String urban_areas = "", float h_lev_min = 3) throws Exception {
+                        String urban_areas = "", float h_lev_min = 3) throws Exception {
     if (!h_lev_min) {
         h_lev_min = 3
     }
@@ -250,59 +250,60 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                     "attraction"                : 0
             ]
 
-
             //Formating building table
             def id_build = 1
-            datasource.withBatch(100) { stmt ->
-                datasource.eachRow(queryMapper.toString()) { row ->
-                    def values = row.toRowResult()
-                    def id_source = values.ID_SOURCE
-                    def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
-                    def feature_type = type_use[0]
-                    def feature_main_use = type_use[1]
-                    def height_wall = values.HEIGHT_WALL
-                    def height_roof = values.HEIGHT_ROOF
-                    def nb_lev = 0
-                    //Update height_wall
-                    if (!height_wall) {
-                        height_wall = 0
-                    }
-                    //Update height_roof
-                    if (!height_roof && height_wall) {
-                        height_roof = height_wall
-                    }
-                    //Update NB_LEV, HEIGHT_WALL and HEIGHT_ROOF
-                    def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
-                            feature_type, building_type_level)
+            def insertBuilding = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL, HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX)
+                    VALUES (:the_geom, :id_build, :id_source, :height_wall, :height_roof, :nb_lev, :type, :main_use, :zindex)""".toString()
+            def insertEstimate = """INSERT INTO $outputEstimateTableName (ID_BUILD, HEIGHT, TYPE)
+                    VALUES (:id_build, 1, 0)""".toString()
+            datasource.withBatch(1000, insertBuilding) { psBuild ->
+                datasource.withBatch(1000, insertEstimate) { psEstim ->
+                    datasource.eachRow(queryMapper.toString()) { row ->
+                        def values = row.toRowResult()
+                        def id_source = values.ID_SOURCE
+                        def type_use = getTypeAndUse(values.TYPE, values.MAIN_USE, types_uses_dictionnary)
+                        def feature_type = type_use[0]
+                        def feature_main_use = type_use[1]
+                        def height_wall = values.HEIGHT_WALL
+                        def height_roof = values.HEIGHT_ROOF
+                        def nb_lev = 0
+                        //Update height_wall
+                        if (!height_wall) {
+                            height_wall = 0
+                        }
+                        //Update height_roof
+                        if (!height_roof && height_wall) {
+                            height_roof = height_wall
+                        }
+                        //Update NB_LEV, HEIGHT_WALL and HEIGHT_ROOF
+                        def formatedHeight = Geoindicators.WorkflowGeoIndicators.formatHeightsAndNbLevels(height_wall, height_roof, nb_lev, h_lev_min,
+                                feature_type, building_type_level)
 
-                    def zIndex = 0
-                    if (formatedHeight.nbLevels > 0) {
-                        Geometry geom = values.the_geom
-                        if (!geom.isEmpty()) {
-                            def srid = geom.getSRID()
-                            for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                Geometry subGeom = geom.getGeometryN(i)
-                                if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                    stmt.addBatch """
-                                                INSERT INTO ${outputTableName} values(
-                                                    ST_GEOMFROMTEXT('${subGeom}',$srid), 
-                                                    $id_build, 
-                                                    '$id_source',
-                                                    ${formatedHeight.heightWall},
-                                                    ${formatedHeight.heightRoof},
-                                                    ${formatedHeight.nbLevels},
-                                                    '${feature_type}',
-                                                    '${feature_main_use}',
-                                                    ${zIndex}, null)
-                                            """.toString()
-
-                                    if (formatedHeight.estimated) {
-                                        stmt.addBatch("""
-                                                INSERT INTO ${outputEstimateTableName} values(
-                                                    $id_build, 1, 0)
-                                                """.toString())
+                        def zIndex = 0
+                        if (formatedHeight.nbLevels > 0) {
+                            Geometry geom = values.the_geom
+                            if (!geom.isEmpty()) {
+                                def srid = geom.getSRID()
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    Geometry subGeom = geom.getGeometryN(i)
+                                    if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
+                                        subGeom.setSRID(srid)
+                                        psBuild.addBatch([
+                                                the_geom   : subGeom,
+                                                id_build   : id_build,
+                                                id_source  : id_source,
+                                                height_wall: formatedHeight.heightWall,
+                                                height_roof: formatedHeight.heightRoof,
+                                                nb_lev     : formatedHeight.nbLevels,
+                                                type       : feature_type,
+                                                main_use   : feature_main_use,
+                                                zindex     : zIndex])
+                                        if (formatedHeight.estimated) {
+                                            psEstim.addBatch([id_build: id_build])
+                                        }
+                                        id_build++
                                     }
-                                    id_build++
                                 }
                             }
                         }
@@ -311,7 +312,6 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
             }
             //Let's use the urban areas table to improve building qualification
             if (urban_areas) {
-
                 datasource.createSpatialIndex(outputTableName, "the_geom")
                 datasource.createIndex(outputTableName, "id_build")
                 datasource.createIndex(outputTableName, "type")
@@ -349,7 +349,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 DROP TABLE IF EXISTS $building_updated_merge;
                 CREATE TABLE $building_updated_merge as select
                 a.id_build, 0 AS HEIGHT, 1 as type from $outputTableName a , $buildinType as b where a.id_build=b.id_build
-                union select id_build, HEIGHT ,TYPE from $outputEstimateTableName
+                union all select id_build, HEIGHT ,TYPE from $outputEstimateTableName
                 """)
 
                 //Clean the building_updated table
@@ -447,7 +447,10 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                 queryMapper += ", a.the_geom FROM $road  as a"
             }
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertRoad = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_ROAD, ID_SOURCE, WIDTH, TYPE, CROSSING, SURFACE, SIDEWALK, MAXSPEED, DIRECTION, LANES, ZINDEX, TUNNEL)
+                    VALUES (:the_geom, :id_road, :id_source, :width, :type, :crossing, :surface, :sidewalk, :maxspeed, :direction, :lanes, :zindex, :tunnel)""".toString()
+            datasource.withBatch(1000, insertRoad) { psRoad ->
                 datasource.eachRow(queryMapper) { row ->
                     //Default value added here.
                     //TODO : check construction_lineaire layer in a future version
@@ -581,22 +584,21 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (!subGeom.isEmpty()) {
-                                    stmt.addBatch """
-                                        INSERT INTO $outputTableName VALUES(ST_GEOMFROMTEXT(
-                                        '${subGeom}',$epsg), 
-                                        ${rowcount++}, 
-                                        '${ID_SOURCE}', 
-                                        ${qualified_road_width},
-                                        '${qualified_road_type}',
-                                        ${qualified_crossing ? "'${qualified_crossing}'" : qualified_crossing}, 
-                                        '${qualified_road_surface}',
-                                        '${qualified_sidewalk}',
-                                        ${qualified_road_maxspeed},
-                                        ${road_sens},
-                                        ${row.'nb_voies'},
-                                        ${qualified_road_zindex},
-                                        ${tunnel})
-                                        """.toString()
+                                    subGeom.setSRID(epsg)
+                                    psRoad.addBatch([
+                                            the_geom : subGeom,
+                                            id_road  : rowcount++,
+                                            id_source: ID_SOURCE,
+                                            width    : qualified_road_width,
+                                            type     : qualified_road_type,
+                                            crossing : qualified_crossing,
+                                            surface  : qualified_road_surface,
+                                            sidewalk : qualified_sidewalk,
+                                            maxspeed : qualified_road_maxspeed,
+                                            direction: road_sens,
+                                            lanes    : row.'nb_voies',
+                                            zindex   : qualified_road_zindex,
+                                            tunnel   : tunnel])
                                 }
                             }
                         }
@@ -668,7 +670,9 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                     ]
 
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertWater = """INSERT INTO $outputTableName (THE_GEOM, ID_WATER, ID_SOURCE, TYPE, INTERMITTENT, ZINDEX)
+                    VALUES (:the_geom, :id_water, :id_source, :type, :intermittent, :zindex)""".toString()
+            datasource.withBatch(1000, insertWater) { psWater ->
                 datasource.eachRow(query) { row ->
                     def water_type = water_types.get(row.TYPE)
                     def water_zindex = 0
@@ -680,8 +684,14 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                    stmt.addBatch("""insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}',
-                                    ${(regime && regime != "Permanent")}, ${water_zindex})""".toString())
+                                    subGeom.setSRID(epsg)
+                                    psWater.addBatch([
+                                            the_geom    : subGeom,
+                                            id_water    : rowcount++,
+                                            id_source   : row.ID_SOURCE,
+                                            type        : water_type,
+                                            intermittent: (regime && regime != "Permanent"),
+                                            zindex      : water_zindex])
                                 }
                             }
                         }
@@ -739,7 +749,10 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                               'Sans objet'                : null,
                               'NC'                        : null]
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertRail = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_RAIL, ID_SOURCE, TYPE, CROSSING, ZINDEX, WIDTH, USAGE)
+                    VALUES (:the_geom, :id_rail, :id_source, :type, :crossing, :zindex, :width, :usage)""".toString()
+            datasource.withBatch(1000, insertRail) { psRail ->
                 datasource.eachRow(queryMapper.toString()) { row ->
                     def rail_type = row.TYPE
                     if (rail_type) {
@@ -768,17 +781,16 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (!subGeom.isEmpty()) {
-                                    stmt.addBatch """
-                                    INSERT INTO $outputTableName values(ST_GEOMFROMTEXT(
-                                    '${subGeom}',$epsg), 
-                                    ${rowcount++}, 
-                                    '${row.ID_SOURCE}',
-                                    '${rail_type}',
-                                    ${rail_crossing ? "'${rail_crossing}'" : rail_crossing},
-                                    ${rail_zindex},
-                                    ${rail_width},
-                                    ${rail_usage ? "'${rail_usage}'" : rail_usage})
-                                """
+                                    subGeom.setSRID(epsg)
+                                    psRail.addBatch([
+                                            the_geom : subGeom,
+                                            id_rail  : rowcount++,
+                                            id_source: row.ID_SOURCE,
+                                            type     : rail_type,
+                                            crossing : rail_crossing,
+                                            zindex   : rail_zindex,
+                                            width    : rail_width,
+                                            usage    : rail_usage])
                                 }
                             }
                         }
@@ -862,7 +874,10 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
             ]
 
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertVeget = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_VEGET, ID_SOURCE, TYPE, HEIGHT_CLASS, ZINDEX)
+                    VALUES (:the_geom, :id_veget, :id_source, :type, :height_class, :zindex)""".toString()
+            datasource.withBatch(1000, insertVeget) { psVeget ->
                 datasource.eachRow(queryMapper) { row ->
                     def vegetation_type = row.TYPE
                     if (vegetation_type) {
@@ -880,14 +895,15 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
                         if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                            stmt.addBatch """
-                                            INSERT INTO $outputTableName VALUES(
-                                                ST_GEOMFROMTEXT('${subGeom}',$epsg), 
-                                                ${rowcount++}, 
-                                                '${row.ID_SOURCE}',
-                                                '${vegetation_type}', 
-                                                '${height_class}', ${vegetation_zindex})
-                                    """.toString()
+                            subGeom.setSRID(epsg)
+                            // String.valueOf keeps the previous behaviour : an unknown type is stored as 'null'
+                            psVeget.addBatch([
+                                    the_geom    : subGeom,
+                                    id_veget    : rowcount++,
+                                    id_source   : row.ID_SOURCE,
+                                    type        : String.valueOf(vegetation_type),
+                                    height_class: String.valueOf(height_class),
+                                    zindex      : vegetation_zindex])
                         }
                     }
                 }
@@ -933,7 +949,9 @@ String formatImperviousLayer(H2GIS datasource, String impervious) throws Excepti
     def query = """SELECT LISTAGG(a.ID_IMPERVIOUS, ',') AS ids_impervious, LISTAGG(a.TYPE, ',') AS types, b.EXPLOD_ID as id, b.the_geom  FROM $impervious AS a, $polygonizedTable AS b
             WHERE a.the_geom && b.the_geom AND st_intersects(st_pointonsurface(b.the_geom), a.the_geom) GROUP BY b.explod_id;""".toString()
     int rowcount = 1
-    datasource.withBatch(100) { stmt ->
+    def insertImpervious = """INSERT INTO $outputTableName (THE_GEOM, ID_IMPERVIOUS, TYPE)
+            VALUES (:the_geom, :id_impervious, :type)""".toString()
+    datasource.withBatch(1000, insertImpervious) { psImpervious ->
         datasource.eachRow(query) { row ->
             def types = row.types
             //Choose the best impervious type
@@ -945,7 +963,8 @@ String formatImperviousLayer(H2GIS datasource, String impervious) throws Excepti
                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                     Geometry subGeom = geom.getGeometryN(i)
                     if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
+                        subGeom.setSRID(epsg)
+                        psImpervious.addBatch([the_geom: subGeom, id_impervious: rowcount++, type: type])
                     }
                 }
             }

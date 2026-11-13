@@ -310,18 +310,21 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
         """.toString())
 
             datasource.createSpatialIndex(grid)
-            datasource.withBatch(100) { stmt ->
+            def selectCells = "SELECT the_geom, ${id_grid} as id from $grid where ? && the_geom".toString()
+            def insertDistance = "INSERT INTO $outputTableName VALUES (:the_geom, :id, :distance)".toString()
+            datasource.withBatch(1000, insertDistance) { psDistance ->
                 datasource.eachRow("SELECT the_geom from $input_polygons".toString()) { row ->
                     Geometry geom = row.the_geom
                     if (geom) {
+                        geom.setSRID(epsg)
                         PreparedGeometry prepGEom = PreparedGeometryFactory.prepare(geom)
                         IndexedFacetDistance indexedFacetDistance = new IndexedFacetDistance(geom)
-                        datasource.eachRow("""SELECT the_geom, ${id_grid} as id from $grid 
-                where ST_GEOMFROMTEXT('${geom}',$epsg)  && the_geom """.toString()) { cell ->
+                        datasource.eachRow(selectCells, [geom]) { cell ->
                             Geometry cell_geom = cell.the_geom
                             if (prepGEom.intersects(cell_geom.getCentroid())) {
                                 double distance = indexedFacetDistance.distance(cell_geom.getCentroid())
-                                stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${cell_geom}',$epsg), ${cell.id},${distance})".toString()
+                                cell_geom.setSRID(epsg)
+                                psDistance.addBatch([the_geom: cell_geom, id: cell.id, distance: distance])
                             }
                         }
                     }
@@ -332,18 +335,20 @@ String gridDistances(JdbcDataSource datasource, String input_polygons, String gr
         CREATE TABLE $outputTableName ($id_grid INT, DISTANCE FLOAT);
         """.toString())
             datasource.createSpatialIndex(grid)
-            datasource.withBatch(100) { stmt ->
+            def selectCells = "SELECT the_geom, ${id_grid} as id from $grid where ? && the_geom".toString()
+            def insertDistance = "INSERT INTO $outputTableName VALUES (:id, :distance)".toString()
+            datasource.withBatch(1000, insertDistance) { psDistance ->
                 datasource.eachRow("SELECT the_geom from $input_polygons".toString()) { row ->
                     Geometry geom = row.the_geom
                     if (geom) {
+                        geom.setSRID(epsg)
                         PreparedGeometry prepGEom = PreparedGeometryFactory.prepare(geom)
                         IndexedFacetDistance indexedFacetDistance = new IndexedFacetDistance(geom)
-                        datasource.eachRow("""SELECT the_geom, ${id_grid} as id from $grid 
-                where ST_GEOMFROMTEXT('${geom}',$epsg)  && the_geom""".toString()) { cell ->
+                        datasource.eachRow(selectCells, [geom]) { cell ->
                             Geometry cell_geom = cell.the_geom.getCentroid()
                             if (prepGEom.intersects(cell_geom)) {
                                 double distance = indexedFacetDistance.distance(cell_geom)
-                                stmt.addBatch "insert into $outputTableName values(${cell.id},${distance})".toString()
+                                psDistance.addBatch([id: cell.id, distance: distance])
                             }
                         }
                     }

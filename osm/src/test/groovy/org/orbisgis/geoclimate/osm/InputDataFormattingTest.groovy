@@ -283,98 +283,125 @@ class InputDataFormattingTest {
     //enable it to test data extraction from the overpass api
     void extractCreateFormatGISLayers() {
         def directory = "/tmp/geoclimate"
-
-        File file = new File(directory)
-        if (!file.exists()) {
-            file.mkdir()
-        }
-        def h2GIS = H2GIS.open("${file.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
-
         def zoneToExtract = "Redon"
+        //zoneToExtract = [48.889780, 2.226381, 48.891529, 2.230699]
+        //zoneToExtract = [51.328681, 1.195128, 51.331121, 1.199162]
 
-        //def nominatim = OSMTools.Utilities.getNominatimData(zoneToExtract)
-        // zoneToExtract = nominatim.bbox
+        // Layers to format : keep only the ones you want,
+        // or override them with the JVM option -Dlayers=building,road
+        def allLayers = ["urban_areas", "building", "road", "rail", "vegetation",
+                         "water", "impervious", "sea_land_mask"]
+        def layers = (System.getProperty("layers")?.split(",")*.trim() ?: allLayers) as Set
+        def unknown = layers - allLayers
+        assertTrue(unknown.isEmpty(), "Unknown layers : $unknown, available layers : $allLayers".toString())
+        // The sea/land mask needs the formatted water table
+        if ("sea_land_mask" in layers) {
+            layers << "water"
+        }
 
-       zoneToExtract =  [48.889780,2.226381,48.891529,2.230699]
+        File folder = new File(directory)
+        folder.mkdirs()
+        def h2GIS = H2GIS.open("${folder.absolutePath + File.separator}osm_gislayers;AUTO_SERVER=TRUE".toString())
 
-        //zoneToExtract =[51.328681,1.195128,51.331121,1.199162]
         Map extractData = OSM.InputDataLoading.extractAndCreateGISLayers(h2GIS, zoneToExtract)
+        assertNotNull(extractData.zone)
 
-        String formatedPlaceName = zoneToExtract.join("_").trim().split("\\s*(,|\\s)\\s*").join("_");
+        //Zone
+        saveTable(h2GIS, extractData.zone, folder, "zone")
+        saveTable(h2GIS, extractData.zone_envelope, folder, "zone_envelope")
 
-        if (!formatedPlaceName) {
-            formatedPlaceName = zoneToExtract
+        //Urban Areas
+        String urbanAreas = ""
+        if ("urban_areas" in layers) {
+            long start = System.currentTimeMillis()
+            urbanAreas = OSM.InputDataFormatting.formatUrbanAreas(h2GIS, extractData.urban_areas, extractData.zone)
+            logFormat(h2GIS, "Urban areas", start, urbanAreas)
+            saveTable(h2GIS, urbanAreas, folder, "urban_areas")
         }
 
-        if (extractData.zone != null) {
-            //Zone
-            def epsg = h2GIS.getSpatialTable(extractData.zone).srid
-            h2GIS.getTable(extractData.zone).save("${file.absolutePath + File.separator}zone.fgb", true)
+        //Buildings
+        if ("building" in layers) {
+            long start = System.currentTimeMillis()
+            String building = OSM.InputDataFormatting.formatBuildingLayer(h2GIS, extractData.building,
+                    extractData.zone, urbanAreas).building
+            logFormat(h2GIS, "Building", start, building)
+            saveTable(h2GIS, building, folder, "building")
+        }
 
-            //Zone envelope
-            h2GIS.getTable(extractData.zone_envelope).save("${file.absolutePath + File.separator}zone_envelope.fgb", true)
+        //Roads
+        if ("road" in layers) {
+            long start = System.currentTimeMillis()
+            String road = OSM.InputDataFormatting.formatRoadLayer(h2GIS, extractData.road, extractData.zone_envelope)
+            logFormat(h2GIS, "Road", start, road)
+            saveTable(h2GIS, road, folder, "road")
+        }
 
-            //Urban Areas
-            def inputUrbanAreas = OSM.InputDataFormatting.formatUrbanAreas(h2GIS,
-                    extractData.urban_areas,extractData.zone)
-            h2GIS.save(inputUrbanAreas,"${file.absolutePath + File.separator}urban_areas.fgb", true)
+        //Rails
+        if ("rail" in layers) {
+            long start = System.currentTimeMillis()
+            String rail = OSM.InputDataFormatting.formatRailsLayer(h2GIS, extractData.rail, extractData.zone_envelope)
+            logFormat(h2GIS, "Rail", start, rail)
+            saveTable(h2GIS, rail, folder, "rail")
+        }
 
-            println("Urban areas formatted")
+        //Vegetation
+        if ("vegetation" in layers) {
+            long start = System.currentTimeMillis()
+            String vegetation = OSM.InputDataFormatting.formatVegetationLayer(h2GIS, extractData.vegetation,
+                    extractData.zone_envelope)
+            logFormat(h2GIS, "Vegetation", start, vegetation)
+            saveTable(h2GIS, vegetation, folder, "vegetation")
+        }
 
-            //Buildings
-            def inputBuildings = OSM.InputDataFormatting.formatBuildingLayer(h2GIS,
-                     extractData.building,extractData.zone,inputUrbanAreas)
-            h2GIS.save(inputBuildings.building,"${file.absolutePath + File.separator}building.fgb", true)
+        //Hydrography
+        String water = null
+        if ("water" in layers) {
+            saveTable(h2GIS, extractData.water, folder, "water_osm")
+            long start = System.currentTimeMillis()
+            water = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
+            logFormat(h2GIS, "Water", start, water)
+        }
 
-            println("Building formatted")
+        //Impervious
+        if ("impervious" in layers) {
+            long start = System.currentTimeMillis()
+            String impervious = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
+                    extractData.zone_envelope)
+            logFormat(h2GIS, "Impervious", start, impervious)
+            saveTable(h2GIS, impervious, folder, "impervious")
+        }
 
-            //Roads
-            def inputRoadTableName = OSM.InputDataFormatting.formatRoadLayer( h2GIS,extractData.road, extractData.zone_envelope)
-            h2GIS.save(inputRoadTableName,"${file.absolutePath + File.separator}road.fgb", true)
-
-            println("Road formatted")
-
-            //Rails
-            def inputRailTableName = OSM.InputDataFormatting.formatRailsLayer( h2GIS,extractData.rail, extractData.zone_envelope)
-            h2GIS.save(inputRailTableName,"${file.absolutePath + File.separator}rail.fgb", true)
-
-            println("Rail formatted")
-
-            //Vegetation
-            def inputVegetationTableName = OSM.InputDataFormatting.formatVegetationLayer(
-                    h2GIS,extractData.vegetation,extractData.zone_envelope)
-            h2GIS.save(inputVegetationTableName,"${file.absolutePath + File.separator}vegetation.fgb", true)
-
-            println("Vegetation formatted")
-
-            //Hydrography
-            h2GIS.save(extractData.water,"${file.absolutePath + File.separator}water_osm.fgb", true)
-            def inputWaterTableName = OSM.InputDataFormatting.formatWaterLayer(h2GIS, extractData.water, extractData.zone_envelope)
-
-            //Impervious
-            String imperviousTable = OSM.InputDataFormatting.formatImperviousLayer(h2GIS, extractData.impervious,
-                     extractData.zone_envelope)
-             h2GIS.save(imperviousTable,"${file.absolutePath + File.separator}impervious.fgb", true)
-
-             println("Impervious formatted")
-
+        //Sea/Land mask
+        if ("sea_land_mask" in layers) {
             //Save coastlines to debug
-            h2GIS.save(extractData.coastline, "${file.absolutePath + File.separator}coastlines.fgb", true)
-
-
-            //Sea/Land mask
-            def inputSeaLandTableName = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
-                    extractData.zone_envelope, inputWaterTableName)
-            h2GIS.save(inputSeaLandTableName, "${file.absolutePath + File.separator}sea_land_mask.fgb", true)
-
-            println("Sea land mask formatted")
-
-            //Save it after sea/land mask because the water table can be modified
-            h2GIS.save(inputWaterTableName, "${file.absolutePath + File.separator}water.fgb", true)
-
-        } else {
-            assertTrue(false)
+            saveTable(h2GIS, extractData.coastline, folder, "coastlines")
+            long start = System.currentTimeMillis()
+            String seaLand = OSM.InputDataFormatting.formatSeaLandMask(h2GIS, extractData.coastline,
+                    extractData.zone_envelope, water)
+            logFormat(h2GIS, "Sea land mask", start, seaLand)
+            saveTable(h2GIS, seaLand, folder, "sea_land_mask")
         }
+
+        //Save it after sea/land mask because the water table can be modified
+        if (water) {
+            saveTable(h2GIS, water, folder, "water")
+        }
+    }
+
+    /**
+     * Print the time
+     */
+    private String logFormat(H2GIS h2GIS, String name, long start, String table) {
+        def count = table ? h2GIS.getRowCount(table) : 0
+        println "${name} formatted in ${(System.currentTimeMillis() - start) / 1000} s ($count rows)"
+        return table
+    }
+
+    /**
+     * Save a table in a FlatGeobuf file in the given folder
+     */
+    private void saveTable(H2GIS h2GIS, String table, File folder, String fileName) {
+        h2GIS.save(table, new File(folder, "${fileName}.fgb").absolutePath, true)
     }
 
     //This test is used for debug purpose
@@ -483,9 +510,7 @@ class InputDataFormattingTest {
                 allModelUses.addAll(inputUses)
             }
         }
-
         assertTrue(!(allOSMTypes - allModelTypes))
         assertTrue(!(allOSMUses - allModelUses))
-
     }
 }

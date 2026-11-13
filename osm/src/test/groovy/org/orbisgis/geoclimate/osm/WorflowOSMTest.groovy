@@ -736,7 +736,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Redon"
-        location = [42.029340,-1.000314,42.050982,-0.950446]
+        location = [41.4, -8.6, 41.6, -8.4]
         //def nominatim = OSMTools.Utilities.getNominatimData("Redon")
         def grid_size = 100
         //location =[47.214976592711274,-1.6425595375815742,47.25814872718718,-1.5659501122281323]
@@ -765,9 +765,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "delete": false
                 ],
                 "input"       : [
-                        "locations": [location],
+                        "locations": [ location],
                         //"area":100000,
-                        "timeout"  : 180,
+                        //"timeout"  : 180,
                         //"date":"2017-12-31T19:20:00Z",
                         //"maxsize": 536870918,
                         //"endpoint":"https://lz4.overpass-api.de/api"
@@ -790,7 +790,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                  "indicatorUse": ["LCZ"]//, "TEB"] //, "UTRF"]
 
                          ],
-                          "grid_indicators"   : [
+                          /*"grid_indicators"   : [
                                 "x_size"    : grid_size,
                                 "y_size"    : grid_size,
                                 "rowCol": false,
@@ -805,9 +805,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                                         "HEIGHT_OF_ROUGHNESS_ELEMENTS", "TERRAIN_ROUGHNESS",
                                         "PROJECTED_FACADE_DENSITY_DIR", "URBAN_SPRAWL_AREAS",
                                         "URBAN_SPRAWL_DISTANCES", "URBAN_SPRAWL_COOL_DISTANCES","STREET_WIDTH",
-                                        "BUILDING_DIRECTION", "BUILDING_NUMBER"*/]
+                                        "BUILDING_DIRECTION", "BUILDING_NUMBER"]
                                 //"lcz_lod":1
-                        ]/*,
+                        ],
 
 
                          "road_traffic"                                         : true,
