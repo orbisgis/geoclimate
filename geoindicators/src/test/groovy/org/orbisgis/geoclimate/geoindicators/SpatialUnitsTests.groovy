@@ -505,13 +505,13 @@ class SpatialUnitsTests {
 
         def createRSU = Geoindicators.SpatialUnits.createTSU(h2GIS, "zone_wrongshape_test", 1d,
                 'road_wrongshape_test', 'rail_wrongshape_test',
-                'veget_wrongshape_test', 'hydro_wrongshape_test',
-                "sea_land_wrongshape_test", "urban_areas_wrongshape_test",
+                'vegetation_wrongshape_test', 'water_wrongshape_test',
+                "sea_land_mask_wrongshape_test", "urban_areas_wrongshape_test",
                 10000d, 2500d,
                 10000d, "test")
         assertNotNull(createRSU)
         def rsuWithoutLong = Geoindicators.SpatialUnits.removeLongRsu(h2GIS, createRSU,
-                'hydro_wrongshape_test', "zone_wrongshape_test", 1d, "test")
+                'water_wrongshape_test', "zone_wrongshape_test", 1d, "test")
         assertNotNull(rsuWithoutLong)
         assertTrue(h2GIS.getRowCount(rsuWithoutLong) > 0)
         assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) AS count FROM $rsuWithoutLong WHERE ST_ISEMPTY(THE_GEOM)".toString()).count)
