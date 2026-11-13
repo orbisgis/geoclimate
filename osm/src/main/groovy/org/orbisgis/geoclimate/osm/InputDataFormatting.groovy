@@ -1190,7 +1190,9 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
             }
             def constructions = ["industrial", "commercial", "residential"]
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertUrban = """INSERT INTO $outputTableName (THE_GEOM, ID_URBAN, ID_SOURCE, TYPE)
+                    VALUES (:the_geom, :id_urban, :id_source, :type)""".toString()
+            datasource.withBatch(1000, insertUrban) { psUrban ->
                 datasource.eachRow(queryMapper) { row ->
                     Geometry geom = row.the_geom
                     if(geom) {
@@ -1209,7 +1211,8 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
                                     if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.id}', ${singleQuote(type)})".toString()
+                                        subGeom.setSRID(epsg)
+                                        psUrban.addBatch([the_geom: subGeom, id_urban: rowcount++, id_source: row.id, type: type])
                                     }
                                 }
                             }
