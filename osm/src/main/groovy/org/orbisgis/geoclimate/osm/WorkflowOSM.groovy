@@ -607,7 +607,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     }else if(grid_indicators_params.domain==null && domain=="zone_extended"){
                         grid_zone = h2gis_datasource.getExtent(utm_extended_bbox_table)
                     }else{
-                        grid_zone = h2gis_datasource.getExtent(utm_zone_table)
+                        grid_zone = outputZoneGeometry
                     }
 
                     // Define the priorities and superposition for land fraction (for grid indicators)
