@@ -670,7 +670,9 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                     ]
 
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertWater = """INSERT INTO $outputTableName (THE_GEOM, ID_WATER, ID_SOURCE, TYPE, INTERMITTENT, ZINDEX)
+                    VALUES (:the_geom, :id_water, :id_source, :type, :intermittent, :zindex)""".toString()
+            datasource.withBatch(1000, insertWater) { psWater ->
                 datasource.eachRow(query) { row ->
                     def water_type = water_types.get(row.TYPE)
                     def water_zindex = 0
@@ -682,8 +684,14 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                    stmt.addBatch("""insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${row.ID_SOURCE}', '${water_type}',
-                                    ${(regime && regime != "Permanent")}, ${water_zindex})""".toString())
+                                    subGeom.setSRID(epsg)
+                                    psWater.addBatch([
+                                            the_geom    : subGeom,
+                                            id_water    : rowcount++,
+                                            id_source   : row.ID_SOURCE,
+                                            type        : water_type,
+                                            intermittent: (regime && regime != "Permanent"),
+                                            zindex      : water_zindex])
                                 }
                             }
                         }
@@ -703,88 +711,95 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
  * @param rail The name of the raw rails table in the DB
  * @return The name of the final rails table
  */
-String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "", String jsonFilename = "") throws Exception {
+String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = "") throws Exception {
     debug('Rails transformation starts')
-    def outputTableName = "INPUT_RAILS_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+    def outputTableName = postfix("RAILS")
     datasource.execute """ drop table if exists $outputTableName;
-                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH FLOAT, USAGE VARCHAR(30));""".toString()
+                CREATE TABLE $outputTableName (THE_GEOM GEOMETRY, id_rail serial,
+                ID_SOURCE VARCHAR, TYPE VARCHAR,CROSSING VARCHAR(30), ZINDEX INTEGER, WIDTH FLOAT, USAGE VARCHAR(30));""".toString()
 
-    if (rail != null) {
-        def paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
-        def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
-        def mappingType = parametersMap.get("type")
-        def crossingValues = parametersMap.get("crossing")
-        def queryMapper = "SELECT "
-        def columnToMap = parametersMap.get("columns")
-
-        if (datasource.getRowCount(rail) > 0) {
-            def columnNames = datasource.getColumnNames(rail)
-            columnNames.remove("THE_GEOM")
-            queryMapper += columnsMapper(columnNames, columnToMap)
+    if (rail) {
+        if (datasource.hasTable(rail)) {
+            def queryMapper = "SELECT a.ID_SOURCE, a.TYPE, a.ZINDEX, a.CROSSING, a.WIDTH"
             if (zone) {
-                datasource.createSpatialIndex(rail)
-                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom else " +
-                        "st_intersection(a.the_geom, b.the_geom) END as the_geom " +
+                datasource.createSpatialIndex(rail, "the_geom")
+                queryMapper += ", CASE WHEN ST_CONTAINS(b.the_geom, a.the_geom) THEN a.the_geom " +
+                        "else st_intersection(a.the_geom, b.the_geom) end as the_geom " +
                         "FROM " +
                         "$rail AS a, $zone AS b " +
                         "WHERE " +
                         "a.the_geom && b.the_geom "
             } else {
-                queryMapper += ", a.the_geom as the_geom FROM $rail  as a"
+                queryMapper += ", a.the_geom FROM $rail  as a"
 
             }
+
+            def rail_types = ['LGV'                       : 'highspeed',
+                              'Principale'                : 'rail',
+                              'Voie ferrée principale'    : 'rail',
+                              'Voie de service'           : 'service_track',
+                              'Voie non exploitée'        : 'disused',
+                              'Transport urbain'          : 'tram',
+                              'Funiculaire ou crémaillère': 'funicular',
+                              'Metro'                     : 'subway',
+                              'Métro'                     : 'subway',
+                              'Tramway'                   : 'tram',
+                              'Pont'                      : 'bridge',
+                              'Tunnel'                    : 'tunnel',
+                              'Sans objet'                : null,
+                              'NC'                        : null]
             int rowcount = 1
             def insertRail = """INSERT INTO $outputTableName
                     (THE_GEOM, ID_RAIL, ID_SOURCE, TYPE, CROSSING, ZINDEX, WIDTH, USAGE)
                     VALUES (:the_geom, :id_rail, :id_source, :type, :crossing, :zindex, :width, :usage)""".toString()
             datasource.withBatch(1000, insertRail) { psRail ->
                 datasource.eachRow(queryMapper.toString()) { row ->
-                    def type = getTypeValue(row, columnNames, mappingType)
-                    def zIndex = getZIndex(row.'layer')
-                    //special treatment if type is subway
-                    if (type == "subway") {
-                        if (!((row.tunnel != null && row.tunnel == "no" && zIndex >= 0)
-                                || (row.bridge != null && (row.bridge == "yes" || row.bridge == "viaduct")))) {
-                            type = null
-                        }
+                    def rail_type = row.TYPE
+                    if (rail_type) {
+                        rail_type = rail_types.get(rail_type)
+                    } else {
+                        rail_type = "unclassified"
                     }
-                    def crossing = row.'bridge'
-                    if (crossing) {
-                        crossing = crossingValues.bridge.contains(crossing) ? "bridge" : null
-                        if (!zIndex && crossing) {
-                            zIndex = 1
-                        }
+                    def rail_usage = null
+                    if (rail_type in ["highspeed", "rail", "tram", "bridge"]) {
+                        rail_usage = "main"
                     }
-                    def gauge = row.'gauge'
-                    //1.435 default value for standard gauge
-                    //1 constant for balasting
-                    def rail_width = 1.435 + 1
-                    if (gauge && gauge.isFloat()) {
-                        rail_width = (gauge.toFloat() / 1000) + 1
+                    def rail_zindex = row.ZINDEX
+                    if (!rail_zindex) {
+                        rail_zindex = 0
                     }
 
-                    if (zIndex >= 0 && type) {
+                    //1.435 default value for standard gauge
+                    //1 constant for balasting
+                    def rail_width = !row.WIDTH ? 1.435 + 1 : row.WIDTH + 1
+                    def rail_crossing = rail_types.get(row.CROSSING)
+
+                    if (rail_zindex >= 0 && rail_type) {
                         Geometry geom = row.the_geom
-                        int epsg = geom.getSRID()
-                        for (int i = 0; i < geom.getNumGeometries(); i++) {
-                            Geometry subGeom = geom.getGeometryN(i)
-                            subGeom.setSRID(epsg)
-                            psRail.addBatch([
-                                    the_geom : subGeom,
-                                    id_rail  : rowcount++,
-                                    id_source: row.id,
-                                    type     : type,
-                                    crossing : crossing ?: null,
-                                    zindex   : zIndex,
-                                    width    : rail_width,
-                                    usage    : row.'usage' ?: null])
+                        if (!geom.isEmpty()) {
+                            def epsg = geom.getSRID()
+                            for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                Geometry subGeom = geom.getGeometryN(i)
+                                if (!subGeom.isEmpty()) {
+                                    subGeom.setSRID(epsg)
+                                    psRail.addBatch([
+                                            the_geom : subGeom,
+                                            id_rail  : rowcount++,
+                                            id_source: row.ID_SOURCE,
+                                            type     : rail_type,
+                                            crossing : rail_crossing,
+                                            zindex   : rail_zindex,
+                                            width    : rail_width,
+                                            usage    : rail_usage])
+                                }
+                            }
                         }
                     }
                 }
             }
         }
     }
-    debug('Rails transformation finishes')
+    info "Rail formatted"
     return outputTableName
 }
 
@@ -859,7 +874,10 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
             ]
 
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertVeget = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_VEGET, ID_SOURCE, TYPE, HEIGHT_CLASS, ZINDEX)
+                    VALUES (:the_geom, :id_veget, :id_source, :type, :height_class, :zindex)""".toString()
+            datasource.withBatch(1000, insertVeget) { psVeget ->
                 datasource.eachRow(queryMapper) { row ->
                     def vegetation_type = row.TYPE
                     if (vegetation_type) {
@@ -877,14 +895,15 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
                         if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                            stmt.addBatch """
-                                            INSERT INTO $outputTableName VALUES(
-                                                ST_GEOMFROMTEXT('${subGeom}',$epsg), 
-                                                ${rowcount++}, 
-                                                '${row.ID_SOURCE}',
-                                                '${vegetation_type}', 
-                                                '${height_class}', ${vegetation_zindex})
-                                    """.toString()
+                            subGeom.setSRID(epsg)
+                            // String.valueOf keeps the previous behaviour : an unknown type is stored as 'null'
+                            psVeget.addBatch([
+                                    the_geom    : subGeom,
+                                    id_veget    : rowcount++,
+                                    id_source   : row.ID_SOURCE,
+                                    type        : String.valueOf(vegetation_type),
+                                    height_class: String.valueOf(height_class),
+                                    zindex      : vegetation_zindex])
                         }
                     }
                 }
@@ -930,7 +949,9 @@ String formatImperviousLayer(H2GIS datasource, String impervious) throws Excepti
     def query = """SELECT LISTAGG(a.ID_IMPERVIOUS, ',') AS ids_impervious, LISTAGG(a.TYPE, ',') AS types, b.EXPLOD_ID as id, b.the_geom  FROM $impervious AS a, $polygonizedTable AS b
             WHERE a.the_geom && b.the_geom AND st_intersects(st_pointonsurface(b.the_geom), a.the_geom) GROUP BY b.explod_id;""".toString()
     int rowcount = 1
-    datasource.withBatch(100) { stmt ->
+    def insertImpervious = """INSERT INTO $outputTableName (THE_GEOM, ID_IMPERVIOUS, TYPE)
+            VALUES (:the_geom, :id_impervious, :type)""".toString()
+    datasource.withBatch(1000, insertImpervious) { psImpervious ->
         datasource.eachRow(query) { row ->
             def types = row.types
             //Choose the best impervious type
@@ -942,7 +963,8 @@ String formatImperviousLayer(H2GIS datasource, String impervious) throws Excepti
                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                     Geometry subGeom = geom.getGeometryN(i)
                     if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                        stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
+                        subGeom.setSRID(epsg)
+                        psImpervious.addBatch([the_geom: subGeom, id_impervious: rowcount++, type: type])
                     }
                 }
             }

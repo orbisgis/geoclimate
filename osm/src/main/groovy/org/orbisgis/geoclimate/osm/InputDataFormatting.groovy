@@ -616,7 +616,10 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                 queryMapper += ", a.the_geom as the_geom FROM $vegetation  as a"
             }
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertVeget = """INSERT INTO $outputTableName
+                    (THE_GEOM, ID_VEGET, ID_SOURCE, TYPE, HEIGHT_CLASS, ZINDEX)
+                    VALUES (:the_geom, :id_veget, :id_source, :type, :height_class, :zindex)""".toString()
+            datasource.withBatch(1000, insertVeget) { psVeget ->
                 datasource.eachRow(queryMapper) { row ->
                     def type = getTypeValue(row, columnNames, mappingType)
                     if (type) {
@@ -645,14 +648,14 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
                                 if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                    stmt.addBatch """
-                                            INSERT INTO $outputTableName VALUES(
-                                                ST_GEOMFROMTEXT('${subGeom}',$epsg), 
-                                                ${rowcount++}, 
-                                                '${row.id}',
-                                                ${singleQuote(type)}, 
-                                                ${singleQuote(height_class)}, ${zindex})
-                                    """.toString()
+                                    subGeom.setSRID(epsg)
+                                    psVeget.addBatch([
+                                            the_geom    : subGeom,
+                                            id_veget    : rowcount++,
+                                            id_source   : row.id,
+                                            type        : type,
+                                            height_class: height_class,
+                                            zindex      : zindex])
                                 }
                             }
                         }
@@ -664,7 +667,6 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
     debug('Vegetation transformation finishes')
     return outputTableName
 }
-
 
 /**
  * This process is used to transform the raw hydro table into a table that matches the constraints
@@ -704,7 +706,9 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                 }
             }
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertWater = """INSERT INTO $outputTableName (THE_GEOM, ID_WATER, ID_SOURCE, TYPE, INTERMITTENT, ZINDEX)
+                    VALUES (:the_geom, :id_water, :id_source, :type, :intermittent, :zindex)""".toString()
+            datasource.withBatch(1000, insertWater) { psWater ->
                 datasource.eachRow(query) { row ->
                     def water_type = row.natural in ['bay', 'strait'] ? 'sea' : 'water'
                     def zIndex = getZIndex(row.'layer')
@@ -714,8 +718,14 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
                         if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                            stmt.addBatch("""insert into $outputTableName values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, 
-                            '${row.id}', '${water_type}',  ${(intermittent && intermittent ==  "yes")}, ${zIndex})""".toString())
+                            subGeom.setSRID(epsg)
+                            psWater.addBatch([
+                                    the_geom    : subGeom,
+                                    id_water    : rowcount++,
+                                    id_source   : row.id,
+                                    type        : water_type,
+                                    intermittent: (intermittent && intermittent == "yes"),
+                                    zindex      : zIndex])
                         }
                     }
                 }
@@ -785,7 +795,9 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                     CREATE TABLE $impervious_prepared (THE_GEOM GEOMETRY, id_impervious serial, type varchar);""".toString()
 
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertImpervious = """INSERT INTO $impervious_prepared (THE_GEOM, ID_IMPERVIOUS, TYPE)
+                    VALUES (:the_geom, :id_impervious, :type)""".toString()
+            datasource.withBatch(1000, insertImpervious) { psImpervious ->
                 datasource.eachRow("""SELECT 
                                 g1.*
                                  FROM $filtered_area g1
@@ -807,7 +819,8 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                                     Geometry subGeom = geom.getGeometryN(i)
                                     if (!subGeom.isEmpty()) {
                                         if (subGeom instanceof Polygon && subGeom.getArea() > 1) {
-                                            stmt.addBatch "insert into $impervious_prepared values(ST_GEOMFROMTEXT('${subGeom}',$epsg), ${rowcount++}, '${type}')".toString()
+                                            subGeom.setSRID(epsg)
+                                            psImpervious.addBatch([the_geom: subGeom, id_impervious: rowcount++, type: type])
                                         }
                                     }
                                 }
