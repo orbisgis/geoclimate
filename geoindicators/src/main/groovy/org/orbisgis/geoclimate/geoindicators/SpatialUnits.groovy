@@ -821,7 +821,6 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 rsuToModify, COLUMN_ID_NAME, "", "", water,
                 "", "", "",tempoPrefix)
 
-
         String surface_fractions = Geoindicators.RsuIndicators.surfaceFractions(datasource,
                 rsuToModify, COLUMN_ID_NAME, smallestCommun,
                 [:], ["water_permanent", "water_intermittent"], tempoPrefix)

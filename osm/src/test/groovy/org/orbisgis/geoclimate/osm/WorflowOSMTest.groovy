@@ -834,6 +834,42 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         OSM.workflow(osm_parmeters)
     }
 
+
+    @Disabled
+    //Use it for debug
+    @Test
+    void testIntegrationRSUClean() {
+        String directory = "/tmp/geoclimate"
+        File dirFile = new File(directory)
+        dirFile.delete()
+        dirFile.mkdir()
+        def location = "Redon"
+        location = [51.0,4.2,51.2,4.4]
+        def osm_parmeters = [
+                "description" : "Example of configuration file to run the OSM workflow with a specific method to clean the RSU",
+                "geoclimatedb": [
+                        "folder": dirFile.absolutePath,
+                        "name"  : "geoclimate_test_integration;",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": [ location]
+                ],
+                "output"      : [
+                        "folder": directory]
+                ,
+                "parameters"  :
+                        ["distance"             : 200,
+                         "rsu_indicators": [
+                                 "indicatorUse": ["LCZ"],//, "TEB"] //, "UTRF"],
+                                 "rsu_clean": "removeLongRsu"
+                         ]
+                        ]
+        ]
+        OSM.workflow(osm_parmeters)
+    }
+
+
     /**
      * Method to compute a grid of domains
      * @param osm_zone
