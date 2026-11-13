@@ -21,6 +21,7 @@ package org.orbisgis.geoclimate.osmtools
 
 import groovy.transform.BaseScript
 import groovy.transform.Field
+import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
@@ -183,20 +184,18 @@ Map fromPlace(JdbcDataSource datasource, String placeName, float distance = 0) t
     if (distance < 0) {
         throw new Exception("Cannot use a negative distance")
     }
-    def env = org.h2gis.utilities.GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
+    def env = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
     //Create table to store the geometry and the envelope of the extracted area
-    datasource.execute("""
-                CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-                INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg), '$placeName');
-        """)
+    geom.setSRID(epsg)
+    datasource.execute("""CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);""".toString())
+    datasource.execute("INSERT INTO $outputZoneTable VALUES (?, ?)".toString(), [geom, placeName])
 
     def geometryFactory = new GeometryFactory()
     def geomEnv = geometryFactory.toGeometry(env)
-    datasource.execute("""
-                CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-                INSERT INTO $outputZoneEnvelopeTable VALUES (ST_GEOMFROMTEXT('$geomEnv',$epsg), '$placeName');
-        """)
+    geomEnv.setSRID(epsg)
+    datasource.execute("""CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);""".toString())
+    datasource.execute("INSERT INTO $outputZoneEnvelopeTable VALUES (?, ?)".toString(), [geomEnv, placeName])
 
     def query = OSMTools.Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
     String extract = extract(query)

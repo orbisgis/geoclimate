@@ -79,14 +79,16 @@ Map extractAndCreateGISLayers(JdbcDataSource datasource, Object zoneToExtract, f
         def tmpGeomEnv = geom.getFactory().toGeometry(envelope)
         tmpGeomEnv.setSRID(4326)
 
+        def zoneEnvUTM = ST_Transform.ST_Transform(con, tmpGeomEnv, epsg)
+        geomUTM.setSRID(epsg)
+        zoneEnvUTM.setSRID(epsg)
         datasource.execute """drop table if exists ${outputZoneTable}; 
-        create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', ${epsg}), '${zoneToExtract.toString()}');""".toString()
+        create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);""".toString()
+        datasource.execute("INSERT INTO ${outputZoneTable} VALUES (?, ?)".toString(), [geomUTM, zoneToExtract.toString()])
 
         datasource.execute """drop table if exists ${outputZoneEnvelopeTable}; 
-         create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${ST_Transform.ST_Transform(con, tmpGeomEnv, epsg).toString()}',${epsg}), '${zoneToExtract.toString()}');
-        """.toString()
+         create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);""".toString()
+        datasource.execute("INSERT INTO ${outputZoneEnvelopeTable} VALUES (?, ?)".toString(), [zoneEnvUTM, zoneToExtract.toString()])
 
         //Prepare OSM extraction
         def query = "[maxsize:1073741824]" + OSMTools.Utilities.buildOSMQuery(envelope, null, OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)

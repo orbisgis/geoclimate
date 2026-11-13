@@ -82,7 +82,9 @@ String groundAcousticAbsorption(JdbcDataSource datasource, String zone, String i
                 impervious, layer_priorities)
         if (ground) {
             int rowcount = 1
-            datasource.withBatch(100) { stmt ->
+            def insertGround = """INSERT INTO $outputTableName (THE_GEOM, ID_GROUND, G, TYPE, LAYER)
+                    VALUES (:the_geom, :id_ground, :g, :type, :layer)""".toString()
+            datasource.withBatch(1000, insertGround) { psGround ->
                 datasource.eachRow("SELECT the_geom, TYPE, layer FROM $ground $filter".toString()) { row ->
                     String type = row.type
                     def layer = row.layer
@@ -91,8 +93,7 @@ String groundAcousticAbsorption(JdbcDataSource datasource, String zone, String i
                         g_coeff = g_absorption.get(type)
                     }
                     Geometry geom = row.the_geom
-                    def epsg = geom.getSRID()
-                    stmt.addBatch "insert into $outputTableName values(ST_GEOMFROMTEXT('${geom}',$epsg), ${rowcount++},${g_coeff}, ${StringUtils.quoteStringSQL(type)}, ${StringUtils.quoteStringSQL(layer)})".toString()
+                    psGround.addBatch([the_geom: geom, id_ground: rowcount++, g: g_coeff, type: type, layer: layer])
                 }
             }
             datasource.dropTable(ground)

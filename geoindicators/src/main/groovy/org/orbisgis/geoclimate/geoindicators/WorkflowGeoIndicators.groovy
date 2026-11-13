@@ -2333,7 +2333,11 @@ String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName,
         if (datasource.getRowCount(inputTableName) > 0) {
             def columnNames = datasource.getColumnNames(inputTableName)
             queryMapper += " ${columnNames.join(",")} FROM $inputTableName"
-            datasource.withBatch(100) { stmt ->
+            def insertBuilding = """INSERT INTO ${outputTableName} (THE_GEOM, ID_BUILD, ID_SOURCE, HEIGHT_WALL, HEIGHT_ROOF,
+                    NB_LEV, TYPE, MAIN_USE, ZINDEX, ID_BLOCK, ID_RSU)
+                    VALUES (:the_geom, :id_build, :id_source, :height_wall, :height_roof,
+                    :nb_lev, :type, :main_use, :zindex, :id_block, :id_rsu)""".toString()
+            datasource.withBatch(1000, insertBuilding) { psBuild ->
                 datasource.eachRow(queryMapper) { row ->
                     def heightRoof = row.height_roof
                     def type = row.type
@@ -2341,19 +2345,21 @@ String formatEstimatedBuilding(JdbcDataSource datasource, String inputTableName,
                             type, null)
                     def nbLevels = formatedData.nbLevels
                     def heightWall = formatedData.heightWall
-                    stmt.addBatch """
-                                                INSERT INTO ${outputTableName} values(
-                                                    ST_GEOMFROMTEXT('${row.the_geom}',$epsg), 
-                                                    ${row.id_build}, 
-                                                    '${row.id_source}',
-                                                    ${heightWall},
-                                                    ${heightRoof},
-                                                    ${nbLevels},
-                                                    '${type}',
-                                                    '${row.main_use}',
-                                                    ${row.zindex},
-                                                    ${row.id_block},${row.id_rsu})
-                                            """.toString()
+                    Geometry geom = row.the_geom
+                    geom.setSRID(epsg)
+                    // String.valueOf keeps the previous behaviour : a null value is stored as 'null'
+                    psBuild.addBatch([
+                            the_geom   : geom,
+                            id_build   : row.id_build,
+                            id_source  : String.valueOf(row.id_source),
+                            height_wall: heightWall,
+                            height_roof: heightRoof,
+                            nb_lev     : nbLevels,
+                            type       : String.valueOf(type),
+                            main_use   : String.valueOf(row.main_use),
+                            zindex     : row.zindex,
+                            id_block   : row.id_block,
+                            id_rsu     : row.id_rsu])
 
                 }
             }
