@@ -90,7 +90,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                     datasource.withBatch(1000, insertEstimate) { psEstim ->
                         datasource.eachRow(queryMapper) { row ->
                             def  rowData  = row.toRowResult()
-                            Geometry geom = row.the_geom
+                            Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                             def row_id = row.id
                             if (pZone.intersects(geom)) {
                                 def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
@@ -155,7 +155,7 @@ Map formatBuildingLayer(JdbcDataSource datasource, String building, String zone 
                 datasource.withBatch(1000, insertBuilding) { psBuild ->
                     datasource.withBatch(1000, insertEstimate) { psEstim ->
                         datasource.eachRow(queryMapper) { row ->
-                            Geometry geom = row.the_geom
+                            Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                             def row_id = row.id
                             if(geom) {
                                 def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
@@ -453,7 +453,7 @@ String formatRoadLayer(
                                 addGeom = true
                             }
                             if (addGeom) {
-                                Geometry geom = row.the_geom
+                                Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                                 int epsg = geom.getSRID()
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
@@ -554,7 +554,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     }
 
                     if (zIndex >= 0 && type) {
-                        Geometry geom = row.the_geom
+                        Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                         int epsg = geom.getSRID()
                         for (int i = 0; i < geom.getNumGeometries(); i++) {
                             Geometry subGeom = geom.getGeometryN(i)
@@ -642,8 +642,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                         if (addGeom) {
                             def height_class = typeAndVegClass[type]
                             def zindex = getZIndex(row."layer")
-
-                            Geometry geom = row.the_geom
+                            Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                             int epsg = geom.getSRID()
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
                                 Geometry subGeom = geom.getGeometryN(i)
@@ -713,7 +712,7 @@ String formatWaterLayer(JdbcDataSource datasource, String water, String zone = "
                     def water_type = row.natural in ['bay', 'strait'] ? 'sea' : 'water'
                     def zIndex = getZIndex(row.'layer')
                     def intermittent = row.'intermittent'
-                    Geometry geom = row.the_geom
+                    Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                     int epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
@@ -810,7 +809,7 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
                     def use = typeAndUseValues[1]
                     def type = typeAndUseValues[0]
                     if (type) {
-                        Geometry geom = row.the_geom
+                        Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                         int epsg = geom.getSRID()
                         if (!geom.isEmpty()) {
                             def plant_source = row."plant:source"
@@ -833,7 +832,7 @@ String formatImperviousLayer(JdbcDataSource datasource, String impervious, Strin
             datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName as SELECT EXPLOD_ID AS id_impervious, THE_GEOM, TYPE
                     FROM ST_EXPLODE('(
-                    SELECT ST_UNION(ST_ACCUM(the_geom)) as the_geom, TYPE from $impervious_prepared group by type
+                    SELECT ST_PrecisionReducer(ST_UNION(ST_ACCUM(the_geom)),2) as the_geom, TYPE from $impervious_prepared group by type
                     )');""".toString())
             datasource.execute("DROP TABLE IF EXISTS  $polygonizedTable, $filtered_area, $polygonizedExploded, $impervious_prepared".toString())
 
@@ -1194,7 +1193,7 @@ String formatUrbanAreas(JdbcDataSource datasource, String urban_areas, String zo
                     VALUES (:the_geom, :id_urban, :id_source, :type)""".toString()
             datasource.withBatch(1000, insertUrban) { psUrban ->
                 datasource.eachRow(queryMapper) { row ->
-                    Geometry geom = row.the_geom
+                    Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                     if(geom) {
                         if (!row.building) {
                             def typeAndUseValues = getTypeAndUse(row, columnNames, mappingType)

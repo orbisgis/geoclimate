@@ -21,6 +21,9 @@ package org.orbisgis.geoclimate.geoindicators
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
+import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.PrecisionModel
+import org.locationtech.jts.precision.GeometryPrecisionReducer
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
@@ -319,4 +322,23 @@ Integer asInteger(def value){
     }catch (Exception ex){
         return null
     }
+}
+
+
+/**
+ * Reduce the precision of a geometry to centimeter
+ *
+ * Note that a polygon can be split into a multipolygon and that a geometry smaller than the precision
+ * can collapse into an empty geometry.
+ *
+ * @param geometry the geometry to reduce
+ * @return the reduced geometry, with the same SRID
+ */
+Geometry reduceToCentimeter(Geometry geometry) {
+    if (geometry == null || geometry.isEmpty()) {
+        return geometry
+    }
+    Geometry reduced = GeometryPrecisionReducer.reduce(geometry, new PrecisionModel(100))
+    reduced.setSRID(geometry.getSRID())
+    return reduced
 }

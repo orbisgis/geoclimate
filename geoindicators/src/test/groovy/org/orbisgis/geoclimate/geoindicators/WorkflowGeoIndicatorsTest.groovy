@@ -573,6 +573,8 @@ class WorkflowGeoIndicatorsTest {
      * Please add new checks here
      */
     def checkRSUIndicators(def datasource, def rsuIndicatorsTableName) {
+        assertEquals 235, datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName}".toString()).count
+
         //Check road_fraction > 0
         def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
         assertEquals(212, countResult.count)
