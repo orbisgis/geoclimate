@@ -29,7 +29,6 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.io.WKTReader
 import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
-import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
 
 import static org.junit.jupiter.api.Assertions.*
@@ -473,6 +472,48 @@ class SpatialUnitsTests {
         }
     }
 
+    /**
+     * A test to debug test creation with some inputs data
+     */
+    @Disabled
+    @Test
+    void debugRemoveNarrowRSUTest() {
+        String path = "/tmp"
+        String zone = h2GIS.load(path + File.separator + "zone_input.fgb", true)
+        String rsuToModify_input = h2GIS.load(path + File.separator + "rsuToModify_input.fgb", true)
+        String water = h2GIS.load(path + File.separator + "water_input.fgb", true)
+        //Keep a copy of the input : removeNarrowRSU renames it when there is no land RSU
+        h2GIS.execute("""DROP TABLE IF EXISTS rsu_input_copy;
+                CREATE TABLE rsu_input_copy AS SELECT * FROM $rsuToModify_input""".toString())
+        def rsuWithoutLong = Geoindicators.SpatialUnits.removeNarrowRSU(h2GIS, rsuToModify_input,
+                water, zone, 1d, "test")
+        assertNotNull(rsuWithoutLong)
+        h2GIS.save(rsuWithoutLong, path + File.separator + "rsuWithoutLong.fgb", true)
+
+        //No holes
+        def holes = h2GIS.firstRow("""SELECT ST_AREA(ST_DIFFERENCE(
+                    (SELECT ST_UNION(ST_ACCUM(THE_GEOM)) FROM rsu_input_copy),
+                    (SELECT ST_UNION(ST_ACCUM(THE_GEOM)) FROM $rsuWithoutLong))) AS area""".toString()).area
+        //Check overlaps between output RSU
+        h2GIS.createSpatialIndex(rsuWithoutLong)
+        def overlaps = h2GIS.firstRow("""SELECT COALESCE(SUM(ST_AREA(ST_INTERSECTION(a.THE_GEOM, b.THE_GEOM))), 0) AS area
+                    FROM $rsuWithoutLong a, $rsuWithoutLong b
+                    WHERE a.THE_GEOM && b.THE_GEOM AND a.ID_RSU < b.ID_RSU
+                    AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM)""".toString()).area
+        //Remaining long RSU
+        def nbLong = h2GIS.firstRow("""SELECT COUNT(*) AS count FROM $rsuWithoutLong
+                    WHERE ST_AREA(THE_GEOM) / ST_AREA(ST_MINIMUMRECTANGLE(THE_GEOM)) < 0.4""".toString()).count
+        println("""
+                   Input RSU : ${h2GIS.getRowCount("rsu_input_copy")}
+                   Output RSU : ${h2GIS.getRowCount(rsuWithoutLong)}
+                   Holes (in m²) : $holes
+                   Overlaps (in m²) : $overlaps
+                   Long RSU remaining : $nbLong
+                """)
+        h2GIS.dropTable("rsu_input_copy")
+    }
+
+
     @Test
     void sprawlAreasTest5() {
         //Data for test
@@ -510,10 +551,41 @@ class SpatialUnitsTests {
                 10000d, 2500d,
                 10000d, "test")
         assertNotNull(createRSU)
-        def rsuWithoutLong = Geoindicators.SpatialUnits.removeLongRsu(h2GIS, createRSU,
+        def rsuWithoutLong = Geoindicators.SpatialUnits.removeNarrowRSU(h2GIS, createRSU,
                 'water_wrongshape_test', "zone_wrongshape_test", 1d, "test")
         assertNotNull(rsuWithoutLong)
         assertTrue(h2GIS.getRowCount(rsuWithoutLong) > 0)
         assertEquals(0, h2GIS.firstRow("SELECT COUNT(*) AS count FROM $rsuWithoutLong WHERE ST_ISEMPTY(THE_GEOM)".toString()).count)
+        //The new RSU layer must not have any holes
+        assertTrue(h2GIS.firstRow("""SELECT ST_AREA(ST_DIFFERENCE(
+                    (SELECT ST_UNION(ST_ACCUM(THE_GEOM)) FROM $createRSU),
+                    (SELECT ST_UNION(ST_ACCUM(THE_GEOM)) FROM $rsuWithoutLong))) AS area""".toString()).area < 1)
+    }
+
+    @Disabled
+    @Test
+    void debugCleanRSUTest() {
+        String path = "/tmp"
+        String zone = h2GIS.load(path + File.separator + "zone_input.fgb", true)
+        String water = h2GIS.load(path + File.separator + "water_input.fgb", true)
+        ["removeNarrowRSU"].each { method ->
+            String rsuToModify_input = h2GIS.load(path + File.separator + "rsuToModify_input.fgb", true)
+            long start = System.currentTimeMillis()
+            String rsuCleaned = Geoindicators.SpatialUnits."$method"(h2GIS, rsuToModify_input,
+                    water, zone, 1d, "test")
+            long time = System.currentTimeMillis() - start
+            h2GIS.save(rsuCleaned, path + File.separator + "${method}.fgb", true)
+            def holes = h2GIS.firstRow("""SELECT ST_AREA(ST_DIFFERENCE(
+                    (SELECT ST_UNION(ST_ACCUM(THE_GEOM)) FROM $rsuToModify_input),
+                    (SELECT ST_UNION(ST_ACCUM(THE_GEOM)) FROM $rsuCleaned))) AS area""".toString()).area
+            h2GIS.createSpatialIndex(rsuCleaned)
+            def overlaps = h2GIS.firstRow("""SELECT COALESCE(SUM(ST_AREA(ST_INTERSECTION(a.THE_GEOM, b.THE_GEOM))), 0) AS area
+                    FROM $rsuCleaned a, $rsuCleaned b
+                    WHERE a.THE_GEOM && b.THE_GEOM AND a.ID_RSU < b.ID_RSU
+                    AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM)""".toString()).area
+            def nbLong = h2GIS.firstRow("""SELECT COUNT(*) AS count FROM $rsuCleaned
+                    WHERE ST_AREA(THE_GEOM) / ST_AREA(ST_MINIMUMRECTANGLE(THE_GEOM)) < 0.4""".toString()).count
+            println("$method : ${h2GIS.getRowCount(rsuCleaned)} RSU, holes $holes m², overlaps $overlaps m², long RSU $nbLong, ${time} ms")
+        }
     }
 }

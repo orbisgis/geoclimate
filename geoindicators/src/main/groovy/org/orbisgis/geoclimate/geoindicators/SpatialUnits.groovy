@@ -764,26 +764,33 @@ String extractCoolAreas(JdbcDataSource datasource, String grid_indicators, Strin
 
 
 /**
- * This process is used to remove the long (or strange shapes) spatial units. Note that water tables are not modified
+ * This process is used to remove the long (or strange shapes) spatial units
+ * using a grid partitioning approach.
+ * Note that water tables are not modified
  *
  * @param datasource A connection to a database
  * @param rsuToModify The input spatial units table having the strange shapes
  * @param water The water table (water RSU being not modified)
  * @param zone The zone table
  * @param area TSU less or equals than area are removed
+ * @param grid_size size of the grid use to redistribute the narrow RSU
  * @param prefixName A prefix used to name the output table
  * @return A database table name and the name of the column ID
  */
-String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water, String zone,
-                     area, String prefixName) throws Exception {
+String removeNarrowRSU(JdbcDataSource datasource, String rsuToModify, String water, String zone,
+                       area, int grid_size =100, String prefixName) throws Exception {
     def COLUMN_ID_NAME = "id_rsu"
     def BASE_NAME = "rsu_without_long"
 
+    if (!grid_size || grid_size  < 1 ) {
+        throw new IllegalArgumentException("Invalid grid size padding. Must be greater or equal than 1")
+    }
+
     debug "Removing strange rsu shapes"
 
-    // Tolerance used to remove holes and spikes created by ST_SNAP and ST_UNION:
+    // Tolerance used to remove holes and spikes created by ST_UNION:
     def CLEAN_TOLERANCE = 0.01
-    // Tolerance used to snap the wrong shapes to the correct ones
+    // Maximum distance between a wrong shape and a correct one to merge them
     def SNAP_TOLERANCE = 0.01
 
     // Name of intermediate tables
@@ -801,7 +808,6 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
     def RSU_SPLIT_WRONG_NOTOUCH = postfix("RSU_SPLIT_WRONG_NOTOUCH")
     def RSU_SPLIT_CORRECT_UNION = postfix("RSU_SPLIT_CORRECT_UNION")
     def RSU_ALL_CORRECTS = postfix("RSU_ALL_CORRECTS")
-    def RSU_SPLIT_WRONG_NOTOUCH_SNAP = postfix("RSU_SPLIT_WRONG_NOTOUCH_SNAP")
     def RSU_WRONG_CORRECT_REL = postfix("RSU_WRONG_CORRECT_REL")
     def RSU_CORRECT_ALL = postfix("RSU_CORRECT_ALL")
     def RSU_SPLIT_WRONG_REMAINING = postfix("RSU_SPLIT_WRONG_REMAINING")
@@ -862,7 +868,7 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
             DROP TABLE IF EXISTS $GRID;
             CREATE TABLE $GRID
                 AS SELECT ID, THE_GEOM AS THE_GEOM
-                FROM ST_MAKEGRID('$RSU_NO_WATER', 100, 100);"""
+                FROM ST_MAKEGRID('$RSU_NO_WATER', $grid_size, $grid_size);"""
 
             // 2. IDENTIFY THE WRONG RSU GEOMETRIES
             // Calculate some shape indicators
@@ -1015,37 +1021,29 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 datasource.createIndex(RSU_ALL_CORRECTS, COLUMN_ID_NAME)
                 datasource.createSpatialIndex(RSU_SPLIT_WRONG_NOTOUCH, "THE_GEOM")
 
-                // Make sure all wrong shape snap correct geometries
-                datasource.execute """
-            DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_NOTOUCH_SNAP;
-            CREATE TABLE $RSU_SPLIT_WRONG_NOTOUCH_SNAP
-                AS SELECT   a.$COLUMN_ID_NAME,
-                            a.ID_GRID,
-                            ST_SNAP(a.THE_GEOM, ST_UNION(ST_ACCUM(b.THE_GEOM)), $SNAP_TOLERANCE) AS THE_GEOM
-                            FROM $RSU_SPLIT_WRONG_NOTOUCH a, $RSU_ALL_CORRECTS b
-                            WHERE a.THE_GEOM && b.THE_GEOM AND ST_DWITHIN(a.THE_GEOM, b.THE_GEOM, $SNAP_TOLERANCE)
-                            GROUP BY a.$COLUMN_ID_NAME, a.ID_GRID;"""
-
-
-                // Identify all correct shape RSU sharing the side with the wrong shape ones
-                datasource.createSpatialIndex(RSU_SPLIT_WRONG_NOTOUCH_SNAP, "THE_GEOM")
+                // Identify all correct shape RSU close to the wrong shape ones (less than SNAP_TOLERANCE).
+                // ST_DWITHIN is used instead of ST_INTERSECTS : two geometries can share a side
+                // without intersecting because of the floating point precision.
+                // VAL estimates the length of the shared side : area of the correct RSU covered by the
+                // wrong shape buffered with SNAP_TOLERANCE, divided by SNAP_TOLERANCE
                 datasource.execute """
             DROP TABLE IF EXISTS $RSU_WRONG_CORRECT_REL;
             CREATE TABLE $RSU_WRONG_CORRECT_REL
                 AS SELECT   b.$COLUMN_ID_NAME,
                             a.ID_GRID,
                             a.THE_GEOM,
-                            ST_LENGTH(ST_COLLECTIONEXTRACT(ST_INTERSECTION(ST_BUFFER(a.THE_GEOM,0), b.THE_GEOM),2)) AS VAL
-                FROM $RSU_SPLIT_WRONG_NOTOUCH_SNAP a, $RSU_ALL_CORRECTS b
-                WHERE a.THE_GEOM && b.THE_GEOM AND ST_INTERSECTS(a.THE_GEOM, b.THE_GEOM);"""
+                            ST_AREA(ST_INTERSECTION(ST_BUFFER(a.THE_GEOM, $SNAP_TOLERANCE), b.THE_GEOM)) / $SNAP_TOLERANCE AS VAL
+                FROM $RSU_SPLIT_WRONG_NOTOUCH a, $RSU_ALL_CORRECTS b
+                WHERE a.THE_GEOM && ST_EXPAND(b.THE_GEOM, $SNAP_TOLERANCE)
+                AND ST_DWITHIN(a.THE_GEOM, b.THE_GEOM, $SNAP_TOLERANCE);"""
 
                 // Keep, for each wrong shape, ONE correct RSU only: the one having the longest shared side
                 // (ties broken by id, to avoid merging the same shape in several RSU)
                 datasource.execute """
             DROP TABLE IF EXISTS $RSU_WRONG_CORRECT_REL2;
             CREATE TABLE $RSU_WRONG_CORRECT_REL2
-                AS SELECT $COLUMN_ID_NAME, THE_GEOM
-                FROM (SELECT $COLUMN_ID_NAME, THE_GEOM,
+                AS SELECT $COLUMN_ID_NAME, ID_GRID, THE_GEOM
+                FROM (SELECT $COLUMN_ID_NAME, ID_GRID, THE_GEOM,
                              ROW_NUMBER() OVER (PARTITION BY ID_GRID ORDER BY VAL DESC, $COLUMN_ID_NAME) AS RK
                       FROM $RSU_WRONG_CORRECT_REL)
                 WHERE RK = 1;"""
@@ -1053,6 +1051,7 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 // Union the wrong shapes with their correct RSU.
                 // Only the RSU receiving a wrong shape are recomputed (union + cleaning),
                 // the other ones are copied as they are.
+                // The cleaning (positive buffer first) closes the micro gaps between the merged geometries
                 datasource.createIndex(RSU_WRONG_CORRECT_REL2, COLUMN_ID_NAME)
                 datasource.execute """
             DROP TABLE IF EXISTS $RSU_CORRECT_ALL;
@@ -1072,17 +1071,18 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                 FROM $RSU_ALL_CORRECTS a
                 WHERE NOT EXISTS (SELECT 1 FROM $RSU_WRONG_CORRECT_REL2 w WHERE w.$COLUMN_ID_NAME = a.$COLUMN_ID_NAME);"""
 
-                // Identify wrong shapes that have not been yet merged with correct ones
+                // Identify wrong shapes that have not been yet merged with correct ones.
+                // Only the shapes really merged (RSU_WRONG_CORRECT_REL2) are removed, otherwise they would be lost
                 // ID_GRID is unique, so an index on the joined table's ID_GRID is enough
-                datasource.createIndex(RSU_SPLIT_WRONG_NOTOUCH_SNAP, "ID_GRID")
+                datasource.createIndex(RSU_WRONG_CORRECT_REL2, "ID_GRID")
                 datasource.execute """
             DROP TABLE IF EXISTS $RSU_SPLIT_WRONG_REMAINING;
             CREATE TABLE $RSU_SPLIT_WRONG_REMAINING
                 AS SELECT a.$COLUMN_ID_NAME, a.ID_GRID, a.THE_GEOM
                 FROM $RSU_SPLIT_WRONG_NOTOUCH a
-                LEFT JOIN $RSU_SPLIT_WRONG_NOTOUCH_SNAP b
-                ON a.$COLUMN_ID_NAME = b.$COLUMN_ID_NAME AND a.ID_GRID = b.ID_GRID
-                WHERE b.$COLUMN_ID_NAME IS NULL AND b.ID_GRID IS NULL;"""
+                LEFT JOIN $RSU_WRONG_CORRECT_REL2 b
+                ON a.ID_GRID = b.ID_GRID
+                WHERE b.ID_GRID IS NULL;"""
 
                 // Test whether the number of geometries have decrease. If not, it means some wrong shape geometries are islands
                 // and do not touch other correct land shapes. So they have to be union and merged and that's it
@@ -1133,7 +1133,7 @@ String removeLongRsu(JdbcDataSource datasource, String rsuToModify, String water
                     DROP TABLE IF EXISTS $smallestCommun, $surface_fractions, $RSU_NO_WATER, $RSU_WATER, $GRID, $RSU_SHAPE,
                         $RSU_WRONG_SHAPE, $RSU_CORRECT_SHAPE, $RSU_SPLITTED, $RSU_SPLIT_SHAPE, $RSU_SPLIT_WRONG_SHAPE,
                         $RSU_SPLIT_CORRECT_SHAPE, $RSU_SPLIT_WRONG_TOUCH, $RSU_SPLIT_WRONG_NOTOUCH,
-                        $RSU_SPLIT_CORRECT_UNION, $RSU_ALL_CORRECTS, $RSU_SPLIT_WRONG_NOTOUCH_SNAP,
+                        $RSU_SPLIT_CORRECT_UNION, $RSU_ALL_CORRECTS,
                         $RSU_WRONG_CORRECT_REL, $RSU_CORRECT_ALL, $RSU_SPLIT_WRONG_REMAINING, $RSU_WRONG_CORRECT_REL2
                     """.toString()
 

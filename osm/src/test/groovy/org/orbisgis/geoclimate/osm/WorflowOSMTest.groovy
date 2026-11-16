@@ -689,8 +689,8 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     @Test
     void testRsuCleanParameter() {
         def params = OSM.WorkflowOSM.extractProcessingParameters([
-                "rsu_indicators": ["indicatorUse": ["LCZ"], "rsu_clean": "removeLongRsu"]])
-        assertEquals("removeLongRsu", params.rsu_indicators.rsu_clean)
+                "rsu_indicators": ["indicatorUse": ["LCZ"], "rsu_clean": "removeNarrowRSU"]])
+        assertEquals("removeNarrowRSU", params.rsu_indicators.rsu_clean)
 
         params = OSM.WorkflowOSM.extractProcessingParameters([
                 "rsu_indicators": ["indicatorUse": ["LCZ"]]])
@@ -844,7 +844,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.delete()
         dirFile.mkdir()
         def location = "Redon"
-        location = [51.0,4.2,51.2,4.4]
+        //location = [51.0,4.2,51.2,4.4]
         def osm_parmeters = [
                 "description" : "Example of configuration file to run the OSM workflow with a specific method to clean the RSU",
                 "geoclimatedb": [
@@ -859,10 +859,10 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                         "folder": directory]
                 ,
                 "parameters"  :
-                        ["distance"             : 200,
+                        ["distance"             : 0,
                          "rsu_indicators": [
                                  "indicatorUse": ["LCZ"],//, "TEB"] //, "UTRF"],
-                                 "rsu_clean": "removeLongRsu"
+                                 "rsu_clean": "removeNarrowRSU"
                          ]
                         ]
         ]

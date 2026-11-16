@@ -507,7 +507,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
                 def rsu_cleanP = rsu_indicators.rsu_clean
                 if (rsu_cleanP) {
-                    def allowed_rsu_clean = ["removeLongRsu"]
+                    def allowed_rsu_clean = ["removeNarrowRSU"]
                     if (rsu_cleanP in allowed_rsu_clean) {
                         rsu_indicators_default.rsu_clean = rsu_cleanP
                     } else {

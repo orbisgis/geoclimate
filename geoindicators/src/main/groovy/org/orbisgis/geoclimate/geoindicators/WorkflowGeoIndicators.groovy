@@ -971,7 +971,7 @@ Map computeTypologyIndicators(JdbcDataSource datasource, String building_indicat
  * @param snappingTolerance A distance to group the geometries (e.g. two buildings in a block - default 0.01 m)
  * @param prefixName A prefix used to name the output table
  * @param rsu_clean optional method used to clean the RSU after their creation (null by default).
- * "removeLongRsu" : the long or strangely shaped RSU are merged with their neighbours
+ * "removeNarrowRSU" : the long or strangely shaped RSU are merged with their neighbours
  * *
  * @param datasource A connection to a database
  * @param indicatorUse The use defined for the indicator. Depending on this use, only a part of the indicators could
@@ -1000,8 +1000,8 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
                 sea_land_mask, urban_areas, surface_vegetation,
                 surface_hydro, surface_urban_areas, prefixName)
         // Clean the RSU if a method is set
-        if (rsu_clean == "removeLongRsu") {
-            String rsuWithoutLong = Geoindicators.SpatialUnits.removeLongRsu(datasource, rsu, water,
+        if (rsu_clean == "removeNarrowRSU") {
+            String rsuWithoutLong = Geoindicators.SpatialUnits.removeNarrowRSU(datasource, rsu, water,
                     zone_extended ?: zone, 1d, prefixName)
             datasource.dropTable(rsu)
             rsu = rsuWithoutLong
