@@ -324,7 +324,6 @@ Integer asInteger(def value){
     }
 }
 
-
 /**
  * Reduce the precision of a geometry to centimeter
  *
