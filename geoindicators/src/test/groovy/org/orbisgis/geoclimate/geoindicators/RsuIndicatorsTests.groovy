@@ -477,6 +477,10 @@ class RsuIndicatorsTests {
                 "test")
         assertNotNull(outputTableStats)
 
+        //id_rsu must be unique
+
+
+
         h2GIS """DROP TABLE IF EXISTS stats_rsu;
                     CREATE INDEX ON $outputTableStats (ID_RSU);
                    CREATE TABLE stats_rsu AS SELECT b.the_geom,
@@ -489,6 +493,12 @@ class RsuIndicatorsTests {
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu;
             CREATE INDEX ON stats_rsu(id_rsu);"""
 
+        // One row per RSU
+        assertEquals(h2GIS.firstRow("SELECT COUNT(*) AS NB FROM stats_rsu").NB,
+                h2GIS.firstRow("SELECT COUNT(DISTINCT id_rsu) AS NB FROM stats_rsu").NB)
+        // All the RSU covered by at least one smallest geometry are in the statistics
+        assertEquals(h2GIS.firstRow("SELECT COUNT(DISTINCT id_rsu) AS NB FROM $outputTableStats").NB,
+                h2GIS.firstRow("SELECT COUNT(*) AS NB FROM stats_rsu").NB)
 
         //Check the sum of building areas by USR
         h2GIS """DROP TABLE IF EXISTS stats_building;
@@ -835,6 +845,5 @@ class RsuIndicatorsTests {
             assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer ='water'".toString()).area) < 10)
         }
     }
-
 }
 

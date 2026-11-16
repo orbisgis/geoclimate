@@ -2017,24 +2017,34 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 tablesToDrop << freeFacadeDensityExact
             }
 
-            def gridForWidth = Geoindicators.DataUtils.joinTables(datasource, tablesToJoinForWidth, "grid_for_width")
-            tablesToDrop << gridForWidth
-
-            // Need to consider the full building fraction if superpositions is added
+            // Need to consider the full building fraction if superpositions are used
+            // (e.g. building covered by high vegetation : "high_vegetation_building_fraction")
             def all_building_frac_name = "building_fraction"
-            if(superpositions){
-                def superpositions_upper = [:]
-                superpositions.each {key, values ->
-                    superpositions_upper[key.toUpperCase()] = values.collect { it.toUpperCase() }
+            def buildingFractionTable = surfaceFractionsProcess
+            if (superpositions && surfaceFractionsProcess) {
+                def surfFracColumns = datasource.getColumnNames(surfaceFractionsProcess).collect { it.toUpperCase() }
+                def buildingFracColumns = ["BUILDING_FRACTION"]
+                superpositions.each { key, values ->
+                    if (values.any { it.toUpperCase() == "BUILDING" }) {
+                        buildingFracColumns << "${key.toUpperCase()}_BUILDING_FRACTION".toString()
+                    }
                 }
-                if(superpositions_upper.values().contains("BUILDING")){
-                    all_building_frac_name = "TMP_BUILD_FRAC"
-                    def all_build_frac_calc = "BUILDING_FRACTION + ${superpositions_upper.keySet()[0]}_BUIDLING_FRACTION"
-                    datasource.execute(
-                    """ALTER TABLE $gridForWidth ADD COLUMN $all_building_frac_name DOUBLE PRECISION;
-                    UPDATE $gridForWidth SET $all_building_frac_name = (SELECT $all_build_frac_calc FROM $gridForWidth)""")
+                buildingFracColumns = buildingFracColumns.findAll { surfFracColumns.contains(it) }
+                if (buildingFracColumns.size() > 1) {
+                    all_building_frac_name = "TOTAL_BUILDING_FRACTION"
+                    buildingFractionTable = postfix "grid_total_building_fraction"
+                    datasource.execute("""
+                        DROP TABLE IF EXISTS $buildingFractionTable;
+                        CREATE TABLE $buildingFractionTable AS
+                            SELECT $grid_column_identifier, ${buildingFracColumns.join(" + ")} AS $all_building_frac_name
+                            FROM $surfaceFractionsProcess""")
+                    tablesToJoinForWidth.put(buildingFractionTable, grid_column_identifier)
+                    tablesToDrop << buildingFractionTable
                 }
             }
+
+            def gridForWidth = Geoindicators.DataUtils.joinTables(datasource, tablesToJoinForWidth, "grid_for_width")
+            tablesToDrop << gridForWidth
 
             // Compute the aspect_ratio (and street width if needed)
             if (list_indicators_upper.intersect(["ASPECT_RATIO", "STREET_WIDTH"]) && building) {
@@ -2061,7 +2071,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
             if (list_indicators_upper.contains("FREE_EXTERNAL_FACADE_DENSITY")) {
                 def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity(
                         datasource, freeFacadeDensityExact,
-                        surfaceFractionsProcess,
+                        buildingFractionTable,
                         "FREE_EXTERNAL_FACADE_DENSITY",
                         all_building_frac_name, grid_column_identifier, prefixName)
                 if (buildingSurfDensity) {
