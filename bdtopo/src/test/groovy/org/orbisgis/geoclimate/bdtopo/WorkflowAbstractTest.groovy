@@ -557,4 +557,52 @@ abstract class WorkflowAbstractTest {
         h2gis.deleteClose()
     }
 
+    @Test
+    void testTargetGridSizeAngle() {
+        def bbox = [ 6359905.15, 663566.1107794361, 6360305.15, 663966.1107794361 ]
+        String dataFolder = getDataFolderPath()
+        def bdTopoParameters = [
+                "description" : "Full workflow configuration file",
+                "geoclimatedb": [
+                        "folder": getDBFolderPath(),
+                        "name"  : "testTargetGridSize",
+                        "delete": false
+                ],
+                "input"       : [
+                        "folder"   : dataFolder,
+                        "locations":["12174"]
+                ],
+                "output"      : [
+                        "folder": ["path": getDBFolderPath(), "tables": ["grid_indicators"]]
+                ],
+                "parameters"  :
+                        ["distance": 0,
+                         rsu_indicators: [
+                                 "indicatorUse" : ["LCZ"]
+                         ],
+                         "grid_indicators"   : [
+                                 "x_size"    : 200,
+                                 "y_size"    : 200,
+                                 "rowCol": false,
+                                 "angle" : 0,
+                                 "indicators": ["LCZ_PRIMARY"]
+                         ]
+                        ]
+        ]
+        Map process = BDTopo.workflow(bdTopoParameters, getVersion())
+
+        assertNotNull(process)
+        def tableNames = process.values()
+        def grid_table = tableNames.grid_indicators[0]
+        H2GIS h2gis = H2GIS.open("${getDBFolderPath() + File.separator}testTargetGridSize")
+        def countRows = h2gis.firstRow "select count(*) as numberOfRows from $grid_table"
+        print(countRows)
+        assert 624 == countRows.numberOfRows
+        def max_col = h2gis.firstRow(" select MAX(ID_COL) as maxCol from $grid_table")
+        assert 24 == max_col.maxCol
+        def max_row = h2gis.firstRow(" select MAX(ID_ROW) as maxRow from $grid_table")
+        assert 26 == max_row.maxrow
+        h2gis.deleteClose()
+    }
+
 }
