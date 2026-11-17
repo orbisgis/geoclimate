@@ -1245,6 +1245,44 @@ class WorflowOSMTest extends WorkflowAbstractTest {
     }
 
     @Test
+    void testWorkflowGridAngle(@TempDir File folder) {
+        String directory = folder.absolutePath + File.separator + "testTargetGridSize"
+        def osm_parmeters = [
+                "description" : "Compute the target grid input",
+                "geoclimatedb": [
+                        "folder": directory,
+                        "name"  : "geoclimate_chain_db",
+                        "delete": false
+                ],
+                "input"       : [
+                        "locations": ["Pont-de-Veyle"]],
+                "output"      : [
+                        "folder": directory],
+                "parameters"  :
+                        ["distance"       : 0,
+                         rsu_indicators   : ["indicatorUse": ["LCZ"]],
+                         "grid_indicators": [
+                                 "x_size"    : 50,
+                                 "y_size"    : 50,
+                                 "rowcol"    : false,
+                                 "angle" : 45,
+                                 "indicators": ["LCZ_PRIMARY"]
+                         ]
+                        ]
+        ]
+        Map process = OSM.WorkflowOSM.workflow(osm_parmeters)
+        def tableNames = process.values()
+        H2GIS h2gis = H2GIS.open("${directory + File.separator}geoclimate_chain_db")
+        def gridIndicators = tableNames.grid_indicators[0]
+        def countRows = h2gis.firstRow "select count(*) as numberOfRows from $gridIndicators"
+        assert 1554 == countRows.numberOfRows
+        def max_col = h2gis.firstRow(" select MAX(ID_COL) as maxCol from $gridIndicators")
+        assert 37 == max_col.maxCol
+        def max_row = h2gis.firstRow(" select MAX(ID_ROW) as maxRow from $gridIndicators")
+        assert 42 == max_row.maxrow
+    }
+
+    @Test
     void testClip(@TempDir File folder) {
         String directory = folder.absolutePath + File.separator + "testClip"
         def bbox = [43.726898, 7.298452, 43.727677, 7.299632]
