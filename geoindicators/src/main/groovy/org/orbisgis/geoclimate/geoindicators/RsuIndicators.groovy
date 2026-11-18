@@ -1596,13 +1596,18 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             //Polygonize the input tables
             debug "Generating " +
                     "minimum polygon areas"
+            // Faces smaller than 1 cm2 are below the precision of the data (centimeter). They are numerical
+            // artefacts created where the zone boundaries (moved by a few microns when the RSU are built) almost
+            // coincide with the layer boundaries, and their presence depends on the order of the computation (see #1134)
+            def min_polygon_area = 1e-4
             def tmp_point_polygonize = postfix "tmp_point_polygonize_zindex0"
             datasource.execute("""DROP TABLE IF EXISTS $tmp_point_polygonize;
                 CREATE INDEX ON $tmp_tables($id_zone);
                 CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as ${ID_COLUMN_NAME}, st_pointonsurface(the_geom) as the_geom ,
                 st_area(the_geom) as area , ${id_zone}
                  from st_explode ('(select st_polygonize(st_union(st_force2d(
-                st_node(st_accum(a.the_geom))))) as the_geom, ${id_zone} from $tmp_tables as a group by ${id_zone})')""")
+                st_node(st_accum(a.the_geom))))) as the_geom, ${id_zone} from $tmp_tables as a group by ${id_zone})')
+                 where st_area(the_geom) > $min_polygon_area""")
 
             //Create indexes
             datasource.createSpatialIndex(tmp_point_polygonize, "the_geom")
@@ -2554,8 +2559,6 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
         //Polygonize the input tables
         debug "Generating " +
                 "minimum polygon areas"
-        //We must filter small polygons less than 1 cm
-        def min_polygon_area = 1e-4
         def final_polygonize = postfix "tmp_point_polygonize_zindex0"
         datasource.execute("""DROP TABLE IF EXISTS $final_polygonize;
                 CREATE INDEX ON $tmp_tables($id_zone);
@@ -2563,7 +2566,7 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
                 st_area(the_geom) as area 
                  from st_explode ('(select st_polygonize(st_union(st_force2d(
                 st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom from $tmp_tables as a group by ${id_zone})')
-                where st_area(the_geom) > $min_polygon_area""")
+                """)
 
         //Create indexes
         datasource.createSpatialIndex(final_polygonize, "the_geom")
