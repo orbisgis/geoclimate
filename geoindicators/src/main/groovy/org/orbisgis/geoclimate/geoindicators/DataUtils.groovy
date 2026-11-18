@@ -341,3 +341,62 @@ Geometry reduceToCentimeter(Geometry geometry) {
     reduced.setSRID(geometry.getSRID())
     return reduced
 }
+
+
+/**
+ * Reduce the precision of the geometries of a table to the centimeter
+ *
+ * The input geometries must be in a metric coordinate reference system.
+ * The output table has the same columns as the input table.
+ *
+ * @param datasource connection to the database
+ * @param inputTable the table to process, with a geometry column named the_geom
+ * @param columnId the name of the unique identifier column
+ * @param outputTableName the name of the output table
+ * @param minArea the polygons with an area lower than or equal to this value are removed
+ * @return the name of the output table
+ */
+String reduceTableToCentimeter(JdbcDataSource datasource, String inputTable, String columnId, String outputTableName,
+                               double minArea = 0) throws Exception {
+    try {
+        def columns = datasource.getColumnNames(inputTable)
+        def geomColumn = columns.find { it.equalsIgnoreCase("THE_GEOM") }
+        def idColumn = columns.find { it.equalsIgnoreCase(columnId) }
+        if (!geomColumn || !idColumn) {
+            throw new IllegalArgumentException("The table $inputTable must contain the columns the_geom and $columnId")
+        }
+        def srid = datasource.getSrid(inputTable)
+        datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+            CREATE TABLE $outputTableName AS SELECT * FROM $inputTable WHERE 1 = 0;
+            ALTER TABLE $outputTableName ALTER COLUMN "$geomColumn" SET DATA TYPE GEOMETRY${srid > 0 ? "(GEOMETRY, $srid)" : ""};
+            """.toString())
+
+        def nextId = (datasource.firstRow("SELECT MAX(\"$idColumn\") AS MAXID FROM $inputTable".toString()).MAXID ?: 0) as long
+        def insert = """INSERT INTO $outputTableName (${columns.collect { "\"$it\"" }.join(", ")}) 
+                        VALUES (${columns.collect { "?" }.join(", ")})""".toString()
+        datasource.withBatch(1000, insert) { ps ->
+            datasource.eachRow("SELECT * FROM $inputTable ORDER BY \"$idColumn\"".toString()) { row ->
+                Geometry geom = reduceToCentimeter(row[geomColumn] as Geometry)
+                if (geom == null || geom.isEmpty()) {
+                    return
+                }
+                boolean firstGeom = true
+                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                    Geometry subGeom = geom.getGeometryN(i)
+                    if (subGeom.isEmpty() || (minArea > 0 && subGeom.getDimension() == 2 && subGeom.getArea() <= minArea)) {
+                        continue
+                    }
+                    subGeom.setSRID(geom.getSRID())
+                    def id = firstGeom ? row[idColumn] : ++nextId
+                    ps.addBatch(columns.collect { column ->
+                        column == geomColumn ? subGeom : (column == idColumn ? id : row[column])
+                    })
+                    firstGeom = false
+                }
+            }
+        }
+        return outputTableName
+    } catch (SQLException e) {
+        throw new SQLException("Cannot reduce the precision of the table $inputTable", e)
+    }
+}
