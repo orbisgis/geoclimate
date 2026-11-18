@@ -1148,3 +1148,67 @@ String removeNarrowRSU(JdbcDataSource datasource, String rsuToModify, String wat
     debug "Wrong RSU shapes have been merged with other"
     return outputTableName
 }
+
+/**
+ * Builds the spatial relations between two tables, e.g. between buildings and blocks,
+ * buildings and RSU or buildings and grid cells.
+ *
+ * The result is a table that contains the identifiers of the two tables plus a column of the shared area.
+ *
+ * @param datasource A connexion to a database (H2GIS, PostGIS, ...) where are stored the input tables
+ * @param sourceTable A first input table of geometries
+ * @param idColumnSource Unique identifier for the sourceTable
+ * @param targetTable A second input table of geometries
+ * @param idColumnTarget Unique identifier for the targetTable
+ * @param largestOverlapOnly If false (default), all the intersecting (source, target) pairs are kept (n to n).
+ * If true, each source object is linked only to the target object
+ *
+ * @param prefixName A prefix used to name the output table
+ *
+ * @return outputTableName A table containing the columns idColumnSource, idColumnTarget plus a column AREA
+ * (area intersected by the two objects)
+ */
+String buildSpatialJoin(JdbcDataSource datasource, String sourceTable, String idColumnSource,
+                        String targetTable, String idColumnTarget,
+                        boolean largestOverlapOnly = false, String prefixName) throws Exception {
+    def GEOMETRIC_COLUMN_SOURCE = "the_geom"
+    def GEOMETRIC_COLUMN_TARGET = "the_geom"
+
+    debug "Creating a spatial join between objects from two tables :  $sourceTable and $targetTable"
+
+    def outputTableName = postfix "${sourceTable}_${targetTable}", "join"
+    datasource.createSpatialIndex(sourceTable, GEOMETRIC_COLUMN_SOURCE)
+    datasource.createSpatialIndex(targetTable, GEOMETRIC_COLUMN_TARGET)
+
+    if (largestOverlapOnly) {
+        datasource """  DROP TABLE IF EXISTS $outputTableName;
+                        CREATE TABLE $outputTableName AS 
+                            SELECT $idColumnSource, $idColumnTarget, AREA 
+                            FROM (SELECT $idColumnSource, $idColumnTarget, AREA,
+                                         ROW_NUMBER() OVER (PARTITION BY $idColumnSource 
+                                                            ORDER BY AREA DESC, $idColumnTarget) AS RANK_AREA
+                                  FROM (SELECT a.$idColumnSource, b.$idColumnTarget,
+                                               ST_AREA(ST_INTERSECTION(a.$GEOMETRIC_COLUMN_SOURCE, 
+                                                                       b.$GEOMETRIC_COLUMN_TARGET)) AS AREA
+                                        FROM $sourceTable a, $targetTable b
+                                        WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
+                                              ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, b.$GEOMETRIC_COLUMN_TARGET)) AS FOO
+                                 ) AS RANKED
+                            WHERE RANK_AREA = 1;""".toString()
+    } else {
+        datasource """  DROP TABLE IF EXISTS $outputTableName;
+                        CREATE TABLE $outputTableName AS 
+                            SELECT a.$idColumnSource, b.$idColumnTarget,
+                                   ST_AREA(ST_INTERSECTION(ST_PRECISIONREDUCER(a.$GEOMETRIC_COLUMN_SOURCE, 3), 
+                                                           ST_PRECISIONREDUCER(b.$GEOMETRIC_COLUMN_TARGET, 3))) AS AREA
+                            FROM $sourceTable a, $targetTable b
+                            WHERE a.$GEOMETRIC_COLUMN_SOURCE && b.$GEOMETRIC_COLUMN_TARGET AND 
+                                  ST_INTERSECTS(a.$GEOMETRIC_COLUMN_SOURCE, b.$GEOMETRIC_COLUMN_TARGET);""".toString()
+    }
+    datasource.createIndex(outputTableName, idColumnSource)
+    datasource.createIndex(outputTableName, idColumnTarget)
+
+    debug "The spatial join have been performed between :  $sourceTable and $targetTable"
+
+    return outputTableName
+}

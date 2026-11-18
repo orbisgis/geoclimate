@@ -162,24 +162,24 @@ class SpatialUnitsTests {
     @Test
     void spatialJoinTest2() {
         h2GIS """
-                DROP TABLE IF EXISTS tab1, tab2;
-                CREATE TABLE tab1(id1 int, the_geom geometry);
-                CREATE TABLE tab2(id2 int, the_geom geometry);
-                INSERT INTO tab1 VALUES (1, 'POLYGON((0 0, 10 0, 10 20, 0 20, 0 0))'),
+                DROP TABLE IF EXISTS geomTableA, geomTableB;
+                CREATE TABLE geomTableA(idA int, the_geom geometry);
+                CREATE TABLE geomTableB(idB int, the_geom geometry);
+                INSERT INTO geomTableA VALUES (1, 'POLYGON((0 0, 10 0, 10 20, 0 20, 0 0))'),
                                         (2, 'POLYGON((10 5, 20 5, 20 20, 10 20, 10 5))'),
                                         (3, 'POLYGON((10 -10, 25 -10, 25 5, 10 5, 10 -10))');
-                INSERT INTO tab2 VALUES (1, 'POLYGON((0 0, 20 0, 20 20, 0 20, 0 0))'),
+                INSERT INTO geomTableB VALUES (1, 'POLYGON((0 0, 20 0, 20 20, 0 20, 0 0))'),
                                         (2, 'POLYGON((20 0, 30 0, 30 20, 20 20, 20 0))');
         """
-        def pNbRelationsAll = Geoindicators.SpatialUnits.spatialJoin(h2GIS, "tab1", "tab2",
-                "id2", false, null, "test")
-        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count FROM ${pNbRelationsAll} WHERE ID1 = 1 AND ID2=1").count
-        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE ID1 = 2 AND ID2=1").count
-        assertEquals 2, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE (ID1 = 3 AND ID2=1) or (ID1 = 3 AND ID2=2)").count
+        def pNbRelationsAll = Geoindicators.SpatialUnits.spatialJoin(h2GIS, "geomTableA", "geomTableB",
+                "idB", false, null, "test")
+        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count FROM ${pNbRelationsAll} WHERE idA = 1 AND idB=1").count
+        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE idA = 2 AND idB=1").count
+        assertEquals 2, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE (idA = 3 AND idB=1) or (idA = 3 AND idB=2)").count
 
 
-        def pPointOnSurface = Geoindicators.SpatialUnits.spatialJoin(h2GIS, "tab1",
-                "tab2", "id2", true, null, "test")
+        def pPointOnSurface = Geoindicators.SpatialUnits.spatialJoin(h2GIS, "geomTableA",
+                "geomTableB", "idB", true, null, "test")
         assert h2GIS.getTable(pPointOnSurface).getRowCount() == 2
     }
 
@@ -561,6 +561,70 @@ class SpatialUnitsTests {
                     (SELECT ST_UNION(ST_ACCUM(THE_GEOM)) FROM $createRSU),
                     (SELECT ST_UNION(ST_ACCUM(THE_GEOM)) FROM $rsuWithoutLong))) AS area""".toString()).area < 1)
     }
+
+    @Test
+    void buildSpatialJoinLargestOverlapTest() {
+        h2GIS.execute("""
+                DROP TABLE IF EXISTS build_tempo; 
+                CREATE TABLE build_tempo AS 
+                    SELECT id_build, the_geom FROM building_test 
+                    WHERE id_build < 9 OR id_build > 28 AND id_build < 30
+        """)
+        String idColumnTarget = "id_rsu"
+        def pRsu = Geoindicators.SpatialUnits.buildSpatialJoin(h2GIS,
+                "build_tempo", "id_build", "rsu_test", idColumnTarget,
+                true, "test")
+        assertNotNull(pRsu)
+        h2GIS.eachRow("SELECT * FROM ${pRsu}") {
+            row ->
+                def expected = h2GIS.firstRow("SELECT ${idColumnTarget} FROM rsu_build_corr WHERE id_build = ${row.id_build}".toString())
+                assert row[idColumnTarget] == expected[idColumnTarget]
+        }
+        idColumnTarget = "id_block"
+        def pBlock = Geoindicators.SpatialUnits.buildSpatialJoin(h2GIS, "build_tempo", "id_build",
+                "block_test", "id_block", true, "test")
+
+        h2GIS.eachRow("SELECT * FROM ${pBlock}".toString()) {
+            row ->
+                def expected = h2GIS.firstRow "SELECT ${idColumnTarget} FROM block_build_corr WHERE id_build = ${row.id_build}".toString()
+                assert row[idColumnTarget] == expected[idColumnTarget]
+        }
+    }
+
+    @Test
+    void buildSpatialJoinTest() {
+        h2GIS.execute("""
+                DROP TABLE IF EXISTS geomTableA, geomTableB;
+                CREATE TABLE geomTableA(idA int, the_geom geometry);
+                CREATE TABLE geomTableB(idB int, the_geom geometry);
+                INSERT INTO geomTableA VALUES (1, 'POLYGON((0 0, 10 0, 10 20, 0 20, 0 0))'),
+                                        (2, 'POLYGON((10 5, 20 5, 20 20, 10 20, 10 5))'),
+                                        (3, 'POLYGON((10 -10, 25 -10, 25 5, 10 5, 10 -10))');
+                INSERT INTO geomTableB VALUES (1, 'POLYGON((0 0, 20 0, 20 20, 0 20, 0 0))'),
+                                        (2, 'POLYGON((20 0, 30 0, 30 20, 20 20, 20 0))');
+        """)
+        // All the relations
+        def pNbRelationsAll = Geoindicators.SpatialUnits.buildSpatialJoin(h2GIS, "geomTableA", "idA", "geomTableB",
+                "idB", false, "test")
+        // Only the ids and the shared area are stored
+        assertEquals(["idA", "idB", "AREA"], h2GIS.getColumnNames(pNbRelationsAll).collect { it.toUpperCase() })
+        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count FROM ${pNbRelationsAll} WHERE idA = 1 AND idB=1").count
+        assertEquals 1, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE idA = 2 AND idB=1").count
+        assertEquals 2, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE (idA = 3 AND idB=1) or (idA = 3 AND idB=2)").count
+        assertEquals 50, h2GIS.firstRow("SELECT AREA FROM ${pNbRelationsAll} WHERE idA = 3 AND idB=1").AREA, 0.0001
+        assertEquals 25, h2GIS.firstRow("SELECT AREA FROM ${pNbRelationsAll} WHERE idA = 3 AND idB=2").AREA, 0.0001
+
+        // Only the relation with the largest overlap
+        def pLargestOverlap = Geoindicators.SpatialUnits.buildSpatialJoin(h2GIS, "geomTableA", "idA", "geomTableB",
+                "idB", true, "test")
+        assertEquals 3, h2GIS.getRowCount(pLargestOverlap)
+        assertEquals 1, h2GIS.firstRow("SELECT idB FROM ${pLargestOverlap} WHERE idA = 1").idB
+        assertEquals 1, h2GIS.firstRow("SELECT idB FROM ${pLargestOverlap} WHERE idA = 2").idB
+        assertEquals 1, h2GIS.firstRow("SELECT idB FROM ${pLargestOverlap} WHERE idA = 3").idB
+        assertEquals 50, h2GIS.firstRow("SELECT AREA FROM ${pLargestOverlap} WHERE idA = 3").AREA, 0.0001
+    }
+
+
 
     @Disabled
     @Test
