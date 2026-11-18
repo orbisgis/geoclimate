@@ -1621,7 +1621,7 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             // Each smallest geometry is identified by its point on surface (b.the_geom). ST_Contains is used
             // instead of ST_Intersects : when a polygon shares an edge with a layer geometry (e.g. a building
             // cut by a rotated grid cell), its point on surface can lie exactly on the layer boundary and the
-            // polygon would be wrongly attributed to this layer (see #1134).
+            // polygon would be wrongly attributed to this layer.
             def finalMerge = []
             def tmpTablesToDrop = []
             tablesToMerge.each { entry ->
