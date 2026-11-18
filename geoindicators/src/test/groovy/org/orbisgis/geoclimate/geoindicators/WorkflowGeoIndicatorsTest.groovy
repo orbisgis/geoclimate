@@ -662,15 +662,6 @@ class WorkflowGeoIndicatorsTest {
      */
     def checkRSUIndicators(def datasource, String rsuIndicatorsTableName, Map<String, Integer> expectedCounts,
                            Integer expectedRsuCount = null) {
-        // Diagnostic #1134 : RSU with a small road fraction (to compare two runs)
-        datasource.eachRow("""SELECT ROUND(ST_X(ST_PointOnSurface(the_geom)), 1) AS X,
-                       ROUND(ST_Y(ST_PointOnSurface(the_geom)), 1) AS Y,
-                       ROUND(ST_Area(the_geom), 1) AS RSU_AREA,
-                       ROAD_FRACTION, ROAD_FRACTION * ST_Area(the_geom) AS ROAD_AREA
-                FROM $rsuIndicatorsTableName
-                WHERE ROAD_FRACTION > 0 AND ROAD_FRACTION < 0.01
-                ORDER BY ROAD_FRACTION""".toString()) { println "   small road : $it" }
-
         if (expectedRsuCount != null) {
             assertEquals(expectedRsuCount, datasource.getRowCount(rsuIndicatorsTableName), "Number of RSU")
         }
