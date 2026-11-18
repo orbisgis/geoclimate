@@ -197,13 +197,23 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.hydrographicTable, "", "", "", "", "",
                 ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
 
-        datasource.save(geoIndicatorsCompute_i.rsu_indicators, "/tmp/rsu.geojson", true)
-
-        datasource.save(geoIndicatorsCompute_i.building_indicators, "/tmp/building_indicators.geojson", true)
         assertNotNull(geoIndicatorsCompute_i)
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, [
+                "road_fraction"                                                                 : 208,
+                "building_fraction"                                                             : 57,
+                "high_vegetation_fraction"                                                      : 16,
+                "high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction": 0,
+                "high_vegetation_building_fraction"                                             : 2,
+                "high_vegetation_low_vegetation_fraction"                                       : 1,
+                "high_vegetation_road_fraction"                                                 : 9,
+                "high_vegetation_impervious_fraction"                                           : 0,
+                "water_permanent_fraction + water_intermittent_fraction"                        : 5,
+                "low_vegetation_fraction"                                                       : 40,
+                "impervious_fraction"                                                           : 0],
+                235)
         assertEquals(listUrbTyp.Bu.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.building_indicators).sort())
         assertEquals(listUrbTyp.Bl.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.block_indicators).sort())
+
 
         List expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + indicatorUse.collect { listNames[it] }).flatten()
@@ -264,7 +274,19 @@ class WorkflowGeoIndicatorsTest {
                 ["indicatorUse": indicatorUse, svfSimplified: false, "utrfModelName": "UTRF_BDTOPO_V2_RF_2_2.model"], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, [
+                "road_fraction"                                                                 : 208,
+                "building_fraction"                                                             : 57,
+                "high_vegetation_fraction"                                                      : 16,
+                "high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction": 0,
+                "high_vegetation_building_fraction"                                             : 2,
+                "high_vegetation_low_vegetation_fraction"                                       : 1,
+                "high_vegetation_road_fraction"                                                 : 9,
+                "high_vegetation_impervious_fraction"                                           : 0,
+                "water_permanent_fraction + water_intermittent_fraction"                        : 5,
+                "low_vegetation_fraction"                                                       : 40,
+                "impervious_fraction"                                                           : 0],
+                235)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.building_indicators).sort())
@@ -339,7 +361,19 @@ class WorkflowGeoIndicatorsTest {
                 "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, [
+                "road_fraction"                                                                 : 208,
+                "building_fraction"                                                             : 57,
+                "high_vegetation_fraction"                                                      : 16,
+                "high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction": 0,
+                "high_vegetation_building_fraction"                                             : 2,
+                "high_vegetation_low_vegetation_fraction"                                       : 1,
+                "high_vegetation_road_fraction"                                                 : 9,
+                "high_vegetation_impervious_fraction"                                           : 0,
+                "water_permanent_fraction + water_intermittent_fraction"                        : 5,
+                "low_vegetation_fraction"                                                       : 40,
+                "impervious_fraction"                                                           : 0],
+                235)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.building_indicators).sort())
@@ -381,8 +415,19 @@ class WorkflowGeoIndicatorsTest {
                 "", "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        datasource.save(geoIndicatorsCompute_i.rsu_indicators, "/tmp/test4.geojson", true)
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, [
+                "road_fraction"                                                                 : 208,
+                "building_fraction"                                                             : 57,
+                "high_vegetation_fraction"                                                      : 16,
+                "high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction": 0,
+                "high_vegetation_building_fraction"                                             : 2,
+                "high_vegetation_low_vegetation_fraction"                                       : 1,
+                "high_vegetation_road_fraction"                                                 : 9,
+                "high_vegetation_impervious_fraction"                                           : 0,
+                "water_permanent_fraction + water_intermittent_fraction"                        : 5,
+                "low_vegetation_fraction"                                                       : 40,
+                "impervious_fraction"                                                           : 0],
+                235)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.building_indicators).sort())
@@ -423,7 +468,19 @@ class WorkflowGeoIndicatorsTest {
                 "", "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, [
+                "road_fraction"                                                                 : 208,
+                "building_fraction"                                                             : 57,
+                "high_vegetation_fraction"                                                      : 16,
+                "high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction": 0,
+                "high_vegetation_building_fraction"                                             : 2,
+                "high_vegetation_low_vegetation_fraction"                                       : 1,
+                "high_vegetation_road_fraction"                                                 : 9,
+                "high_vegetation_impervious_fraction"                                           : 0,
+                "water_permanent_fraction + water_intermittent_fraction"                        : 5,
+                "low_vegetation_fraction"                                                       : 40,
+                "impervious_fraction"                                                           : 0],
+                235)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.building_indicators).sort())
@@ -467,7 +524,19 @@ class WorkflowGeoIndicatorsTest {
                         prefixName)
         assertNotNull(geoIndicatorsCompute_i)
 
-        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators)
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, [
+                "road_fraction"                                                                 : 208,
+                "building_fraction"                                                             : 57,
+                "high_vegetation_fraction"                                                      : 16,
+                "high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction": 0,
+                "high_vegetation_building_fraction"                                             : 2,
+                "high_vegetation_low_vegetation_fraction"                                       : 1,
+                "high_vegetation_road_fraction"                                                 : 9,
+                "high_vegetation_impervious_fraction"                                           : 0,
+                "water_permanent_fraction + water_intermittent_fraction"                        : 5,
+                "low_vegetation_fraction"                                                       : 40,
+                "impervious_fraction"                                                           : 0],
+                235)
 
         if (indicatorUse.contains("UTRF")) {
             assertEquals(listUrbTyp.Bu.sort(), datasource.getColumnNames(geoIndicatorsCompute_i.building_indicators).sort())
@@ -507,6 +576,20 @@ class WorkflowGeoIndicatorsTest {
                 inputTableNames.hydrographicTable, "",
                 "", "", "", "", ["indicatorUse": indicatorUse, svfSimplified: false], prefixName)
         assertNotNull(geoIndicatorsCompute_i)
+
+        checkRSUIndicators(datasource, geoIndicatorsCompute_i.rsu_indicators, [
+                "road_fraction"                                                                 : 208,
+                "building_fraction"                                                             : 57,
+                "high_vegetation_fraction"                                                      : 16,
+                "high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction": 0,
+                "high_vegetation_building_fraction"                                             : 2,
+                "high_vegetation_low_vegetation_fraction"                                       : 1,
+                "high_vegetation_road_fraction"                                                 : 9,
+                "high_vegetation_impervious_fraction"                                           : 0,
+                "water_permanent_fraction + water_intermittent_fraction"                        : 5,
+                "low_vegetation_fraction"                                                       : 40,
+                "impervious_fraction"                                                           : 0],
+                235)
 
         def expectListRsuTempo = listColBasic + listColCommon
         expectListRsuTempo = (expectListRsuTempo + indicatorUse.collect { listNames[it] }).flatten()
@@ -567,74 +650,31 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(1d, rows.AREA_FRACTION_TERTIARY)
     }
 
-
     /**
-     * Method to check the result for the RSU indicators table
-     * Please add new checks here
+     * Check the number of RSU for each fraction from a the map
+     *
+     * @param datasource connection to the database
+     * @param rsuIndicatorsTableName the RSU indicators table
+     * @param expectedCounts a map where the key is :
+     *        - a fraction or an expression (e.g. "water_permanent_fraction + water_intermittent_fraction"),
+     *          the expected value is the number of RSU where it is greater than 0
+     * @param expectedRsuCount the expected number of RSU (not checked if null)
      */
-    def checkRSUIndicators(def datasource, def rsuIndicatorsTableName) {
-        //Check road_fraction > 0
-        def countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE ROAD_FRACTION>0".toString())
-        assertEquals(208, countResult.count)
-
-        //Check building_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE BUILDING_FRACTION>0".toString())
-        assertEquals(57, countResult.count)
-
-        //Check high_vegetation_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_fraction>0".toString())
-        assertEquals(16, countResult.count)
-
-        //Check high_vegetation_water_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_water_permanent_fraction + high_vegetation_water_intermittent_fraction>0".toString())
-        assertEquals(0, countResult.count)
-
-        //Check high_vegetation_building_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_building_fraction>0".toString())
-        assertEquals(2, countResult.count)
-
-        //Check high_vegetation_low_vegetation_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_low_vegetation_fraction>0".toString())
-        assertEquals(1, countResult.count)
-
-        //Check high_vegetation_road_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_road_fraction>0".toString())
-        assertEquals(9, countResult.count)
-
-        //Check high_vegetation_impervious_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE high_vegetation_impervious_fraction>0".toString())
-        assertEquals(0, countResult.count)
-
-        //Check water_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE water_permanent_fraction + water_intermittent_fraction>0".toString())
-        assertEquals(5, countResult.count)
-
-        //Check low_vegetation_fraction > 0.001
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE low_vegetation_fraction>0.001".toString())
-        assertEquals(39, countResult.count)
-
-        //Check impervious_fraction > 0
-        countResult = datasource.firstRow("select count(*) as count from ${rsuIndicatorsTableName} WHERE impervious_fraction>0".toString())
-        assertEquals(0, countResult.count)
+    def checkRSUIndicators(def datasource, String rsuIndicatorsTableName, Map<String, Integer> expectedCounts,
+                           Integer expectedRsuCount = null) {
+        if (expectedRsuCount != null) {
+            assertEquals(expectedRsuCount, datasource.getRowCount(rsuIndicatorsTableName), "Number of RSU")
+        }
+        expectedCounts.each { key, expected ->
+            def count = datasource.firstRow("SELECT COUNT(*) AS NB FROM $rsuIndicatorsTableName WHERE $key > 0".toString()).NB
+            assertEquals(expected, count, "Number of RSU where $key > 0")
+        }
     }
 
     @Test
     void GeoClimateProperties() {
         assertNotNull Geoindicators.version()
         assertNotNull Geoindicators.buildNumber()
-    }
-
-    @Disabled
-    @Test
-    void test() {
-        datasource.load("/tmp/road_inter.geojson", "road", true)
-        datasource.load("/tmp/rsu_table.geojson", "rsu", true)
-        datasource.createSpatialIndex("road")
-        datasource.createSpatialIndex("rsu")
-        datasource.execute("""
-        select st_intersection(a.the_geom, b.the_geom) as the_geom from road as a, rsu as b where a.the_geom && b.the_geom 
-        and st_intersects(a.the_geom, b.the_geom);
-        """.toString())
     }
 
     @Test
@@ -660,7 +700,6 @@ class WorkflowGeoIndicatorsTest {
         assertEquals(0, datasource.getRowCount(urban_cool_areas))
     }
 
-
     @Test
     void sprawlIndicators2() {
         //Data for test only vegetation
@@ -676,7 +715,6 @@ class WorkflowGeoIndicatorsTest {
         def urban_sprawl_areas = results.urban_sprawl_areas
         assertTrue(datasource.isEmpty(urban_sprawl_areas))
         assertNull(urban_cool_areas)
-
     }
 
 

@@ -578,7 +578,7 @@ String formatRoadLayer(JdbcDataSource datasource, String road, String zone = "")
 
                     def ID_SOURCE = row.ID_SOURCE
                     if (qualified_road_zindex >= 0 && qualified_road_type != 'path') {
-                        Geometry geom = row.the_geom
+                        Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                         if (!geom.isEmpty()) {
                             def epsg = geom.getSRID()
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
@@ -678,7 +678,7 @@ String formatHydroLayer(JdbcDataSource datasource, String water, String zone = "
                     def water_zindex = 0
                     def regime = row."REGIME"
                     if (water_type) {
-                        Geometry geom = row.the_geom
+                        Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                         if (!geom.isEmpty()) {
                             def epsg = geom.getSRID()
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
@@ -775,7 +775,7 @@ String formatRailsLayer(JdbcDataSource datasource, String rail, String zone = ""
                     def rail_crossing = rail_types.get(row.CROSSING)
 
                     if (rail_zindex >= 0 && rail_type) {
-                        Geometry geom = row.the_geom
+                        Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                         if (!geom.isEmpty()) {
                             def epsg = geom.getSRID()
                             for (int i = 0; i < geom.getNumGeometries(); i++) {
@@ -890,7 +890,7 @@ String formatVegetationLayer(JdbcDataSource datasource, String vegetation, Strin
                     if (!vegetation_zindex) {
                         vegetation_zindex = 0
                     }
-                    Geometry geom = row.the_geom
+                    Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                     def epsg = geom.getSRID()
                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                         Geometry subGeom = geom.getGeometryN(i)
@@ -958,7 +958,7 @@ String formatImperviousLayer(H2GIS datasource, String impervious) throws Excepti
             def listTypes = types.split(",") as Set
             def type = weight_values.subMap(listTypes).max { it.key }.key
             if (type) {
-                Geometry geom = row.the_geom
+                Geometry geom = Geoindicators.DataUtils.reduceToCentimeter(row.the_geom)
                 def epsg = geom.getSRID()
                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                     Geometry subGeom = geom.getGeometryN(i)

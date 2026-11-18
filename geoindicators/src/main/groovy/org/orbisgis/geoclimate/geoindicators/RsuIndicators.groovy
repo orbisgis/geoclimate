@@ -1596,13 +1596,18 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             //Polygonize the input tables
             debug "Generating " +
                     "minimum polygon areas"
+            // Faces smaller than 1 cm2 are below the precision of the data (centimeter). They are numerical
+            // artefacts created where the zone boundaries (moved by a few microns when the RSU are built) almost
+            // coincide with the layer boundaries, and their presence depends on the order of the computation (see #1134)
+            def min_polygon_area = 1e-4
             def tmp_point_polygonize = postfix "tmp_point_polygonize_zindex0"
             datasource.execute("""DROP TABLE IF EXISTS $tmp_point_polygonize;
                 CREATE INDEX ON $tmp_tables($id_zone);
                 CREATE TABLE $tmp_point_polygonize as  select  EXPLOD_ID as ${ID_COLUMN_NAME}, st_pointonsurface(the_geom) as the_geom ,
                 st_area(the_geom) as area , ${id_zone}
                  from st_explode ('(select st_polygonize(st_union(st_force2d(
-                st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom, ${id_zone} from $tmp_tables as a group by ${id_zone})')""")
+                st_node(st_accum(a.the_geom))))) as the_geom, ${id_zone} from $tmp_tables as a group by ${id_zone})')
+                 where st_area(the_geom) > $min_polygon_area""")
 
             //Create indexes
             datasource.createSpatialIndex(tmp_point_polygonize, "the_geom")
@@ -1618,6 +1623,10 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
             datasource.createSpatialIndex(final_polygonize, "the_geom")
             datasource.createIndex(final_polygonize, id_zone)
 
+            // Each smallest geometry is identified by its point on surface (b.the_geom). ST_Contains is used
+            // instead of ST_Intersects : when a polygon shares an edge with a layer geometry (e.g. a building
+            // cut by a rotated grid cell), its point on surface can lie exactly on the layer boundary and the
+            // polygon would be wrongly attributed to this layer.
             def finalMerge = []
             def tmpTablesToDrop = []
             tablesToMerge.each { entry ->
@@ -1629,54 +1638,54 @@ String smallestCommunGeometry(JdbcDataSource datasource, String zone, String id_
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 1 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
-                $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_Contains(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("low_vegetation")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
                  CREATE TABLE $tmptableName AS SELECT b.area,1 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
-                $final_polygonize as b where a.the_geom && b.the_geom and st_intersects(a.the_geom,b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_Contains(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("water_intermittent")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 0 as high_vegetation, 1 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road,  0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
-                $final_polygonize as b  where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                $final_polygonize as b  where a.the_geom && b.the_geom and ST_Contains(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("water_permanent")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""CREATE TABLE $tmptableName AS SELECT b.area,0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 1 as water_permanent, 0 as impervious, 0 as road,  0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
-                $final_polygonize as b  where a.the_geom && b.the_geom and st_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                $final_polygonize as b  where a.the_geom && b.the_geom and ST_Contains(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("road")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
                     CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 1 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
-                $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_Contains(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("rail")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
                     CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road, 0 as building,1 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
-                $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_Contains(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("impervious")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 1 as impervious, 0 as road, 0 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key} as a,
-                $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_Contains(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 } else if (entry.key.startsWith("building")) {
                     datasource.createSpatialIndex(entry.key, "the_geom")
                     datasource.createIndex(entry.key, id_zone)
                     datasource.execute("""DROP TABLE IF EXISTS $tmptableName;
                 CREATE TABLE $tmptableName AS SELECT b.area, 0 as low_vegetation, 0 as high_vegetation, 0 as water_intermittent, 0 as water_permanent, 0 as impervious, 0 as road, 1 as building,0 as rail, b.${ID_COLUMN_NAME}, b.${id_zone} from ${entry.key}  as a,
-                $final_polygonize as b where a.the_geom && b.the_geom and ST_intersects(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
+                $final_polygonize as b where a.the_geom && b.the_geom and ST_Contains(a.the_geom, b.the_geom) AND a.${id_zone} =b.${id_zone}""")
                     finalMerge.add("SELECT * FROM $tmptableName")
                 }
             }
@@ -1851,16 +1860,17 @@ String surfaceFractions(JdbcDataSource datasource,
 
         }
         // Calculates the fraction of land without defined surface
+        // The fractions are bounded to 1 and the undefined fraction to 0
         def allCols = datasource.getColumnNames(withoutUndefined)
         def allFractionCols = allCols.minus(id_rsu.toUpperCase())
         datasource.execute(""" DROP TABLE IF EXISTS $outputTableName;
                            CREATE TABLE $outputTableName
-                                AS SELECT *, 1-(${allFractionCols.join("+")}) AS UNDEFINED_FRACTION
+                                AS SELECT ${id_rsu}, ${allFractionCols.collect { "LEAST($it, 1) AS $it" }.join(", ")},
+                                GREATEST(1 - (${allFractionCols.join("+")}), 0) AS UNDEFINED_FRACTION
                                 FROM $withoutUndefined""")
 
         // Drop intermediate tables
         datasource.execute("DROP TABLE IF EXISTS $withoutUndefined;")
-
         //Cache the table name to re-use it
         cacheTableName(BASE_TABLE_NAME, outputTableName)
         return outputTableName
@@ -2555,7 +2565,8 @@ String groundLayer(JdbcDataSource datasource, String zone, String id_zone,
                 CREATE TABLE $final_polygonize as  select  CAST((row_number() over()) as Integer) as ${ID_COLUMN_NAME}, the_geom ,
                 st_area(the_geom) as area 
                  from st_explode ('(select st_polygonize(st_union(st_force2d(
-                st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom from $tmp_tables as a group by ${id_zone})')""")
+                st_precisionreducer(st_node(st_accum(a.the_geom)), 3)))) as the_geom from $tmp_tables as a group by ${id_zone})')
+                """)
 
         //Create indexes
         datasource.createSpatialIndex(final_polygonize, "the_geom")

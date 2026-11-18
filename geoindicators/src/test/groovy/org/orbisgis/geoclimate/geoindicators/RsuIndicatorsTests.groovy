@@ -477,6 +477,10 @@ class RsuIndicatorsTests {
                 "test")
         assertNotNull(outputTableStats)
 
+        //id_rsu must be unique
+
+
+
         h2GIS """DROP TABLE IF EXISTS stats_rsu;
                     CREATE INDEX ON $outputTableStats (ID_RSU);
                    CREATE TABLE stats_rsu AS SELECT b.the_geom,
@@ -489,6 +493,12 @@ class RsuIndicatorsTests {
                 FROM $outputTableStats AS a, $outputTable b WHERE a.id_rsu=b.id_rsu GROUP BY b.id_rsu;
             CREATE INDEX ON stats_rsu(id_rsu);"""
 
+        // One row per RSU
+        assertEquals(h2GIS.firstRow("SELECT COUNT(*) AS NB FROM stats_rsu").NB,
+                h2GIS.firstRow("SELECT COUNT(DISTINCT id_rsu) AS NB FROM stats_rsu").NB)
+        // All the RSU covered by at least one smallest geometry are in the statistics
+        assertEquals(h2GIS.firstRow("SELECT COUNT(DISTINCT id_rsu) AS NB FROM $outputTableStats").NB,
+                h2GIS.firstRow("SELECT COUNT(*) AS NB FROM stats_rsu").NB)
 
         //Check the sum of building areas by USR
         h2GIS """DROP TABLE IF EXISTS stats_building;
@@ -573,6 +583,7 @@ class RsuIndicatorsTests {
                 "rsu_tempo", "id_rsu", tempoTable,
                 superpositions0, priorities0, "test")
         assertNotNull(p0)
+        checkSurfaceFractions(h2GIS, p0)
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0}")
         assertEquals(1.0 / 5, result0["high_vegetation_building_fraction"])
         assertEquals(3.0 / 20, result0["high_vegetation_low_vegetation_fraction"])
@@ -592,6 +603,7 @@ class RsuIndicatorsTests {
                 superpositions1, priorities1,
                 "test")
         assertNotNull(p1)
+        checkSurfaceFractions(h2GIS, p1)
         def result1 = h2GIS.firstRow("SELECT * FROM ${p1}")
         assertEquals(1.0 / 5, result1["high_vegetation_building_fraction"])
         assertEquals(3.0 / 20, result1["high_vegetation_low_vegetation_fraction"])
@@ -611,6 +623,7 @@ class RsuIndicatorsTests {
                 superpositions2, priorities0,
                 "test")
         assertNotNull(p2)
+        checkSurfaceFractions(h2GIS, p2)
         def result2 = h2GIS.firstRow("SELECT * FROM ${p2}")
         assertEquals(1.0 / 5, result2["high_vegetation_building_fraction"])
         assertEquals(3.0 / 20, result2["high_vegetation_low_vegetation_fraction"])
@@ -647,6 +660,7 @@ class RsuIndicatorsTests {
                 "rsu_tempo", "id_rsu", tempoTable,
                 superpositions0, priorities0, "test")
         assertNotNull(p0)
+        checkSurfaceFractions(h2GIS, p0)
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0}")
         assertEquals(5.0 / 100, result0["road_fraction"])
         assertEquals(0.95d, result0["undefined_fraction"])
@@ -671,6 +685,7 @@ class RsuIndicatorsTests {
                 "rsu_tempo", "id_rsu", "smallest_geom",
                 superpositions0, priorities0, "test")
         assertNotNull(p0)
+        checkSurfaceFractions(h2GIS, p0)
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0} WHERE ID_RSU=1")
         assertEquals(0d, result0["building_fraction"])
         assertEquals(1d, result0["undefined_fraction"])
@@ -695,6 +710,7 @@ class RsuIndicatorsTests {
                 "rsu_tempo", "id_rsu", tempoTable,
                 superpositions0, priorities0, "test")
         assertNotNull(p0)
+        checkSurfaceFractions(h2GIS, p0)
         def result0 = h2GIS.firstRow("SELECT * FROM ${p0}")
         assertEquals(3.0 / 10, result0["high_vegetation_fraction"])
         assertEquals(3.0 / 20, result0["low_vegetation_fraction"])
@@ -702,6 +718,27 @@ class RsuIndicatorsTests {
         assertEquals(1.0 / 4, result0["water_permanent_fraction"])
         assertEquals(3.0 / 10, result0["building_fraction"])
         assertEquals(0d, result0["undefined_fraction"])
+    }
+
+    /**
+     * Check that all the surface fractions of a row are between 0 and 1 and that their sum
+     * (undefined fraction included) is equal to 1
+     * @param datasource
+     * @param  surfaceFractionsTable
+     * @param tolerance
+     */
+    static void checkSurfaceFractions(H2GIS datasource, String surfaceFractionsTable, double tolerance = 1e-9) {
+        def fractions = datasource.getColumnNames(surfaceFractionsTable).findAll { it.toUpperCase().endsWith("_FRACTION") }
+        assertTrue(fractions.collect { it.toUpperCase() }.contains("UNDEFINED_FRACTION"))
+        assertEquals(0, datasource.firstRow("""SELECT COUNT(*) AS NB FROM $surfaceFractionsTable 
+                WHERE ${fractions.collect { "$it IS NULL" }.join(" OR ")}""".toString()).NB,
+                "The surface fractions must not be null")
+        assertEquals(0, datasource.firstRow("""SELECT COUNT(*) AS NB FROM $surfaceFractionsTable 
+                WHERE ${fractions.collect { "$it < 0 OR $it > 1" }.join(" OR ")}""".toString()).NB,
+                "The surface fractions must be between 0 and 1")
+        assertEquals(0, datasource.firstRow("""SELECT COUNT(*) AS NB FROM $surfaceFractionsTable 
+                WHERE ABS(${fractions.join(" + ")} - 1) > $tolerance""".toString()).NB,
+                "The sum of the surface fractions must be equal to 1")
     }
 
     @Test
@@ -835,6 +872,5 @@ class RsuIndicatorsTests {
             assertTrue((h2GIS.firstRow("select sum(st_area(the_geom)) as area from  hydro_test where zindex=0".toString()).area - h2GIS.firstRow("select sum(st_area(the_geom)) as area from  $ground where layer ='water'".toString()).area) < 10)
         }
     }
-
 }
 

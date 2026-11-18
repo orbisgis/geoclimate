@@ -588,4 +588,17 @@ class SpatialUnitsTests {
             println("$method : ${h2GIS.getRowCount(rsuCleaned)} RSU, holes $holes m², overlaps $overlaps m², long RSU $nbLong, ${time} ms")
         }
     }
+
+    @Disabled
+    @Test
+    void debugTest() {
+        String building = h2GIS.load("/tmp/aspect_ratio/buildings_with_height2.geojson", true)
+        String grid = h2GIS.load("/tmp/aspect_ratio/geo_grid.geojson", true)
+
+        def smallestCommun = Geoindicators.RsuIndicators.smallestCommunGeometry(h2GIS,
+                grid, "CELL_ID", building, "", "",
+                "", "", "","aspect")
+
+        h2GIS.save(smallestCommun, "/tmp/smallest.csv",true)
+    }
 }

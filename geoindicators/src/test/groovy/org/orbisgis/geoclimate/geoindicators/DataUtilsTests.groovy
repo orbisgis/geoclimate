@@ -164,4 +164,28 @@ class DataUtilsTests {
         assertTrue( h2GIS.firstRow("select st_area(the_geom) as area_1 from result where id =1").area_1-h2GIS.firstRow("select st_area(the_geom) as area_2 from result where id =2").area_2<0)
         h2GIS.dropTable("result")
     }
+
+    @Test
+    void reduceTableToCentimeterTest() {
+        h2GIS """DROP TABLE IF EXISTS building_precision;
+            CREATE TABLE building_precision(id_build INTEGER, id_source VARCHAR, the_geom GEOMETRY(GEOMETRY, 2154));
+            INSERT INTO building_precision VALUES (1, 'w1', ST_GEOMFROMTEXT('POLYGON((0 0, 10 0, 10 5, 10.3 5, 10.3 4.8, 10.8 4.8, 
+                10.8 5.3, 10.3 5.3, 10.3 5.004, 10 5.004, 10 10, 0 10, 0 0))', 2154)),
+            (2, 'w2', ST_GEOMFROMTEXT('POLYGON((20 0, 25 0, 25 0.003, 20 0))', 2154)),
+            (3, 'w3', ST_GEOMFROMTEXT('POLYGON((30 0, 40 0, 40 10, 30 10, 30 0))', 2154));""".toString()
+
+        def result = Geoindicators.DataUtils.reduceTableToCentimeter(h2GIS, "building_precision", "id_build", "building_reduced")
+        // Building 1 gives 2 rows, building 2 is removed, building 3 is kept
+        assertEquals(3, h2GIS.getRowCount(result))
+        assertEquals([1, 3, 4], h2GIS.rows("SELECT id_build FROM $result ORDER BY id_build".toString()).collect { it.id_build })
+        // Both parts of building 1 keep its id_source
+        def parts = h2GIS.rows("SELECT ST_AREA(the_geom) AS AREA FROM $result WHERE id_source = 'w1' ORDER BY AREA".toString())
+        assertEquals(2, parts.size())
+        assertEquals(0.25, parts[0].AREA, 0.01)
+        assertEquals(100, parts[1].AREA, 0.01)
+        // With a minimum area of 1 m2, the small part of the geometry 1 is removed
+        def filtered = Geoindicators.DataUtils.reduceTableToCentimeter(h2GIS, "building_precision", "id_build", "building_filtered", 1)
+        assertEquals(2, h2GIS.getRowCount(filtered))
+        assertEquals([1, 3], h2GIS.rows("SELECT id_build FROM $filtered ORDER BY id_build".toString()).collect { it.id_build })
+    }
 }
