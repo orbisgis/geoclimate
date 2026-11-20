@@ -1863,11 +1863,21 @@ String surfaceFractions(JdbcDataSource datasource,
         // The fractions are bounded to 1 and the undefined fraction to 0
         def allCols = datasource.getColumnNames(withoutUndefined)
         def allFractionCols = allCols.minus(id_rsu.toUpperCase())
-        datasource.execute(""" DROP TABLE IF EXISTS $outputTableName;
-                           CREATE TABLE $outputTableName
-                                AS SELECT ${id_rsu}, ${allFractionCols.collect { "LEAST($it, 1) AS $it" }.join(", ")},
-                                GREATEST(1 - (${allFractionCols.join("+")}), 0) AS UNDEFINED_FRACTION
-                                FROM $withoutUndefined""")
+        // Tolerance used to fix floating-point rounding
+        def epsilon = 0.001
+        // Case when to appy the tolerance
+        def snap = { String expr ->
+            """CASE WHEN ($expr) > 1 AND ($expr) <= 1 + $epsilon THEN 1.0
+            WHEN ($expr) < 0 AND ($expr) >= -$epsilon THEN 0.0
+            ELSE ($expr) END"""
+        }
+
+        datasource.execute("""DROP TABLE IF EXISTS $outputTableName;
+                      CREATE TABLE $outputTableName
+                      AS SELECT ${id_rsu},
+                                ${allFractionCols.collect { "${snap(it)} AS $it" }.join(", ")},
+                                ${snap("1 - (${allFractionCols.join(" + ")})")} AS UNDEFINED_FRACTION
+                      FROM $withoutUndefined""")
 
         // Drop intermediate tables
         datasource.execute("DROP TABLE IF EXISTS $withoutUndefined;")

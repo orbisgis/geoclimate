@@ -703,7 +703,6 @@ class RsuIndicatorsTests {
                 "test")
         assertNotNull(tempoTable)
 
-
         def superpositions0 = [:]
         def priorities0 = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"]
         def p0 = Geoindicators.RsuIndicators.surfaceFractions(h2GIS,
