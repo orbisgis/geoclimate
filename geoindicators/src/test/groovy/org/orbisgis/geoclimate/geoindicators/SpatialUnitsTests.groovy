@@ -607,7 +607,7 @@ class SpatialUnitsTests {
         def pNbRelationsAll = Geoindicators.SpatialUnits.buildSpatialJoin(h2GIS, "geomTableA", "idA", "geomTableB",
                 "idB", false, "test")
         // Only the ids and the shared area are stored
-        assertEquals(["idA", "idB", "AREA"], h2GIS.getColumnNames(pNbRelationsAll).collect { it.toUpperCase() })
+        assertEquals(["IDA", "IDB", "AREA"], h2GIS.getColumnNames(pNbRelationsAll).collect { it.toUpperCase() })
         assertEquals 1, h2GIS.firstRow("SELECT count(*) as count FROM ${pNbRelationsAll} WHERE idA = 1 AND idB=1").count
         assertEquals 1, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE idA = 2 AND idB=1").count
         assertEquals 2, h2GIS.firstRow("SELECT count(*) as count  FROM ${pNbRelationsAll} WHERE (idA = 3 AND idB=1) or (idA = 3 AND idB=2)").count
