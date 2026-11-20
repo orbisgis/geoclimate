@@ -1025,45 +1025,50 @@ Map createUnitsOfAnalysis(JdbcDataSource datasource, String zone, String zone_ex
             rsu = rsu_tmp
         }
     }
-
-    // By default, the building table is used to calculate the relations between buildings and RSU
-    def inputLowerScaleBuRsu = building
-    // And the block / RSU table does not exists
+    def idBuild = "id_build"
+    def idBlock = "id_block"
+    // The block / RSU table does not exists by default
     def tableRsuBlocks = null
+    // Relations between buildings and blocks (only if the urban typology is needed)
+    def relationsBuBl = null
     // If the urban typology is needed
     if (indicatorUse.contains("UTRF")) {
         // Create the blocks
         String createBlocks = Geoindicators.SpatialUnits.createBlocks(datasource, building, snappingTolerance, prefixName)
-        // Create the relations between RSU and blocks (store in the block table)
-        String createScalesRelationsRsuBl = Geoindicators.SpatialUnits.spatialJoin(datasource, createBlocks, rsu,
-                idRsu, 1, prefixName)
-        tableRsuBlocks = createScalesRelationsRsuBl
-        // Create the relations between buildings and blocks (store in the buildings table)
-        String createScalesRelationsBlBu = Geoindicators.SpatialUnits.spatialJoin(datasource,
-                building, createBlocks, "id_block", 1, prefixName)
-        if (!createScalesRelationsBlBu) {
-            info "Cannot compute the scales relations between blocks and buildings."
-            datasource.dropTable(createBlocks)
-            return
-        }
-        datasource.dropTable(createBlocks)
-        inputLowerScaleBuRsu = createScalesRelationsBlBu
-        tablesToDrop << inputLowerScaleBuRsu
+        // Create the relations between blocks and RSU and store them in a new block table
+        String relationsBlRsu = Geoindicators.SpatialUnits.buildSpatialJoin(datasource, createBlocks, idBlock,
+                rsu, idRsu, true, prefixName)
+        // The shared area is not needed
+        datasource.execute("ALTER TABLE $relationsBlRsu DROP COLUMN AREA".toString())
+        tableRsuBlocks = Geoindicators.DataUtils.joinTables(datasource,
+                [(createBlocks): idBlock, (relationsBlRsu): idBlock], postfix("${createBlocks}_${rsu}"))
+        // Create the relations between buildings and blocks
+        relationsBuBl = Geoindicators.SpatialUnits.buildSpatialJoin(datasource,
+                building, idBuild, createBlocks, idBlock, true, prefixName)
+        datasource.execute("ALTER TABLE $relationsBuBl DROP COLUMN AREA".toString())
+        tablesToDrop << createBlocks << relationsBlRsu << relationsBuBl
     }
 
-
-    // Create the relations between buildings and RSU (store in the buildings table)
+    // Create the relations between buildings and RSU
     // WARNING : if the blocks are used, the building table will contain the id_block and id_rsu for each of its
-    // id_build but the relations between id_block and i_rsu should not been consider in this Table
+    // id_build but the relations between id_block and id_rsu should not been consider in this Table
     // the relationships may indeed be different from the one in the block Table
-    String createScalesRelationsRsuBlBu = Geoindicators.SpatialUnits.spatialJoin(datasource,
-            inputLowerScaleBuRsu,
-            rsu, idRsu, 1, prefixName)
+    String relationsBuRsu = Geoindicators.SpatialUnits.buildSpatialJoin(datasource,
+            building, idBuild, rsu, idRsu, true, prefixName)
+    datasource.execute("ALTER TABLE $relationsBuRsu DROP COLUMN AREA".toString())
+    tablesToDrop << relationsBuRsu
 
-    //Replace the building table with a new one that contains the relations between block and RSU
+    //Replace the building table with a new one that contains the relations with the blocks and the RSU
+    //The building table is copied only once
+    def tablesToJoin = [(building): idBuild]
+    if (relationsBuBl) {
+        tablesToJoin.put(relationsBuBl, idBuild)
+    }
+    tablesToJoin.put(relationsBuRsu, idBuild)
+    String buildingWithRelations = Geoindicators.DataUtils.joinTables(datasource, tablesToJoin,
+            postfix("${building}_relations"))
     datasource.execute("""DROP TABLE IF EXISTS $building;
-            ALTER TABLE $createScalesRelationsRsuBlBu RENAME TO $building; """.toString())
-    tablesToDrop << createScalesRelationsRsuBlBu
+            ALTER TABLE $buildingWithRelations RENAME TO $building; """.toString())
     datasource.dropTable(tablesToDrop)
     return ["building": building,
             "block"   : tableRsuBlocks,
@@ -1562,12 +1567,12 @@ String formatBuildingBeforeEstimation(JdbcDataSource datasource, String building
     HashSet<String> inputTypes = new HashSet<>()
     HashSet<String> inputUses = new HashSet<>()
     datasource.eachRow("SELECT DISTINCT BUILD_TYPE, BUILD_MAIN_USE FROM $buildingToEstimate"){ row->
-            if(row.BUILD_TYPE!="null"){
-                inputTypes.add(row.BUILD_TYPE)
-            }
-            if(row.BUILD_MAIN_USE!="null") {
-                inputUses.add(row.BUILD_MAIN_USE)
-            }
+        if(row.BUILD_TYPE!="null"){
+            inputTypes.add(row.BUILD_TYPE)
+        }
+        if(row.BUILD_MAIN_USE!="null") {
+            inputUses.add(row.BUILD_MAIN_USE)
+        }
     }
 
     //Let's check if the type and uses values are known in the model
@@ -1921,13 +1926,22 @@ String rasterizeIndicators(JdbcDataSource datasource,
             info "Cannot compute the surface fractions at grid scale"
         }
     }
+    // Indicators that need the buildings joined with the grid cells
+    // computed only once
+    def indicatorsUsingBuildingGrid = ["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO", "BUILDING_SURFACE_DENSITY",
+                                       "STREET_WIDTH", "FRONTAL_AREA_INDEX", "SVF",
+                                       "TERRAIN_ROUGHNESS", "PROJECTED_FACADE_DENSITY_DIR"]
+    // Buildings joined with their grid cells (one row per building / grid cell pair
     String createScalesRelationsGridBl
+    if (building && (unweightedBuildingIndicators || list_indicators_upper.intersect(indicatorsUsingBuildingGrid))) {
+        String relationsGridBu = Geoindicators.SpatialUnits.buildSpatialJoin(datasource, building, "id_build",
+                grid, grid_column_identifier, false, prefixName)
+        createScalesRelationsGridBl = Geoindicators.DataUtils.joinTables(datasource,
+                [(relationsGridBu): "id_build", (building): "id_build"], postfix("building_grid"))
+        tablesToDrop << relationsGridBu << createScalesRelationsGridBl
+    }
     String computeBuildingStats
     if (unweightedBuildingIndicators) {
-        // Create the relations between grid cells and buildings
-        createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building, grid,
-                grid_column_identifier, null,
-                prefixName)
         computeBuildingStats = Geoindicators.GenericIndicators.unweightedOperationFromLowerScale(datasource, createScalesRelationsGridBl,
                 grid, grid_column_identifier,
                 grid_column_identifier, unweightedBuildingIndicators,
@@ -1953,9 +1967,12 @@ String rasterizeIndicators(JdbcDataSource datasource,
             // Create blocks from buildings cutted
             def blocksCutted = Geoindicators.SpatialUnits.createBlocks(datasource,
                     buildingCutted, 0.01, "block_cutted")
-            def blocksCuttedID = Geoindicators.SpatialUnits.spatialJoin(datasource,
-                    blocksCutted, grid, grid_column_identifier,
-                    false, null, prefixName+"_cutted_bl")
+            def relationsGridBl = Geoindicators.SpatialUnits.buildSpatialJoin(datasource,
+                    blocksCutted, "id_block", grid, grid_column_identifier,
+                    false, prefixName+"_cutted_bl")
+            def blocksCuttedID = Geoindicators.DataUtils.joinTables(datasource,
+                    [(relationsGridBl): "id_block", (blocksCutted): "id_block"], postfix("block_cutted_grid"))
+            tablesToDrop << relationsGridBl
             tablesToDrop << blocksCutted
             tablesToDrop << blocksCuttedID
 
@@ -2002,12 +2019,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     if (list_indicators_upper.intersect(["FREE_EXTERNAL_FACADE_DENSITY", "ASPECT_RATIO", "BUILDING_SURFACE_DENSITY", "STREET_WIDTH"]) && building) {
-        if (!createScalesRelationsGridBl) {
-            // Create the relations between grid cells and buildings
-            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,
-                    building, grid, grid_column_identifier, null,
-                    prefixName)
-        }
         def freeFacadeDensityExact = Geoindicators.RsuIndicators.freeExternalFacadeDensityExact(datasource, createScalesRelationsGridBl,
                 grid, grid_column_identifier, prefixName)
         tablesToJoinForWidth.put(freeFacadeDensityExact, grid_column_identifier)
@@ -2101,12 +2112,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     if (list_indicators_upper.contains("FRONTAL_AREA_INDEX") && building) {
         if (!datasource.getTable(building).isEmpty()) {
-            if (!createScalesRelationsGridBl) {
-                // Create the relations between grid cells and buildings
-                createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
-                        grid, grid_column_identifier, null,
-                        prefixName)
-            }
             def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution(datasource,
                     createScalesRelationsGridBl, grid, grid_column_identifier,
                     [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], 12, true, prefixName)
@@ -2169,12 +2174,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
 
     if (list_indicators_upper.contains("SVF") && building) {
-        if (!createScalesRelationsGridBl) {
-            // Create the relations between grid cells and buildings
-            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource, building,
-                    grid, grid_column_identifier, null,
-                    prefixName)
-        }
         def svf_fraction = Geoindicators.RsuIndicators.groundSkyViewFactor(datasource, grid, grid_column_identifier, createScalesRelationsGridBl, 0.008, 100, 60, "grid")
 
         datasource """  ALTER TABLE ${svf_fraction} RENAME COLUMN GROUND_SKY_VIEW_FACTOR TO SVF""".toString()
@@ -2186,12 +2185,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
         def heightColumnName = "height_roof"
         def facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50]
         def facadeDensNumberOfDirection = 12
-        if (!createScalesRelationsGridBl) {
-            // Create the relations between grid cells and buildings
-            createScalesRelationsGridBl = Geoindicators.SpatialUnits.spatialJoin(datasource,
-                    building, grid, grid_column_identifier, null,
-                    prefixName)
-        }
         def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution(datasource,
                 createScalesRelationsGridBl, grid, grid_column_identifier,
                 facadeDensListLayersBottom, facadeDensNumberOfDirection, false, prefixName)
@@ -2208,9 +2201,9 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
         if (list_indicators_upper.contains("PROJECTED_FACADE_DENSITY_DIR")) {
             def projFacDensDir = Geoindicators.RsuIndicators.projectedFacadeDensityDir(datasource, grid_for_roughness,
-                                                                            grid_column_identifier,
-                                                                            "frontal_area_index",
-                                                                            facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
+                    grid_column_identifier,
+                    "frontal_area_index",
+                    facadeDensListLayersBottom, facadeDensNumberOfDirection, prefixName)
             indicatorTablesToJoin.put(projFacDensDir, grid_column_identifier)
             tablesToDrop << projFacDensDir
         }
@@ -2238,7 +2231,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
     //Execute commands
     datasource.execute(sqlUpdateCommand.join(" "))
 
-    tablesToDrop << createScalesRelationsGridBl
     tablesToDrop << buildingCutted
 
     datasource.dropTable(indicatorTablesToJoin.keySet().toArray(new String[0]))
