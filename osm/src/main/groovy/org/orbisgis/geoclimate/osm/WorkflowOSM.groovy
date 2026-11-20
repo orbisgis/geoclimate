@@ -398,10 +398,19 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
     def outputTableNamesResult = [:]
     int nbAreas = id_zones.size()
     info "$nbAreas osm areas will be processed"
-    id_zones.each { id_zone ->
+    id_zones.eachWithIndex { id_zone, index ->
         if(!(id_zone in String) && !(id_zone in Collection)){
             throw new Exception("The location value must be a text or a collection of coordinates. " +
                     "Invalid location : $id_zone".toString())
+        }
+        if (id_zone in Collection) {
+            if (id_zone.size() == 3) {
+                info "Processing the area ${index + 1}/$nbAreas defined by the point ${id_zone[0]}, ${id_zone[1]} and the distance ${id_zone[2]} m"
+            } else {
+                info "Processing the area ${index + 1}/$nbAreas defined by the bbox : ${id_zone.join(', ')}"
+            }
+        } else {
+            info "Processing the area ${index + 1}/$nbAreas : $id_zone"
         }
         //Store the current OSM zone can be null
         Geometry osm_zone_geometry = null

@@ -723,13 +723,22 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             outputGrid = grid_indicators_params.output
         }
 
+        def locationParts = location.toString().split("_")
+        boolean isBbox = locationParts.size() in [3, 4] && locationParts.every { it.isNumber() }
+
         def tmp_results = [:]
         def rows = h2gis_datasource.rows("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE")
         //We process each zones because the input zone can overlap several communes
         rows.each { row ->
-            Geometry geom = row.the_geom
             def code_insee = row.code_insee
-            info "Processing the commune with the code insee :  ${code_insee}"
+            if (!isBbox) {
+                info "Processing the commune with the code insee : ${code_insee}"
+            } else if (code_insee.toString().contains("_")) {
+                info "Processing the bbox : ${code_insee.toString().split('_').join(', ')}"
+            } else {
+                info "Processing the part of the commune with the code insee ${code_insee} inside the bbox : ${locationParts.join(', ')}"
+            }
+            Geometry geom = row.the_geom
             def numGeom = geom.getNumGeometries()
             if (numGeom == 1) {
                 if (!geom.isEmpty()) {
