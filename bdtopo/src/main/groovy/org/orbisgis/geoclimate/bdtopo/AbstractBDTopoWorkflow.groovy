@@ -895,6 +895,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 grid_zone = h2gis_datasource.getExtent(results.zone_extended)
             } else {
                 grid_zone = h2gis_datasource.getExtent(results.zone)
+                //grid_zone = h2gis_datasource.firstRow("select st_union(st_accum(the_geom)) as the_geom from $results.zone").the_geom
             }
             String gridTableName = Geoindicators.WorkflowGeoIndicators.createGrid(h2gis_datasource, grid_zone,
                     x_size, y_size, srid, rowCol, angle)
