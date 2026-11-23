@@ -24,6 +24,7 @@ import com.thoughtworks.xstream.io.xml.StaxDriver
 import com.thoughtworks.xstream.security.NoTypePermission
 import com.thoughtworks.xstream.security.NullPermission
 import com.thoughtworks.xstream.security.PrimitiveTypePermission
+import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
@@ -802,4 +803,27 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
         throw new SQLException("Cannot save the dataframe.", e)
     }
     return tableName
+}
+
+/**
+ * Return the fallback values of the nominal columns, built from types_uses_height_model.json.
+ *
+ * In this file, each type (or use) is followed by the more specific values that fall back to it,
+ * e.g. "residential": ["house", "apartments", ...]. The map is inverted here : each value is associated with
+ * the values it falls back to, e.g. house -> [residential].
+ *
+ * @return a map with, for each nominal column (BUILD_TYPE, BUILD_MAIN_USE), the values to use when a value
+ * is not a level of the model
+ */
+Map getNominalFallbacks() {
+    Map mapping = new JsonSlurper().parse(TypologyClassification.class.getResourceAsStream("types_uses_height_model.json")) as Map
+    def invert = { Map parentToValues ->
+        Map fallbacks = [:]
+        parentToValues.each { parent, values ->
+            values.each { value -> fallbacks.get(value, []).add(parent) }
+        }
+        return fallbacks
+    }
+    return [BUILD_TYPE    : invert(mapping.types as Map),
+            BUILD_MAIN_USE: invert(mapping.uses as Map)]
 }
