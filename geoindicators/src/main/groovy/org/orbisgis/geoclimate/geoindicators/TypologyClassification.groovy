@@ -35,6 +35,7 @@ import org.orbisgis.geoclimate.Geoindicators
 import smile.base.cart.SplitRule
 import smile.classification.RandomForest as RandomForestClassification
 import smile.data.formula.Formula
+import smile.data.measure.NominalScale
 import smile.data.type.DataType
 import smile.data.type.DataTypes
 import smile.data.vector.DoubleVector
@@ -708,41 +709,44 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
     def varType
     def var2model
     def tree = model.trees[0]
-    def modelColumnNames = []
+    def modelFields
     if (tree instanceof RegressionTree) {
         def response = tree.response
         varType = response.type
         var2model = response.name
-        modelColumnNames = tree.schema.fields.collect {
-            it.name
-        }
+        modelFields = tree.schema.fields
     } else {
         def response = tree.tree.response
         varType = response.type
         var2model = response.name
-        modelColumnNames = tree.tree.schema.fields.collect {
-            it.name
-        }
+        modelFields = tree.tree.schema.fields
     }
+    def modelColumnNames = modelFields.collect { it.name }
     //Check the column names before building the dataframe and apply the model
     def inputColumns = datasource.getColumnNamesTypes(explicativeVariablesTableName)
 
-    def allowedColumnNames = modelColumnNames.intersect(inputColumns.keySet())
-    def notSameColumnNames = allowedColumnNames.size() != modelColumnNames.size()
-    if (!allowedColumnNames && notSameColumnNames) {
-        error "Cannot find the requiered columns to apply the model"
-        return
+    def missingColumnNames = modelColumnNames - inputColumns.keySet()
+    if (missingColumnNames) {
+        throw new IllegalArgumentException("Cannot apply the model ${modelName}. The following columns are missing : ${missingColumnNames.join(", ")}".toString())
     }
     def isDouble = false
     if (DataType.isDouble(varType)) {
         isDouble = true
     }
+    // The nominal variables (e.g. BUILD_TYPE) must be encoded with the codes used to train the model.
+    // These codes are stored in the model schema, they must not be computed from the input data
+    def selectedColumns = modelFields.collect { field ->
+        if (field.measure instanceof NominalScale) {
+            return encodeNominalColumn(datasource, explicativeVariablesTableName, modelName, field.name,
+                    field.measure as NominalScale)
+        }
+        return field.name
+    }
+
     // Read the table containing the explicative variables as a DataFrame
-    def dfNofactorized = DataFrame.of(datasource.getTable("""(SELECT ${modelColumnNames.join(",")}, 
+    def df = DataFrame.of(datasource.getTable("""(SELECT ${selectedColumns.join(",")}, 
             ${isDouble ? "CAST (0 AS DOUBLE PRECISION) AS " + var2model : "CAST(0 AS INTEGER) AS " + var2model},
             $idName from $explicativeVariablesTableName)""".toString()))
-
-    def df = dfNofactorized
     //Factorize only string field
     df.schema().fields().each { field ->
         if (DataTypes.StringType.equals(field.type)) {
@@ -785,7 +789,7 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
                 if (batch_size >= batchSize) {
                     preparedStatement.executeBatch()
                     preparedStatement.clearBatch()
-                    batchSize = 0
+                    batch_size = 0
                 }
             }
             if (batch_size > 0) {
@@ -803,6 +807,78 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
         throw new SQLException("Cannot save the dataframe.", e)
     }
     return tableName
+}
+
+
+/**
+ * Build the SQL expression that encodes a nominal column (e.g. BUILD_TYPE) with the codes stored in the model.
+ *
+ * Each value of the column is converted to a level of the model :
+ * - the value itself if it is a level of the model
+ * - otherwise the first fallback value that is a level of the model (see types_uses_height_model.json),
+ *   e.g. residential -> building for a model that does not know residential. The fallback values of the
+ *   fallback values are also explored (e.g. annex -> detached -> house -> residential -> building)
+ * - otherwise the default level : "building", or the first level if the model has no "building" level.
+ *   These values are logged.
+ *
+ * The same fallback file is used for all the models, the levels known by each model being read in the model.
+ *
+ * @param datasource A connection to a database
+ * @param tableName The table that contains the column to encode
+ * @param modelName The name of the model (file name without extension), used in the log
+ * @param columnName The name of the nominal column
+ * @param scale The nominal scale stored in the model for this column
+ * @return the SQL expression that returns the code of each value, named as the column
+ */
+String encodeNominalColumn(JdbcDataSource datasource, String tableName, String modelName,
+                           String columnName, NominalScale scale) {
+    List levels = scale.levels() as List
+    Map fallbacks = getNominalFallbacks().get(columnName) as Map ?: [:]
+    String defaultValue = levels.contains("building") ? "building" : levels[0]
+    int defaultCode = scale.valueOf(defaultValue).intValue()
+    def cases = []
+    def unknownValues = [:]
+    datasource.eachRow("SELECT ${columnName} AS VALUE_TO_ENCODE, COUNT(*) AS NB FROM ${tableName} GROUP BY ${columnName}".toString()) { row ->
+        String value = row.VALUE_TO_ENCODE
+        String level = value == null ? null : findNominalLevel(value, levels, fallbacks)
+        if (level != null) {
+            cases << "WHEN '${value.replace("'", "''")}' THEN ${scale.valueOf(level).intValue()}"
+        } else {
+            unknownValues.put(value, row.NB)
+        }
+    }
+    if (unknownValues) {
+        warn("The model ${modelName} does not know the following ${columnName} values, they are replaced by " +
+                "'${defaultValue}' : ${unknownValues.collect { k, v -> "${k} (${v})" }.join(", ")}")
+    }
+    if (!cases) {
+        return "CAST(${defaultCode} AS INTEGER) AS ${columnName}"
+    }
+    return "CASE ${columnName} ${cases.join(" ")} ELSE ${defaultCode} END AS ${columnName}"
+}
+
+/**
+ * Find the level of the model to use for a value : the value itself or the first of its fallback values
+ * (explored breadth first) that is a level of the model
+ *
+ * @param value the value to convert
+ * @param levels the levels of the model
+ * @param fallbacks the fallback values of the column
+ * @return the level, null if no level is found
+ */
+String findNominalLevel(String value, List levels, Map fallbacks) {
+    def candidates = [value]
+    def visited = [] as Set
+    while (candidates) {
+        String candidate = candidates.remove(0)
+        if (levels.contains(candidate)) {
+            return candidate
+        }
+        if (visited.add(candidate)) {
+            candidates.addAll(fallbacks.get(candidate) ?: [])
+        }
+    }
+    return null
 }
 
 /**

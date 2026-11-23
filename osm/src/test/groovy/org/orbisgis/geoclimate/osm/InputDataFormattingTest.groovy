@@ -441,27 +441,14 @@ class InputDataFormattingTest {
             }
         }
 
-        Map types_uses_for_model = Geoindicators.WorkflowGeoIndicators.getHeightModelTypesMapping()
-
-        Map typesToMap = types_uses_for_model.types as Map
-        Map usesToMap = types_uses_for_model.uses as Map
-        HashSet<String> allModelTypes = new HashSet<>()
-        typesToMap.each {it->
-            allModelTypes.add(it.key)
-            List inputTypes = it.value
-            if(inputTypes){
-                allModelTypes.addAll(inputTypes)
-            }
-        }
-
-        HashSet<String> allModelUses = new HashSet<>()
-        usesToMap.each {it->
-            allModelUses.add(it.key)
-            List inputUses = it.value
-            if(inputUses){
-                allModelUses.addAll(inputUses)
-            }
-        }
+        // All the OSM types and uses must have fallback values (or be a fallback value) for the RF models
+        Map fallbacks = Geoindicators.TypologyClassification.getNominalFallbacks()
+        Map typesFallbacks = fallbacks.BUILD_TYPE as Map
+        Map usesFallbacks = fallbacks.BUILD_MAIN_USE as Map
+        HashSet<String> allModelTypes = new HashSet<>(typesFallbacks.keySet())
+        typesFallbacks.values().each { allModelTypes.addAll(it as List) }
+        HashSet<String> allModelUses = new HashSet<>(usesFallbacks.keySet())
+        usesFallbacks.values().each { allModelUses.addAll(it as List) }
 
         assertTrue(!(allOSMTypes - allModelTypes))
         assertTrue(!(allOSMUses - allModelUses))
@@ -489,27 +476,15 @@ class InputDataFormattingTest {
             }
         }
 
-        Map types_uses_for_model = Geoindicators.WorkflowGeoIndicators.getHeightModelTypesMapping()
+        // All the OSM types and uses must have fallback values (or be a fallback value) for the RF models
+        Map fallbacks = Geoindicators.TypologyClassification.getNominalFallbacks()
+        Map typesFallbacks = fallbacks.BUILD_TYPE as Map
+        Map usesFallbacks = fallbacks.BUILD_MAIN_USE as Map
+        HashSet<String> allModelTypes = new HashSet<>(typesFallbacks.keySet())
+        typesFallbacks.values().each { allModelTypes.addAll(it as List) }
+        HashSet<String> allModelUses = new HashSet<>(usesFallbacks.keySet())
+        usesFallbacks.values().each { allModelUses.addAll(it as List) }
 
-        Map typesToMap = types_uses_for_model.types as Map
-        Map usesToMap = types_uses_for_model.uses as Map
-        HashSet<String> allModelTypes = new HashSet<>()
-        typesToMap.each {it->
-            allModelTypes.add(it.key)
-            List inputTypes = it.value
-            if(inputTypes){
-                allModelTypes.addAll(inputTypes)
-            }
-        }
-
-        HashSet<String> allModelUses = new HashSet<>()
-        usesToMap.each {it->
-            allModelUses.add(it.key)
-            List inputUses = it.value
-            if(inputUses){
-                allModelUses.addAll(inputUses)
-            }
-        }
         assertTrue(!(allOSMTypes - allModelTypes))
         assertTrue(!(allOSMUses - allModelUses))
     }

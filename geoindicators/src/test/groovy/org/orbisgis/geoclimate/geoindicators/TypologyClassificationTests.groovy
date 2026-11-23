@@ -32,6 +32,7 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.dataframe.DataFrame
 import org.orbisgis.geoclimate.Geoindicators
 import smile.classification.DataFrameClassifier
+import smile.data.measure.NominalScale
 import smile.validation.Accuracy
 import smile.validation.Validation
 
@@ -718,5 +719,80 @@ class TypologyClassificationTests {
         } else {
             println("The model has not been create because the output directory doesn't exist")
         }
+    }
+
+    @Test
+    void encodeNominalColumnTest() {
+        h2GIS.execute("""DROP TABLE IF EXISTS nominal_test;
+                CREATE TABLE nominal_test(ID INTEGER, BUILD_TYPE VARCHAR);
+                INSERT INTO nominal_test VALUES (1, 'building'), (2, 'residential'), (3, 'industrial'),
+                                                (4, 'light_industry'), (5, 'unknown_type'), (6, NULL), (7, 'castle');""")
+        def encode = { NominalScale scale ->
+            def expression = Geoindicators.TypologyClassification.encodeNominalColumn(h2GIS, "nominal_test",
+                    "TEST_MODEL", "BUILD_TYPE", scale)
+            def codes = [:]
+            h2GIS.eachRow("SELECT ID, ${expression} FROM nominal_test".toString()) { row ->
+                codes[row.ID] = row.BUILD_TYPE
+            }
+            return codes
+        }
+        // A model that does not know residential and industrial (e.g. UTRF BDTopo) :
+        // residential -> building, industrial -> light_industry, unknown values -> building
+        assertEquals([1: 0, 2: 0, 3: 2, 4: 2, 5: 0, 6: 0, 7: 1],
+                encode(new NominalScale("building", "castle", "light_industry")))
+        // A model that knows residential and industrial (e.g. building height OSM) : light_industry -> industrial
+        assertEquals([1: 0, 2: 2, 3: 1, 4: 1, 5: 0, 6: 0, 7: 0],
+                encode(new NominalScale("building", "industrial", "residential")))
+
+        // All the values are unknown by the model (e.g. BUILD_MAIN_USE in the UTRF BDTopo model) : default level
+        def expression = Geoindicators.TypologyClassification.encodeNominalColumn(h2GIS, "nominal_test",
+                "TEST_MODEL", "BUILD_TYPE", new NominalScale(""))
+        assertEquals("CAST(0 AS INTEGER) AS BUILD_TYPE", expression)
+    }
+
+    /**
+     * The codes of the nominal variables must not depend on the values present in the input data (see the
+     * UTRF classification of residential buildings as industrial buildings)
+     */
+    @Test
+    void applyRandomForestModelNominalEncodingTest() {
+        def modelFile = new File("../models/UTRF_BDTOPO_V2_RF_2_2.model")
+        def trainingFile = new File("../models/TRAINING_DATA_UTRF_BDTOPO_V2_RF_2_2.geojson.gz")
+        if (!modelFile.exists() || !trainingFile.exists()) {
+            return
+        }
+        // The training data are used as input data
+        h2GIS.execute("""CALL GEOJSONREAD('${trainingFile.absolutePath}', 'utrf_training', true);
+                DROP TABLE IF EXISTS utrf_all_types;
+                CREATE TABLE utrf_all_types AS SELECT ROWNUM() AS ID_BUILD, * FROM utrf_training;
+                ALTER TABLE utrf_all_types DROP COLUMN THE_GEOM, I_TYPO;""".toString())
+        def predict = { String table ->
+            def result = Geoindicators.TypologyClassification.applyRandomForestModel(h2GIS, table,
+                    modelFile.absolutePath, "ID_BUILD", "test")
+            def predictions = [:]
+            h2GIS.eachRow("SELECT ID_BUILD, I_TYPO FROM $result".toString()) { row ->
+                predictions[row.ID_BUILD] = row.I_TYPO
+            }
+            return predictions
+        }
+        def reference = predict("utrf_all_types")
+        assertEquals(20761, reference.size())
+
+        // Only commercial and light_industry buildings : the codes computed from these data would differ
+        // from the training codes
+        h2GIS.execute("""DROP TABLE IF EXISTS utrf_two_types;
+                CREATE TABLE utrf_two_types AS SELECT * FROM utrf_all_types 
+                WHERE BUILD_TYPE IN ('commercial', 'light_industry')""".toString())
+        def twoTypes = predict("utrf_two_types")
+        assertEquals(1555, twoTypes.size())
+        twoTypes.each { id, typo -> assertEquals(reference[id], typo) }
+
+        // The types produced by the current formatting are converted to the types of the model
+        h2GIS.execute("""DROP TABLE IF EXISTS utrf_current_types;
+                CREATE TABLE utrf_current_types AS SELECT * FROM utrf_all_types;
+                UPDATE utrf_current_types SET BUILD_TYPE = 'residential' WHERE BUILD_TYPE = 'building';
+                UPDATE utrf_current_types SET BUILD_TYPE = 'industrial' WHERE BUILD_TYPE = 'light_industry';
+                UPDATE utrf_current_types SET BUILD_MAIN_USE = 'residential';""".toString())
+        assertEquals(reference, predict("utrf_current_types"))
     }
 }

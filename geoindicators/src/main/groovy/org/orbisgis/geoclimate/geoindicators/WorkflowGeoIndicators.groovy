@@ -1536,70 +1536,13 @@ Map estimateBuildingHeight(JdbcDataSource datasource, String zone, String zone_e
  * @return a new building table with the data ready for the RF model
  */
 String formatBuildingBeforeEstimation(JdbcDataSource datasource, String buildingToEstimate){
-    Map types_uses_for_model = getHeightModelTypesMapping()
-    Map typesToMap = types_uses_for_model.types as Map
-    Map usesToMap = types_uses_for_model.uses as Map
-    HashSet<String> allModelTypes = new HashSet<>()
-    //Check if the input data contains the same type and use values
-    def typesCaseWhen = "CASE "
-    typesToMap.each {it->
-        allModelTypes.add(it.key)
-        List inputTypes = it.value
-        if(inputTypes){
-            typesCaseWhen+=" WHEN BUILD_TYPE in ('${inputTypes.join("','")}') THEN '${it.key}'"
-            allModelTypes.addAll(inputTypes)
-        }
-    }
-    typesCaseWhen+=" ELSE BUILD_TYPE end as BUILD_TYPE"
-
-    HashSet<String> allModelUses = new HashSet<>()
-    def usesCaseWhen = "CASE "
-    usesToMap.each {it->
-        allModelUses.add(it.key)
-        List inputUses = it.value
-        if(inputUses){
-            usesCaseWhen+=" WHEN BUILD_MAIN_USE in ('${inputUses.join("','")}') THEN '${it.key}'"
-            allModelUses.addAll(inputUses)
-        }
-    }
-    usesCaseWhen+=" ELSE BUILD_MAIN_USE end as BUILD_MAIN_USE"
-
-    HashSet<String> inputTypes = new HashSet<>()
-    HashSet<String> inputUses = new HashSet<>()
-    datasource.eachRow("SELECT DISTINCT BUILD_TYPE, BUILD_MAIN_USE FROM $buildingToEstimate"){ row->
-        if(row.BUILD_TYPE!="null"){
-            inputTypes.add(row.BUILD_TYPE)
-        }
-        if(row.BUILD_MAIN_USE!="null") {
-            inputUses.add(row.BUILD_MAIN_USE)
-        }
-    }
-
-    //Let's check if the type and uses values are known in the model
-    def diffTypes = inputTypes-allModelTypes
-    if(diffTypes.size()>0){
-        error("The input types are different than the model types. Please check the folowing types : ${diffTypes}")
-        return
-    }
-    def diffUses = inputUses-allModelUses
-    if(diffUses.size()>0){
-        error("The input main_uses are different than the model main_uses. Please check the folowing main_uses : ${diffUses}")
-        return
-    }
-
-    def columns =  datasource.getColumnNames(buildingToEstimate)
-    columns.removeAll(["BUILD_TYPE", "BUILD_MAIN_USE"])
     String outputTable =  postfix("format_building_before_rf")
-    // Water has been splitted into intermittent and permanent water fractions, thus the indicator names should be modified in order to work for the UTRF calculation
-    //Replace the abstract type and uses values by the good ones in the RF model
     datasource.execute("""DROP TABLE IF EXISTS $outputTable;
                     CREATE TABLE $outputTable 
-                    AS SELECT ${columns.join(",")}, 
+                    AS SELECT *, 
                     RSU_HIGH_VEGETATION_WATER_PERMANENT_FRACTION + RSU_HIGH_VEGETATION_WATER_INTERMITTENT_FRACTION AS RSU_HIGH_VEGETATION_WATER_FRACTION,
-                    RSU_WATER_PERMANENT_FRACTION as RSU_WATER_FRACTION,
-                    ${typesCaseWhen}, ${usesCaseWhen}
+                    RSU_WATER_PERMANENT_FRACTION as RSU_WATER_FRACTION
                     FROM $buildingToEstimate""")
-
     return outputTable
 }
 
