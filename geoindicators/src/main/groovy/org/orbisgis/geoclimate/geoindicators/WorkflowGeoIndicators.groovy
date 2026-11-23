@@ -19,7 +19,6 @@
  */
 package org.orbisgis.geoclimate.geoindicators
 
-import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.FilenameUtils
@@ -1545,22 +1544,6 @@ String formatBuildingBeforeEstimation(JdbcDataSource datasource, String building
                     FROM $buildingToEstimate""")
     return outputTable
 }
-
-/**
- * Get the mapping between the abstract type and use and the RF model
- * @return a map with the corresponding types and main_uses
- */
-Map getHeightModelTypesMapping(){
-    //Load the json file that defines the mapping between the abstract type and use and the RF model
-    JsonSlurper jsonSlurper = new JsonSlurper()
-    Map types_uses_for_model = jsonSlurper.parse(this.class.getResourceAsStream("types_uses_height_model.json")) as Map
-    if (!types_uses_for_model) {
-        error "Cannot find the file to map the input types and uses"
-        return null
-    }
-    return types_uses_for_model
-}
-
 
 /**
  * Compute all geoclimate indicators at the 3 scales (building, block and RSU) plus the typologies (LCZ and UTRF)

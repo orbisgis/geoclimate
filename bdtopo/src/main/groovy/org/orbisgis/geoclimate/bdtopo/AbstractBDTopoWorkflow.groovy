@@ -269,7 +269,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 try {
                     inputSRID = loadDataFromPostGIS(inputDataBase.subMap(["user", "password", "url", "databaseName"]), location, processing_parameters.distance, inputTables, inputSRID, h2gis_datasource)
 
-                    def formatedZone = checkAndFormatLocations(location)
+                    def formatedZone = Geoindicators.WorkflowUtilities.formatLocation(location)
                     if (formatedZone) {
                         def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables,
                                 outputSRID, inputSRID, true, excluded_output_db_columns,domain)

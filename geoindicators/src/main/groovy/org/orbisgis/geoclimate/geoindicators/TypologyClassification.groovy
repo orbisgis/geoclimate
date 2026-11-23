@@ -37,7 +37,6 @@ import smile.classification.RandomForest as RandomForestClassification
 import smile.data.formula.Formula
 import smile.data.measure.NominalScale
 import smile.data.type.DataType
-import smile.data.type.DataTypes
 import smile.data.vector.DoubleVector
 import smile.data.vector.IntVector
 import smile.regression.RandomForest as RandomForestRegression
@@ -747,12 +746,6 @@ String applyRandomForestModel(JdbcDataSource datasource, String explicativeVaria
     def df = DataFrame.of(datasource.getTable("""(SELECT ${selectedColumns.join(",")}, 
             ${isDouble ? "CAST (0 AS DOUBLE PRECISION) AS " + var2model : "CAST(0 AS INTEGER) AS " + var2model},
             $idName from $explicativeVariablesTableName)""".toString()))
-    //Factorize only string field
-    df.schema().fields().each { field ->
-        if (DataTypes.StringType.equals(field.type)) {
-            df = df.factorize(field.name)
-        }
-    }
 
     // Remove the id for the application of the randomForest
     def df_var = df.drop(idName.toUpperCase())
