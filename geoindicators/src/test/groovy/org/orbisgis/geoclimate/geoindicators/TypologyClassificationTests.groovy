@@ -286,13 +286,13 @@ class TypologyClassificationTests {
 
         rows = h2GIS.rows("SELECT * from $buildingFormated where id_build=2")
         assertEquals(1, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
-        assertEquals("commercial", rows.BUILD_TYPE[0])
-        assertEquals("commercial", rows.BUILD_MAIN_USE[0])
+        assertEquals("retail", rows.BUILD_TYPE[0])
+        assertEquals("retail", rows.BUILD_MAIN_USE[0])
 
         rows = h2GIS.rows("SELECT * from $buildingFormated where id_build=3")
         assertEquals(0, rows.RSU_HIGH_VEGETATION_WATER_FRACTION[0])
         assertEquals("building", rows.BUILD_TYPE[0])
-        assertEquals("transportation", rows.BUILD_MAIN_USE[0])
+        assertEquals("service", rows.BUILD_MAIN_USE[0])
 
         h2GIS.dropTable("building", buildingFormated)
     }
