@@ -441,14 +441,12 @@ class InputDataFormattingTest {
             }
         }
 
-        // All the OSM types and uses must have fallback values (or be a fallback value) for the RF models
-        Map fallbacks = Geoindicators.TypologyClassification.getNominalFallbacks()
-        Map typesFallbacks = fallbacks.BUILD_TYPE as Map
-        Map usesFallbacks = fallbacks.BUILD_MAIN_USE as Map
-        HashSet<String> allModelTypes = new HashSet<>(typesFallbacks.keySet())
-        typesFallbacks.values().each { allModelTypes.addAll(it as List) }
-        HashSet<String> allModelUses = new HashSet<>(usesFallbacks.keySet())
-        usesFallbacks.values().each { allModelUses.addAll(it as List) }
+        // All the OSM types and uses must be defined in the mapping file used by the RF models
+        Map mapping = Geoindicators.TypologyClassification.getTypesUsesMapping()
+        HashSet<String> allModelTypes = new HashSet<>(mapping.types.keySet())
+        mapping.types.values().each { allModelTypes.addAll(it as List) }
+        HashSet<String> allModelUses = new HashSet<>(mapping.uses.keySet())
+        mapping.uses.values().each { allModelUses.addAll(it as List) }
 
         assertTrue(!(allOSMTypes - allModelTypes))
         assertTrue(!(allOSMUses - allModelUses))
@@ -476,14 +474,13 @@ class InputDataFormattingTest {
             }
         }
 
-        // All the OSM types and uses must have fallback values (or be a fallback value) for the RF models
-        Map fallbacks = Geoindicators.TypologyClassification.getNominalFallbacks()
-        Map typesFallbacks = fallbacks.BUILD_TYPE as Map
-        Map usesFallbacks = fallbacks.BUILD_MAIN_USE as Map
-        HashSet<String> allModelTypes = new HashSet<>(typesFallbacks.keySet())
-        typesFallbacks.values().each { allModelTypes.addAll(it as List) }
-        HashSet<String> allModelUses = new HashSet<>(usesFallbacks.keySet())
-        usesFallbacks.values().each { allModelUses.addAll(it as List) }
+        // All the OSM types and uses must be defined in the mapping file used by the RF models
+        // (as a type or use of the model, or as a value that falls back to it)
+        Map mapping = Geoindicators.TypologyClassification.getTypesUsesMapping()
+        HashSet<String> allModelTypes = new HashSet<>(mapping.types.keySet())
+        mapping.types.values().each { allModelTypes.addAll(it as List) }
+        HashSet<String> allModelUses = new HashSet<>(mapping.uses.keySet())
+        mapping.uses.values().each { allModelUses.addAll(it as List) }
 
         assertTrue(!(allOSMTypes - allModelTypes))
         assertTrue(!(allOSMUses - allModelUses))

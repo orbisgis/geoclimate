@@ -896,3 +896,13 @@ Map getNominalFallbacks() {
     return [BUILD_TYPE    : invert(mapping.types as Map),
             BUILD_MAIN_USE: invert(mapping.uses as Map)]
 }
+
+/**
+ * Return the content of types_uses_height_model.json : for each type (or use) of the abstract model,
+ * the more specific values that fall back to it
+ *
+ * @return a map with two keys : types and uses
+ */
+Map getTypesUsesMapping() {
+    return new JsonSlurper().parse(TypologyClassification.class.getResourceAsStream("types_uses_height_model.json")) as Map
+}
