@@ -1193,7 +1193,7 @@ Map getSurfaceSuperpositions(){
  * @return a list of heights
  */
 List getBuildHeightListLayersBottom(){
-    return [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,65,70,75]
+    return [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75]
 }
 
 /**
@@ -1683,9 +1683,9 @@ def computeZoneStats(JdbcDataSource datasource, String zone, String building_ind
  * @param superpositions rules for overlapping between the different types of lands
  * @param priorities priorities between the different types of lands
  * @param buildHeightListLayersBottom bottom heights of the vertical layers used for the building height
- * distribution and the frontal area index distribution (default [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ * distribution and the frontal area index distribution (default getBuildHeightListLayersBottom())
  * @param facadeDensListLayersBottom bottom heights of the vertical layers used for the projected facade density
- * and the terrain roughness (default [0, 10, 20, 30, 40, 50])
+ * and the terrain roughness (default getFacadeDensListLayersBottom())
  * @param lcz_lod level to aggregate the LCZ on the grid. Set by default to -1
  * @param buildingTable name
  * @param roadTable name
@@ -1703,8 +1703,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                            String grid, List list_indicators,
                            Map superpositions = ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]],
                            List priorities = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
-                           List buildHeightListLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
-                           List facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50],
+                           List buildHeightListLayersBottom = getBuildHeightListLayersBottom(),
+                           List facadeDensListLayersBottom = getFacadeDensListLayersBottom(),
                            String building, String road, String vegetation,
                            String water, String impervious, String rsu_lcz,
                            String rsu_utrf_area, String rsu_utrf_floor_area, String sea_land_mask,
