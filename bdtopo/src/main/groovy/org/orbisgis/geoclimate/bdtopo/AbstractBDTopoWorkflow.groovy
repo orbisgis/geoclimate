@@ -531,6 +531,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
                 defaultParameters.put("rsu_indicators", rsu_indicators_default)
 
+            } else {
+                //Use the default RSU parameters, they can be updated by the grid indicators (LCZ, UTRF)
+                rsu_indicators = rsu_indicators_default
+                defaultParameters.put("rsu_indicators", rsu_indicators_default)
             }
 
             //Check for grid indicators
@@ -1160,43 +1164,43 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
 
         //Export block indicators
         indicatorTableBatchExportTable(output_datasource, outputTableNames.block_indicators, id_zone, h2gis_datasource, h2gis_tables.block_indicators
-            , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.block_indicators))
+                , "WHERE ID_RSU IS NOT NULL", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.block_indicators))
 
-    //Export rsu indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators, id_zone, h2gis_datasource, h2gis_tables.rsu_indicators
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_indicators))
+        //Export rsu indicators
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_indicators, id_zone, h2gis_datasource, h2gis_tables.rsu_indicators
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_indicators))
 
-    //Export rsu lcz
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.rsu_lcz
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_lcz))
+        //Export rsu lcz
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_lcz, id_zone, h2gis_datasource, h2gis_tables.rsu_lcz
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_lcz))
 
-    //Export rsu_utrf_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_area
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_utrf_area))
+        //Export rsu_utrf_area
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_area
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_utrf_area))
 
-    //Export rsu_utrf_floor_area
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_floor_area
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_utrf_floor_area))
+        //Export rsu_utrf_floor_area
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.rsu_utrf_floor_area, id_zone, h2gis_datasource, h2gis_tables.rsu_utrf_floor_area
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.rsu_utrf_floor_area))
 
-    //Export grid_indicators
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators, id_zone, h2gis_datasource, h2gis_tables.grid_indicators
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.grid_indicators))
+        //Export grid_indicators
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.grid_indicators, id_zone, h2gis_datasource, h2gis_tables.grid_indicators
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.grid_indicators))
 
-    //Export building_utrf
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf, id_zone, h2gis_datasource, h2gis_tables.building_utrf
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.building_utrf))
+        //Export building_utrf
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.building_utrf, id_zone, h2gis_datasource, h2gis_tables.building_utrf
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.building_utrf))
 
-    //Export road_traffic
-    indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.road_traffic
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.road_traffic))
+        //Export road_traffic
+        indicatorTableBatchExportTable(output_datasource, outputTableNames.road_traffic, id_zone, h2gis_datasource, h2gis_tables.road_traffic
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.road_traffic))
 
-    //Export zone
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.zone, id_zone, h2gis_datasource, h2gis_tables.zone
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.zone))
+        //Export zone
+        abstractModelTableBatchExportTable(output_datasource, outputTableNames.zone, id_zone, h2gis_datasource, h2gis_tables.zone
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get(outputTableNames.zone))
 
-    //Export building
-    abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.building
-            , "", inputSRID, outputSRID, reproject,excluded_columns.get( outputTableNames.building))
+        //Export building
+        abstractModelTableBatchExportTable(output_datasource, outputTableNames.building, id_zone, h2gis_datasource, h2gis_tables.building
+                , "", inputSRID, outputSRID, reproject,excluded_columns.get( outputTableNames.building))
 
         //Export road
         abstractModelTableBatchExportTable(output_datasource, outputTableNames.road, id_zone, h2gis_datasource, h2gis_tables.road

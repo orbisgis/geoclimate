@@ -909,7 +909,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.mkdir()
         def test = "test"
         def wrf_indicators = ["LAND_TYPE_FRACTION", "BUILDING_HEIGHT", "BUILDING_HEIGHT_WEIGHTED",
-                              "BUILDING_TYPE_FRACTION", "FREE_EXTullERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
+                              "BUILDING_TYPE_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
                               "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
         def databasePath = '/tmp/geoclimate_chain_dbtest;AUTO_SERVER=TRUE'
         def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
