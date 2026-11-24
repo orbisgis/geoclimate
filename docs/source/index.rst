@@ -14,6 +14,13 @@
     Output-data
 
 .. toctree::
+    :caption: Models
+    :maxdepth: 2
+
+    Urban-typology-model
+    Building-height-model
+
+.. toctree::
     :caption: Show
     :maxdepth: 1
 

@@ -125,11 +125,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         }
         def inputDataBase = inputParameters.database
         def inputFolder = inputParameters.folder
-        def locations = inputParameters.locations as Set
-        if (!locations) {
-            throw new Exception("Cannot find any locations parameter.")
-        }
+        //Check the locations
+        def locations = checkLocations(inputParameters.locations)
         def inputSRID = inputParameters.srid
+
         if (inputSRID && inputSRID <= 0) {
             throw new Exception("The input srid must be greater than 0.")
         }
@@ -270,7 +269,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 try {
                     inputSRID = loadDataFromPostGIS(inputDataBase.subMap(["user", "password", "url", "databaseName"]), location, processing_parameters.distance, inputTables, inputSRID, h2gis_datasource)
 
-                    def formatedZone = checkAndFormatLocations(location)
+                    def formatedZone = Geoindicators.WorkflowUtilities.formatLocation(location)
                     if (formatedZone) {
                         def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables,
                                 outputSRID, inputSRID, true, excluded_output_db_columns,domain)
@@ -723,13 +722,22 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
             outputGrid = grid_indicators_params.output
         }
 
+        def locationParts = location.toString().split("_")
+        boolean isBbox = locationParts.size() in [3, 4] && locationParts.every { it.isNumber() }
+
         def tmp_results = [:]
         def rows = h2gis_datasource.rows("SELECT ST_CollectionExtract(THE_GEOM, 3) as the_geom,code_insee  FROM COMMUNE")
         //We process each zones because the input zone can overlap several communes
         rows.each { row ->
-            Geometry geom = row.the_geom
             def code_insee = row.code_insee
-            info "Processing the commune with the code insee :  ${code_insee}"
+            if (!isBbox) {
+                info "Processing the commune with the code insee : ${code_insee}"
+            } else if (code_insee.toString().contains("_")) {
+                info "Processing the bbox : ${code_insee.toString().split('_').join(', ')}"
+            } else {
+                info "Processing the part of the commune with the code insee ${code_insee} inside the bbox : ${locationParts.join(', ')}"
+            }
+            Geometry geom = row.the_geom
             def numGeom = geom.getNumGeometries()
             if (numGeom == 1) {
                 if (!geom.isEmpty()) {
@@ -1571,4 +1579,54 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @return
      */
     abstract Map formatLayers(JdbcDataSource datasource, Map layers, float distance = 1000, float hLevMin = 3) throws Exception
+
+
+    /**
+     * Check the locations parameter of the configuration file and return them as a set.
+     *
+     * @param locations the value of the locations parameter. A location can be :
+     * - an insee code or a commune name written as text (e.g. "56260")
+     * - a list of 4 coordinates to define a bbox [min_y, min_x, max_y, max_x]
+     * - a list of 3 values to define a point plus a distance in meters [x, y, distance]
+     * The coordinates are expressed in the coordinate system of the BDTopo data (e.g. Lambert-93, in meters)
+     * @return the set of locations
+     * @throws Exception if the parameter or one of the locations is invalid
+     */
+    Set checkLocations(def locations) throws Exception {
+        def help = """The locations parameter must be a list where each location is either :
+ - an insee code or a commune name written as text (e.g. "56260")
+ - a list of 4 coordinates to define a bbox [min_y, min_x, max_y, max_x]
+ - a list of 3 values to define a point plus a distance of at least 100 meters [x, y, distance]
+The coordinates are expressed in the coordinate system of the BDTopo data (e.g. Lambert-93, in meters),
+e.g. "locations" : ["56260", [6359905.15, 663566.11, 6360305.15, 663966.11], [663766.11, 6360105.15, 500]]"""
+        if (!locations) {
+            throw new Exception("Please set at least one location.\n$help")
+        }
+        if (!(locations in Collection)) {
+            throw new Exception("Invalid locations parameter : ${locations}. It must be a list.\n$help")
+        }
+        // A single bbox or point written without the enclosing list, e.g. [6359905.15, 663566.11, 6360305.15, 663966.11]
+        if (locations.size() in [3, 4] && locations.every { it instanceof Number }) {
+            throw new Exception("Invalid locations parameter : ${locations}. It looks like a single bbox or point, " +
+                    "it must be enclosed in a list : [${locations}].\n$help")
+        }
+        def errors = locations.collect { location ->
+            if (location instanceof String) {
+                return location.trim() ? null : "an insee code or a commune name cannot be an empty text"
+            } else if (location instanceof Number) {
+                return "${location} : an insee code must be written as text, e.g. \"${location}\""
+            } else if (location in Collection) {
+                def error = Geoindicators.WorkflowUtilities.checkCoordinatesLocation(location)
+                if (!error && location.size() == 3 && location[2] < 100) {
+                    error = "${location} : the distance to create a bbox from a point must be greater than 100 meters"
+                }
+                return error
+            }
+            return "${location} : a location must be an insee code, a commune name or a list of coordinates"
+        }.findAll()
+        if (errors) {
+            throw new Exception("Invalid locations parameter :\n - ${errors.join('\n - ')}\n$help")
+        }
+        return locations as Set
+    }
 }

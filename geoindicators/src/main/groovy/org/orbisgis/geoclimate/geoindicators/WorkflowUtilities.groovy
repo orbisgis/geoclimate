@@ -80,7 +80,7 @@ def createDatasource(def database_properties) {
             if (url.startsWith("h2")) {
                 return H2GIS.open(database_properties)
             } else if (url.startsWith("postgis")) {
-                database_properties.url = "jdbc:postgresql"+url.substring("postgis".length())
+                database_properties.url = "jdbc:postgresql" + url.substring("postgis".length())
                 return POSTGIS.open(database_properties)
             } else if (url.startsWith("postgresql")) {
                 return POSTGIS.open(database_properties)
@@ -91,16 +91,15 @@ def createDatasource(def database_properties) {
         } else {
             //Try to create the URL without JDBC prefix
             if (db_output_url.startsWith("h2")) {
-                database_properties.url = "jdbc:"+db_output_url
+                database_properties.url = "jdbc:" + db_output_url
                 return H2GIS.open(database_properties)
             } else if (db_output_url.startsWith("postgresql")) {
-                database_properties.url = "jdbc:"+db_output_url
+                database_properties.url = "jdbc:" + db_output_url
                 return POSTGIS.open(database_properties)
-            }else if (db_output_url.startsWith("postgis")) {
-                database_properties.url = "jdbc:postgresql"+db_output_url.substring("postgis".length())
+            } else if (db_output_url.startsWith("postgis")) {
+                database_properties.url = "jdbc:postgresql" + db_output_url.substring("postgis".length())
                 return POSTGIS.open(database_properties)
-            }
-            else {
+            } else {
                 error "Unsupported database"
                 return
             }
@@ -237,9 +236,9 @@ def saveToAscGrid(def outputTable, def subFolder, def filePrefix, JdbcDataSource
  * @param filter where filter clause
  * @param deleteOutputData true to delete the file if exists
  */
-def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject,  def filter,def deleteOutputData) {
-    if (outputTable && h2gis_datasource.hasTable(outputTable)){
-        h2gis_datasource.save(buildSelectQuery(h2gis_datasource,  outputTable, outputSRID,  reproject,   filter), filePath, deleteOutputData)
+def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def outputSRID, def reproject, def filter, def deleteOutputData) {
+    if (outputTable && h2gis_datasource.hasTable(outputTable)) {
+        h2gis_datasource.save(buildSelectQuery(h2gis_datasource, outputTable, outputSRID, reproject, filter), filePath, deleteOutputData)
         info "${outputTable} has been saved in ${filePath}."
     }
 }
@@ -253,14 +252,14 @@ def saveInFile(def outputTable, def filePath, H2GIS h2gis_datasource, def output
  * @param filter
  * @return
  */
-String buildSelectQuery(H2GIS h2gis_datasource, def outputTable,def outputSRID, def reproject,  def filter){
+String buildSelectQuery(H2GIS h2gis_datasource, def outputTable, def outputSRID, def reproject, def filter) {
     def columns = h2gis_datasource.getColumnNames(outputTable)
     columns.remove("THE_GEOM")
     String geomColum = "THE_GEOM"
     if (reproject) {
-        geomColum=  "ST_TRANSFORM(THE_GEOM, $outputSRID) as the_geom"
+        geomColum = "ST_TRANSFORM(THE_GEOM, $outputSRID) as the_geom"
     }
-    return "(SELECT ${columns?"\""+columns.join("\",\"")+"\",":""} $geomColum FROM $outputTable ${filter?filter:""})"
+    return "(SELECT ${columns ? "\"" + columns.join("\",\"") + "\"," : ""} $geomColum FROM $outputTable ${filter ? filter : ""})"
 }
 
 /**
@@ -338,18 +337,17 @@ def saveToCSV(def outputTable, def filePath, def h2gis_datasource, def deleteOut
  * @param columnsToKeep columns to keep
  * @return
  */
-def getTableToSave(H2GIS h2gis_datasource,String h2gis_table_to_save, Integer targetTableSrid,  Collection columnsToKeep, String filter){
-    if(columnsToKeep.contains("THE_GEOM")) {
-        List columns = columnsToKeep.findAll() {it -> it!="THE_GEOM"} asList()
-        if(targetTableSrid) {
+def getTableToSave(H2GIS h2gis_datasource, String h2gis_table_to_save, Integer targetTableSrid, Collection columnsToKeep, String filter) {
+    if (columnsToKeep.contains("THE_GEOM")) {
+        List columns = columnsToKeep.findAll() { it -> it != "THE_GEOM" } asList()
+        if (targetTableSrid) {
             columns.add("ST_TRANSFORM(THE_GEOM, $targetTableSrid) as the_geom")
-        }else{
+        } else {
             columns.add("THE_GEOM")
         }
-        return h2gis_datasource.getSpatialTable("(SELECT ${columns.join(",")} from ${h2gis_table_to_save} ${filter?filter:""})".toString())
-    }
-    else{
-        return h2gis_datasource.getTable("(SELECT ${columnsToKeep.join(",")} from ${h2gis_table_to_save} ${filter?filter:""})".toString())
+        return h2gis_datasource.getSpatialTable("(SELECT ${columns.join(",")} from ${h2gis_table_to_save} ${filter ? filter : ""})".toString())
+    } else {
+        return h2gis_datasource.getTable("(SELECT ${columnsToKeep.join(",")} from ${h2gis_table_to_save} ${filter ? filter : ""})".toString())
     }
 }
 
@@ -367,9 +365,39 @@ def formatLocation(def location) throws Exception {
     if (location in Collection) {
         return location.join("_")
     } else if (location instanceof String) {
-        return location.trim().replace("'","''")
+        return location.trim().replace("'", "''")
     } else {
         throw new Exception("Invalid location input. \n" +
                 "The location input must be a string value or an array of 4 coordinates to define a bbox or 3 values to define a point plus a distance in meters ")
     }
+}
+
+/**
+ * Check the structure of a location defined by coordinates
+ *
+ * @param location a bbox [min_y, min_x, max_y, max_x] or a point plus a distance in meters
+ * @return an error message if the location is invalid, null otherwise
+ */
+String checkCoordinatesLocation(Collection location) {
+    if (location.any { it in Collection }) {
+        return "${location} : too many brackets, a bbox or a point must be a list of numbers"
+    }
+    if (!location.every { it instanceof Number }) {
+        return "${location} : the coordinates must be numbers, not text"
+    }
+    if (location.size() == 4) {
+        def (min_y, min_x, max_y, max_x) = location
+        if (min_y >= max_y || min_x >= max_x) {
+            return "${location} : invalid bbox, the expected order is [min_y, min_x, max_y, max_x]"
+        }
+        return null
+    }
+    if (location.size() == 3) {
+        if (location[2] <= 0) {
+            return "${location} : the distance must be greater than 0 meters"
+        }
+        return null
+    }
+    return "${location} : a list of ${location.size()} values is not supported. " +
+            "Use 4 coordinates for a bbox or 3 values for a point plus a distance"
 }
