@@ -27,8 +27,14 @@ import org.orbisgis.data.H2GIS
 import org.orbisgis.data.POSTGIS
 import org.orbisgis.data.jdbc.JdbcDataSource
 import org.orbisgis.geoclimate.Geoindicators
+import groovy.transform.Field
 
 @BaseScript Geoindicators geoindicators
+
+
+//Supported formats to save data in files
+static @Field List<String> SUPPORTED_OUTPUT_FILE_FORMATS = ["fgb", "geojson", "geojson.gz", "json", "csv"]
+
 
 /**
  * Method to
@@ -119,25 +125,26 @@ def createDatasource(def database_properties) {
 /**
  * Method to check the output tables that can be saved
  *
- * @param outputFolder properties to store in a folder (path and table names)
+ * @param outputFolder properties to store in a folder (path, table names and file format)
+ * e.g "folder" : "/tmp" or "folder" : {"path" : "/tmp", "tables" : ["rsu_lcz"], "format" : "geojson"}
  * @parm allowedOutputTables list of supported tables
  *
- * @return a map with the allowed tables (tables) and a connection to the database (datasource)
- *
+ * @return a map with the folder path (path), the allowed tables (tables) and the file format (format)
  */
-def buildOutputFolderParameters(def outputFolder, def allowedOutputTables) {
+def buildOutputFolderParameters(def outputFolder, def allowedOutputTables) throws Exception {
     if (outputFolder in Map) {
         def outputPath = outputFolder.path
         def outputTables = outputFolder.tables
         if (!outputPath) {
             return
         }
+        def format = getOutputFileFormat(outputFolder.format)
         if (outputTables) {
-            return ["path": outputPath, "tables": allowedOutputTables.intersect(outputTables)]
+            return ["path": outputPath, "tables": allowedOutputTables.intersect(outputTables), "format": format]
         }
-        return ["path": outputPath, "tables": allowedOutputTables]
+        return ["path": outputPath, "tables": allowedOutputTables, "format": format]
     } else {
-        return ["path": outputFolder, "tables": allowedOutputTables]
+        return ["path": outputFolder, "tables": allowedOutputTables, "format": getOutputFileFormat(null)]
     }
 }
 
@@ -372,6 +379,29 @@ def formatLocation(def location) throws Exception {
     }
 }
 
+
+/**
+ * Check and return the file format used to save the layers in a folder
+ *
+ * @param format the format set by the user, null to use the default one (fgb)
+ * @return the file format in lower case
+ */
+String getOutputFileFormat(def format) throws Exception {
+    if (format == null) {
+        return SUPPORTED_OUTPUT_FILE_FORMATS[0]
+    }
+    if (!(format in String) && !(format in GString)) {
+        throw new Exception("The output file format must be a string. Supported formats are : ${SUPPORTED_OUTPUT_FILE_FORMATS.join(", ")}".toString())
+    }
+    String formatLower = format.toString().trim().toLowerCase()
+    if (formatLower.startsWith(".")) {
+        formatLower = formatLower.substring(1)
+    }
+    if (formatLower in SUPPORTED_OUTPUT_FILE_FORMATS) {
+        return formatLower
+    }
+    throw new Exception("Unsupported output file format : $format. Supported formats are : ${SUPPORTED_OUTPUT_FILE_FORMATS.join(", ")}".toString())
+}
 /**
  * Check the structure of a location defined by coordinates
  *

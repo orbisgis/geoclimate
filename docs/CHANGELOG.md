@@ -9,3 +9,4 @@
 - Grid indicators : the TARGET checks (square cells, size in meters) are only applied when TARGET is requested, the `asc` output requires square and not rotated cells
 - Grid indicators : the urban sprawl distance and the TARGET resolution use the real cell size of the grid
 - Fix the `lcz_lod` range check
+- Add the `format` parameter to choose the file format of the output layers : `fgb` (default), `geojson`, `geojson.gz`, `json` or `csv` (#1057)

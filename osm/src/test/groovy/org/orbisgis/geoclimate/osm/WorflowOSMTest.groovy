@@ -1391,4 +1391,58 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 WHERE b.the_geom IS NULL;""")
         assertEquals(14, h2gis.getRowCount("building_out"))
     }
+
+    @Test
+    void testOutputFolderFormat(@TempDir File folder) {
+        String directory = folder.absolutePath + File.separator + "testOutputFolderFormat"
+        def osm_parmeters = [
+                "description" : "Save the results in a folder with a custom file format",
+                "geoclimatedb": [
+                        "folder": directory,
+                        "name"  : "geoclimate_chain_db;AUTO_SERVER=TRUE",
+                        "delete": true
+                ],
+                "input"       : ["locations": ["Pont-de-Veyle"]],
+                "output"      : [
+                        "folder": ["path"  : directory,
+                                   "format": "geojson",
+                                   "tables": ["building", "zone", "grid_indicators"]]],
+                "parameters"  :
+                        ["grid_indicators": [
+                                "x_size"    : 1000,
+                                "y_size"    : 1000,
+                                "indicators": ["LAND_TYPE_FRACTION"]]]
+        ]
+        OSM.WorkflowOSM.workflow(osm_parmeters)
+        def subFolder = new File(directory + File.separator + "osm_Pont-de-Veyle")
+        ["building", "zone", "grid_indicators"].each {
+            assertTrue(new File(subFolder, "${it}.geojson").exists(), "${it}.geojson must exist")
+            assertFalse(new File(subFolder, "${it}.fgb").exists(), "${it}.fgb must not exist")
+        }
+        H2GIS h2gis = H2GIS.open(directory + File.separator + "check_db")
+        h2gis.load(new File(subFolder, "building.geojson").absolutePath, "building_geojson", true)
+        assertTrue(h2gis.getRowCount("building_geojson") > 0)
+        h2gis.close()
+    }
+
+    @Test
+    void testOutputFolderFormatParameters() {
+        def tables = ["building", "zone"]
+        //Default format
+        assertEquals("fgb", Geoindicators.WorkflowUtilities.buildOutputFolderParameters("/tmp", tables).format)
+        assertEquals("fgb", Geoindicators.WorkflowUtilities.buildOutputFolderParameters(["path": "/tmp"], tables).format)
+        //Supported formats
+        ["fgb", "geojson", "json", "csv"].each {
+            assertEquals(it, Geoindicators.WorkflowUtilities.buildOutputFolderParameters(["path": "/tmp", "format": it], tables).format)
+        }
+        assertEquals("geojson", Geoindicators.WorkflowUtilities.buildOutputFolderParameters(["path": "/tmp", "format": "GeoJSON"], tables).format)
+        assertEquals("csv", Geoindicators.WorkflowUtilities.buildOutputFolderParameters(["path": "/tmp", "format": ".csv"], tables).format)
+        //The shapefile format is not supported because the dbf truncates the column names
+        assertThrows(Exception.class, () -> Geoindicators.WorkflowUtilities.buildOutputFolderParameters(["path": "/tmp", "format": "shp"], tables))
+        assertThrows(Exception.class, () -> Geoindicators.WorkflowUtilities.buildOutputFolderParameters(["path": "/tmp", "format": 12], tables))
+        //An invalid format stops the workflow before any processing
+        assertThrows(Exception.class, () -> OSM.WorkflowOSM.workflow([
+                "input" : ["locations": ["Pont-de-Veyle"]],
+                "output": ["folder": ["path": System.getProperty("java.io.tmpdir"), "format": "shp"]]]))
+    }
 }

@@ -156,6 +156,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         Map excluded_output_db_columns=[:]
         def file_outputFolder
         def outputFileTables
+        String outputFileFormat
         def outputSRID
         def deleteOutputData
         String domain ="zone"
@@ -181,6 +182,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 //Check if we can write in the output folder
                 def outputFiles = Geoindicators.WorkflowUtilities.buildOutputFolderParameters(outputFolder, outputWorkflowTableNames)
                 outputFileTables = outputFiles.tables
+                outputFileFormat = outputFiles.format
                 //Check if we can write in the output folder
                 file_outputFolder = new File(outputFiles.path)
                 if (!file_outputFolder.exists()) {
@@ -220,7 +222,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                             if (formatedZone) {
                                 def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters,
                                         createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource,
-                                        outputTables, outputSRID, inputSRID, true, excluded_output_db_columns, domain)
+                                        outputTables, outputSRID, inputSRID, true, excluded_output_db_columns, domain, outputFileFormat)
                                 if (bdtopo_results) {
                                     outputTableNamesResult.putAll(bdtopo_results)
                                 }
@@ -272,7 +274,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                     def formatedZone = Geoindicators.WorkflowUtilities.formatLocation(location)
                     if (formatedZone) {
                         def bdtopo_results = bdtopo_processing(formatedZone, h2gis_datasource, processing_parameters, createMainFolder(file_outputFolder, formatedZone), outputFileTables, outputDatasource, outputTables,
-                                outputSRID, inputSRID, true, excluded_output_db_columns,domain)
+                                outputSRID, inputSRID, true, excluded_output_db_columns,domain, outputFileFormat)
                         if (bdtopo_results) {
                             outputTableNamesResult.putAll(bdtopo_results)
                         }
@@ -706,11 +708,14 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
      * @param outputSRID force the srid for the output data
      * @param inputSRID force the srid for the input data
      * @param deleteOutputData true to delete the output files if exist
+     * @param excluded_columns list of columns to exclude for each table saved in a database
+     * @param domain set zone to use the original bbox or zone_extended to use the bbox plus a distance
+     * @param outputFileFormat format used to save the result in tables
      * @return
      */
     def bdtopo_processing(def location, H2GIS h2gis_datasource, def processing_parameters, def outputFolder, def outputFiles,
                           def output_datasource, def outputTableNames, def outputSRID,
-                          def inputSRID, def deleteOutputData = true, Map excluded_columns, String domain)
+                          def inputSRID, def deleteOutputData = true, Map excluded_columns, String domain, String outputFileFormat)
             throws Exception {
         //Add clip info
         processing_parameters.put("domain", domain)
@@ -792,7 +797,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 }
                 computeGridIndicators(h2gis_datasource, location, inputSRID, processing_parameters, res)
                 outputTableNamesResult.put(location, res)
-                saveResults(h2gis_datasource, location, res, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid, excluded_columns, domain)
+                saveResults(h2gis_datasource, location, res, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid, excluded_columns, domain, outputFileFormat)
 
             } else {
                 def tablesToMerge = ["zone"               : [],
@@ -818,7 +823,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 def results = mergeResultTables(tablesToMerge, h2gis_datasource)
                 computeGridIndicators(h2gis_datasource, location, inputSRID, processing_parameters, results)
                 outputTableNamesResult.put(location, results)
-                saveResults(h2gis_datasource, location, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid,excluded_columns, domain)
+                saveResults(h2gis_datasource, location, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid,excluded_columns, domain, outputFileFormat)
 
             }
         }
@@ -959,11 +964,12 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
  * @param outputSRID
  * @param deleteOutputData
  * @param data_domain domain to save the data
+ * @param outputFileFormat format used to save the result in tables
  * @return
  */
     def saveResults(H2GIS h2gis_datasource, def id_zone, def results, def srid, def outputFolder, def outputFiles,
                     def output_datasource, def outputTableNames, def outputSRID, def deleteOutputData, def outputGrid,
-                    Map excluded_columns, String data_domain) throws Exception {
+                    Map excluded_columns, String data_domain, String outputFileFormat) throws Exception {
         //Check if the user decides to reproject the output data
         def reproject = false
         if (outputSRID) {
@@ -981,7 +987,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         }
 
         if (outputFolder && outputFiles) {
-            saveOutputFiles(h2gis_datasource, results, outputFiles, outputFolder, outputSRID, reproject, deleteOutputData, outputGrid, outputZoneGeometry)
+            saveOutputFiles(h2gis_datasource, results, outputFiles, outputFolder, outputSRID, reproject, deleteOutputData, outputGrid, outputZoneGeometry, outputFileFormat)
         }
         if (output_datasource) {
             saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames, results, id_zone, srid, outputSRID, reproject,excluded_columns)
@@ -1084,17 +1090,19 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
     }
 
     /**
-    * Save the geoclimate tables into files
-    * @param id_zone the id of the zone
-    * @param results a list of tables computed by geoclimate
-    * @param outputFolder the output folder
-    * @param outputSRID srid code to reproject the result
-    * @param deleteOutputData true to delete the file if exists
+     * Save the geoclimate tables into files
+     * @param id_zone the id of the zone
+     * @param results a list of tables computed by geoclimate
+     * @param outputFolder the output folder
+     * @param outputSRID srid code to reproject the result
+     * @param deleteOutputData true to delete the file if exists
      * @param outputZoneGeometry if the geometry is not null we use it to filter the output data
-    * @return
-    */
+     * @param outputFileFormat format used to save the result in tables
+     * @return
+     */
     def saveOutputFiles(def h2gis_datasource, def results, def outputFiles, def outputFolder, def outputSRID,
-                        def reproject, def deleteOutputData, def outputGrid, Geometry outputZoneGeometry) throws Exception {
+                        def reproject, def deleteOutputData, def outputGrid, Geometry outputZoneGeometry, String outputFileFormat) throws Exception {
+        def fileExtension = Geoindicators.WorkflowUtilities.getOutputFileFormat(outputFileFormat)
         def whereFilter =""
         if(outputZoneGeometry) {
             whereFilter+="""the_geom && ST_GEOMFROMTEXT('${outputZoneGeometry}',${outputZoneGeometry.getSRID()}) 
@@ -1102,10 +1110,10 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
         }
         outputFiles.each {
             if (it in ["grid_indicators", "grid_target"]) {
-                if (outputGrid == "fgb") {
-                    Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject,null, deleteOutputData)
-                } else if (outputGrid == "asc") {
+                if (outputGrid == "asc") {
                     Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", outputFolder, it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
+                }else{
+                    Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.${fileExtension}", h2gis_datasource, outputSRID, reproject, null, deleteOutputData)
                 }
             } else if (it == "building_updated") {
                 Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${outputFolder + File.separator + it}.csv", h2gis_datasource, deleteOutputData)
@@ -1114,14 +1122,14 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                            "urban_areas", "road_traffic","ground_acoustic",
                            "urban_sprawl_areas", "urban_cool_areas"]) {
                 //Apply where filter
-                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, whereFilter?" WHERE "+whereFilter:null, deleteOutputData)
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.${fileExtension}", h2gis_datasource, outputSRID, reproject, whereFilter?" WHERE "+whereFilter:null, deleteOutputData)
             } else if(it in[ "building_indicators", "block_indicators","rsu_utrf_area" ,
                              "rsu_utrf_floor_area" , "building_utrf" , "rsu_indicators" ,
                              "rsu_lcz"] ) {
-                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, whereFilter ? " WHERE " + whereFilter + " and ID_RSU IS NOT NULL" : " where ID_RSU IS NOT NULL", deleteOutputData)
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.${fileExtension}", h2gis_datasource, outputSRID, reproject, whereFilter ? " WHERE " + whereFilter + " and ID_RSU IS NOT NULL" : " where ID_RSU IS NOT NULL", deleteOutputData)
 
             }  else {
-                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, null, deleteOutputData)
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${outputFolder + File.separator + it}.${fileExtension}", h2gis_datasource, outputSRID, reproject, null, deleteOutputData)
             }
         }
     }
