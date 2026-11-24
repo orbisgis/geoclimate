@@ -1445,4 +1445,13 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "input" : ["locations": ["Pont-de-Veyle"]],
                 "output": ["folder": ["path": System.getProperty("java.io.tmpdir"), "format": "shp"]]]))
     }
+
+    @Test
+    void testGridIndicatorsCaseInsensitive() {
+        def params = OSM.WorkflowOSM.extractProcessingParameters(["grid_indicators": [
+                "x_size": 1000, "y_size": 1000,
+                "indicators": ["LanD_TYPE_FraCTION", " lcz_primary ", "count_warm_3", "LAND_TYPE_FRACTION"]]])
+        assertEquals(["LAND_TYPE_FRACTION", "LCZ_PRIMARY", "COUNT_WARM_3"], params.grid_indicators.indicators)
+        assertTrue(params.rsu_indicators.indicatorUse.contains("LCZ"))
+    }
 }

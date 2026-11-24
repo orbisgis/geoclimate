@@ -22,6 +22,8 @@ package org.orbisgis.geoclimate.bdtopo
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.CleanupMode
 import org.junit.jupiter.api.io.TempDir
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 import static org.junit.jupiter.api.Assertions.assertThrows
 
@@ -70,5 +72,20 @@ class WorkflowParametersTest {
         ]
         assertThrows(Exception.class, () -> BDTopo.v2(bdTopoParameters))
         assertThrows(Exception.class, () -> BDTopo.v3(bdTopoParameters))
+    }
+
+    @Test
+    void testGridIndicatorsCaseInsensitive() {
+        [new BDTopoV2Workflow(), new BDTopoV3Workflow()].each { workflow ->
+            def params = workflow.extractProcessingParameters([
+                    "rsu_indicators" : ["indicatorUse": ["TEB"]],
+                    "grid_indicators": [
+                            "x_size"    : 1000, "y_size": 1000,
+                            "indicators": ["LanD_TYPE_FraCTION", " lcz_primary ", "count_warm_3", "LAND_TYPE_FRACTION"]]])
+            assertEquals(["LAND_TYPE_FRACTION", "LCZ_PRIMARY", "COUNT_WARM_3"], params.grid_indicators.indicators)
+            assertTrue(params.rsu_indicators.indicatorUse.contains("LCZ"))
+        }
+        assertThrows(Exception.class, () -> new BDTopoV3Workflow().extractProcessingParameters([
+                "grid_indicators": ["x_size": 1000, "y_size": 1000, "indicators": ["land_type"]]]))
     }
 }
