@@ -33,7 +33,7 @@ import groovy.transform.Field
 
 
 //Supported formats to save data in files
-static @Field List<String> SUPPORTED_OUTPUT_FILE_FORMATS = ["fgb", "geojson", "json", "csv"]
+static @Field List<String> SUPPORTED_OUTPUT_FILE_FORMATS = ["fgb", "geojson", "geojson.gz", "json", "csv"]
 
 
 /**
