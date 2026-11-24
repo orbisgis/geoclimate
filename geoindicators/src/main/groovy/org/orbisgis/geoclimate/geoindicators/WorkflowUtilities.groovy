@@ -401,7 +401,7 @@ String getOutputFileFormat(def format) throws Exception {
         return formatLower
     }
     throw new Exception("Unsupported output file format : $format. Supported formats are : ${SUPPORTED_OUTPUT_FILE_FORMATS.join(", ")}".toString())
-  
+}
 /**
  * Check the structure of a location defined by coordinates
  *
