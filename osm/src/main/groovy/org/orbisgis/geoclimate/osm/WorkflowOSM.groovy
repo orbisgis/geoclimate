@@ -659,11 +659,11 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
 
                 if (outputFolder && ouputTableFiles) {
                     saveOutputFiles(h2gis_datasource, id_zone, results, ouputTableFiles, outputFolder, "osm_",
-                            outputSRID, reproject, deleteOutputData, outputGrid, outputZoneGeometry)
+                            outputSRID, reproject, deleteOutputData, outputGrid, outputZoneGeometry, outputFileFormat)
                 }
                 if (output_datasource) {
                     saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames,
-                            results, id_zone, srid, outputSRID, reproject, excluded_columns,outputZoneGeometry, outputFileFormat)
+                            results, id_zone, srid, outputSRID, reproject, excluded_columns,outputZoneGeometry)
                 }
                 outputTableNamesResult.put(Geoindicators.WorkflowUtilities.formatLocation(id_zone), results.findAll { it.value != null })
                 h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
@@ -1100,12 +1100,11 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
  * @param reproject the output table
  * @param excluded_columns list of columns to exclude for each table saved in a database
  * @param outputZoneGeometry
- * @param outputFileFormat
  * @return
  */
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames,
                          def h2gis_tables, def id_zone, def inputSRID, def outputSRID, def reproject,
-                         Map excluded_columns, Geometry outputZoneGeometry, String outputFileFormat) throws Exception {
+                         Map excluded_columns, Geometry outputZoneGeometry) throws Exception {
 
     def whereIntersects =""
     if(outputZoneGeometry) {

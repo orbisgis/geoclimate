@@ -815,7 +815,7 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                 def results = mergeResultTables(tablesToMerge, h2gis_datasource)
                 computeGridIndicators(h2gis_datasource, location, inputSRID, processing_parameters, results)
                 outputTableNamesResult.put(location, results)
-                saveResults(h2gis_datasource, location, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid,excluded_columns, domain)
+                saveResults(h2gis_datasource, location, results, inputSRID, outputFolder, outputFiles, output_datasource, outputTableNames, outputSRID, deleteOutputData, outputGrid,excluded_columns, domain, outputFileFormat)
 
             }
         }

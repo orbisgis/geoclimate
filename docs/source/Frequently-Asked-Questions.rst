@@ -55,6 +55,32 @@ this parameter.
      }
    }
 
+How to choose the format of the output files?
+---------------------------------------------
+
+By default, the tables are saved in the
+`FlatGeobuf <https://flatgeobuf.org/>`_ format (``.fgb``). Set the
+"format" keyword in the "folder" entry of the "output" section to use
+another format. The supported formats are ``fgb`` (default), ``geojson``,
+``geojson.gz`` (compressed GeoJSON), ``json`` and ``csv``.
+
+.. code:: json
+
+   {
+     "output": {
+       "folder": {
+         "path": "/tmp",
+         "format": "geojson"
+       }
+     }
+   }
+
+The shapefile format is not supported because the dbf file truncates the
+column names. The grid indicators are saved in this format too, unless the
+"output" parameter of "grid_indicators" is set to ``asc``. The
+``building_updated`` table is always saved in ``csv``.
+
+
 How to use GeoClimate with proxy configuration?
 -----------------------------------------------
 
