@@ -909,7 +909,7 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         dirFile.mkdir()
         def test = "test"
         def wrf_indicators = ["LAND_TYPE_FRACTION", "BUILDING_HEIGHT", "BUILDING_HEIGHT_WEIGHTED",
-                              "BUILDING_TYPE_FRACTION", "FREE_EXTullERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
+                              "BUILDING_TYPE_FRACTION", "FREE_EXTERNAL_FACADE_DENSITY", "BUILDING_SURFACE_DENSITY",
                               "BUILDING_HEIGHT_DISTRIBUTION", "FRONTAL_AREA_INDEX", "SEA_LAND_FRACTION"]
         def databasePath = '/tmp/geoclimate_chain_dbtest;AUTO_SERVER=TRUE'
         def h2gis_properties = ["databaseName": databasePath, "user": "sa", "password": ""]
@@ -1444,5 +1444,14 @@ class WorflowOSMTest extends WorkflowAbstractTest {
         assertThrows(Exception.class, () -> OSM.WorkflowOSM.workflow([
                 "input" : ["locations": ["Pont-de-Veyle"]],
                 "output": ["folder": ["path": System.getProperty("java.io.tmpdir"), "format": "shp"]]]))
+    }
+
+    @Test
+    void testGridIndicatorsCaseInsensitive() {
+        def params = OSM.WorkflowOSM.extractProcessingParameters(["grid_indicators": [
+                "x_size": 1000, "y_size": 1000,
+                "indicators": ["LanD_TYPE_FraCTION", " lcz_primary ", "count_warm_3", "LAND_TYPE_FRACTION"]]])
+        assertEquals(["LAND_TYPE_FRACTION", "LCZ_PRIMARY", "COUNT_WARM_3"], params.grid_indicators.indicators)
+        assertTrue(params.rsu_indicators.indicatorUse.contains("LCZ"))
     }
 }
