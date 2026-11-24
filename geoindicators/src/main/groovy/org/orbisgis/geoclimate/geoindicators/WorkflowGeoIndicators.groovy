@@ -556,7 +556,7 @@ String computeRSUIndicators(JdbcDataSource datasource, String buildingTable,
     if (indicatorUse*.toUpperCase().contains("TEB")) {
         def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact(datasource,
                 rsu, buildingTable, columnIdRsu,
-                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], true, prefixName)
+                parameters.buildHeightListLayersBottom ?: getBuildHeightListLayersBottom(), true, prefixName)
         finalTablesToJoin.put(roofFractionDistributionExact, columnIdRsu)
 
     }
@@ -1093,8 +1093,8 @@ Map getParameters() {
             "utrfModelName"                    : "",
             "buildingHeightModelName"          : "",
             "svfSimplified"                    : true,
-            "facadeDensListLayersBottom"       : [0, 10, 20, 30, 40, 50],
-            "buildHeightListLayersBottom"      : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+            "facadeDensListLayersBottom"       : getFacadeDensListLayersBottom(),
+            "buildHeightListLayersBottom"      : getBuildHeightListLayersBottom(),
             "facadeDensNumberOfDirection"      : 12,
             "svfPointDensity"                  : 0.008,
             "svfRayLength"                     : 100,
@@ -1184,6 +1184,26 @@ List getSurfacePriorities(){
  */
 Map getSurfaceSuperpositions(){
     return ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]]
+}
+
+/**
+ * Bottom heights (in meters) of the vertical layers used to compute the building height distribution
+ *
+ *
+ * @return a list of heights
+ */
+List getBuildHeightListLayersBottom(){
+    return [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+}
+
+/**
+ * Bottom heights (in meters) of the vertical layers used to compute the projected facade density
+ * and the effective terrain roughness length
+ *
+ * @return a list of heights
+ */
+List getFacadeDensListLayersBottom(){
+    return [0, 10, 20, 30, 40, 50]
 }
 
 /**
@@ -1660,6 +1680,12 @@ def computeZoneStats(JdbcDataSource datasource, String zone, String building_ind
  * @param h2gis_datasource the local H2GIS database
  * @param gridTableName the name of the grid table to aggregate the data
  * @param list_indicators indicators names to compute
+ * @param superpositions rules for overlapping between the different types of lands
+ * @param priorities priorities between the different types of lands
+ * @param buildHeightListLayersBottom bottom heights of the vertical layers used for the building height
+ * distribution and the frontal area index distribution (default [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ * @param facadeDensListLayersBottom bottom heights of the vertical layers used for the projected facade density
+ * and the terrain roughness (default [0, 10, 20, 30, 40, 50])
  * @param lcz_lod level to aggregate the LCZ on the grid. Set by default to -1
  * @param buildingTable name
  * @param roadTable name
@@ -1677,6 +1703,8 @@ String rasterizeIndicators(JdbcDataSource datasource,
                            String grid, List list_indicators,
                            Map superpositions = ["high_vegetation": ["water_permanent", "water_intermittent", "building", "low_vegetation", "rail", "road", "impervious"]],
                            List priorities = ["water_permanent", "water_intermittent", "building", "high_vegetation", "low_vegetation", "road", "impervious"],
+                           List buildHeightListLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                           List facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50],
                            String building, String road, String vegetation,
                            String water, String impervious, String rsu_lcz,
                            String rsu_utrf_area, String rsu_utrf_floor_area, String sea_land_mask,
@@ -2031,7 +2059,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         }
         def roofFractionDistributionExact = Geoindicators.RsuIndicators.roofFractionDistributionExact(datasource,
                 grid, buildingCutted, grid_column_identifier,
-                [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], false, prefixName)
+                buildHeightListLayersBottom, false, prefixName)
         indicatorTablesToJoin.put(roofFractionDistributionExact, grid_column_identifier)
 
     }
@@ -2040,7 +2068,7 @@ String rasterizeIndicators(JdbcDataSource datasource,
         if (!datasource.getTable(building).isEmpty()) {
             def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution(datasource,
                     createScalesRelationsGridBl, grid, grid_column_identifier,
-                    [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50], 12, true, prefixName)
+                    buildHeightListLayersBottom, 12, true, prefixName)
             indicatorTablesToJoin.put(frontalAreaIndexDistribution, grid_column_identifier)
         }
     }
@@ -2109,7 +2137,6 @@ String rasterizeIndicators(JdbcDataSource datasource,
 
     if (list_indicators_upper.intersect(["TERRAIN_ROUGHNESS", "PROJECTED_FACADE_DENSITY_DIR"]) && building) {
         def heightColumnName = "height_roof"
-        def facadeDensListLayersBottom = [0, 10, 20, 30, 40, 50]
         def facadeDensNumberOfDirection = 12
         def frontalAreaIndexDistribution = Geoindicators.RsuIndicators.frontalAreaIndexDistribution(datasource,
                 createScalesRelationsGridBl, grid, grid_column_identifier,

@@ -1959,7 +1959,7 @@ String buildingSurfaceDensity(JdbcDataSource datasource, String facadeDensityTab
  * @author Jérémy Bernard
  */
 String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, String building,
-                                     String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                                     String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,65,70,75],
                                      boolean cutBuilding = true, String prefixName) throws Exception {
     def GEOMETRIC_COLUMN_RSU = "the_geom"
     def GEOMETRIC_COLUMN_BU = "the_geom"
@@ -2113,7 +2113,7 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
  * TODO :  https://github.com/orbisgis/geoclimate/issues/848
  */
 String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, String rsu,
-                                    String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                                    String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,65,70,75],
                                     int numberOfDirection = 12, boolean distributionAsIndex = true, String prefixName) throws Exception {
     def GEOMETRIC_FIELD_RSU = "the_geom"
     def GEOMETRIC_FIELD_BU = "the_geom"

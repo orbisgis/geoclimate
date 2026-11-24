@@ -638,6 +638,8 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                     String rasterizedIndicators = Geoindicators.WorkflowGeoIndicators.rasterizeIndicators(h2gis_datasource, grid,
                             grid_indicators_params.indicators,
                             land_superposition_grid, land_priorities_grid,
+                            Geoindicators.WorkflowGeoIndicators.getBuildHeightListLayersBottom(),
+                            Geoindicators.WorkflowGeoIndicators.getFacadeDensListLayersBottom(),
                             results.building, roadTableName, vegetationTableName,
                             hydrographicTableName, imperviousTableName,
                             results.rsu_lcz,
