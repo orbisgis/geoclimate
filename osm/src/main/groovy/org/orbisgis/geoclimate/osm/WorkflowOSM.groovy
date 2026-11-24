@@ -301,6 +301,7 @@ Map workflow(def input) throws Exception {
     Map excluded_output_db_columns=[:]
     def file_outputFolder
     def outputFileTables
+    String outputFileFormat
     def outputSRID
     def deleteOutputData
     String domain ="zone"
@@ -326,6 +327,7 @@ Map workflow(def input) throws Exception {
             //Check if we can write in the output folder
             def outputFiles = Geoindicators.WorkflowUtilities.buildOutputFolderParameters(outputFolder, outputWorkflowTableNames)
             outputFileTables = outputFiles.tables
+            outputFileFormat = outputFiles.format
             //Check if we can write in the output folder
             file_outputFolder = new File(outputFiles.path)
             if (!file_outputFolder.exists()) {
@@ -356,7 +358,7 @@ Map workflow(def input) throws Exception {
         Map osmprocessing = osm_processing(h2gis_datasource, processing_parameters , locations.findAll { it }, file_outputFolder, outputFileTables,
                 outputDatasource, outputTables, outputSRID, downloadAllOSMData, deleteOutputData, deleteOSMFile, osm_size_area,
                 overpass_timeout, overpass_maxsize, osm_date, databaseFolder,
-                excluded_output_db_columns, domain)
+                excluded_output_db_columns, domain, outputFileFormat)
         if (delete_h2gis) {
                 h2gis_datasource.deleteClose()
         }
@@ -385,6 +387,7 @@ Map workflow(def input) throws Exception {
  * @param databaseFolder output database folder path for the internal H2GIS db
  * @param excluded_columns list of columns to exclude for each table saved in a database
  * @param domain set zone to use the original bbox or zone_extended to use the bbox plus a distance
+ * @param outputFileFormat format used to save the result in tables
  * @return the identifier of the zone and the list of the output tables computed and stored in the local database for this zone
  */
 Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, def id_zones,
@@ -393,7 +396,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                    def deleteOutputData, def deleteOSMFile,
                    def bbox_size,
                    def overpass_timeout, def overpass_maxsize, def overpass_date, String databaseFolder,
-                   Map excluded_columns, String  domain) throws Exception {
+                   Map excluded_columns, String  domain, String outputFileFormat) throws Exception {
     //Store the zone identifier and the names of the tables
     def outputTableNamesResult = [:]
     int nbAreas = id_zones.size()
@@ -660,7 +663,7 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
                 }
                 if (output_datasource) {
                     saveTablesInDatabase(output_datasource, h2gis_datasource, outputTableNames,
-                            results, id_zone, srid, outputSRID, reproject, excluded_columns,outputZoneGeometry)
+                            results, id_zone, srid, outputSRID, reproject, excluded_columns,outputZoneGeometry, outputFileFormat)
                 }
                 outputTableNamesResult.put(Geoindicators.WorkflowUtilities.formatLocation(id_zone), results.findAll { it.value != null })
                 h2gis_datasource.dropTable(Geoindicators.getCachedTableNames())
@@ -1039,12 +1042,13 @@ def extractProcessingParameters(def processing_parameters) throws Exception {
  * @param outputSRID srid code to reproject the result
  * @param reproject true if the file must reprojected
  * @param deleteOutputData delete the files if exist
- * @param outputGrid file format of the grid
- * @param outputZoneGeometry if the geometry is not null we use it to filter the output data
+ * @param outputZoneGeometry the extend of the zone to save
+ * @param outputFileFormat format used to save the result in tables
  * @return
  */
 def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFiles, def ouputFolder, def subFolderName, def outputSRID,
-                    def reproject, def deleteOutputData, def outputGrid,Geometry outputZoneGeometry) throws Exception {
+                    def reproject, def deleteOutputData, def outputGrid, Geometry outputZoneGeometry, String outputFileFormat = "fgb") throws Exception {
+    def fileExtension = Geoindicators.WorkflowUtilities.getOutputFileFormat(outputFileFormat)
     //Create a subfolder to store each results
     def folderName = Geoindicators.WorkflowUtilities.formatLocation(id_zone)
     def subFolder = new File(ouputFolder.getAbsolutePath() + File.separator + subFolderName + folderName)
@@ -1054,33 +1058,33 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
         FileUtilities.deleteFiles(subFolder)
     }
 
-    def whereFilter =""
-    if(outputZoneGeometry) {
-        whereFilter+="""the_geom && ST_GEOMFROMTEXT('${outputZoneGeometry}',${outputZoneGeometry.getSRID()}) 
+    def whereFilter = ""
+    if (outputZoneGeometry) {
+        whereFilter += """the_geom && ST_GEOMFROMTEXT('${outputZoneGeometry}',${outputZoneGeometry.getSRID()}) 
             and ST_INTERSECTS(the_geom, ST_GEOMFROMTEXT('${outputZoneGeometry}',${outputZoneGeometry.getSRID()}))"""
     }
 
     //We must save each files
-    outputFiles.each { it->
+    outputFiles.each { it ->
         if (it in ["grid_indicators", "grid_target"]) {
-            if (outputGrid == "fgb") {
-                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, null,deleteOutputData)
-                } else if (outputGrid == "asc") {
+            if (outputGrid == "asc") {
                 Geoindicators.WorkflowUtilities.saveToAscGrid(results."$it", subFolder.getAbsolutePath(), it, h2gis_datasource, outputSRID, reproject, deleteOutputData)
+            } else {
+                Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.${fileExtension}", h2gis_datasource, outputSRID, reproject, null, deleteOutputData)
             }
         } else if (it == "building_updated") {
             Geoindicators.WorkflowUtilities.saveToCSV(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.csv", h2gis_datasource, deleteOutputData)
-        } else if (it in["building","road",  "rail",   "water", "vegetation",  "impervious",
-                         "urban_areas","sea_land_mask", "road_traffic","ground_acoustic",
-                         "urban_sprawl_areas", "urban_cool_areas"]) {
+        } else if (it in ["building", "road", "rail", "water", "vegetation", "impervious",
+                          "urban_areas", "sea_land_mask", "road_traffic", "ground_acoustic",
+                          "urban_sprawl_areas", "urban_cool_areas"]) {
             //Apply where filter
-            Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, whereFilter?" WHERE "+whereFilter:null, deleteOutputData)
-        } else if(it in[ "building_indicators", "block_indicators","rsu_utrf_area" ,
-                         "rsu_utrf_floor_area" , "building_utrf" , "rsu_indicators" ,
-                         "rsu_lcz"] ) {
-            Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject, whereFilter?" WHERE "+whereFilter+" and ID_RSU IS NOT NULL":" where ID_RSU IS NOT NULL", deleteOutputData)
+            Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.${fileExtension}", h2gis_datasource, outputSRID, reproject, whereFilter ? " WHERE " + whereFilter : null, deleteOutputData)
+        } else if (it in ["building_indicators", "block_indicators", "rsu_utrf_area",
+                          "rsu_utrf_floor_area", "building_utrf", "rsu_indicators",
+                          "rsu_lcz"]) {
+            Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.${fileExtension}", h2gis_datasource, outputSRID, reproject, whereFilter ? " WHERE " + whereFilter + " and ID_RSU IS NOT NULL" : " where ID_RSU IS NOT NULL", deleteOutputData)
         } else {
-            Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.fgb", h2gis_datasource, outputSRID, reproject,null, deleteOutputData)
+            Geoindicators.WorkflowUtilities.saveInFile(results."$it", "${subFolder.getAbsolutePath() + File.separator + it}.${fileExtension}", h2gis_datasource, outputSRID, reproject, null, deleteOutputData)
         }
     }
 }
@@ -1095,11 +1099,13 @@ def saveOutputFiles(def h2gis_datasource, def id_zone, def results, def outputFi
  * @param outputSRID srid code to reproject the data *
  * @param reproject the output table
  * @param excluded_columns list of columns to exclude for each table saved in a database
+ * @param outputZoneGeometry
+ * @param outputFileFormat
  * @return
  */
 def saveTablesInDatabase(JdbcDataSource output_datasource, JdbcDataSource h2gis_datasource, def outputTableNames,
                          def h2gis_tables, def id_zone, def inputSRID, def outputSRID, def reproject,
-                         Map excluded_columns, Geometry outputZoneGeometry) throws Exception {
+                         Map excluded_columns, Geometry outputZoneGeometry, String outputFileFormat) throws Exception {
 
     def whereIntersects =""
     if(outputZoneGeometry) {
@@ -1588,6 +1594,5 @@ Map buildGeoclimateLayers(JdbcDataSource datasource, Object zoneToExtract,
                 rail      : railTableName, water: hydroTableName,
                 vegetation: vegetationTableName, impervious: imperviousTableName,
                 zone      : zone, zone_envelope: zoneEnvelopeTableName]
-
     }
 }
