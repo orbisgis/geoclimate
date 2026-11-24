@@ -786,6 +786,9 @@ def getServerStatus(String endPoint) {
             return null
         }
         return connection.inputStream.getText(UTF_8.name())
+    } catch (IOException e) {
+        error "Cannot get the status of the server ${endPoint}. Cause : ${e.class.simpleName} : ${e.message}"
+        return null
     } finally {
         connection.disconnect()
     }

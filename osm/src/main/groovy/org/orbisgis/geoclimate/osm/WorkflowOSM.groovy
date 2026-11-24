@@ -224,11 +224,11 @@ Map workflow(def input) throws Exception {
         throw new Exception("Cannot find any input parameters.")
     }
 
-    def locations = inputParameters.locations as Set
-    if (!locations) {
-        throw new Exception("Please set at least one OSM location (place name or bounding box).")
-    }
+    //Check the locations
+    def locations = checkLocations(inputParameters.locations)
+
     def downloadAllOSMData = inputParameters.get("all")
+
     if (!downloadAllOSMData) {
         downloadAllOSMData = true
     } else if (!downloadAllOSMData in Boolean) {
@@ -401,10 +401,19 @@ Map osm_processing(JdbcDataSource h2gis_datasource, def processing_parameters, d
     def outputTableNamesResult = [:]
     int nbAreas = id_zones.size()
     info "$nbAreas osm areas will be processed"
-    id_zones.each { id_zone ->
+    id_zones.eachWithIndex { id_zone, index ->
         if(!(id_zone in String) && !(id_zone in Collection)){
             throw new Exception("The location value must be a text or a collection of coordinates. " +
                     "Invalid location : $id_zone".toString())
+        }
+        if (id_zone in Collection) {
+            if (id_zone.size() == 3) {
+                info "Processing the area ${index + 1}/$nbAreas defined by the point ${id_zone[0]}, ${id_zone[1]} and the distance ${id_zone[2]} m"
+            } else {
+                info "Processing the area ${index + 1}/$nbAreas defined by the bbox : ${id_zone.join(', ')}"
+            }
+        } else {
+            info "Processing the area ${index + 1}/$nbAreas : $id_zone"
         }
         //Store the current OSM zone can be null
         Geometry osm_zone_geometry = null
@@ -1594,4 +1603,56 @@ Map buildGeoclimateLayers(JdbcDataSource datasource, Object zoneToExtract,
                 vegetation: vegetationTableName, impervious: imperviousTableName,
                 zone      : zone, zone_envelope: zoneEnvelopeTableName]
     }
+}
+
+
+/**
+ * Check the locations parameter of the configuration file and return them as a set
+ *
+ * @param locations the value of the locations parameter. A location can be :
+ * - a place name supported by Nominatim (e.g. "Paimpol")
+ * - a list of 4 coordinates in degrees to define a bbox [lat_min, lon_min, lat_max, lon_max]
+ * - a list of 3 values to define a point in degrees plus a distance in meters [lat, lon, distance]
+ * @return the set of locations
+ * @throws Exception if the parameter or one of the locations is invalid
+ */
+Set checkLocations(def locations) throws Exception {
+    def help = """The locations parameter must be a list where each location is either :
+ - a place name supported by Nominatim (e.g. "Paimpol")
+ - a list of 4 coordinates in degrees to define a bbox [lat_min, lon_min, lat_max, lon_max]
+ - a list of 3 values to define a point in degrees plus a distance in meters [lat, lon, distance]
+e.g. "locations" : ["Paimpol", [48.49749, 5.25349, 48.58082, 5.33682], [43.726898, 7.298452, 100]]"""
+    if (!locations) {
+        throw new Exception("Please set at least one OSM location.\n$help")
+    }
+    if (!(locations in Collection)) {
+        throw new Exception("Invalid locations parameter : ${locations}. It must be a list.\n$help")
+    }
+    // A single bbox or point written without the enclosing list, e.g. [48.4, 5.2, 48.5, 5.3]
+    if (locations.size() in [3, 4] && locations.every { it instanceof Number }) {
+        throw new Exception("Invalid locations parameter : ${locations}. It looks like a single bbox or point, " +
+                "it must be enclosed in a list : [${locations}].\n$help")
+    }
+    def errors = locations.collect { location ->
+        if (location instanceof String) {
+            return location.trim() ? null : "a place name cannot be an empty text"
+        } else if (location in Collection) {
+            def error = Geoindicators.WorkflowUtilities.checkCoordinatesLocation(location)
+            if (!error) {
+                // OSM coordinates are latitudes and longitudes in degrees
+                def latitudes = location.size() == 4 ? [location[0], location[2]] : [location[0]]
+                def longitudes = location.size() == 4 ? [location[1], location[3]] : [location[1]]
+                if (!latitudes.every { it >= -90 && it <= 90 } || !longitudes.every { it >= -180 && it <= 180 }) {
+                    error = "${location} : the coordinates must be in degrees with latitudes between -90 and 90 " +
+                            "and longitudes between -180 and 180"
+                }
+            }
+            return error
+        }
+        return "${location} : a location must be a place name written as text or a list of coordinates"
+    }.findAll()
+    if (errors) {
+        throw new Exception("Invalid locations parameter :\n - ${errors.join('\n - ')}\n$help")
+    }
+    return locations as Set
 }

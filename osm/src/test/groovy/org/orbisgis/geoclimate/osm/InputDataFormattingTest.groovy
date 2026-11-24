@@ -441,27 +441,12 @@ class InputDataFormattingTest {
             }
         }
 
-        Map types_uses_for_model = Geoindicators.WorkflowGeoIndicators.getHeightModelTypesMapping()
-
-        Map typesToMap = types_uses_for_model.types as Map
-        Map usesToMap = types_uses_for_model.uses as Map
-        HashSet<String> allModelTypes = new HashSet<>()
-        typesToMap.each {it->
-            allModelTypes.add(it.key)
-            List inputTypes = it.value
-            if(inputTypes){
-                allModelTypes.addAll(inputTypes)
-            }
-        }
-
-        HashSet<String> allModelUses = new HashSet<>()
-        usesToMap.each {it->
-            allModelUses.add(it.key)
-            List inputUses = it.value
-            if(inputUses){
-                allModelUses.addAll(inputUses)
-            }
-        }
+        // All the OSM types and uses must be defined in the mapping file used by the RF models
+        Map mapping = Geoindicators.TypologyClassification.getTypesUsesMapping()
+        HashSet<String> allModelTypes = new HashSet<>(mapping.types.keySet())
+        mapping.types.values().each { allModelTypes.addAll(it as List) }
+        HashSet<String> allModelUses = new HashSet<>(mapping.uses.keySet())
+        mapping.uses.values().each { allModelUses.addAll(it as List) }
 
         assertTrue(!(allOSMTypes - allModelTypes))
         assertTrue(!(allOSMUses - allModelUses))
@@ -489,27 +474,14 @@ class InputDataFormattingTest {
             }
         }
 
-        Map types_uses_for_model = Geoindicators.WorkflowGeoIndicators.getHeightModelTypesMapping()
+        // All the OSM types and uses must be defined in the mapping file used by the RF models
+        // (as a type or use of the model, or as a value that falls back to it)
+        Map mapping = Geoindicators.TypologyClassification.getTypesUsesMapping()
+        HashSet<String> allModelTypes = new HashSet<>(mapping.types.keySet())
+        mapping.types.values().each { allModelTypes.addAll(it as List) }
+        HashSet<String> allModelUses = new HashSet<>(mapping.uses.keySet())
+        mapping.uses.values().each { allModelUses.addAll(it as List) }
 
-        Map typesToMap = types_uses_for_model.types as Map
-        Map usesToMap = types_uses_for_model.uses as Map
-        HashSet<String> allModelTypes = new HashSet<>()
-        typesToMap.each {it->
-            allModelTypes.add(it.key)
-            List inputTypes = it.value
-            if(inputTypes){
-                allModelTypes.addAll(inputTypes)
-            }
-        }
-
-        HashSet<String> allModelUses = new HashSet<>()
-        usesToMap.each {it->
-            allModelUses.add(it.key)
-            List inputUses = it.value
-            if(inputUses){
-                allModelUses.addAll(inputUses)
-            }
-        }
         assertTrue(!(allOSMTypes - allModelTypes))
         assertTrue(!(allOSMUses - allModelUses))
     }

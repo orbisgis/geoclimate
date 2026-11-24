@@ -429,7 +429,9 @@ class WorflowOSMTest extends WorkflowAbstractTest {
                 "output"      : [
                         "folder": directory]
         ]
-        OSM.workflow(osm_parmeters)
+        def e = assertThrows(Exception.class, () -> OSM.workflow(osm_parmeters))
+        assertTrue(e.getMessage().contains("a place name cannot be an empty text"))
+        assertTrue(e.getMessage().contains("a list of 2 values is not supported"))
     }
 
     @Test
