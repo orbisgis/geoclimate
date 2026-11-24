@@ -1862,7 +1862,12 @@ String rasterizeIndicators(JdbcDataSource datasource,
     }
 
     // Calculate all surface fractions indicators on the GRID cell
-    if (priorities) {
+    // Only if LAND_TYPE_FRACTION is asked, otherwise they are only used to compute
+    // the indicators that need the building fraction
+    boolean landTypeFraction = list_indicators_upper.contains("LAND_TYPE_FRACTION")
+    def surfaceFractionsNeeded = landTypeFraction ||
+            (building && list_indicators_upper.intersect(["ASPECT_RATIO", "STREET_WIDTH", "BUILDING_SURFACE_DENSITY"]))
+    if (priorities && surfaceFractionsNeeded) {
         // Need to create the smallest geometries used as input of the surface fraction process
         String superpositionsTableGrid = Geoindicators.RsuIndicators.smallestCommunGeometry(datasource,
                 grid, grid_column_identifier,
@@ -1872,7 +1877,11 @@ String rasterizeIndicators(JdbcDataSource datasource,
             surfaceFractionsProcess = Geoindicators.RsuIndicators.surfaceFractions(
                     datasource, grid, grid_column_identifier, superpositionsTableGrid,
                     superpositions, priorities, prefixName)
-            indicatorTablesToJoin.put(surfaceFractionsProcess, grid_column_identifier)
+            if (landTypeFraction) {
+                indicatorTablesToJoin.put(surfaceFractionsProcess, grid_column_identifier)
+            } else {
+                tablesToDrop << surfaceFractionsProcess
+            }
             tablesToJoinForWidth.put(surfaceFractionsProcess, grid_column_identifier)
 
             tablesToDrop << superpositionsTableGrid
@@ -2033,16 +2042,14 @@ String rasterizeIndicators(JdbcDataSource datasource,
                 }
             }
 
-            if (list_indicators_upper.contains("FREE_EXTERNAL_FACADE_DENSITY")) {
+            if (list_indicators_upper.contains("BUILDING_SURFACE_DENSITY")) {
                 def buildingSurfDensity = Geoindicators.RsuIndicators.buildingSurfaceDensity(
                         datasource, freeFacadeDensityExact,
                         buildingFractionTable,
                         "FREE_EXTERNAL_FACADE_DENSITY",
                         all_building_frac_name, grid_column_identifier, prefixName)
                 if (buildingSurfDensity) {
-                    if (list_indicators_upper.contains("BUILDING_SURFACE_DENSITY")) {
-                        indicatorTablesToJoin.put(buildingSurfDensity, grid_column_identifier)
-                    }
+                    indicatorTablesToJoin.put(buildingSurfDensity, grid_column_identifier)
                 }
                 tablesToDrop << freeFacadeDensityExact
                 tablesToDrop << buildingSurfDensity
