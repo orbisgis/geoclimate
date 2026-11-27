@@ -928,7 +928,6 @@ abstract class AbstractBDTopoWorkflow extends BDTopoUtils {
                         grid_indicators_params.indicators,
                         land_superposition_grid, land_priorities_grid,
                         Geoindicators.WorkflowGeoIndicators.getBuildHeightListLayersBottom(),
-                        Geoindicators.WorkflowGeoIndicators.getFacadeDensListLayersBottom(),
                         results.building, results.road, results.vegetation,
                         results.water, results.impervious,
                         results.rsu_lcz, results.rsu_utrf_area, "", "",
