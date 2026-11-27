@@ -108,13 +108,14 @@ class WorkflowGeoIndicatorsTest {
         List listFacadeDistrib = []
         List listRoofDensDistrib = []
         int rangeDeg = 360 / parameters.facadeDensNumberOfDirection
-        for (int i in 0..parameters.facadeDensListLayersBottom.size() - 1) {
-            Integer h_bot = parameters.facadeDensListLayersBottom[i]
+        def buildHeightListLayersBottom  = parameters.buildHeightListLayersBottom
+        for (int i in 0..buildHeightListLayersBottom.size() - 1) {
+            Integer h_bot = buildHeightListLayersBottom[i]
             Integer h_up
-            if (h_bot == parameters.facadeDensListLayersBottom[-1]) {
+            if (h_bot == buildHeightListLayersBottom[-1]) {
                 h_up = null
             } else {
-                h_up = parameters.facadeDensListLayersBottom[i + 1]
+                h_up = buildHeightListLayersBottom[i + 1]
             }
             // Create names for vert and non vert roof density
             listRoofDensDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("vert_roof_area", 'h', h_bot, h_up).toString().toUpperCase())
@@ -130,13 +131,13 @@ class WorkflowGeoIndicatorsTest {
         }
         // Indicator list (at RSU scale) for each building height level
         List listHeightDistrib = []
-        for (int i in 0..parameters.buildHeightListLayersBottom.size() - 1) {
-            Integer h_bot = parameters.buildHeightListLayersBottom[i]
+        for (int i in 0..buildHeightListLayersBottom.size() - 1) {
+            Integer h_bot = buildHeightListLayersBottom[i]
             Integer h_up
-            if (h_bot == parameters.buildHeightListLayersBottom[-1]) {
+            if (h_bot == buildHeightListLayersBottom[-1]) {
                 h_up = null
             } else {
-                h_up = parameters.buildHeightListLayersBottom[i + 1]
+                h_up = buildHeightListLayersBottom[i + 1]
             }
             listHeightDistrib.add(Geoindicators.RsuIndicators.getDistribIndicName("roof_fraction_distribution", 'h', h_bot, h_up).toString().toUpperCase())
         }

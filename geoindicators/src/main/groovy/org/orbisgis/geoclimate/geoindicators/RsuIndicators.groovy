@@ -1951,7 +1951,7 @@ String buildingSurfaceDensity(JdbcDataSource datasource, String facadeDensityTab
  * @param idRsu the name of the id of the RSU table
  * @param prefixName String use as prefix to name the output table
  * @param listLayersBottom the list of height corresponding to the bottom of each vertical layers (default
- * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+ * [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75])
  * @param cutBuilding set to true if the building layer must be cuted by the rsu layer
  *
  * @return Table name in which the rsu id and their corresponding indicator value are stored
@@ -1959,7 +1959,7 @@ String buildingSurfaceDensity(JdbcDataSource datasource, String facadeDensityTab
  * @author Jérémy Bernard
  */
 String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, String building,
-                                     String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                                     String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75],
                                      boolean cutBuilding = true, String prefixName) throws Exception {
     def GEOMETRIC_COLUMN_RSU = "the_geom"
     def GEOMETRIC_COLUMN_BU = "the_geom"
@@ -2113,7 +2113,7 @@ String roofFractionDistributionExact(JdbcDataSource datasource, String rsu, Stri
  * TODO :  https://github.com/orbisgis/geoclimate/issues/848
  */
 String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, String rsu,
-                                    String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50],
+                                    String idRsu, List listLayersBottom = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75],
                                     int numberOfDirection = 12, boolean distributionAsIndex = true, String prefixName) throws Exception {
     def GEOMETRIC_FIELD_RSU = "the_geom"
     def GEOMETRIC_FIELD_BU = "the_geom"
@@ -2231,12 +2231,12 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
                     dirQueryVertFrac[k] = """
                                                 CASE WHEN $v > AZIMUTH AND $v-AZIMUTH < PI()
                                                     THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
-                                                                THEN LENGTH*SIN($v-AZIMUTH)
+                                                                THEN LENGTH*SIN($v-AZIMUTH)*$deltaH
                                                                 ELSE LENGTH*SIN($v-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)
                                                                 END
                                                     ELSE    CASE WHEN $v - AZIMUTH < -PI()
                                                             THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
-                                                                    THEN LENGTH*SIN($v+2*PI()-AZIMUTH)
+                                                                    THEN LENGTH*SIN($v+2*PI()-AZIMUTH)*$deltaH
                                                                     ELSE LENGTH*SIN($v+2*PI()-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)
                                                                     END
                                                             ELSE 0
