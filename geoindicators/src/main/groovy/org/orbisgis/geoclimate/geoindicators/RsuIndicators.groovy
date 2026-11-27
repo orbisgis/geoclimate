@@ -2215,13 +2215,13 @@ String frontalAreaIndexDistribution(JdbcDataSource datasource, String building, 
                     dirQueryVertFrac[k] = """
                                                 CASE WHEN $v > AZIMUTH AND $v-AZIMUTH < PI()
                                                     THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
-                                                                THEN LENGTH*SIN($v-AZIMUTH)
-                                                                ELSE LENGTH*SIN($v-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                                THEN LENGTH*SIN($v-AZIMUTH)*$deltaH
+                                                                ELSE LENGTH*SIN($v-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)
                                                                 END
                                                     ELSE    CASE WHEN $v - AZIMUTH < -PI()
                                                             THEN    CASE WHEN $HEIGHT_WALL >= $layer_top
-                                                                    THEN LENGTH*SIN($v+2*PI()-AZIMUTH)
-                                                                    ELSE LENGTH*SIN($v+2*PI()-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)/$deltaH
+                                                                    THEN LENGTH*SIN($v+2*PI()-AZIMUTH)*$deltaH
+                                                                    ELSE LENGTH*SIN($v+2*PI()-AZIMUTH)*($HEIGHT_WALL-$layer_bottom)
                                                                     END
                                                             ELSE 0
                                                             END
